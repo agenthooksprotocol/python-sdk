@@ -58,12 +58,6 @@ The generated module exports:
 
 Unknown object fields and unknown discriminator or enum values are retained for forward compatibility. JSON numbers are decoded without losing decimal precision. Parsers do not coerce values, insert defaults, or discard extension data.
 
-## Parsing and validation
-
-Structural parsing answers whether a payload can be represented by the generated model while preserving forward-compatible data. It is not full JSON Schema validation.
-
-Before classifying a response or making an authorization decision, validate the payload against the canonical AHP Draft 2020-12 schema and applicable protocol requirements. In particular, `parse_intercept_deny_response(...)["ok"]` alone does not prove that a response is an authorized denial.
-
 ## Development
 
 ```sh

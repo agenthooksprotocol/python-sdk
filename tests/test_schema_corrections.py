@@ -1,11 +1,43 @@
 from copy import deepcopy
 import unittest
+from agent_hooks_protocol import generated
 from agent_hooks_protocol.runtime import Validator, ProtocolError, apply_response
 from test_interop import request, response
 
 
 class CorrectedSchemaTests(unittest.TestCase):
     def setUp(self): self.validator = Validator()
+
+    def test_effect_branches_reject_unknown_fields_atomically(self):
+        effects = [
+            {'type': 'allow'},
+            {'type': 'ask'},
+            {'type': 'deny', 'reason': 'policy'},
+            {'type': 'modify', 'target': 'input', 'operation': 'merge', 'value': {}},
+            {'type': 'message', 'text': 'hello'},
+            {'type': 'return', 'value': None},
+            {'type': 'flow', 'operation': 'stop', 'reason': 'budget'},
+            {'type': 'flow', 'operation': 'continue', 'instruction': 'retry'},
+            {'type': 'inject', 'target': 'context', 'operation': 'append',
+             'deliverAt': 'now', 'value': 'context'},
+        ]
+        for effect in effects:
+            with self.subTest(effect=effect):
+                self.validator.validate('intercept-response', response([effect]))
+                self.assertTrue(generated.parse_effect(effect)['ok'])
+                invalid = {**effect, 'unexpected': True}
+                # Generated structural codecs are permissive; canonical schemas
+                # enforce the strict fields before runtime publication.
+                with self.assertRaises(ProtocolError):
+                    self.validator.validate('intercept-response', response([invalid]))
+                req = request()
+                reply = response([
+                    {'type': 'modify', 'target': 'input', 'operation': 'merge',
+                     'value': {'staged': True}}, invalid])
+                before = deepcopy((req, reply))
+                with self.assertRaises(ProtocolError):
+                    apply_response(req, reply, self.validator)
+                self.assertEqual((req, reply), before)
 
     def model_request(self):
         req = request()

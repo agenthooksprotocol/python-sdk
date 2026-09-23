@@ -8,6 +8,7 @@ version = "0.0.0"
 description = "Official non-normative Python SDK for the Agent Hooks Protocol"
 readme = "README.md"
 requires-python = ">=3.11"
+dependencies = ["jsonschema[format]>=4.23,<5"]
 license = { file = "LICENSE" }
 authors = [{ name = "Agent Hooks Protocol maintainers" }]
 classifiers = [
@@ -21,4 +22,4 @@ classifiers = [
 where = ["src"]
 
 [tool.setuptools.package-data]
-agent_hooks_protocol = ["py.typed"]
+agent_hooks_protocol = ["py.typed", "schemas.json", "ahp-codegen.lock.json"]

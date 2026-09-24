@@ -1,8 +1,8 @@
 {
   "sourceRepository": "agenthooksprotocol/agent-hooks-protocol",
-  "sourceCommit": "dd77c9d11dcf4d41c8a080b1d464a63329c18c55",
+  "sourceCommit": "fe08d564713ab9ccebac050f46e7a66d091cae7e",
   "schemaRevision": "draft",
-  "manifestSha256": "9b1799418a4db21d1fec86cf6b694bd4f37fce280708ca1da02b7f63a4e6ccf9",
+  "manifestSha256": "5790952c8b55619a64e63b0ad1775ff4ad38e9790474500fa2d4ae0a3008923a",
   "generator": "ahp-codegen",
   "language": "python"
 }

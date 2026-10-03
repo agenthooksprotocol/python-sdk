@@ -1,0 +1,25 @@
+{
+  "language": "python",
+  "server": [
+    ".venv/bin/python",
+    "-m",
+    "agent_hooks_protocol.interop",
+    "server"
+  ],
+  "client": [
+    ".venv/bin/python",
+    "-m",
+    "agent_hooks_protocol.interop",
+    "client"
+  ],
+  "lifecycleClient": [
+    ".venv/bin/python",
+    "-m",
+    "agent_hooks_protocol.lifecycle_client"
+  ],
+  "lifecycleServer": [
+    ".venv/bin/python",
+    "-m",
+    "agent_hooks_protocol.lifecycle_server"
+  ]
+}

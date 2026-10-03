@@ -175,7 +175,9 @@ implementations.
 
 Lifecycle HTTP event authentication supports none, bearer, OAuth client credentials,
 workload assertions, and mutual TLS, using the same configuration and checks as
-the core adapter. Stdio accepts process trust only. The shared runner’s independent
+the core adapter. The SDK does not implement HTTP authentication challenges,
+protected-resource metadata, authorization-server discovery, or interactive OAuth
+flows. Stdio accepts process trust only. The shared runner’s independent
 `uploadAuth: {token, scope?}` server configuration and client `upload`
 configuration are supported without inheriting event credentials. Exact incoming
 canonical envelopes are captured in received/observed test receipts; those receipts

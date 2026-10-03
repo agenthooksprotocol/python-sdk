@@ -42,8 +42,6 @@ def validate_registration(
         refs = {
             "bearer": ["tokenRef"],
             "oauth": ["clientSecretRef"],
-            "mtls": ["certificateRef", "privateKeyRef", "trustRootsRef"],
-            "workload": ["credentialRef"],
         }.get(kind)
         if refs is None or resolve_credential is None:
             raise ProtocolError("No trusted credential resolver")

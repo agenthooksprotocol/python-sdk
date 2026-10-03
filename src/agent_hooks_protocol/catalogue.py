@@ -76,7 +76,7 @@ def discovery(request, validator):
                     },
                 ],
                 "transports": ["http", "stdio"],
-                "authentication": ["bearer", "oauth", "workload", "mtls"],
+                "authentication": ["bearer", "oauth"],
                 "toolPaths": ["native"],
                 "contentCategories": ["messages", "toolResults"],
                 "limits": {"maxUploadBytes": 4 * 1024 * 1024},

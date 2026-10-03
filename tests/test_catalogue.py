@@ -117,6 +117,31 @@ class CatalogueTests(unittest.TestCase):
         with self.assertRaises(ProtocolError):
             self.validate(bad)
 
+    def test_only_portable_authentication_is_advertised_and_registered(self):
+        self.assertEqual(self.manifest["authentication"], ["bearer", "oauth"])
+        # Deployment TLS/assertion support must not introduce portable variants.
+        for auth in (
+            {"type": "workload", "credentialRef": "host-secret"},
+            {
+                "type": "mtls",
+                "certificateRef": "cert",
+                "privateKeyRef": "key",
+                "trustRootsRef": "roots",
+            },
+        ):
+            with self.subTest(authentication=auth["type"]):
+                value = registration()
+                value["hooks"][0]["authentication"] = auth
+                with self.assertRaises(ProtocolError):
+                    validate_registration(
+                        value,
+                        self.manifest,
+                        [],
+                        self.context,
+                        self.validator,
+                        resolve_credential=lambda _: True,
+                    )
+
     def test_credentials_are_trusted_host_inputs_not_manifest_identity(self):
         value = registration()
         value["hooks"][0]["authentication"] = {

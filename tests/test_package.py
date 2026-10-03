@@ -13,20 +13,22 @@ class PackageTest(unittest.TestCase):
         self.assertIsNotNone(agent_hooks_protocol.generated)
 
     def test_runtime_uses_bundled_canonical_schemas(self):
-        with patch.dict('os.environ', {}, clear=True):
+        with patch.dict("os.environ", {}, clear=True):
             validator = Validator()
-        value = {'effects': [], 'futureCapability': {'enabled': True}}
-        self.assertIs(validator.validate('capabilities', value), value)
+        value = {"effects": [], "futureCapability": {"enabled": True}}
+        self.assertIs(validator.validate("capabilities", value), value)
         with self.assertRaises(ProtocolError):
-            validator.validate('capabilities', {'effects': 'deny'})
+            validator.validate("capabilities", {"effects": "deny"})
 
     def test_bundle_includes_every_locked_schema(self):
         package = Path(agent_hooks_protocol.__file__).parent
-        bundled = json.loads((package / 'schemas.json').read_text())
-        lock = json.loads((package / 'ahp-codegen.lock.json').read_text())
-        self.assertEqual(len(bundled), len(lock['documents']))
-        self.assertEqual(len({schema['$id'] for schema in bundled}), len(bundled))
-        self.assertEqual(lock['schemaRevision'], agent_hooks_protocol.generated.SCHEMA_REVISION)
+        bundled = json.loads((package / "schemas.json").read_text())
+        lock = json.loads((package / "ahp-codegen.lock.json").read_text())
+        self.assertEqual(len(bundled), len(lock["documents"]))
+        self.assertEqual(len({schema["$id"] for schema in bundled}), len(bundled))
+        self.assertEqual(
+            lock["schemaRevision"], agent_hooks_protocol.generated.SCHEMA_REVISION
+        )
 
 
 if __name__ == "__main__":

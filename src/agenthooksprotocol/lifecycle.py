@@ -8,8 +8,16 @@ from .lineage import TaskLineage
 
 
 class Lifecycle:
-    def __init__(self, validator, *, native_authorize=None, native_approve=None):
+    def __init__(
+        self,
+        validator,
+        *,
+        native_authorize=None,
+        native_approve=None,
+        include_staged=False,
+    ):
         self.validator = validator
+        self.include_staged = include_staged
         self.native_authorize = native_authorize
         self.native_approve = native_approve
         self.accepting = {}
@@ -53,6 +61,10 @@ class Lifecycle:
             return True
 
     def accept(self, ident, fallback=False):
+        prepared = self.prepare_accept(ident, fallback=fallback)
+        return None if prepared is None else self.commit_accept(ident, *prepared)
+
+    def prepare_accept(self, ident, fallback=False, *, content=None):
         # Reserve one publication attempt, but never hold the state lock while
         # calling host authorization. Both reentrant and cross-thread cancellation
         # invalidate the attempt before any staged state can become visible.
@@ -80,17 +92,27 @@ class Lifecycle:
                 self.validator,
                 native_authorize=self.native_authorize,
                 native_approve=self.native_approve,
+                include_staged=self.include_staged,
+                content=content,
             )
         except BaseException:
             with self.lock:
                 if self.accepting.get(ident) is token:
                     del self.accepting[ident]
             raise
+        return token, state
+
+    def abort_accept(self, ident, token):
+        with self.lock:
+            if self.accepting.get(ident) is token:
+                del self.accepting[ident]
+
+    def commit_accept(self, ident, token, state):
         with self.lock:
             if self.accepting.get(ident) is not token or ident in self.terminal:
                 return None
             del self.accepting[ident]
-            self.states[ident] = state
+            self.states[ident] = deepcopy(state)
             self.terminal[ident] = "accepted"
             self.staged.pop(ident, None)
             return deepcopy(state)

@@ -185,6 +185,52 @@ class Server:
         return None
 
     def protocol(self, request):
+        # Discovery is supplied by this synthetic harness, not by the backend.
+        if request.get("method") == "hooks/capabilities":
+            return self.catalogue_protocol(request)
+        # Raw catalogue probes need rejection receipts even when the public
+        # notification dispatcher correctly suppresses a wire error response.
+        if self.config.get("suite") == "catalogue":
+            try:
+                self.validator.validate("observe-notification", request)
+            except ProtocolError:
+                return self.catalogue_protocol(request)
+        # This named diagnostic intentionally violates notification semantics.
+        if (
+            request.get("method") == "hooks/observe"
+            and request.get("params", {}).get("event", {}).get("id")
+            in self.malicious_observers
+        ):
+            return self._fixture_protocol(request)
+
+        import anyio
+        from .server.hooks import Handler, InterceptResult
+
+        async def intercept(message):
+            response = self._fixture_protocol(message)
+            result = response["result"]
+            return InterceptResult(
+                effects=result["effects"], extensions=result.get("extensions")
+            )
+
+        observer_errors = []
+
+        async def observe(message):
+            try:
+                self._fixture_protocol(message)
+            except (CatalogueRejection, ProtocolError) as exc:
+                observer_errors.append(exc)
+                raise
+
+        async def process():
+            return await Handler(intercept=intercept, observe=observe).process(request)
+
+        response = anyio.run(process)
+        if observer_errors:
+            raise observer_errors[0]
+        return response
+
+    def _fixture_protocol(self, request):
         if self.config.get("suite") == "catalogue":
             return self.catalogue_protocol(request)
         if request.get("method") == "hooks/observe":

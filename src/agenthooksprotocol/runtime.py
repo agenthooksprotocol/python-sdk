@@ -37,6 +37,22 @@ class Validator:
         }
 
     def validate(self, kind, value):
+        if kind == "form-answer":
+            # MCP requestedSchema is validated separately; never resolve remote
+            # schemas or populate defaults while validating submitted content.
+            Draft202012Validator(
+                value["schema"], registry=Registry(), format_checker=FormatChecker()
+            ).validate(value["value"])
+            return value
+        if kind in ("mcp-elicitation#request", "mcp-elicitation#result"):
+            name, fragment = kind.split("#")
+            root = self.validators[name + ".schema.json"]
+            body = root.evolve(
+                schema={"$ref": root.schema["$id"] + "#/$defs/" + fragment}
+            )
+            if not body.is_valid(value):
+                raise ProtocolError("Canonical schema rejected " + kind)
+            return value
         codec = getattr(generated, "parse_" + kind.replace("-", "_"), None)
         if codec is None:
             raise ProtocolError("Generated codec unavailable: " + kind)
@@ -76,6 +92,8 @@ def apply_response(
     native_authorize=None,
     native_approve=None,
     validate_operation=None,
+    include_staged=False,
+    content=None,
 ):
     """Stage a complete response; neither argument is mutated on failure."""
     validator.validate("intercept-request", request)
@@ -90,6 +108,22 @@ def apply_response(
         params["capabilities"],
         params["event"],
     )
+    if content is None:
+        for effect in effects:
+            needs_body = (
+                event["type"].startswith("user.elicitation.")
+                and effect["type"] in ("modify", "return", "deny")
+            ) or (
+                event["type"].startswith("context.compact.")
+                and (
+                    effect["type"] == "return"
+                    or effect.get("target") in ("instructions", "summary")
+                )
+            )
+            if needs_body:
+                raise ProtocolError(
+                    "This effect requires an explicit trusted content binding"
+                )
     state = deepcopy(params.get("state", {}))
     original = deepcopy(event.get("tool", {}).get("input", event.get("input", {})))
     effective = deepcopy(original)
@@ -145,6 +179,7 @@ def apply_response(
             support = caps.get("modify", {}).get(effect["target"], {})
             if (
                 effect["target"] not in targets
+                and (content is None or effect["target"] not in content.targets)
                 or operation not in ("replace", "merge")
                 or support.get(operation) is not True
             ):
@@ -166,8 +201,13 @@ def apply_response(
                 or effect.get("deliverAt") not in support.get("deliverAt", [])
             ):
                 raise ProtocolError("Unsupported injection")
+    bound = content.stage(request, effects) if content is not None else None
     for effect in effects:
-        if effect["type"] != "modify":
+        if (
+            effect["type"] != "modify"
+            or content is not None
+            and effect.get("target") in content.targets
+        ):
             continue
         value = deepcopy(effect["value"])
         path = targets[effect["target"]]
@@ -190,7 +230,7 @@ def apply_response(
     staged_request = deepcopy(request)
     staged_request["params"]["event"] = effective_event
     validator.validate("intercept-request", staged_request)
-    if not json_equal(effective_event, event):
+    if not json_equal(effective_event, event) or bound is not None and bound["changed"]:
         candidate = None
         if permission == "allow":
             permission = "none"
@@ -273,5 +313,14 @@ def apply_response(
         any(e["type"] == "modify" and e["target"] != "input" for e in effects)
         or event["type"] == "task.change.before"
     ):
+        result["event"] = effective_event
+    if bound is not None:
+        result["content"] = bound["values"]
+        result["_content_updates"] = bound["updates"]
+        result["event"] = effective_event
+    if include_staged:
+        # Settlement data is not host authorization or an execution claim.
+        result["permission"] = "deny" if denied else permission
+        result["candidate"] = deepcopy(candidate)
         result["event"] = effective_event
     return result

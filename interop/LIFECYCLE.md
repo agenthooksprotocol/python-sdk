@@ -3,8 +3,8 @@
 From this SDK directory:
 
 ```sh
-.venv/bin/python -m agent_hooks_protocol.lifecycle_server --config ABS_PATH
-.venv/bin/python -m agent_hooks_protocol.lifecycle_client --config ABS_PATH
+.venv/bin/python -m agenthooksprotocol.lifecycle_server --config ABS_PATH
+.venv/bin/python -m agenthooksprotocol.lifecycle_client --config ABS_PATH
 .venv/bin/python -m unittest discover -s tests
 ```
 

@@ -21,7 +21,8 @@ from .interop import (
     tls_context,
     synthetic_native_policy,
 )
-from .lifecycle import Lifecycle, ContentStore
+from .lifecycle import ContentStore
+from .interop import fixture_hooks, fixture_notify, host_outcome
 from .runtime import ProtocolError, Validator
 
 TIMEOUT = 30
@@ -177,11 +178,15 @@ class Transport:
             endpoint = self.config["endpoint"].rstrip("/")
             if endpoint.endswith("/intercept"):
                 endpoint = endpoint[: -len("/intercept")]
-            status, _ = http(
+            status, response = http(
                 endpoint + "/observe", notification, self.headers, self.context
             )
             if status not in (200, 204) and not (raw and status in (400, 409)):
                 raise ProtocolError("Notification transport failure: " + str(status))
+            if status in (200, 204) and response is not None:
+                # Hooks.notify records this as a diagnostic, never an effect or
+                # a reason to reopen the already-settled interception.
+                raise ProtocolError("Observer returned an acknowledgement body")
 
     def send(self, request):
         request = replace_references(wire_request(request), self.references)
@@ -258,7 +263,7 @@ def run(config):
                     }
                 )
                 continue
-            lifecycle = Lifecycle(validator, native_authorize=synthetic_native_policy)
+            pending = {}
             slots = {}
             actual = {
                 "published": [],
@@ -280,7 +285,8 @@ def run(config):
                 )
                 ident = request["id"] if request else None
                 if op == "send":
-                    lifecycle.send(request)
+                    if ident not in pending:
+                        pending[ident] = fixture_hooks(request).begin(request)
                     if step["slot"] in slots:
                         raise ProtocolError("Duplicate transport slot")
                     slots[step["slot"]] = (request, transport.send(request))
@@ -290,7 +296,7 @@ def run(config):
                     )
                 elif op == "receive":
                     original, future = slots[step["slot"]]
-                    if lifecycle.receive(original, future.result(timeout=TIMEOUT)):
+                    if pending[original["id"]].receive(future.result(timeout=TIMEOUT)):
                         transport.control(
                             "/mark",
                             {
@@ -302,7 +308,9 @@ def run(config):
                     else:
                         actual["ignored"].append(step["slot"])
                 elif op == "cancel":
-                    if lifecycle.cancel(ident):
+                    if pending.setdefault(
+                        ident, fixture_hooks(request).begin(request)
+                    ).cancel():
                         actual["cancelled"].append(ident)
                         transport.control(
                             "/mark",
@@ -314,9 +322,12 @@ def run(config):
                         )
                 elif op in ("accept", "failOpen"):
                     # Fallback can settle a boundary with no transport attempt.
-                    if op == "failOpen":
-                        lifecycle.send(request)
-                    state = lifecycle.accept(ident, fallback=op == "failOpen")
+                    if op == "failOpen" and ident not in pending:
+                        pending[ident] = fixture_hooks(request).begin(request)
+                    outcome = pending[ident].accept(fallback=op == "failOpen")
+                    state = (
+                        host_outcome(request, outcome) if outcome is not None else None
+                    )
                     if state is not None:
                         actual["published"].append(ident)
                         actual["states"][ident] = state
@@ -358,12 +369,13 @@ def run(config):
                             transport.references[step["ref"]] = descriptor
                     actual["uploadStatuses"].append(status)
                 elif op == "observe":
-                    notification = lifecycle.observe(
-                        request,
+                    notification = pending[ident].observe(
                         step["subscription"],
-                        replace_references(step.get("items"), transport.references),
+                        items=replace_references(
+                            step.get("items"), transport.references
+                        ),
                     )
-                    transport.observe(notification)
+                    fixture_notify(notification, transport.observe)
                     event = notification["params"]["event"]
                     observed[event["id"]] += 1
                     transport.control(

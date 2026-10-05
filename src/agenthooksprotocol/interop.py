@@ -20,12 +20,41 @@ import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.request import Request, build_opener, HTTPRedirectHandler, HTTPSHandler
 from urllib.parse import urlencode, urlsplit
-from .runtime import Validator, ProtocolError, apply_response, json_equal
+from .runtime import Validator, ProtocolError, json_equal
 from .lifecycle import content_items
 from .lineage import TaskLineage
 
 LIMIT = 4 * 1024 * 1024
 TIMEOUT = 10
+
+# Exact malformed wire probes, never ordinary application-level failures.
+RAW_RESPONSE_PROBES = frozenset(
+    {
+        "invalid",  # Native malformed-effect regression.
+        "modify-then-unknown-rejects-entire-response",
+        "message-then-unknown-rejects-entire-response",
+        "return-then-unknown-rejects-entire-response",
+        "deny-then-unknown-rejects-entire-response",
+        "allow-then-unknown-rejects-entire-response",
+        "ask-then-unknown-rejects-entire-response",
+        "deny-missing-reason",
+        "message-non-string",
+        "return-missing-value",
+        "modify-missing-operation",
+        "modify-unsupported-operation",
+        "modify-array-value",
+        "wrong-response-id",
+        "wrong-jsonrpc-version",
+        "wrong-protocol-version",
+        "missing-effects-array",
+        "non-array-effects",
+        "null-result-envelope",
+        "flow-stop-then-unknown-is-atomic",
+        "flow-stop-missing-reason",
+        "inject-then-unknown-rejects-entire-response",
+        "inject-missing-delivery",
+    }
+)
 
 
 def loads(data):
@@ -119,9 +148,213 @@ def synthetic_native_policy(event):
 
 def synthetic_input_validator(event):
     if event.get("tool", {}).get("name") == "task":
-        task = event["tool"]["input"].get("task")
+        value = event["tool"]["input"]
+        if not isinstance(value, dict):
+            raise ProtocolError("Invalid task application input shape")
+        task = value.get("task")
         if type(task) not in (int, float) or task <= 0 or task != int(task):
             raise ProtocolError("Invalid task application input")
+
+
+def host_outcome(request, outcome, *, validate_input=False):
+    """Apply this fixture host's policy after SDK settlement, never inside it."""
+    if outcome is None:
+        raise ProtocolError("No correlated response accepted")
+    actual = deepcopy(outcome.state)
+    actual["executed"] = False
+    candidate = actual.pop("candidate", None)
+    actual.pop("permission", None)
+    effects = (outcome.accepted_response or {}).get("result", {}).get("effects", [])
+    if not (
+        any(e.get("type") == "modify" and e.get("target") != "input" for e in effects)
+        or outcome.event["type"] == "task.change.before"
+    ):
+        actual.pop("event", None)
+    event = deepcopy(outcome.event)
+    if "tool" in event:
+        event["tool"]["input"] = deepcopy(outcome.input)
+    if validate_input:
+        try:
+            synthetic_input_validator(event)
+        except ProtocolError:
+            actual.update(
+                sdkAccepted=True,
+                hostAccepted=False,
+                rejectionLayer="host-input-schema",
+                executed=False,
+            )
+            actual.pop("result", None)
+            actual.pop("authorization", None)
+            return actual
+    if (
+        actual["decision"] == "allow"
+        and actual.get("flow") != "stop"
+        and synthetic_native_policy(event)
+    ):
+        actual.pop("authorization", None)
+        if candidate is not None:
+            actual["result"] = deepcopy(candidate["value"])
+        actual["executed"] = event["type"] == "tool.before" and "result" not in actual
+    return actual
+
+
+def fixture_hooks(request, transport=None):
+    """Configure the public harness for an already-canonical fixture occurrence.
+
+    Socket authentication and test-only barriers belong to the injected transport;
+    acquisition, cancellation, response validation, and settlement belong to Hooks.
+    """
+    from . import Hooks
+
+    event = request["params"]["event"]
+    mode = "observe" if request["method"] == "hooks/observe" else "intercept"
+    declaration = {"modes": [mode]}
+    if mode == "intercept":
+        declaration["capabilities"] = request["params"]["capabilities"]
+    config = {
+        "protocolVersion": request["params"]["protocolVersion"],
+        "hooks": [
+            {
+                "id": "org.agenthooksprotocol.fixture",
+                "transport": {"type": "http", "url": "http://127.0.0.1/fixture"},
+                "subscriptions": [
+                    {
+                        "events": [event["type"]],
+                        "mode": mode,
+                        **(
+                            {
+                                "timeoutMs": TIMEOUT * 1000,
+                                "failurePolicy": "fail-closed",
+                            }
+                            if mode == "intercept"
+                            else {}
+                        ),
+                        "content": {"default": "metadata"},
+                    }
+                ],
+            }
+        ],
+    }
+    return Hooks(
+        config,
+        source=event["source"],
+        capabilities={event["type"]: declaration},
+        transport=transport,
+    )
+
+
+def fixture_notify(notification, deliver):
+    """Deliver an exact notification via Hooks; transport failures are diagnostics."""
+    import anyio
+
+    class NotificationTransport:
+        async def notify(self, message):
+            await anyio.to_thread.run_sync(deliver, message)
+
+    async def invoke():
+        async with fixture_hooks(notification, NotificationTransport()) as hooks:
+            return await hooks.notify(notification)
+
+    return anyio.run(invoke)
+
+
+def run_fixture_compaction(
+    instructions, before=(), after=(), *, item_id="summary-1", observe_only=False
+):
+    """Host scheduling only: callbacks return already-settled public HookResults."""
+    from .compaction import compaction_capabilities
+
+    if not isinstance(instructions, str) or not isinstance(item_id, str) or not item_id:
+        raise ValueError("instructions and nonempty item ID required")
+    state = {
+        "instructions": instructions,
+        "candidate": None,
+        "summary": None,
+        "bodies": {},
+        "messages": [],
+        "denied": False,
+    }
+    seen, failures = [], []
+
+    def summary(body):
+        ref = "urn:ahp:compaction:utf8:" + body.encode("utf-8").hex()
+        state["bodies"][ref] = body
+        return {"id": item_id, "ref": ref}
+
+    def pipeline(boundary, subscriptions):
+        for supplier, policy, callback in subscriptions:
+            snapshot = dict(
+                deepcopy(state),
+                boundary=boundary,
+                capabilities=compaction_capabilities(boundary),
+            )
+            seen.append(deepcopy(snapshot))
+            try:
+                settled = callback(snapshot)
+                values = settled.state["content"]
+                # No effect interpretation here: the SDK has committed the full
+                # response, resolved bodies, and confirmed replacement uploads.
+                if boundary == "before":
+                    state["instructions"] = values["instructions"]
+                    candidate = settled.candidate
+                    if candidate is None:
+                        state["candidate"] = None
+                    elif "candidate" in values:
+                        state["candidate"] = {
+                            "body": candidate["value"],
+                            "supplier": supplier,
+                        }
+                else:
+                    state["summary"] = summary(values["summary"])
+                state["messages"].extend(settled.state["messages"])
+                state["denied"] = settled.decision == "deny"
+            except Exception:
+                failures.append({"boundary": boundary, "supplier": supplier})
+                if policy == "fail-closed":
+                    return False
+            if state["denied"]:
+                return False
+        return True
+
+    generated, applied, provenance = False, False, None
+    if pipeline("before", before):
+        candidate = state["candidate"]
+        if candidate is None:
+            body = "summary:" + state["instructions"]
+            generated, provenance = True, {"kind": "generated"}
+        else:
+            body = candidate["body"]
+            provenance = {"kind": "supplied", "supplier": candidate["supplier"]}
+        state["summary"] = summary(body)
+        applied = True if observe_only else pipeline("after", after)
+    result = dict(
+        state,
+        seen=seen,
+        failures=failures,
+        generated=generated,
+        provenance=provenance,
+        applied=applied,
+    )
+    if observe_only and applied:
+        for _, _, callback in after:
+            snapshot = dict(
+                deepcopy(state),
+                boundary="after",
+                applied=True,
+                generated=generated,
+                provenance=deepcopy(provenance),
+                capabilities=compaction_capabilities("after", True),
+            )
+            seen.append(deepcopy(snapshot))
+
+            def notify(callback=callback, snapshot=snapshot):
+                try:
+                    callback(snapshot)
+                except BaseException:
+                    pass  # Best-effort notification cannot reopen settlement.
+
+            threading.Thread(target=notify, daemon=True).start()
+    return result
 
 
 class NoRedirect(HTTPRedirectHandler):
@@ -475,11 +708,25 @@ class AdapterServer:
             )
         if scenario.get("barrier") and not barrier.wait(TIMEOUT):
             raise ProtocolError("Barrier watchdog expired")
-        # Negative response fixtures intentionally reach the client's validator.
-        response = scenario["response"]
-        if not scenario.get("expectError"):
-            self.validator.validate("intercept-response", response)
-        return response
+        # Named negative-response fixtures deliberately bypass backend response
+        # construction so the client's validator sees the adversarial envelope.
+        if scenario["id"] in RAW_RESPONSE_PROBES:
+            return deepcopy(scenario["response"])
+
+        import anyio
+        from .server.hooks import Handler, InterceptResult
+
+        async def respond(message):
+            result = scenario["response"]["result"]
+            return InterceptResult(
+                effects=deepcopy(result["effects"]),
+                extensions=deepcopy(result.get("extensions")),
+            )
+
+        async def process():
+            return await Handler(intercept=respond).process(request)
+
+        return anyio.run(process)
 
     def stop(self):
         self.stopping.set()
@@ -744,15 +991,20 @@ def run_client(config):
                     replace_references(scenario["request"], references)
                 )
                 validator.validate("intercept-request", request)
-                response = exchange(request)
+                import anyio
+
+                class FixtureTransport:
+                    async def request(self, message):
+                        return await anyio.to_thread.run_sync(exchange, message)
+
+                async def invoke():
+                    transport = FixtureTransport()
+                    async with fixture_hooks(request, transport) as hooks:
+                        return await hooks.exchange(request)
+
                 try:
-                    actual = apply_response(
-                        request,
-                        response,
-                        validator,
-                        native_authorize=synthetic_native_policy,
-                        validate_operation=synthetic_input_validator,
-                    )
+                    outcome = anyio.run(invoke)
+                    actual = host_outcome(request, outcome, validate_input=True)
                 except ProtocolError:
                     if not scenario.get("expectError"):
                         raise
@@ -760,6 +1012,16 @@ def run_client(config):
                 else:
                     result["actual"] = actual
                     if scenario.get("expectError"):
+                        if actual.get("hostAccepted") is False:
+                            for field in (
+                                "sdkAccepted",
+                                "hostAccepted",
+                                "rejectionLayer",
+                            ):
+                                result[field] = actual.pop(field)
+                            result["status"] = "passed"
+                            results.append(result)
+                            continue
                         raise ProtocolError("Expected rejection")
                     if not all(
                         key in actual and json_equal(actual[key], value)

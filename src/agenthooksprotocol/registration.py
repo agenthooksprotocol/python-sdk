@@ -5,6 +5,7 @@ This evaluator does not contact registered endpoints or expose credentials in re
 """
 
 from .runtime import ProtocolError
+from ._models.registration import *
 
 
 def validate_registration(

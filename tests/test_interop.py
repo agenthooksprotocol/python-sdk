@@ -17,8 +17,8 @@ import unittest
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from http.client import HTTPConnection
 from urllib.error import HTTPError, URLError
-from agent_hooks_protocol.runtime import Validator, ProtocolError, apply_response
-from agent_hooks_protocol.interop import (
+from agenthooksprotocol.runtime import Validator, ProtocolError, apply_response
+from agenthooksprotocol.interop import (
     AdapterServer,
     http_json,
     tls_context,
@@ -341,7 +341,7 @@ class TransportTests(unittest.TestCase):
                 serverCommand=[
                     sys.executable,
                     "-m",
-                    "agent_hooks_protocol.interop",
+                    "agenthooksprotocol.interop",
                     "server",
                 ],
                 serverConfig=str(server_file),
@@ -359,7 +359,7 @@ class TransportTests(unittest.TestCase):
             server = AdapterServer(config)
             ready = threading.Event()
             # Observe atomic readiness without sleep-based ordering.
-            import agent_hooks_protocol.interop as module
+            import agenthooksprotocol.interop as module
 
             original = module.atomic_json
 
@@ -933,11 +933,11 @@ class UploadContractTests(unittest.TestCase):
         report = Path(self.temp.name) / "report.json"
         with (
             patch(
-                "agent_hooks_protocol.interop.http_json",
+                "agenthooksprotocol.interop.http_json",
                 return_value={"effects": ["message"]},
             ) as exchange,
             patch(
-                "agent_hooks_protocol.interop.upload_blob",
+                "agenthooksprotocol.interop.upload_blob",
                 side_effect=ProtocolError("bad descriptor"),
             ),
         ):
@@ -1025,7 +1025,7 @@ class UploadContractTests(unittest.TestCase):
                     self.assertNotEqual(first["ref"], second["ref"])
                     if name == "compaction_wire.py":
                         import importlib.util
-                        from agent_hooks_protocol.compaction import run_compaction
+                        from agenthooksprotocol.interop import run_fixture_compaction
 
                         spec = importlib.util.spec_from_file_location(
                             "compaction_wire_fixture", sdk / "interop" / name
@@ -1057,7 +1057,7 @@ class UploadContractTests(unittest.TestCase):
                             )
                             for scope in ("hook", "second")
                         ]
-                        outcome = run_compaction("base", hooks)
+                        outcome = run_fixture_compaction("base", hooks)
                         self.assertEqual(outcome["instructions"], "base:one:two")
                         self.assertEqual(outcome["failures"], [])
                         denied = http_json(

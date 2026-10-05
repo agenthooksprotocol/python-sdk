@@ -1,7 +1,7 @@
 import unittest
 from queue import Queue
 from threading import Event
-from agent_hooks_protocol.lifecycle import dispatch_observations
+from agenthooksprotocol.lifecycle import dispatch_observations
 
 
 class ObservationTests(unittest.TestCase):

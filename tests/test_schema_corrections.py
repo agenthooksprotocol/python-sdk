@@ -1,7 +1,7 @@
 from copy import deepcopy
 import unittest
-from agent_hooks_protocol import generated
-from agent_hooks_protocol.runtime import Validator, ProtocolError, apply_response
+from agenthooksprotocol import generated
+from agenthooksprotocol.runtime import Validator, ProtocolError, apply_response
 from test_interop import request, response
 
 

@@ -3,23 +3,23 @@
   "server": [
     ".venv/bin/python",
     "-m",
-    "agent_hooks_protocol.interop",
+    "agenthooksprotocol.interop",
     "server"
   ],
   "client": [
     ".venv/bin/python",
     "-m",
-    "agent_hooks_protocol.interop",
+    "agenthooksprotocol.interop",
     "client"
   ],
   "lifecycleClient": [
     ".venv/bin/python",
     "-m",
-    "agent_hooks_protocol.lifecycle_client"
+    "agenthooksprotocol.lifecycle_client"
   ],
   "lifecycleServer": [
     ".venv/bin/python",
     "-m",
-    "agent_hooks_protocol.lifecycle_server"
+    "agenthooksprotocol.lifecycle_server"
   ]
 }

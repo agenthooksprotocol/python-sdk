@@ -3,12 +3,12 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "agent-hooks-protocol"
+name = "agenthooksprotocol"
 version = "0.0.0"
 description = "Official non-normative Python SDK for the Agent Hooks Protocol"
 readme = "README.md"
 requires-python = ">=3.11"
-dependencies = ["jsonschema[format]>=4.23,<5"]
+dependencies = ["jsonschema[format]>=4.23,<5", "anyio>=4.8,<5", "sniffio>=1.3,<2"]
 license = { file = "LICENSE" }
 authors = [{ name = "Agent Hooks Protocol maintainers" }]
 classifiers = [
@@ -22,4 +22,18 @@ classifiers = [
 where = ["src"]
 
 [tool.setuptools.package-data]
-agent_hooks_protocol = ["py.typed", "schemas.json", "ahp-codegen.lock.json"]
+agenthooksprotocol = ["py.typed", "schemas.json", "ahp-codegen.lock.json"]
+
+[project.optional-dependencies]
+http = ["httpx>=0.28,<1"]
+pydantic = ["pydantic>=2.10,<3"]
+
+[dependency-groups]
+dev = ["build>=1.2", "httpx>=0.28,<1", "trio>=0.29,<1", "mypy>=1.15,<2", "ruff==0.12.12", "pydantic>=2.10,<3"]
+
+[tool.mypy]
+python_version = "3.11"
+files = ["examples", "src/agenthooksprotocol/codec.py", "src/agenthooksprotocol/integrations"]
+follow_imports = "silent"
+check_untyped_defs = true
+strict = true

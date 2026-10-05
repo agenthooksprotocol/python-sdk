@@ -9,10 +9,10 @@ from referencing import Registry, Resource
 import unittest
 from unittest.mock import Mock, patch
 
-from agent_hooks_protocol.elicitation import apply_effects, validate_exchange
-from agent_hooks_protocol.lifecycle_client import Transport
-from agent_hooks_protocol.lifecycle_server import Server, MALICIOUS
-from agent_hooks_protocol.runtime import Validator, ProtocolError
+from agenthooksprotocol.elicitation import apply_effects, validate_exchange
+from agenthooksprotocol.lifecycle_client import Transport
+from agenthooksprotocol.lifecycle_server import Server, MALICIOUS
+from agenthooksprotocol.runtime import Validator, ProtocolError
 
 
 class IntegrationEdgeTests(unittest.TestCase):
@@ -150,7 +150,7 @@ class IntegrationEdgeTests(unittest.TestCase):
                             )
                     self.assertEqual((request, result), original)
 
-    def test_http_notifications_accept_204_and_ignore_effects(self):
+    def test_http_notifications_accept_204_and_diagnose_effects(self):
         transport = Transport.__new__(Transport)
         transport.process = None
         transport.references = {}
@@ -162,14 +162,20 @@ class IntegrationEdgeTests(unittest.TestCase):
         notification = {"jsonrpc": "2.0", "method": "hooks/observe", "params": {}}
         try:
             for method in (transport.notify, transport.observe):
-                for status, body in ((204, None), (200, MALICIOUS)):
-                    with patch(
-                        "agent_hooks_protocol.lifecycle_client.http",
-                        return_value=(status, body),
-                    ):
-                        self.assertIsNone(method(notification))
                 with patch(
-                    "agent_hooks_protocol.lifecycle_client.http",
+                    "agenthooksprotocol.lifecycle_client.http", return_value=(204, None)
+                ):
+                    self.assertIsNone(method(notification))
+                # The transport reports an illicit acknowledgement. Hooks.notify
+                # contains this as a diagnostic, never as effects or a rollback.
+                with patch(
+                    "agenthooksprotocol.lifecycle_client.http",
+                    return_value=(200, MALICIOUS),
+                ):
+                    with self.assertRaisesRegex(ProtocolError, "acknowledgement"):
+                        method(notification)
+                with patch(
+                    "agenthooksprotocol.lifecycle_client.http",
                     return_value=(500, None),
                 ):
                     with self.assertRaises(ProtocolError):
@@ -192,7 +198,15 @@ class IntegrationEdgeTests(unittest.TestCase):
             "observation-chain-deny",
             "settled-observer-effects-ignored:a",
         ):
-            note = {"method": "hooks/observe", "params": {"event": {"id": ident}}}
+            from test_interop import request as tool_request
+
+            event = tool_request()["params"]["event"]
+            event["id"] = ident
+            note = {
+                "jsonrpc": "2.0",
+                "method": "hooks/observe",
+                "params": {"protocolVersion": "draft", "event": event},
+            }
             self.assertEqual(
                 server.protocol(note),
                 MALICIOUS if ident in server.malicious_observers else None,

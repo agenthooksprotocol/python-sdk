@@ -1,8 +1,8 @@
 """Serial adapter interception followed by one-way, permission-filtered views."""
 
 from copy import deepcopy
-from .runtime import apply_response
-from .interop import synthetic_native_policy
+from .runtime import ProtocolError
+from .interop import fixture_hooks, fixture_notify, host_outcome
 
 
 def run_chain(scenario, transport, validator):
@@ -24,6 +24,7 @@ def run_chain(scenario, transport, validator):
             request["params"]["event"]["items"] = []
         validator.validate("intercept-request", request)
         called.append(subscription["id"])
+        invocation = fixture_hooks(request).begin(request)
         future = transport.send(request)
         transport.control("/wait", {"id": ident, "count": len(called)})
         if chain.get("interrupt"):
@@ -31,14 +32,14 @@ def run_chain(scenario, transport, validator):
             transport.control(
                 "/mark", {"scenario": scenario["id"], "kind": "cancelled", "id": ident}
             )
-            pending, halted = future, True
+            invocation.cancel()
+            pending, halted = (future, invocation), True
             continue
         transport.control("/release", {"id": ident})
         try:
             response = future.result(timeout=15)
-            state = apply_response(
-                request, response, validator, native_authorize=synthetic_native_policy
-            )
+            invocation.receive(response)
+            state = host_outcome(request, invocation.accept())
             event["tool"]["input"] = deepcopy(state["input"])
             permission = state["decision"]
             halted = state["decision"] == "deny" or state.get("flow") == "stop"
@@ -64,11 +65,14 @@ def run_chain(scenario, transport, validator):
             "params": {"protocolVersion": "draft", "event": projected},
         }
         validator.validate("observe-notification", note)
-        deliveries.append(transport.pool.submit(transport.observe, note))
+        deliveries.append(
+            transport.pool.submit(fixture_notify, note, transport.observe)
+        )
     # Test-only drain occurs after settlement and stopping, never on that path.
     if pending is not None:
         transport.control("/release", {"id": ident})
-        pending.result(timeout=15)  # Discard late effects; they cannot change event.
+        future, invocation = pending
+        invocation.receive(future.result(timeout=15))  # Cancelled effects are ignored.
     if remaining:
         transport.control("/wait-observed", {"eventId": ident, "count": len(remaining)})
     if chain.get("holdObservers"):

@@ -27,6 +27,33 @@ def compaction_capabilities(boundary, observe_only=False):
     }
 
 
+def validate_text_effects(boundary, effects, capabilities, validator):
+    """Shared compaction admission for legacy hosts and public content bindings."""
+    target = "instructions" if boundary == "before" else "summary"
+    for effect in effects:
+        validator.validate("effect", effect)
+        kind = effect["type"]
+        if kind not in capabilities["effects"] or kind not in (
+            ("modify", "return", "deny", "message")
+            if boundary == "before"
+            else ("modify", "message")
+        ):
+            raise ValueError("Unsupported compaction effect")
+        if kind == "modify" and (
+            effect["target"] != target
+            or effect["operation"] != "replace"
+            or capabilities.get("modify", {}).get(target, {}).get("replace") is not True
+            or not isinstance(effect["value"], str)
+        ):
+            raise ValueError(
+                "Compaction modification requires granted text replacement"
+            )
+        if kind == "return" and not isinstance(effect["value"], str):
+            raise ValueError("Compaction summary must be text")
+        if kind == "deny" and not effect.get("reason"):
+            raise ValueError("Compaction denial requires a reason")
+
+
 def run_compaction(
     instructions,
     before=(),
@@ -79,6 +106,7 @@ def run_compaction(
                 effects = callback(deepcopy(snapshot))
                 if not isinstance(effects, list):
                     raise ValueError("effects must be an array")
+                validate_text_effects(boundary, effects, caps, validator)
                 staged = deepcopy(state)
                 for effect in effects:
                     validator.validate("effect", effect)

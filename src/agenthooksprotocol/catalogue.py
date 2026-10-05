@@ -2,9 +2,10 @@
 
 from copy import deepcopy
 from collections import defaultdict
+from contextlib import AsyncExitStack
 from .runtime import ProtocolError
 from .registration import validate_registration
-from .lifecycle import Lifecycle
+import anyio
 
 EXECUTION_EVENTS = (
     "tool.before",
@@ -96,6 +97,11 @@ def discovery(request, validator):
 
 
 def run_catalogue(config, fixtures, transport, validator):
+    return anyio.run(_run_catalogue, config, fixtures, transport, validator)
+
+
+async def _run_catalogue(config, fixtures, transport, validator):
+    from . import Hooks
     from .interop import atomic_json
 
     request = {
@@ -112,42 +118,78 @@ def run_catalogue(config, fixtures, transport, validator):
     ):
         raise ProtocolError("Discovery correlation mismatch")
     manifest = response["result"]["manifest"]
-    lifecycle = Lifecycle(validator)
-    observed, results = defaultdict(int), []
-    for scenario in fixtures["scenarios"]:
-        actual = {"sent": [], "registrations": []}
-        for step in scenario["steps"]:
-            if step["op"] in ("notify", "rawNotify"):
-                raw = step["op"] == "rawNotify"
-                message = (
-                    deepcopy(step["message"])
-                    if raw
-                    else lifecycle.observe_native(step["message"])
-                )
-                transport.notify(message, raw=raw)
-                ident = message["params"]["event"]["id"]
-                observed[ident] += 1
-                transport.control(
-                    "/wait-observed", {"eventId": ident, "count": observed[ident]}
-                )
-                actual["sent"].append(message)
-            elif step["op"] == "register":
-                try:
-                    validate_registration(
-                        step["registration"],
-                        manifest,
-                        step["requirements"],
-                        step["context"],
-                        validator,
+
+    class NotificationTransport:
+        async def notify(self, message):
+            await anyio.to_thread.run_sync(transport.notify, message)
+
+    declarations = {
+        entry["event"]: {"modes": ["observe"]}
+        for entry in manifest["events"]
+        if "observe" in entry["modes"]
+    }
+    registration = {
+        "protocolVersion": "draft",
+        "hooks": [
+            {
+                "id": "org.agenthooksprotocol.catalogue",
+                "transport": {"type": "http", "url": "http://127.0.0.1/fixture"},
+                "subscriptions": [
+                    {
+                        "events": list(declarations),
+                        "mode": "observe",
+                        "content": {"default": "metadata"},
+                    }
+                ],
+            }
+        ],
+    }
+    observed, results, sources = defaultdict(int), [], {}
+    async with AsyncExitStack() as stack:
+        for scenario in fixtures["scenarios"]:
+            actual = {"sent": [], "registrations": []}
+            for step in scenario["steps"]:
+                if step["op"] in ("notify", "rawNotify"):
+                    raw = step["op"] == "rawNotify"
+                    message = deepcopy(step["message"])
+                    if raw:
+                        # Explicit rawNotify scenarios are adversarial wire probes.
+                        transport.notify(message, raw=True)
+                    else:
+                        source = message["params"]["event"]["source"]
+                        if source not in sources:
+                            sources[source] = await stack.enter_async_context(
+                                Hooks(
+                                    registration,
+                                    source=source,
+                                    capabilities=declarations,
+                                    transport=NotificationTransport(),
+                                )
+                            )
+                        await sources[source].notify(message)
+                    ident = message["params"]["event"]["id"]
+                    observed[ident] += 1
+                    transport.control(
+                        "/wait-observed", {"eventId": ident, "count": observed[ident]}
                     )
-                except ProtocolError:
-                    accepted = False
+                    actual["sent"].append(message)
+                elif step["op"] == "register":
+                    try:
+                        validate_registration(
+                            step["registration"],
+                            manifest,
+                            step["requirements"],
+                            step["context"],
+                            validator,
+                        )
+                    except ProtocolError:
+                        accepted = False
+                    else:
+                        accepted = True
+                    actual["registrations"].append({"accepted": accepted})
                 else:
-                    accepted = True
-                actual["registrations"].append({"accepted": accepted})
-            else:
-                raise ProtocolError("Unknown catalogue operation")
-        results.append({"id": scenario["id"], "status": "passed", "actual": actual})
+                    raise ProtocolError("Unknown catalogue operation")
+            results.append({"id": scenario["id"], "status": "passed", "actual": actual})
     atomic_json(
         config["reportFile"],
         {

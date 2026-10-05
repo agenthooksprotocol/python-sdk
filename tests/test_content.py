@@ -8,9 +8,9 @@ import threading
 import unittest
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from unittest.mock import patch
-from agent_hooks_protocol.content import upload, receive
-from agent_hooks_protocol.lifecycle import ContentStore
-from agent_hooks_protocol.runtime import Validator, ProtocolError
+from agenthooksprotocol.content import upload, receive
+from agenthooksprotocol.lifecycle import ContentStore
+from agenthooksprotocol.runtime import Validator, ProtocolError
 
 
 class ContentTests(unittest.TestCase):
@@ -74,8 +74,8 @@ class ContentTests(unittest.TestCase):
             worker.join()
 
     def test_configured_event_credentials_are_not_inherited_by_upload(self):
-        from agent_hooks_protocol.lifecycle_server import Server
-        from agent_hooks_protocol.lifecycle_client import run
+        from agenthooksprotocol.lifecycle_server import Server
+        from agenthooksprotocol.lifecycle_client import run
         from test_interop import request, response
 
         calls = []
@@ -208,7 +208,7 @@ class ContentTests(unittest.TestCase):
     def test_sender_rejects_unconfirmed_and_mismatched_descriptors(self):
         from io import BytesIO
         from types import SimpleNamespace
-        from agent_hooks_protocol.interop import validate_descriptor
+        from agenthooksprotocol.interop import validate_descriptor
 
         data = b"abc"
         correct = {
@@ -235,7 +235,7 @@ class ContentTests(unittest.TestCase):
                     validate_descriptor(response, data, Validator())
 
     def test_credential_scope_not_correlation_and_explicit_anonymous_grants(self):
-        from agent_hooks_protocol.lifecycle_server import Server
+        from agenthooksprotocol.lifecycle_server import Server
 
         with tempfile.TemporaryDirectory() as directory:
             fixture = Path(directory) / "fixture.json"
@@ -284,7 +284,7 @@ class ContentTests(unittest.TestCase):
                 upload(config, b"abc")
 
     def test_single_receiver_context_defaults_and_explicit_scope_validation(self):
-        from agent_hooks_protocol.lifecycle_server import Server
+        from agenthooksprotocol.lifecycle_server import Server
 
         with tempfile.TemporaryDirectory() as directory:
             fixture = Path(directory) / "fixture.json"

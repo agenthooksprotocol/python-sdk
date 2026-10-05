@@ -5,6 +5,15 @@ agent/tool runner. Commands in `adapter.json` execute from the Python SDK direct
 and accept `--config /absolute/config.json` as specified by the shared
 `agent-hooks-protocol/interop/CONTRACT.md`.
 
+Ordinary protocol paths use the public SDK: `Handler.process` on receivers,
+`Hooks.exchange` or `PendingInvocation` for interception, and `Hooks.notify` for
+exact canonical notifications. Specialized elicitation and compaction settlement
+uses `ContentContext`; fixtures retain only host scheduling, authorization, and
+reporting. Native catalogue notifications share one Hooks instance per source.
+Only the explicit `RAW_RESPONSE_PROBES` names, catalogue `rawNotify` steps, and
+the named malicious-observer diagnostic bypass ordinary wire construction.
+Observer acknowledgement failures are diagnostics and cannot undo settlement.
+
 ## Setup and checks
 
 From `python-sdk/`:
@@ -13,8 +22,8 @@ From `python-sdk/`:
 uv venv .venv
 uv pip install --python .venv/bin/python -e .
 .venv/bin/python -m unittest discover -s tests -v
-.venv/bin/python -m agent_hooks_protocol.interop server --config /absolute/server.json
-.venv/bin/python -m agent_hooks_protocol.interop client --config /absolute/client.json
+.venv/bin/python -m agenthooksprotocol.interop server --config /absolute/server.json
+.venv/bin/python -m agenthooksprotocol.interop client --config /absolute/client.json
 ```
 
 Tests use sibling canonical schemas, central scenarios, and explicitly public test
@@ -46,13 +55,14 @@ fallback is used.
   `continuationRemaining` decrements once for a winning continue, regardless of
   repeated continue effects. A winning stop preserves allowance and retains the
   instruction list for reporting without requesting execution.
-- The synthetic task-input contract requires a positive integer `task` after each
-  mutation for the core adapter’s synthetic tool named `task`. JSON booleans are not integers.
-  Other tools are not assigned an invented input schema. The core adapter passes
-  this application validator explicitly. Both test adapters explicitly supply a
-  synthetic native policy that permits the effective operation when no override
-  applies; the reusable runtime defaults to no native authorization. Ask and deny
-  cannot be bypassed by that native policy.
+- The synthetic host requires a positive integer `task` in the settled effective
+  input for its tool named `task`. JSON booleans are not integers. Other tools
+  are not assigned an invented input schema. This application check runs after
+  public SDK settlement, not as an SDK validation callback. Rejections report
+  `sdkAccepted: true`, `hostAccepted: false`, `rejectionLayer: host-input-schema`,
+  and the actual effective input with `executed: false`. The fixture host also
+  authorizes the effective operation after settlement; ask, deny, and stop still
+  prevent execution or supplied-result delivery.
 - Real bearer authorization; OAuth client-credentials token endpoint calls; HS256
   OAuth/workload signature, issuer, audience, purpose, expiry and not-before checks;
   real mutually authenticated TLS. Authorization precedes receipt recording and

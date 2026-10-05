@@ -1,216 +1,107 @@
 # Agent Hooks Protocol SDK for Python
 
-The active draft also provides MCP-aligned elicitation, automatic short-circuit
-observation delivery, and before/after compaction controls. See the shared
-[boundary API guide](https://github.com/agenthooksprotocol/agent-hooks-protocol/blob/main/docs/accepted-boundary-apis.md)
-for entrypoints, upload binding, trusted-host obligations, and test scope.
+A typed, asynchronous SDK for the [Agent Hooks Protocol](https://github.com/agenthooksprotocol/agent-hooks-protocol) draft. Python 3.11+; AnyIO supports asyncio and Trio. The import package is **`agenthooksprotocol`**, and the primary harness is **`Hooks`**.
 
-Typed Python models and JSON codecs for the [Agent Hooks Protocol (AHP)](https://github.com/agenthooksprotocol/agent-hooks-protocol).
+## Install
 
-The SDK follows the current AHP `draft` schema snapshot and requires Python 3.11 or newer.
-
-## Installation
-
-The package is not yet published to PyPI. Until the first release, pin it directly from GitHub:
+The distribution name is `agenthooksprotocol`. Until the first PyPI release, install a pinned Git commit:
 
 ```sh
-python -m pip install \
-  "agent-hooks-protocol @ git+https://github.com/agenthooksprotocol/python-sdk.git@main"
+python -m pip install 'agenthooksprotocol[http] @ git+https://github.com/agenthooksprotocol/python-sdk.git@<commit-sha>'
 ```
 
-For reproducible builds, replace `main` with a commit SHA.
+HTTPX is an opt-in dependency (`[http]`). Pydantic is an independent opt-in integration (`[pydantic]`); neither a web framework nor Pydantic is needed for the core SDK or stdio.
 
-## Quick start
+## Harness ownership
 
-Every public AHP schema has a typed model, a `parse_*` function, and an `encode_*` function.
+Read trusted registration JSON with the standard library and construct `Hooks` from the resulting dictionary. Registration validation occurs at construction; each asynchronous boundary ensures readiness. There is no mandatory separate initialization call or special configuration-file loader. Registration can launch processes: **do not load untrusted registrations**.
+
+Use `async with` for a bounded lifetime. Owned processes, observation work, and uploads belong to that lifetime. Injected HTTP clients remain caller-owned. Event-delivery credentials and content-upload credentials have separate scopes; redirects must not forward either authority.
 
 ```python
-from agent_hooks_protocol.generated import (
-    encode_capabilities,
-    parse_capabilities,
-)
+import json
+from agenthooksprotocol import Hooks, capability, event, tool
 
-result = parse_capabilities(
-    '{"effects":["deny"],"com.example.preview":true}'
-)
+with open("hooks.json") as file:
+    config = json.load(file)
 
-if not result["ok"]:
-    raise ValueError(result["diagnostics"])
-
-capabilities = result["value"]
-print(capabilities["effects"])
-
-encoded = encode_capabilities(capabilities)
+async def review(existing_arguments):
+    async with Hooks(config, source="urn:example:harness", capabilities={
+        "tool.before": capability.Declaration(
+            modes=[capability.Mode.INTERCEPT],
+            grants=[capability.Allow(), capability.Deny(),
+                    capability.ModifyInput(replace=True)],
+        ),
+    }) as hooks:
+        result = await hooks.tool_before(event.ToolBeforeInput(
+            call=tool.Call(id="call-1"),
+            path=tool.Path.NATIVE,
+            tool=tool.Tool(name="read_file", origin=tool.Origin.NATIVE,
+                           input=existing_arguments),
+        ), initial_state={"permission": "allow", "candidate": None})
+        return result  # The host validates effective input and decides execution.
 ```
 
-Parsers accept either JSON text or an already-decoded JSON value. Successful results contain:
+Canonical dictionaries are accepted alongside generated declarations. `ModifyInput(replace=True)` grants the `modify` effect and the input-replace operation together; it does not grant merge, other targets, or delivery modes. Form and URL elicitation grants are separate and explicit.
 
-- `value`: the typed model
-- `raw`: the preserved JSON value
-- `diagnostics`: compatibility warnings, such as an unknown enum value
+Runnable, statically checked consumer programs live in [`examples/`](examples):
 
-Failed results contain structural diagnostics with a JSON Pointer `path`, machine-readable `code`, `severity`, and message.
+- `typed_tool.py`: JSON registration, generated tool input, typed grants, initial state, real in-process ASGI handler, borrowed HTTP client, and explicit application decoding.
+- `common_cases.py`: rewrite/allow, deny, invalid application shape, host policy, occurrence narrowing, native initial state, and fail-open/fail-closed reports. The host operation is an in-memory execution recorder, not a shell.
+- `stdio_tool.py` / `stdio_backend.py`: a real owned backend process using the same public Handler, denial, and child cleanup.
+- `upload.py`: streamed binary upload, metadata no-read behavior, independent upload credentials, verified descriptor, and caller-owned immutable storage.
 
-## API
+- `lifecycle.py`: observation dispatch without blocking settlement, explicit waiting, interrupted requests, idempotent close, and proof that an owned subprocess was reaped.
+- `http_auth.py`: real loopback HTTP, canonical backend callbacks, registration `tokenEnv` resolution, and separate content-upload authorization. Its standard-library HTTP routing is example host code, not a production server.
 
-The generated module exports:
+Run them with `uv run python examples/<name>.py`; `uv run mypy` checks the actual public imports and signatures. These examples do not claim an all-pairs cross-language matrix.
 
-- `SCHEMA_REVISION` and `PROTOCOL_VERSION`
-- typed models for registrations, JSON-RPC messages, hook events, requests, responses, capabilities, and effects
-- `parse_<root>(input)` for structural parsing
-- `encode_<root>(value)` for JSON encoding
-- `ParseResult`, `ParseDiagnostic`, and JSON value aliases
+## Protocol admission and application input
 
-Unknown object fields and unknown discriminator or enum values are retained for forward compatibility. JSON numbers are decoded without losing decimal precision. Parsers do not coerce values, insert defaults, or discard extension data.
+Generated constructors build JSON-shaped protocol values. Generated `TypedDict` models provide static typing, **not runtime validation**. Structural `parse_*` codecs preserve unknown properties and values; they do not insert defaults, coerce values, or establish permission to execute an operation. Canonical validation and whole-response effect admission remain separate from application-specific input validation.
+
+Capabilities explicitly grant effects and target operations. Supply event capabilities at harness construction; a per-occurrence capability override can narrow them, never widen them. `initial_state` carries the host's native prior decision for one occurrence. A hook-supplied result is a candidate, not an assertion that an operation executed. The host owns its ordinary input validation and actual execution.
+
+After settlement, explicitly decode effective input with `result.decode_input(codec)`. A codec implements `encode(value)` and `decode(json_value)`; `IdentityCodec` copies JSON. The optional `integrations.pydantic.PydanticCodec` accepts a Pydantic `TypeAdapter`. A decoding error does not retroactively reject protocol effects: retain the settled result, raw effective input, accepted responses, and diagnostics, and report host-level rejection without executing.
+
+## Backend servers
+
+`from agenthooksprotocol.server import hooks` exposes the small `hooks.Handler(intercept=..., observe=...)` callback surface and `hooks.InterceptResult`. Both callbacks are asynchronous and receive canonical generated protocol requests. The same protocol dispatcher serves stdio and the framework-neutral ASGI adapter. ASGI does not require Starlette or FastAPI.
+
+Observation is one-way. It does not acquire effect authority and never waits for an acknowledgement. An optional static **harness** manifest can expose `hooks/capabilities`; backend callbacks are not capability discovery and do not manufacture grants.
+
+The attachment receiver verifies byte length and digest through EOF before committing caller-provided immutable storage. Receiver-allocated references are published only after authorization and successful storage commit. Applications choose storage durability and retention.
+
+## Body-bound boundaries
+
+Use `ContentContext` for MCP elicitation and compaction bodies. Its asynchronous `resolve(reference)` and `upload(bytes)` functions are trusted storage/transport adapters, not application-schema callbacks. `upload` must return a verified receiver-allocated immutable descriptor after storage commit. The SDK verifies referenced bytes and replacement descriptors before publishing an accepted state.
+
+Bindings are explicit paths within the canonical event:
+
+| Boundary | Binding |
+| --- | --- |
+| `user_elicitation_request` | `{"request": ("elicitation", "request")}` |
+| `user_elicitation_result` | `{"content": ("elicitation", "result")}` plus `original_request` |
+| `context_compact_before` | `{"instructions": ("instructions",)}` |
+| `context_compact_after` | `{"summary": ("summary",)}` |
+
+Pass `content=context` to the named boundary. An elicitation result needs the original canonical request snapshot; the SDK does not fabricate correlation, form/URL support, or MCP defaults. Metadata and omitted selections do not read body bytes. Changed bodies receive new immutable references, and a changed compaction input invalidates an earlier supplied summary.
+
+For custom transport integrations, `begin(canonical_request)` returns a `PendingInvocation` with separate acquisition, cancellation, and acceptance. `exchange(canonical_request)` uses the same settlement engine. Content-aware pending invocations use `await accept_content()`; this keeps upload completion and cancellation inside the publication boundary. The ordinary named-method path does this automatically.
+
+## Generated models and provenance
+
+Semantic namespaces (`event`, `tool`, `effect`, `capability`, and registration models) and all named event boundaries come from schema metadata, not a selected handwritten helper list. Constructors may supply fixed protocol literals; parsers never repair missing input. Open fields are retained for forward-compatible JSON round trips.
+
+The low-level `generated` module exports the full schema's typed models, `parse_<root>` / `encode_<root>` codecs, `PROTOCOL_VERSION`, `SCHEMA_REVISION`, and JSON types. `ahp-codegen.lock.json` records immutable generator provenance. Change canonical schemas and generator source in the protocol repository rather than editing generated files.
 
 ## Development
 
 ```sh
-git clone https://github.com/agenthooksprotocol/python-sdk.git
-cd python-sdk
-python -m pip install -e .
-python -m compileall -q src tests
-PYTHONPATH=src python -m unittest discover -s tests
+uv sync --group dev --extra http --extra pydantic
+uv run python -m unittest discover -s tests
+uv run mypy
+uv run python -m build
 ```
 
-Integration tests additionally require the matching protocol draft checkout at
-`../agent-hooks-protocol` for shared fixtures and synthetic certificate material.
-The installed runtime itself does not need this checkout.
-
-Generated code lives in `src/agent_hooks_protocol/generated.py`. Its provenance is recorded in `ahp-codegen.lock.json`; schema changes are made in the [protocol repository](https://github.com/agenthooksprotocol/agent-hooks-protocol), not by editing the generated file.
-
-## License
-
-Apache-2.0
-
-## Draft integration runtime
-
-`runtime.Validator` checks the canonical Draft 2020-12 schemas **and** this
-SDK's generated Python codecs. The installed package includes its canonical
-schema bundle and does not require a protocol checkout. `AHP_SCHEMA_DIR` can
-select an explicit canonical schema directory for development. Generated codecs
-and schemas must describe the same revision; mismatches fail closed. Regenerate
-`generated.py`, `schemas.json`, and the codegen lock together from the protocol
-repository's generator.
-
-`runtime.apply_response` is the Python evaluator. It stages the whole response,
-checks correlation and advertised operations, applies ordered shallow merges or
-whole replacements, validates the effective event, then publishes one result.
-Unsupported effects or invalid final payloads reject the whole response.
-Permission composition is deny > ask > allow; input/destination changes invalidate
-old approval and candidate results. `executed` is an eligibility report, not a
-host tool invocation. No effect does not grant permission: native permission must
-still be obtained, and an applicable ask cannot be erased by a later allow.
-`native_authorize(effective_event)` is a required host access-policy guard when
-configured: it runs after effective modifications, even for hook `allow`, and gates
-both execution and delivery of supplied results. False is refusal; None is pending
-and exposes neither execution nor a candidate. Only exact booleans/None are accepted.
-An optional separate `native_approve(effective_event)` implements the ordinary
-native approval prompt: hook allow can suppress this prompt, never the access guard.
-An applicable ask remains pending confirmation, not approval. A host configuring an
-access guard without an approval callback declares no additional ordinary prompt.
-Without host callbacks or an applicable allow, authorization remains pending.
-Callbacks decide policy only; they must not execute the operation themselves.
-`validate_operation(effective_event)` supplies application-specific payload checks.
-Synthetic test adapters explicitly configure their permissive test-host policy.
-Flow stop suppresses execution independently of permission; continue consumes one
-boundary continuation, retaining ordered instructions. Injections require the
-advertised context/append/delivery capability.
-
-Observers receive the permission-filtered effective event,
-with the same logical event ID and no generic disposition or decision summary.
-Subscription identities are harness-local and are never sent in an envelope,
-execution metadata, or upload header.
-After short-circuiting, remaining uncalled matching intercept subscriptions get
-`hooks/observe` under their existing permissions and selections. Already-called
-interceptors get no automatic second copy; explicit observation subscriptions
-remain independent. Interruption ends pending decisions immediately and does not
-wait for observer uploads or processing. Upload readiness precedes each delivered
-notification. There is no downgrade flag or `/view` fallback.
-
-`lineage.TaskLineage` preserves source-scoped logical identities across projected
-views, detects late parent cycles, and allows unknown ancestry at receivers.
-`producer=True` additionally requires known parents. Task and workspace payloads
-are canonically typed. Task interception supports deny/message only; it cannot
-modify task changes or transfer tool approval to a task operation. Identity,
-operation, prior state, and parents remain explicit. Workspace modifications target
-`workspace.change`. After-events with known prior state must represent a change.
-
-### Content upload
-
-`content.upload(upload_config, data, *, loopback=False)` returns `(status, descriptor)`
-on success and `(status, None)` on a rejected upload. Invalid success descriptors
-raise `ProtocolError`. Uploads POST raw `bytes` to the **exact** configured endpoint, including its query,
-with `Content-Length` and `AHP-Content-SHA256`. The receiver allocates an immutable
-reference and returns **201 JSON `{ref, size, sha256}`**. The sender checks the
-returned size and hash before publishing any dependent event. Redirects are
-rejected; HTTPS is required outside explicit loopback tests. Upload authentication
-is independently resolved from `upload_config.auth = {"type": "bearer",
-"tokenEnv": "UPLOAD_TOKEN"}`; absent upload auth never inherits event credentials.
-Zero bytes and invalid UTF-8 are supported.
-
-`ContentStore` stores immutable bytes in a trusted local authorization scope,
-checks size/hash, and resolves normalized references before observe **or**
-intercept processing. Authorization comes from credentials or explicit process
-trust, never JSON-RPC correlation or event identity. The test adapter's
-`uploadSubscriptions` configuration is local credential-to-scope routing;
-`null` is an explicit anonymous grant. Its separate readiness `uploadEndpoint`
-accepts binary `/content` POSTs, not a JSON upload control request. Lifecycle
-fixtures encode binary input as `bodyBase64` only; the client decodes it once,
-uploads and confirms it before any referencing wire message. Upload steps may
-provide an independent `upload` endpoint/auth object. Standard interop scenarios
-can provide an `uploads` array with the same fields.
-
-Run language checks (with matching generated outputs):
-
-```sh
-.venv/bin/python -m unittest discover -s tests
-.venv/bin/python -m unittest discover -s tests -p test_content.py
-.venv/bin/python -m compileall -q src/agent_hooks_protocol
-```
-
-Shared interoperability fixtures/matrices are maintained separately. These local
-adapters are test hosts, not production HTTP deployment or durable cancellation
-implementations.
-
-Lifecycle HTTP event authentication supports none, bearer, OAuth client credentials,
-workload assertions, and mutual TLS, using the same configuration and checks as
-the core adapter. The SDK does not implement HTTP authentication challenges,
-protected-resource metadata, authorization-server discovery, or interactive OAuth
-flows. Stdio accepts process trust only. The shared runner’s independent
-`uploadAuth: {token, scope?}` server configuration and client `upload`
-configuration are supported without inheriting event credentials. Exact incoming
-canonical envelopes are captured in received/observed test receipts; those receipts
-must be treated as sensitive test content, not production redacted telemetry.
-
-### Catalogue and registration evaluation
-
-The lifecycle adapters also implement `suite: "catalogue"`. They use one actual
-capabilities exchange, native settled observation snapshots, and the same HTTP
-and stdio event transports. The receiver records exact accepted/rejected messages;
-raw negative notifications bypass only sender checks, never receiver validation.
-The Python `registration.validate_registration` evaluator checks the actual
-validated discovery manifest, subscription event/mode support, operation
-requirements, interactive prompting, credential resolution, and enforceable
-managed scope. Environment/credential resolvers are trusted host inputs, not
-self-reported manifest identity. Registration explicitly requires `content.default`.
-
-`TaskLineage` also checks known task before/after IDs and operations, late-edge
-cycles, and content-child role agreement with known owners. These checks stage
-all changes before committing, so a rejected event cannot poison later processing.
-Model-visible children must still carry their own explicit role even when an owner
-is known. Corrected codecs preserve typed synthesized identity markers and validate
-`model.response.after` interception; runtime response modifications use normalized
-items and preserve execution provenance.
-
-Run the catalogue self-pair across all applicable auth modes:
-
-```sh
-# From the workspace root:
-python-sdk/.venv/bin/python agent-hooks-protocol/interop/catalogue_matrix.py \
-  --client python --server python --workers 3 --timeout 45 \
-  --output /tmp/python-catalogue-self.json
-```
-
-This is synthetic language-runtime and wire coverage, not evidence that a native
-harness produces every event or enforces every possible registration.
+Integration tests also use a matching sibling `../agent-hooks-protocol` checkout for shared fixtures and public synthetic certificates. The installed runtime uses its bundled schemas and does not need that checkout. No SDK API executes host tools on your behalf.

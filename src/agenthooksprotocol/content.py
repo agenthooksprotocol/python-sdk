@@ -1,4 +1,10 @@
-"""Normative synchronous raw-octet upload binding, independent of event auth."""
+"""Content bindings and legacy raw-octet upload helpers, independent of event auth.
+
+Use ContentContext with the public asynchronous Hooks harness. The legacy upload
+function below is synchronous and is not used by the public async runtime.
+"""
+
+from ._content import ContentContext
 
 import hashlib
 import os

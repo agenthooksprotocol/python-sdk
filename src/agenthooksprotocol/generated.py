@@ -11158,7 +11158,7 @@ def _discriminator_value(schema: _SchemaNode, property: str) -> str | None:
 
 
 def _to_safe_json(value: object) -> JsonValue:
-    if value is None or type(value) in (str, bool, int):
+    if value is None or isinstance(value, str) or type(value) in (bool, int):
         return cast(JsonPrimitive, value)
     if type(value) is float:
         if not math.isfinite(value):

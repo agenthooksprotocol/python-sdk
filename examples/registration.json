@@ -1,0 +1,14 @@
+{
+  "protocolVersion": "draft",
+  "hooks": [{
+    "id": "org.example.review",
+    "transport": {"type": "http", "url": "http://example.test/hooks"},
+    "subscriptions": [{
+      "events": ["tool.before"],
+      "mode": "intercept",
+      "timeoutMs": 1000,
+      "failurePolicy": "fail-closed",
+      "content": {"default": "metadata"}
+    }]
+  }]
+}

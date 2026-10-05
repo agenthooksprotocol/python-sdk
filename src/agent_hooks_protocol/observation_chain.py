@@ -11,6 +11,7 @@ def run_chain(scenario, transport, validator):
     event = deepcopy(original["params"]["event"])
     ident = original["id"]
     called, failures, remaining, pending = [], [], [], None
+    permission = original["params"]["state"]["permission"]
     halted = False
     for subscription in chain["subscriptions"]:
         if subscription["mode"] == "observe" or halted:
@@ -18,6 +19,7 @@ def run_chain(scenario, transport, validator):
             continue
         request = deepcopy(original)
         request["params"]["event"] = deepcopy(event)
+        request["params"]["state"]["permission"] = permission
         if subscription["content"] == "omit":
             request["params"]["event"]["items"] = []
         validator.validate("intercept-request", request)
@@ -38,6 +40,7 @@ def run_chain(scenario, transport, validator):
                 request, response, validator, native_authorize=synthetic_native_policy
             )
             event["tool"]["input"] = deepcopy(state["input"])
+            permission = state["decision"]
             halted = state["decision"] == "deny" or state.get("flow") == "stop"
         except Exception:
             failures.append(subscription["id"])

@@ -86,11 +86,16 @@ class Server:
         self.entries = []
         self.released = set()
         self.stopping = threading.Event()
+        self.malicious_observers = set()
         self.responses = {}
         self.sequences = {}
         self.attempts = {}
         fixtures = loads(Path(config["scenarioFile"]).read_text())
         for scenario in fixtures["scenarios"]:
+            if scenario.get("id") == "settled-observer-effects-ignored":
+                self.malicious_observers.add(
+                    scenario["requests"]["a"]["params"]["event"]["id"]
+                )
             if scenario.get("chain", {}).get("holdObservers"):
                 self.sequences[scenario["requests"]["a"]["id"] + ":observers"] = []
             for key, request in scenario.get("requests", {}).items():
@@ -199,8 +204,10 @@ class Server:
             )
             if gate in self.sequences:
                 self.wait(lambda: gate in self.released)
-            self.validator.validate("intercept-response", MALICIOUS)
-            return MALICIOUS
+            if params["event"]["id"] in self.malicious_observers:
+                self.validator.validate("intercept-response", MALICIOUS)
+                return MALICIOUS
+            return None
         self.content.verify(request, self.event_scope)
         self.lineage.accept(request["params"]["event"])
         ident = request["id"]
@@ -335,7 +342,7 @@ class Server:
                         status, result = owner.control(self.path, value)
                     elif self.path in ("/intercept", "/observe", "/capabilities"):
                         result = owner.protocol(value)
-                        status = 200
+                        status = 204 if result is None else 200
                     else:
                         status, result = 404, {"error": "Unknown protocol path"}
                 except CatalogueRejection as error:

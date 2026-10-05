@@ -61,6 +61,7 @@ def validate_exchange(request, result, resolve, validate, principal, effect=None
         validate("effect", effect)
         kind = effect.get("type")
         boundary = result if kind == "modify" else request
+        validate_mode(mode, boundary["params"]["capabilities"].get("elicitation"))
         if (
             kind not in ("return", "deny", "modify")
             or kind not in boundary["params"]["capabilities"]["effects"]
@@ -150,6 +151,7 @@ def apply_effects(request, result, resolve, validate, principal, effects):
         else validate_exchange(request, result, resolve, validate, principal)["result"]
     )
     caps = boundary["params"]["capabilities"]
+    validate_mode(meta["mode"], caps.get("elicitation"))
     kinds = []
     for effect in effects:
         validate("effect", effect)

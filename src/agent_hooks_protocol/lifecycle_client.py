@@ -180,7 +180,7 @@ class Transport:
             status, _ = http(
                 endpoint + "/observe", notification, self.headers, self.context
             )
-            if status != 200 and not (raw and status in (400, 409)):
+            if status not in (200, 204) and not (raw and status in (400, 409)):
                 raise ProtocolError("Notification transport failure: " + str(status))
 
     def send(self, request):
@@ -205,14 +205,8 @@ class Transport:
         return response
 
     def observe(self, notification):
-        notification = replace_references(wire_request(notification), self.references)
-        self.confirmed.verify(notification, "confirmed")
-        if self.process is None:
-            self.http_protocol("/observe", notification)  # Ignore all returned effects.
-        else:
-            with self.lock:
-                self.process.stdin.write(json.dumps(notification) + "\n")
-                self.process.stdin.flush()
+        # Notifications may acknowledge with an empty HTTP 204, never effects.
+        self.notify(notification)
 
     def close(self):
         if self.process is not None:

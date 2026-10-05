@@ -12274,7 +12274,6 @@ class SessionStartInput(dict[str, Any]):
         gaps: list[Any] = _UNSET,
         harness: dict[str, Any],
         items: list[Any],
-        manifest: dict[str, Any],
         native: Any = _UNSET,
         parent_event_id: str = _UNSET,
         permission_mode: str,
@@ -12292,7 +12291,6 @@ class SessionStartInput(dict[str, Any]):
             self["gaps"] = gaps
         self["harness"] = harness
         self["items"] = items
-        self["manifest"] = manifest
         if native is not _UNSET:
             self["native"] = native
         if parent_event_id is not _UNSET:

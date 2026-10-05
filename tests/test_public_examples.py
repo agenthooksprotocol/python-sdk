@@ -22,6 +22,12 @@ class PublicExamplesTests(unittest.TestCase):
         self.assertEqual(run.returncode, 0, run.stderr)
         return json.loads(run.stdout)
 
+    def test_static_manifest_example(self):
+        result = self.run_example("session_manifest.py")
+        self.assertTrue(result["automaticManifest"])
+        self.assertEqual(result["source"], "urn:example:manifest")
+        self.assertEqual(result["id"], "example-start")
+
     def test_typed_tool_real_asgi_handler(self):
         result = self.run_example("typed_tool.py")
         self.assertTrue(result["sdkAccepted"])

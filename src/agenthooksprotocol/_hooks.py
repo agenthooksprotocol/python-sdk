@@ -235,7 +235,8 @@ class Hooks(BoundaryMixin):
         config: dict[str, Any],
         *,
         source: str,
-        capabilities: dict[str, Any],
+        capabilities: dict[str, Any] | None = None,
+        manifest: dict[str, Any] | None = None,
         transport: Any = None,
         resolve_credential: Any = None,
     ) -> None:
@@ -248,6 +249,30 @@ class Hooks(BoundaryMixin):
             or not FormatChecker().conforms(source, "uri")
         ):
             raise ProtocolError("source must be an absolute URI")
+        if manifest is not None:
+            if capabilities is not None:
+                raise ProtocolError("Supply manifest or capabilities, not both")
+            self.validator.validate(
+                "capabilities-response",
+                {
+                    "jsonrpc": "2.0",
+                    "id": "configured-manifest",
+                    "result": {
+                        "protocolVersion": config["protocolVersion"],
+                        "manifest": manifest,
+                    },
+                },
+            )
+            capabilities = {}
+            for entry in manifest["events"]:
+                name = entry["event"]
+                if name in capabilities:
+                    raise ProtocolError("Duplicate manifest event")
+                capabilities[name] = {
+                    key: deepcopy(value)
+                    for key, value in entry.items()
+                    if key != "event"
+                }
         if not isinstance(capabilities, dict):
             raise ProtocolError("capabilities must map events to explicit modes")
         self.config = deepcopy(config)
@@ -267,6 +292,20 @@ class Hooks(BoundaryMixin):
                 if "capabilities" not in declaration:
                     raise ProtocolError("Interception requires explicit capabilities")
                 self.validator.validate("capabilities", declaration["capabilities"])
+        self._manifest = (
+            deepcopy(manifest) if manifest is not None else self._derive_manifest()
+        )
+        self.validator.validate(
+            "capabilities-response",
+            {
+                "jsonrpc": "2.0",
+                "id": "configured-manifest",
+                "result": {
+                    "protocolVersion": config["protocolVersion"],
+                    "manifest": self._manifest,
+                },
+            },
+        )
         for backend in self.config["hooks"]:
             if backend["id"] in ids:
                 raise ProtocolError("Duplicate backend ID")
@@ -316,6 +355,58 @@ class Hooks(BoundaryMixin):
         self._closed = False
         self._observations: list[dict[str, Any]] = []
         self._observation_diagnostics: deque[dict[str, Any]] = deque(maxlen=256)
+
+    @property
+    def manifest(self) -> dict[str, Any]:
+        """Return a detached snapshot of the configured static host manifest."""
+        return deepcopy(self._manifest)
+
+    def _derive_manifest(self) -> dict[str, Any]:
+        # The schema catalogue bounds coverage; omitted declarations never grant modes.
+        schema = self.validator.validators["capabilities-response.schema.json"].schema
+        shape = schema["allOf"][1]["properties"]["result"]["properties"]["manifest"]
+        names = shape["properties"]["events"]["items"]["properties"]["event"]["enum"]
+        result = {
+            "events": [
+                {
+                    "event": name,
+                    **(
+                        deepcopy(grant)
+                        if "intercept" in grant["modes"]
+                        else {"modes": deepcopy(grant["modes"])}
+                    ),
+                }
+                for name, grant in self.capabilities.items()
+            ],
+            "gaps": [
+                {"path": "events." + name, "reason": "Event not declared by the host"}
+                for name in names
+                if name not in self.capabilities
+            ],
+            "transports": [],
+            "authentication": [],
+            "toolPaths": [],
+            "contentCategories": [],
+            "limits": {},
+            "managedPolicy": {"scopes": [], "disableable": True},
+            "correlationIdentityFields": ["event.source", "event.id"],
+        }
+        # An event grant map provides no evidence for these host-level facilities.
+        result["gaps"].extend(
+            {
+                "path": name,
+                "reason": "Not declared by the event capability map; supply a full manifest",
+            }
+            for name in (
+                "transports",
+                "authentication",
+                "toolPaths",
+                "contentCategories",
+                "limits",
+                "managedPolicy",
+            )
+        )
+        return result
 
     async def __aenter__(self) -> Hooks:
         await self._ensure_ready()
@@ -503,6 +594,8 @@ class Hooks(BoundaryMixin):
         event = deepcopy(input)
         if not isinstance(event, dict):
             raise TypeError("Event input must be a canonical event payload object")
+        if event_name == "session.start":
+            event["manifest"] = deepcopy(self._manifest)
         event.update(
             id=event_id or str(uuid4()),
             source=self.source,

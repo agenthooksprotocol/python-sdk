@@ -1,87 +1,151 @@
-"""Serial adapter interception followed by one-way, permission-filtered views."""
+"""Exercise the public SDK chain over the fixture's real, controlled transports.
+
+The adapter owns receiver barriers and the deliberately late cancelled-response
+probe. Hooks owns serial interception, failure policy, content projection and
+observation selection. Local reports come from actual transport invocations and
+settled SDK results, never from the scenario's expected receipt lists.
+"""
 
 from copy import deepcopy
-from .runtime import ProtocolError
-from .interop import fixture_hooks, fixture_notify, host_outcome
+from functools import partial
+
+import anyio
+
+from . import Hooks
 
 
 def run_chain(scenario, transport, validator):
-    chain = scenario["chain"]
-    original = deepcopy(scenario["requests"]["a"])
-    event = deepcopy(original["params"]["event"])
-    ident = original["id"]
-    called, failures, remaining, pending = [], [], [], None
-    permission = original["params"]["state"]["permission"]
-    halted = False
-    for subscription in chain["subscriptions"]:
-        if subscription["mode"] == "observe" or halted:
-            remaining.append(subscription)
-            continue
-        request = deepcopy(original)
-        request["params"]["event"] = deepcopy(event)
-        request["params"]["state"]["permission"] = permission
-        if subscription["content"] == "omit":
-            request["params"]["event"]["items"] = []
-        validator.validate("intercept-request", request)
-        called.append(subscription["id"])
-        invocation = fixture_hooks(request).begin(request)
-        future = transport.send(request)
-        transport.control("/wait", {"id": ident, "count": len(called)})
-        if chain.get("interrupt"):
-            # Do not acquire this response, or wait for any observer, to stop.
-            transport.control(
-                "/mark", {"scenario": scenario["id"], "kind": "cancelled", "id": ident}
+    async def run():
+        chain = scenario["chain"]
+        original = deepcopy(scenario["requests"]["a"])
+        validator.validate("intercept-request", original)
+        event = original["params"]["event"]
+        ident = original["id"]
+        called, observed, pending = [], [], []
+        registrations, adapters, subscription_ids = [], {}, {}
+        result = None
+
+        async def control(path, value):
+            return await anyio.to_thread.run_sync(transport.control, path, value)
+
+        class ChainTransport:
+            def __init__(self, subscription):
+                self.subscription = subscription
+
+            async def request(self, message):
+                called.append(self.subscription["id"])
+                future = transport.send(message)
+                pending.append(future)
+                await control("/wait", {"id": ident, "count": len(called)})
+                if chain.get("interrupt"):
+                    await control(
+                        "/mark",
+                        {
+                            "scenario": scenario["id"],
+                            "kind": "cancelled",
+                            "id": ident,
+                        },
+                    )
+                    # Cancel the owning SDK operation while the receiver still
+                    # holds its response. No settlement or observation loop is
+                    # implemented in this adapter.
+                    call_scope.cancel()
+                    await anyio.lowlevel.checkpoint()
+                await control("/release", {"id": ident})
+                try:
+                    return await anyio.to_thread.run_sync(
+                        partial(future.result, timeout=15)
+                    )
+                finally:
+                    pending.remove(future)
+
+            async def notify(self, message):
+                observed.append(self.subscription["id"])
+                # The fixture can deliberately block receiver processing. Its
+                # release is host-owned synchronization, scoped to this send.
+                async with anyio.create_task_group() as group:
+                    group.start_soon(
+                        anyio.to_thread.run_sync, transport.observe, message
+                    )
+                    await control(
+                        "/wait-observed", {"eventId": ident, "count": len(observed)}
+                    )
+                    if chain.get("holdObservers"):
+                        await control("/release", {"id": ident + ":observers"})
+
+        for index, subscription in enumerate(chain["subscriptions"]):
+            # Preserve authored subscription order, including registrations
+            # sharing one physical endpoint. These IDs stay SDK-local.
+            backend = f"org.agenthooksprotocol.chain{index}"
+            subscription_ids[backend] = subscription["id"]
+            adapters[backend] = ChainTransport(subscription)
+            declaration = {
+                "events": [event["type"]],
+                "mode": subscription["mode"],
+                "content": {"default": subscription["content"]},
+            }
+            if subscription["mode"] == "intercept":
+                declaration.update(
+                    timeoutMs=15000, failurePolicy=subscription["failurePolicy"]
+                )
+            registrations.append(
+                {
+                    "id": backend,
+                    "transport": {"type": "http", "url": "http://127.0.0.1/fixture"},
+                    "subscriptions": [declaration],
+                }
             )
-            invocation.cancel()
-            pending, halted = (future, invocation), True
-            continue
-        transport.control("/release", {"id": ident})
-        try:
-            response = future.result(timeout=15)
-            invocation.receive(response)
-            state = host_outcome(request, invocation.accept())
-            event["tool"]["input"] = deepcopy(state["input"])
-            permission = state["decision"]
-            halted = state["decision"] == "deny" or state.get("flow") == "stop"
-        except Exception:
-            failures.append(subscription["id"])
-            halted = subscription["failurePolicy"] == "fail-closed"
-    transport.control(
-        "/mark", {"scenario": scenario["id"], "kind": "chain-settled", "id": ident}
-    )
-    deliveries = []
-    for subscription in remaining:
-        projected = deepcopy(event)
-        if subscription["content"] == "omit":
-            projected["items"] = []
-        else:
-            for item in projected.get("items", []):
-                item.pop("body", None)
-                item.pop("gap", None)
-                item["selection"] = "metadata"
-        note = {
-            "jsonrpc": "2.0",
-            "method": "hooks/observe",
-            "params": {"protocolVersion": "draft", "event": projected},
+
+        async with Hooks(
+            {
+                "protocolVersion": original["params"]["protocolVersion"],
+                "hooks": registrations,
+            },
+            source=event["source"],
+            capabilities={
+                event["type"]: {
+                    "modes": ["intercept", "observe"],
+                    "capabilities": original["params"]["capabilities"],
+                }
+            },
+            transport=adapters,
+        ) as hooks:
+            with anyio.CancelScope() as call_scope:
+                result = await hooks.dispatch(
+                    event["type"],
+                    event,
+                    initial_state=original["params"].get("state"),
+                    event_id=ident,
+                )
+            await control(
+                "/mark",
+                {
+                    "scenario": scenario["id"],
+                    "kind": "chain-settled",
+                    "id": ident,
+                },
+            )
+            # Only the adversarial transport probe survives cancellation: its
+            # late response is drained after the stopped milestone and is never
+            # offered to SDK acceptance or used to initiate another delivery.
+            if pending:
+                await control("/release", {"id": ident})
+                for future in pending:
+                    await anyio.to_thread.run_sync(partial(future.result, timeout=15))
+
+        return {
+            "called": called,
+            "failures": []
+            if result is None
+            else [
+                subscription_ids[diagnostic["backend"]]
+                for diagnostic in result.diagnostics
+                if diagnostic["mode"] == "intercept"
+            ],
+            "observations": observed,
+            "input": deepcopy(event["tool"]["input"])
+            if result is None
+            else result.input,
         }
-        validator.validate("observe-notification", note)
-        deliveries.append(
-            transport.pool.submit(fixture_notify, note, transport.observe)
-        )
-    # Test-only drain occurs after settlement and stopping, never on that path.
-    if pending is not None:
-        transport.control("/release", {"id": ident})
-        future, invocation = pending
-        invocation.receive(future.result(timeout=15))  # Cancelled effects are ignored.
-    if remaining:
-        transport.control("/wait-observed", {"eventId": ident, "count": len(remaining)})
-    if chain.get("holdObservers"):
-        transport.control("/release", {"id": ident + ":observers"})
-    for delivery in deliveries:
-        delivery.result(timeout=15)
-    return {
-        "called": called,
-        "failures": failures,
-        "observations": [s["id"] for s in remaining],
-        "input": event["tool"]["input"],
-    }
+
+    return anyio.run(run)

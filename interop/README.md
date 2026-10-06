@@ -6,8 +6,9 @@ and accept `--config /absolute/config.json` as specified by the shared
 `agent-hooks-protocol/interop/CONTRACT.md`.
 
 Ordinary protocol paths use the public SDK: `Handler.process` on receivers,
-`Hooks.exchange` or `PendingInvocation` for interception, and `Hooks.notify` for
-exact canonical notifications. Specialized elicitation and compaction settlement
+`Hooks.dispatch` for serial subscription chains, `Hooks.exchange` or
+`PendingInvocation` for individual interceptions, and `Hooks.notify` for exact
+canonical notifications. Specialized elicitation and compaction settlement
 uses `ContentContext`; fixtures retain only host scheduling, authorization, and
 reporting. Native catalogue notifications share one Hooks instance per source.
 Only the explicit `RAW_RESPONSE_PROBES` names, catalogue `rawNotify` steps, and

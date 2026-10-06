@@ -46,6 +46,39 @@ class UnificationTests(unittest.TestCase):
         self.assertEqual(capability.observe().to_wire()["modes"], ["observe"])
         self.assertNotIn("elicitation", base.to_wire()["capabilities"])
 
+    def test_generated_flow_counts_are_safe_and_required(self):
+        base = capability.intercept()
+        for field in (
+            "continuation_count",
+            "remaining_continuations",
+            "max_continuations",
+        ):
+            for value in (-1, 9007199254740992, True, False, 0.5):
+                with (
+                    self.subTest(field=field, value=value),
+                    self.assertRaises(ValueError),
+                ):
+                    base.flow(operations=["stop"], **{field: value})
+        for counts in ({}, {"continuation_count": 0}, {"remaining_continuations": 0}):
+            with self.subTest(counts=counts), self.assertRaises(ValueError):
+                base.flow(operations=["continue"], **counts)
+        for value in (0, 9007199254740991):
+            caps = base.flow(
+                operations=["continue"],
+                continuation_count=value,
+                remaining_continuations=value,
+                max_continuations=value,
+            ).to_wire()["capabilities"]["flow"]
+            self.assertEqual(caps["continuationCount"], value)
+            self.assertEqual(caps["remainingContinuations"], value)
+            self.assertEqual(caps["maxContinuations"], value)
+        self.assertEqual(
+            base.flow(operations=["stop"]).to_wire()["capabilities"]["flow"][
+                "operations"
+            ],
+            ["stop"],
+        )
+
     def test_permission_input_and_host_facts_share_canonical_settlement(self):
         async def run():
             transport = MemoryTransport([effect.replace_input({"command": "reviewed"})])

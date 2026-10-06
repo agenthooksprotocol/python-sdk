@@ -11,9 +11,19 @@ from typing import Any, TypeVar
 from types import TracebackType
 from .codec import Codec
 from .generated import JsonValue
+from .permission import Permission
+from .diagnostics import Code
+from ._diagnostics import (
+    Diagnostic,
+    ContentPreparationError,
+    ContentPreparationTimeout,
+    delivery_diagnostic,
+)
 
 from copy import deepcopy
 from collections import deque
+from contextlib import asynccontextmanager
+from functools import wraps
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from uuid import uuid4
@@ -21,13 +31,55 @@ from uuid import uuid4
 import anyio
 from jsonschema import FormatChecker
 
-from .runtime import ProtocolError, Validator, apply_response
+from .runtime import OperationCancelledError, ProtocolError, Validator, apply_response
 from .lifecycle import Lifecycle
 from .lineage import TaskLineage
 from ._boundaries import BoundaryMixin
-from ._content import ContentContext, merge_effective, project_content
+from ._content import ContentContext, ContentSources, merge_effective, project_content
 
 T = TypeVar("T")
+
+
+class HooksClosedError(OperationCancelledError):
+    """The harness closed before its operation could complete."""
+
+    code = Code.CANCELLED
+
+
+def _owned_operation(method):
+    @wraps(method)
+    async def run(self, *args, **kwargs):
+        if method.__name__ == "dispatch":
+            payload = args[1] if len(args) > 1 else kwargs.get("input")
+            bindings = getattr(payload, "content_sources", None)
+            if bindings:
+                if kwargs.get("sources") is not None:
+                    raise TypeError("Use input-bound sources or sources=, not both")
+                kwargs["sources"] = ContentSources(
+                    bindings, uploads=kwargs.get("uploads")
+                )
+        sources = kwargs.get("sources")
+        entered = False
+        try:
+            async with self._operation():
+                entered = True
+                try:
+                    result = await method(self, *args, **kwargs)
+                finally:
+                    if sources is not None:
+                        with anyio.CancelScope(shield=True):
+                            await sources.aclose()
+                # A deadline/close may have arrived during shielded cleanup.
+                # Never publish permission without observing that interruption.
+                await anyio.lowlevel.checkpoint()
+                return result
+        finally:
+            # Rejected calls still release transferred, unused streams.
+            if not entered and sources is not None:
+                with anyio.CancelScope(shield=True):
+                    await sources.aclose()
+
+    return run
 
 
 @dataclass
@@ -37,7 +89,7 @@ class HookResult:
     event: dict[str, Any]
     state: dict[str, Any]
     accepted_responses: list[dict[str, Any]] = field(default_factory=list)
-    diagnostics: list[dict[str, Any]] = field(default_factory=list)
+    diagnostics: list[Diagnostic] = field(default_factory=list)
 
     @property
     def input(self) -> JsonValue:
@@ -52,8 +104,12 @@ class HookResult:
         return self.state.get("decision", "allow")
 
     @property
-    def permission(self) -> str:
-        return self.state.get("permission", "none")
+    def permission(self) -> Permission:
+        return Permission(self.state.get("permission", "none"))
+
+    @property
+    def interrupted(self) -> bool:
+        return bool(self.state.get("interrupted", False))
 
     @property
     def candidate(self) -> dict[str, Any] | None:
@@ -91,7 +147,9 @@ class PendingInvocation:
         validator: Validator,
         transport: Any,
         content: ContentContext | None = None,
+        owner: Hooks | None = None,
     ) -> None:
+        self._owner = owner
         self.request = deepcopy(request)
         self.transport = transport
         self.lifecycle = Lifecycle(validator, include_staged=True)
@@ -102,6 +160,19 @@ class PendingInvocation:
         self.result = None
         self._scope = None
 
+    @asynccontextmanager
+    async def _operation(self):
+        if self._owner is None:
+            yield
+        else:
+            async with self._owner._operation():
+                yield
+
+    def _check_open(self):
+        if self._owner is not None and self._owner._closed:
+            raise HooksClosedError("Hooks is closed")
+
+    @_owned_operation
     async def acquire(self) -> dict[str, Any] | None:
         if self.transport is None:
             raise RuntimeError("No transport configured")
@@ -111,11 +182,14 @@ class PendingInvocation:
             self._scope = scope
             try:
                 if self.content is not None:
-                    self.prepared_content = await self.content.prepare(
-                        self.request, self.lifecycle.validator
-                    )
+                    self.prepared_content = await self._prepare_content()
                 response = await self.transport.request(deepcopy(self.request))
-                self.receive(response)
+                if not self.receive(response):
+                    if self.lifecycle.terminal.get(self.request["id"]) == "cancelled":
+                        raise OperationCancelledError(
+                            "Invocation cancelled before acceptance"
+                        )
+                    raise ProtocolError("Response was not admitted for this invocation")
                 return response
             except BaseException as exc:
                 if isinstance(exc, anyio.get_cancelled_exc_class()):
@@ -126,12 +200,14 @@ class PendingInvocation:
         return None
 
     def receive(self, response: dict[str, Any]) -> bool:
+        self._check_open()
         accepted = self.lifecycle.receive(self.request, response)
         if accepted:
             self.response = deepcopy(response)
         return accepted
 
     def accept(self, *, fallback: bool = False) -> HookResult | None:
+        self._check_open()
         if self.content is not None:
             raise RuntimeError(
                 "Content-bound invocations require await accept_content()"
@@ -139,6 +215,7 @@ class PendingInvocation:
         state = self.lifecycle.accept(self.request["id"], fallback=fallback)
         return self._publish(state, fallback)
 
+    @_owned_operation
     async def accept_content(self, *, fallback: bool = False) -> HookResult | None:
         if self.content is None:
             return self.accept(fallback=fallback)
@@ -153,16 +230,25 @@ class PendingInvocation:
             self._scope = scope
             try:
                 if self.prepared_content is None:
-                    self.prepared_content = await self.content.prepare(
-                        self.request, self.lifecycle.validator
-                    )
+                    self.prepared_content = await self._prepare_content()
                 prepared = self.lifecycle.prepare_accept(
                     self.request["id"], fallback=fallback, content=self.prepared_content
                 )
                 if prepared is None:
                     return None
                 token, state = prepared
-                state = await self.prepared_content.finalize(state)
+                try:
+                    state = await self.prepared_content.finalize(state)
+                except OperationCancelledError:
+                    raise
+                except TimeoutError:
+                    raise ContentPreparationTimeout(
+                        "Selected content timed out"
+                    ) from None
+                except Exception as exc:
+                    raise ContentPreparationError(
+                        "Content finalization failed", cause=exc
+                    ) from None
                 committed = self.lifecycle.commit_accept(
                     self.request["id"], token, state
                 )
@@ -176,6 +262,18 @@ class PendingInvocation:
             finally:
                 self._scope = None
         return None
+
+    async def _prepare_content(self):
+        try:
+            return await self.content.prepare(self.request, self.lifecycle.validator)
+        except OperationCancelledError:
+            raise
+        except TimeoutError:
+            raise ContentPreparationTimeout("Selected content timed out") from None
+        except Exception as exc:
+            raise ContentPreparationError(
+                "Content preparation failed", cause=exc
+            ) from None
 
     def _publish(
         self, state: dict[str, Any] | None, fallback: bool
@@ -239,6 +337,7 @@ class Hooks(BoundaryMixin):
         manifest: dict[str, Any] | None = None,
         transport: Any = None,
         resolve_credential: Any = None,
+        auth_provider: Any = None,
     ) -> None:
         self.validator = Validator()
         self._lineage = TaskLineage(self.validator)
@@ -277,9 +376,18 @@ class Hooks(BoundaryMixin):
             raise ProtocolError("capabilities must map events to explicit modes")
         self.config = deepcopy(config)
         self.source = source
-        self.capabilities = deepcopy(capabilities)
+        self.capabilities = {
+            key: deepcopy(value.to_wire() if hasattr(value, "to_wire") else value)
+            for key, value in capabilities.items()
+        }
+        from .auth import EnvironmentAuthProvider
+
+        self._auth_provider = (
+            auth_provider
+            if auth_provider is not None
+            else EnvironmentAuthProvider(resolve_credential=resolve_credential)
+        )
         ids = set()
-        self._headers: dict[str, dict[str, str]] = {}
         for event, declaration in self.capabilities.items():
             modes = declaration.get("modes") if isinstance(declaration, dict) else None
             if (
@@ -310,41 +418,11 @@ class Hooks(BoundaryMixin):
             if backend["id"] in ids:
                 raise ProtocolError("Duplicate backend ID")
             ids.add(backend["id"])
-            if "authentication" in backend and transport is None:
-                import os
-
-                auth = backend["authentication"]
-                if auth["type"] != "bearer":
-                    raise ProtocolError(
-                        "Authentication requires an injected authenticated transport"
-                    )
-                try:
-                    token = (
-                        os.environ.get(auth["tokenEnv"])
-                        if "tokenEnv" in auth
-                        else (
-                            resolve_credential(auth["tokenRef"])
-                            if resolve_credential is not None
-                            else None
-                        )
-                    )
-                except Exception:
-                    raise ProtocolError(
-                        "Cannot resolve configured credential"
-                    ) from None
-                if (
-                    not isinstance(token, str)
-                    or not token
-                    or "\r" in token
-                    or "\n" in token
-                ):
-                    raise ProtocolError("Cannot resolve configured credential")
-                self._headers[backend["id"]] = {"Authorization": "Bearer " + token}
             for subscription in backend["subscriptions"]:
                 for selector in subscription["events"]:
-                    matched = [e for e in capabilities if _matches(selector, e)]
+                    matched = [e for e in self.capabilities if _matches(selector, e)]
                     if not matched or any(
-                        subscription["mode"] not in capabilities[e]["modes"]
+                        subscription["mode"] not in self.capabilities[e]["modes"]
                         for e in matched
                     ):
                         raise ProtocolError("Unsupported event or delivery mode")
@@ -353,6 +431,8 @@ class Hooks(BoundaryMixin):
         self._owned = []
         self._ready_lock = anyio.Lock()
         self._closed = False
+        self._close_lock = anyio.Lock()
+        self._operations: list[dict[str, Any]] = []
         self._observations: list[dict[str, Any]] = []
         self._observation_diagnostics: deque[dict[str, Any]] = deque(maxlen=256)
 
@@ -445,18 +525,19 @@ class Hooks(BoundaryMixin):
                             cwd=config.get("cwd"),
                         )
                     else:
-                        from .transports.http import HTTPTransport
+                        from .auth import AuthenticatedHTTPTransport
 
-                        transport = HTTPTransport(
+                        transport = AuthenticatedHTTPTransport(
                             config["url"],
-                            headers=self._headers.get(backend["id"]),
+                            backend=backend,
+                            auth_provider=self._auth_provider,
                             validator=self.validator,
                         )
                     self._owned.append(transport)
                 self._transports[backend["id"]] = transport
 
     async def wait_observations(self) -> list[dict[str, Any]]:
-        """Wait for scheduled deliveries; drain the latest 256 retained errors."""
+        """Drain retained observation errors; calls already own their deliveries."""
         observations = list(self._observations)
         for observation in observations:
             await observation["done"].wait()
@@ -467,17 +548,35 @@ class Hooks(BoundaryMixin):
     async def wait(self) -> list[dict[str, Any]]:
         return await self.wait_observations()
 
+    @asynccontextmanager
+    async def _operation(self):
+        if self._closed:
+            raise HooksClosedError("Hooks is closed")
+        operation = {"scope": anyio.CancelScope(), "done": anyio.Event()}
+        self._operations.append(operation)
+        try:
+            with operation["scope"]:
+                yield
+            if operation["scope"].cancel_called:
+                raise HooksClosedError("Hooks closed during operation")
+        finally:
+            self._operations.remove(operation)
+            operation["done"].set()
+
     async def aclose(self) -> None:
+        """Cancel and join owned calls; borrowed transports/providers stay open."""
         with anyio.CancelScope(shield=True):
             self._closed = True
-            for observation in self._observations:
-                if observation["scope"] is not None:
-                    observation["scope"].cancel()
-            await self.wait_observations()
-            async with self._ready_lock:
-                for transport in self._owned:
-                    await transport.aclose()
-                self._owned.clear()
+            async with self._close_lock:
+                operations = list(self._operations)
+                for operation in operations:
+                    operation["scope"].cancel()
+                for operation in operations:
+                    await operation["done"].wait()
+                async with self._ready_lock:
+                    for transport in self._owned:
+                        await transport.aclose()
+                    self._owned.clear()
 
     def begin(
         self,
@@ -495,7 +594,9 @@ class Hooks(BoundaryMixin):
         event = request["params"]["event"]
         self._check_occurrence(event, "intercept", request["params"]["capabilities"])
         self._lineage.accept(event)
-        return PendingInvocation(request, self.validator, transport, content)
+        return PendingInvocation(
+            request, self.validator, transport, content, owner=self
+        )
 
     def _check_occurrence(
         self, event: dict[str, Any], mode: str, caps: dict[str, Any] | None = None
@@ -510,6 +611,7 @@ class Hooks(BoundaryMixin):
                 "Occurrence capabilities may only narrow advertised capabilities"
             )
 
+    @_owned_operation
     async def exchange(
         self,
         request: dict[str, Any],
@@ -532,6 +634,7 @@ class Hooks(BoundaryMixin):
             await pending.accept_content() if content is not None else pending.accept()
         )
 
+    @_owned_operation
     async def notify(
         self,
         notification: dict[str, Any],
@@ -541,7 +644,7 @@ class Hooks(BoundaryMixin):
     ) -> list[dict[str, Any]]:
         """Deliver an exact canonical notification, without any effect authority.
 
-        Unlike dispatch observations, this explicit delivery waits for completion.
+        Like dispatch observations, delivery is owned by this call.
         Receiver errors are diagnostics; malformed input/lineage fails before I/O.
         """
         await self._ensure_ready()
@@ -556,20 +659,10 @@ class Hooks(BoundaryMixin):
                 backend_id = next(iter(self._transports))
             transport = self._transports[backend_id]
         result = HookResult(deepcopy(note["params"]["event"]), {})
-        observation = self._schedule_observation(
-            transport, note, result, backend_id or "injected"
-        )
-        try:
-            await observation["done"].wait()
-        except BaseException:
-            observation["cancelled"] = True
-            if observation["scope"] is not None:
-                observation["scope"].cancel()
-            with anyio.CancelScope(shield=True):
-                await observation["done"].wait()
-            raise
-        return deepcopy(observation["diagnostics"])
+        await self._notify(transport, note, result, backend_id or "injected")
+        return deepcopy(result.diagnostics)
 
+    @_owned_operation
     async def dispatch(
         self,
         event_name: str,
@@ -579,6 +672,8 @@ class Hooks(BoundaryMixin):
         capabilities: dict[str, Any] | None = None,
         event_id: str | None = None,
         content: ContentContext | None = None,
+        sources: ContentSources | None = None,
+        uploads: dict[str, Any] | None = None,
     ) -> HookResult:
         await self._ensure_ready()
         if event_name not in self.capabilities:
@@ -591,18 +686,22 @@ class Hooks(BoundaryMixin):
                     "Occurrence capabilities may only narrow advertised capabilities"
                 )
             caps = deepcopy(capabilities)
-        event = deepcopy(input)
+        event = deepcopy(input.to_wire() if hasattr(input, "to_wire") else input)
         if not isinstance(event, dict):
             raise TypeError("Event input must be a canonical event payload object")
         if event_name == "session.start":
             event["manifest"] = deepcopy(self._manifest)
         event.update(
-            id=event_id or str(uuid4()),
+            id=event_id if event_id is not None else event.get("id", str(uuid4())),
             source=self.source,
             type=event_name,
-            time=datetime.now(timezone.utc).isoformat(),
+            time=event.get("time", datetime.now(timezone.utc).isoformat()),
         )
-        state = deepcopy(initial_state or {"permission": "none", "candidate": None})
+        state = deepcopy(
+            initial_state
+            if initial_state is not None
+            else {"permission": "none", "candidate": None}
+        )
         request = {
             "jsonrpc": "2.0",
             "id": event["id"],
@@ -649,33 +748,39 @@ class Hooks(BoundaryMixin):
         halted = state.get("permission") == "deny" or state.get("flow") == "stop"
         for backend in self.config["hooks"]:
             transport = self._transports[backend["id"]]
-            for subscription in backend["subscriptions"]:
+            for subscription_index, subscription in enumerate(backend["subscriptions"]):
                 if not any(_matches(s, event_name) for s in subscription["events"]):
                     continue
                 # Filters are optional optimization hints. The host has not
                 # supplied a recognized-kind taxonomy, so never infer one or
                 # skip policy hooks for arbitrary future normalized kinds.
                 if subscription["mode"] == "observe":
-                    observers.append((backend, subscription, transport))
+                    observers.append(
+                        (backend, subscription_index, subscription, transport)
+                    )
                     continue
                 if halted:
                     # Uncalled subscriptions receive a one-way settled view,
                     # never an interception after the chain has stopped.
-                    observers.append((backend, subscription, transport))
+                    observers.append(
+                        (backend, subscription_index, subscription, transport)
+                    )
                     continue
-                request["params"]["event"] = _project(
-                    result.event,
-                    subscription["content"],
-                    subscription.get("includeNative", False),
-                )
                 request["params"]["state"] = deepcopy(state)
+                stage = "content"
                 try:
                     with anyio.fail_after(subscription["timeoutMs"] / 1000):
+                        request["params"]["event"] = await self._project_delivery(
+                            result.event, subscription, backend["id"], sources, uploads
+                        )
+                        stage = "delivery"
                         accepted = await self.exchange(
                             request, transport=transport, content=content
                         )
                     if accepted is None:
-                        raise ProtocolError("Invocation cancelled before acceptance")
+                        raise OperationCancelledError(
+                            "Invocation cancelled before acceptance"
+                        )
                     previous = result.event
                     result.event = merge_effective(
                         previous, request["params"]["event"], accepted.event
@@ -705,19 +810,26 @@ class Hooks(BoundaryMixin):
                     halted = (
                         result.decision == "deny" or result.state.get("flow") == "stop"
                     )
+                except OperationCancelledError:
+                    raise
                 except Exception as exc:
-                    result.diagnostics.append(
-                        {
-                            "backend": backend["id"],
-                            "mode": "intercept",
-                            "error": type(exc).__name__,
-                        }
-                    )
-                    if (
+                    closed = (
                         subscription["failurePolicy"] == "fail-closed"
                         or subscription.get("scope") == "managed"
                         or subscription.get("disableable") is False
-                    ):
+                    )
+                    result.diagnostics.append(
+                        delivery_diagnostic(
+                            exc,
+                            backend=backend["id"],
+                            subscription=subscription_index,
+                            mode="intercept",
+                            stage=stage,
+                            failure_policy=subscription["failurePolicy"],
+                            synthetic_denial=closed,
+                        )
+                    )
+                    if closed:
                         state["permission"] = "deny"
                         result.state["decision"] = "deny"
                         result.state["permission"] = "deny"
@@ -725,48 +837,29 @@ class Hooks(BoundaryMixin):
                         result.state.pop("result", None)
                         result.state.pop("authorization", None)
                         halted = True
-        for backend, subscription, transport in observers:
-            note = {
-                "jsonrpc": "2.0",
-                "method": "hooks/observe",
-                "params": {
-                    "protocolVersion": self.config["protocolVersion"],
-                    "event": _project(
-                        result.event,
-                        subscription["content"],
-                        subscription.get("includeNative", False),
-                    ),
+        for backend, subscription_index, subscription, transport in observers:
+            await self._notify(
+                transport,
+                {
+                    "jsonrpc": "2.0",
+                    "method": "hooks/observe",
+                    "params": {
+                        "protocolVersion": self.config["protocolVersion"],
+                        "event": result.event,
+                    },
                 },
-            }
-            self._schedule_observation(transport, note, result, backend["id"])
+                result,
+                backend["id"],
+                timeout_ms=subscription.get("timeoutMs"),
+                subscription=subscription_index,
+                selection=subscription,
+                sources=sources,
+                uploads=uploads,
+            )
         # The legacy evaluator uses a synthetic execution flag for fixtures;
         # the public harness never executes the host operation.
         result.state.pop("executed", None)
         return result
-
-    def _schedule_observation(
-        self, transport: Any, note: dict[str, Any], result: HookResult, backend: str
-    ) -> dict[str, Any]:
-        observation = {"done": anyio.Event(), "scope": None, "diagnostics": []}
-        self._observations.append(observation)
-        # Bootstrap a supervisor without borrowing the calling task's cancel
-        # stack. All task work, cancellation and joining use AnyIO. This permits
-        # contextless auto-readiness and close from another task on both backends.
-        import sniffio
-
-        if sniffio.current_async_library() == "trio":
-            import trio
-
-            trio.lowlevel.spawn_system_task(
-                self._notify, transport, note, result, backend, observation
-            )
-        else:
-            import asyncio
-
-            observation["task"] = asyncio.create_task(
-                self._notify(transport, note, result, backend, observation)
-            )
-        return observation
 
     async def _notify(
         self,
@@ -774,25 +867,59 @@ class Hooks(BoundaryMixin):
         note: dict[str, Any],
         result: HookResult,
         backend: str,
-        observation: dict[str, Any],
+        *,
+        timeout_ms: int | None = None,
+        subscription: int | None = None,
+        selection: dict[str, Any] | None = None,
+        sources: ContentSources | None = None,
+        uploads: dict[str, Any] | None = None,
     ) -> None:
+        # No private task/runtime: host task groups own concurrency and budgets.
+        await anyio.lowlevel.checkpoint()
+        stage = "content" if selection is not None else "delivery"
         try:
-            with anyio.CancelScope() as scope:
-                observation["scope"] = scope
-                if self._closed or observation.get("cancelled", False):
-                    return
-                try:
-                    self.validator.validate("observe-notification", note)
-                    await transport.notify(note)
-                except Exception as exc:
-                    diagnostic = {
-                        "backend": backend,
-                        "mode": "observe",
-                        "error": type(exc).__name__,
-                    }
-                    result.diagnostics.append(diagnostic)
-                    observation["diagnostics"].append(diagnostic)
-                    self._observation_diagnostics.append(diagnostic)
-        finally:
-            self._observations.remove(observation)
-            observation["done"].set()
+            with anyio.fail_after(None if timeout_ms is None else timeout_ms / 1000):
+                note = deepcopy(note)
+                if selection is not None:
+                    note["params"]["event"] = await self._project_delivery(
+                        note["params"]["event"], selection, backend, sources, uploads
+                    )
+                stage = "delivery"
+                self.validator.validate("observe-notification", note)
+                await transport.notify(note)
+        except OperationCancelledError:
+            raise
+        except Exception as exc:
+            diagnostic = delivery_diagnostic(
+                exc,
+                backend=backend,
+                subscription=subscription,
+                mode="observe",
+                stage=stage,
+            )
+            result.diagnostics.append(diagnostic)
+            self._observation_diagnostics.append(diagnostic)
+
+    async def _project_delivery(self, event, subscription, backend, sources, uploads):
+        if sources is None:
+            return _project(
+                event, subscription["content"], subscription.get("includeNative", False)
+            )
+
+        try:
+            return await sources.project(
+                event,
+                subscription["content"],
+                backend=backend,
+                upload=uploads.get(backend) if uploads is not None else None,
+                validator=self.validator,
+                include_native=subscription.get("includeNative", False),
+            )
+        except OperationCancelledError:
+            raise
+        except TimeoutError:
+            raise
+        except Exception as exc:
+            raise ContentPreparationError(
+                "Selected content preparation failed", cause=exc
+            ) from None

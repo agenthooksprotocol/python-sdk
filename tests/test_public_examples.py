@@ -48,7 +48,7 @@ class PublicExamplesTests(unittest.TestCase):
 
     def test_observation_wait_and_child_cancellation(self):
         result = self.run_example("lifecycle.py")
-        self.assertTrue(result["S09"]["nonGating"])
+        self.assertTrue(result["S09"]["operationOwned"])
         self.assertTrue(result["S09"]["waitCompleted"])
         self.assertTrue(result["S10"]["cancelled"])
         self.assertTrue(result["S10"]["childReaped"])

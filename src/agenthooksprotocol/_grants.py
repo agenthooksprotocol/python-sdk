@@ -298,6 +298,251 @@ class Declaration(dict[str, Any]):
         self["capabilities"] = capabilities
 
 
+class Builder:
+    """Immutable declaration; intercept deliberately supports observation too.
+
+    Grants describe host support, not evidence that the host enacted effects.
+    Raw Declaration remains available without convenience inference.
+    """
+
+    __slots__ = ("_modes", "_capabilities")
+
+    def __init__(self, modes: tuple[Mode, ...], capabilities: dict[str, Any]) -> None:
+        object.__setattr__(self, "_modes", modes)
+        object.__setattr__(self, "_capabilities", json.dumps(capabilities))
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        raise AttributeError("Capability builders are immutable")
+
+    def to_wire(self) -> dict[str, Any]:
+        capabilities = json.loads(self._capabilities)
+        if Mode.INTERCEPT in self._modes and capabilities == {"effects": []}:
+            raise ValueError("Intercept declarations require an explicit grant")
+        return {"modes": list(self._modes), "capabilities": capabilities}
+
+    def _add(self, grant: dict[str, Any]) -> Builder:
+        if grant.get("effects") and Mode.INTERCEPT not in self._modes:
+            raise ValueError("Observation-only declarations cannot grant effects")
+        capabilities = json.loads(self._capabilities)
+        _merge(capabilities, grant)
+        return Builder(self._modes, capabilities)
+
+    def allow(self) -> Builder:
+        arguments: dict[str, Any] = {}
+        return self._add(Allow(**arguments))
+
+    def ask(self) -> Builder:
+        arguments: dict[str, Any] = {}
+        return self._add(Ask(**arguments))
+
+    def deny(self) -> Builder:
+        arguments: dict[str, Any] = {}
+        return self._add(Deny(**arguments))
+
+    def flow(
+        self,
+        *,
+        continuation_count: int = _UNSET,
+        max_continuations: int = _UNSET,
+        operations: list[Any],
+        remaining_continuations: int = _UNSET,
+    ) -> Builder:
+        arguments: dict[str, Any] = {}
+        if continuation_count is not _UNSET:
+            arguments["continuation_count"] = continuation_count
+        if max_continuations is not _UNSET:
+            arguments["max_continuations"] = max_continuations
+        if operations is not _UNSET:
+            arguments["operations"] = operations
+            if not operations or any(
+                value not in ["continue", "stop"] for value in operations
+            ):
+                raise ValueError("operations requires known, nonempty values")
+        if remaining_continuations is not _UNSET:
+            arguments["remaining_continuations"] = remaining_continuations
+        return self._add(Flow(**arguments))
+
+    def message(self) -> Builder:
+        arguments: dict[str, Any] = {}
+        return self._add(Message(**arguments))
+
+    def return_2(self) -> Builder:
+        arguments: dict[str, Any] = {}
+        return self._add(Return(**arguments))
+
+    def elicitation_form(self) -> Builder:
+        arguments: dict[str, Any] = {}
+        return self._add(ElicitationForm(**arguments))
+
+    def elicitation_url(self) -> Builder:
+        arguments: dict[str, Any] = {}
+        return self._add(ElicitationUrl(**arguments))
+
+    def inject_context(
+        self, *, append: bool = _UNSET, deliver_at: list[Any]
+    ) -> Builder:
+        arguments: dict[str, Any] = {}
+        if append is not _UNSET:
+            arguments["append"] = append
+            if append is not True:
+                raise ValueError("append must be true")
+        if deliver_at is not _UNSET:
+            arguments["deliver_at"] = deliver_at
+            if not deliver_at or any(
+                value not in ["next_turn", "now"] for value in deliver_at
+            ):
+                raise ValueError("deliver_at requires known, nonempty values")
+        return self._add(InjectContext(**arguments))
+
+    def modify_content(
+        self, *, merge: bool = _UNSET, replace: bool = _UNSET
+    ) -> Builder:
+        arguments: dict[str, Any] = {}
+        if merge is not _UNSET:
+            arguments["merge"] = merge
+            if not isinstance(merge, bool):
+                raise ValueError("merge must be boolean")
+        if replace is not _UNSET:
+            arguments["replace"] = replace
+            if not isinstance(replace, bool):
+                raise ValueError("replace must be boolean")
+        if not (merge is True or replace is True):
+            raise ValueError("Select at least one operation")
+        return self._add(ModifyContent(**arguments))
+
+    def modify_input(self, *, merge: bool = _UNSET, replace: bool = _UNSET) -> Builder:
+        arguments: dict[str, Any] = {}
+        if merge is not _UNSET:
+            arguments["merge"] = merge
+            if not isinstance(merge, bool):
+                raise ValueError("merge must be boolean")
+        if replace is not _UNSET:
+            arguments["replace"] = replace
+            if not isinstance(replace, bool):
+                raise ValueError("replace must be boolean")
+        if not (merge is True or replace is True):
+            raise ValueError("Select at least one operation")
+        return self._add(ModifyInput(**arguments))
+
+    def modify_instructions(
+        self, *, merge: bool = _UNSET, replace: bool = _UNSET
+    ) -> Builder:
+        arguments: dict[str, Any] = {}
+        if merge is not _UNSET:
+            arguments["merge"] = merge
+            if not isinstance(merge, bool):
+                raise ValueError("merge must be boolean")
+        if replace is not _UNSET:
+            arguments["replace"] = replace
+            if not isinstance(replace, bool):
+                raise ValueError("replace must be boolean")
+        if not (merge is True or replace is True):
+            raise ValueError("Select at least one operation")
+        return self._add(ModifyInstructions(**arguments))
+
+    def modify_output(self, *, merge: bool = _UNSET, replace: bool = _UNSET) -> Builder:
+        arguments: dict[str, Any] = {}
+        if merge is not _UNSET:
+            arguments["merge"] = merge
+            if not isinstance(merge, bool):
+                raise ValueError("merge must be boolean")
+        if replace is not _UNSET:
+            arguments["replace"] = replace
+            if not isinstance(replace, bool):
+                raise ValueError("replace must be boolean")
+        if not (merge is True or replace is True):
+            raise ValueError("Select at least one operation")
+        return self._add(ModifyOutput(**arguments))
+
+    def modify_prompt(self, *, merge: bool = _UNSET, replace: bool = _UNSET) -> Builder:
+        arguments: dict[str, Any] = {}
+        if merge is not _UNSET:
+            arguments["merge"] = merge
+            if not isinstance(merge, bool):
+                raise ValueError("merge must be boolean")
+        if replace is not _UNSET:
+            arguments["replace"] = replace
+            if not isinstance(replace, bool):
+                raise ValueError("replace must be boolean")
+        if not (merge is True or replace is True):
+            raise ValueError("Select at least one operation")
+        return self._add(ModifyPrompt(**arguments))
+
+    def modify_request(
+        self, *, merge: bool = _UNSET, replace: bool = _UNSET
+    ) -> Builder:
+        arguments: dict[str, Any] = {}
+        if merge is not _UNSET:
+            arguments["merge"] = merge
+            if not isinstance(merge, bool):
+                raise ValueError("merge must be boolean")
+        if replace is not _UNSET:
+            arguments["replace"] = replace
+            if not isinstance(replace, bool):
+                raise ValueError("replace must be boolean")
+        if not (merge is True or replace is True):
+            raise ValueError("Select at least one operation")
+        return self._add(ModifyRequest(**arguments))
+
+    def modify_response(
+        self, *, merge: bool = _UNSET, replace: bool = _UNSET
+    ) -> Builder:
+        arguments: dict[str, Any] = {}
+        if merge is not _UNSET:
+            arguments["merge"] = merge
+            if not isinstance(merge, bool):
+                raise ValueError("merge must be boolean")
+        if replace is not _UNSET:
+            arguments["replace"] = replace
+            if not isinstance(replace, bool):
+                raise ValueError("replace must be boolean")
+        if not (merge is True or replace is True):
+            raise ValueError("Select at least one operation")
+        return self._add(ModifyResponse(**arguments))
+
+    def modify_summary(
+        self, *, merge: bool = _UNSET, replace: bool = _UNSET
+    ) -> Builder:
+        arguments: dict[str, Any] = {}
+        if merge is not _UNSET:
+            arguments["merge"] = merge
+            if not isinstance(merge, bool):
+                raise ValueError("merge must be boolean")
+        if replace is not _UNSET:
+            arguments["replace"] = replace
+            if not isinstance(replace, bool):
+                raise ValueError("replace must be boolean")
+        if not (merge is True or replace is True):
+            raise ValueError("Select at least one operation")
+        return self._add(ModifySummary(**arguments))
+
+    def modify_workspace(
+        self, *, merge: bool = _UNSET, replace: bool = _UNSET
+    ) -> Builder:
+        arguments: dict[str, Any] = {}
+        if merge is not _UNSET:
+            arguments["merge"] = merge
+            if not isinstance(merge, bool):
+                raise ValueError("merge must be boolean")
+        if replace is not _UNSET:
+            arguments["replace"] = replace
+            if not isinstance(replace, bool):
+                raise ValueError("replace must be boolean")
+        if not (merge is True or replace is True):
+            raise ValueError("Select at least one operation")
+        return self._add(ModifyWorkspace(**arguments))
+
+
+def intercept() -> Builder:
+    """Advertise both intercept and observe delivery, with explicit grants."""
+    return Builder((Mode.INTERCEPT, Mode.OBSERVE), {"effects": []})
+
+
+def observe() -> Builder:
+    """Advertise observation only; no effect authority is inferred."""
+    return Builder((Mode.OBSERVE,), {"effects": []})
+
+
 __all__ = [
     "Declaration",
     "Mode",
@@ -319,4 +564,7 @@ __all__ = [
     "ModifyResponse",
     "ModifySummary",
     "ModifyWorkspace",
+    "Builder",
+    "intercept",
+    "observe",
 ]

@@ -1,7 +1,7 @@
 """Optional HTTPX transport (install agenthooksprotocol[http])."""
 
 from typing import Any, AsyncIterable
-from ..runtime import ProtocolError, Validator
+from ..runtime import ProtocolError, Validator, validate_intercept_response
 
 
 class HTTPTransport:
@@ -34,10 +34,22 @@ class HTTPTransport:
         response = await self._ready().post(
             self.url, json=message, headers=self.headers, follow_redirects=False
         )
+        try:
+            result = response.json()
+        except (ValueError, UnicodeError):
+            response.raise_for_status()
+            raise ProtocolError("Malformed HTTP protocol response") from None
+        if (
+            message.get("method") == "hooks/intercept"
+            and isinstance(result, dict)
+            and "error" in result
+        ):
+            validate_intercept_response(self._validator, message, result)
         response.raise_for_status()
-        result = response.json()
         if not isinstance(result, dict) or result.get("id") != message["id"]:
             raise ProtocolError("HTTP response correlation mismatch")
+        if message.get("method") == "hooks/intercept":
+            validate_intercept_response(self._validator, message, result)
         return result
 
     async def notify(self, message: dict[str, Any]) -> None:

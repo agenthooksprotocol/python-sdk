@@ -1,4 +1,4 @@
-"""Real public observation waiting and owned subprocess cancellation (S09/S10)."""
+"""Caller-owned hook concurrency and owned subprocess cancellation (S09/S10)."""
 
 from __future__ import annotations
 
@@ -18,13 +18,11 @@ from agenthooksprotocol.transports.http import HTTPTransport
 
 def input_event() -> event.ToolBeforeInput:
     return event.ToolBeforeInput(
-        call=tool.Call(id="call-1"),
+        call_id="call-1",
         path=tool.Path.NATIVE,
-        tool=tool.Tool(
-            name="shell",
-            origin=tool.Origin.NATIVE,
-            input={"command": "echo original", "timeoutMs": 1000},
-        ),
+        name="shell",
+        origin=tool.Origin.NATIVE,
+        input={"command": "echo original", "timeoutMs": 1000},
     )
 
 
@@ -61,13 +59,22 @@ async def main() -> None:
             },
             transport=HTTPTransport("http://example.test/hooks", client=client),
         ) as harness:
-            result = await harness.tool_before(input_event())
+            results = []
+
+            async def deliver() -> None:
+                results.append(await harness.tool_before(input_event()))
+
+            # The host backgrounds the entire call, and retains its task group.
+            # No host execution is authorized before the result is available.
             with anyio.fail_after(2):
-                await started.wait()
-            assert not delivered.is_set() and result.decision == "allow"
-            release.set()
-            diagnostics = await harness.wait()
-            assert delivered.is_set() and not diagnostics
+                async with anyio.create_task_group() as group:
+                    group.start_soon(deliver)
+                    await started.wait()
+                    assert not delivered.is_set() and not results
+                    release.set()
+            assert results[0].permission == "allow" and delivered.is_set()
+            diagnostics = results[0].diagnostics
+            assert not diagnostics
     # The HTTP client was borrowed and closed by its outer context, not Hooks.
 
     with tempfile.TemporaryDirectory() as directory:
@@ -107,7 +114,7 @@ async def main() -> None:
     print(
         json.dumps(
             {
-                "S09": {"nonGating": True, "waitCompleted": True},
+                "S09": {"operationOwned": True, "waitCompleted": True},
                 "S10": {
                     "cancelled": cancelled,
                     "childReaped": reaped,

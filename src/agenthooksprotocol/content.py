@@ -4,7 +4,10 @@ Use ContentContext with the public asynchronous Hooks harness. The legacy upload
 function below is synchronous and is not used by the public async runtime.
 """
 
-from ._content import ContentContext
+from ._content import ContentContext as ContentContext
+from ._content import ContentSources as ContentSources
+from ._content import OwnedContentSource as OwnedContentSource
+from .runtime import ProtocolError
 
 import hashlib
 import os
@@ -18,9 +21,6 @@ from urllib.error import HTTPError
 class NoRedirect(HTTPRedirectHandler):
     def redirect_request(self, *_args, **_kwargs):
         return None
-
-
-from .runtime import ProtocolError
 
 
 def upload(config, data, *, loopback=False, _declared=None):

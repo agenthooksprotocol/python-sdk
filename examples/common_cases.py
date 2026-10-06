@@ -54,13 +54,11 @@ async def run_case(case: dict[str, Any]) -> dict[str, Any]:
         ) as harness:
             result = await harness.tool_before(
                 event.ToolBeforeInput(
-                    call=tool.Call(id="call-1"),
+                    call_id="call-1",
                     path=tool.Path.NATIVE,
-                    tool=tool.Tool(
-                        name="shell",
-                        origin=tool.Origin.NATIVE,
-                        input={"command": "echo original", "timeoutMs": 1000},
-                    ),
+                    name="shell",
+                    origin=tool.Origin.NATIVE,
+                    input={"command": "echo original", "timeoutMs": 1000},
                 ),
                 initial_state={
                     "permission": case.get("initialPermission", "allow"),

@@ -199,3 +199,300 @@ class BoundaryMixin:
         return await cast("Hooks", self).dispatch(
             "workspace.change.before", input, **kwargs
         )
+
+
+CONTENT_SOURCE_SLOTS: dict[str, tuple[str, tuple[str, ...]]] = {
+    "config.change.after.items": (
+        "config.change.after",
+        (
+            "items",
+            "*",
+        ),
+    ),
+    "config.change.before.items": (
+        "config.change.before",
+        (
+            "items",
+            "*",
+        ),
+    ),
+    "context.compact.after.items": (
+        "context.compact.after",
+        (
+            "items",
+            "*",
+        ),
+    ),
+    "context.compact.after.summary": ("context.compact.after", ("summary",)),
+    "context.compact.before.instructions": (
+        "context.compact.before",
+        ("instructions",),
+    ),
+    "context.compact.before.items": (
+        "context.compact.before",
+        (
+            "items",
+            "*",
+        ),
+    ),
+    "file.changed.items": (
+        "file.changed",
+        (
+            "items",
+            "*",
+        ),
+    ),
+    "hook.failure.items": (
+        "hook.failure",
+        (
+            "items",
+            "*",
+        ),
+    ),
+    "model.error.items": (
+        "model.error",
+        (
+            "items",
+            "*",
+        ),
+    ),
+    "model.request.before.items": (
+        "model.request.before",
+        (
+            "items",
+            "*",
+        ),
+    ),
+    "model.response.after.items": (
+        "model.response.after",
+        (
+            "items",
+            "*",
+        ),
+    ),
+    "model.switch.after.items": (
+        "model.switch.after",
+        (
+            "items",
+            "*",
+        ),
+    ),
+    "model.switch.before.items": (
+        "model.switch.before",
+        (
+            "items",
+            "*",
+        ),
+    ),
+    "session.end.items": (
+        "session.end",
+        (
+            "items",
+            "*",
+        ),
+    ),
+    "session.start.items": (
+        "session.start",
+        (
+            "items",
+            "*",
+        ),
+    ),
+    "task.change.after.items": (
+        "task.change.after",
+        (
+            "items",
+            "*",
+        ),
+    ),
+    "task.change.before.items": (
+        "task.change.before",
+        (
+            "items",
+            "*",
+        ),
+    ),
+    "tool.after.file_changes_after": (
+        "tool.after",
+        (
+            "fileChanges",
+            "*",
+            "after",
+        ),
+    ),
+    "tool.after.file_changes_before": (
+        "tool.after",
+        (
+            "fileChanges",
+            "*",
+            "before",
+        ),
+    ),
+    "tool.after.items": (
+        "tool.after",
+        (
+            "items",
+            "*",
+        ),
+    ),
+    "tool.batch.after.items": (
+        "tool.batch.after",
+        (
+            "items",
+            "*",
+        ),
+    ),
+    "tool.before.items": (
+        "tool.before",
+        (
+            "items",
+            "*",
+        ),
+    ),
+    "tool.permission.request.items": (
+        "tool.permission.request",
+        (
+            "items",
+            "*",
+        ),
+    ),
+    "tool.permission.resolved.items": (
+        "tool.permission.resolved",
+        (
+            "items",
+            "*",
+        ),
+    ),
+    "tool.progress.items": (
+        "tool.progress",
+        (
+            "items",
+            "*",
+        ),
+    ),
+    "tool.progress.partial_output": ("tool.progress", ("partialOutput",)),
+    "turn.end.items": (
+        "turn.end",
+        (
+            "items",
+            "*",
+        ),
+    ),
+    "turn.finish.before.items": (
+        "turn.finish.before",
+        (
+            "items",
+            "*",
+        ),
+    ),
+    "turn.progress.delta": ("turn.progress", ("delta",)),
+    "turn.progress.items": (
+        "turn.progress",
+        (
+            "items",
+            "*",
+        ),
+    ),
+    "turn.start.items": (
+        "turn.start",
+        (
+            "items",
+            "*",
+        ),
+    ),
+    "user.attention.items": (
+        "user.attention",
+        (
+            "items",
+            "*",
+        ),
+    ),
+    "user.attention.attention_message": (
+        "user.attention",
+        (
+            "attention",
+            "message",
+            "*",
+        ),
+    ),
+    "user.attention.attention_title": (
+        "user.attention",
+        (
+            "attention",
+            "title",
+            "*",
+        ),
+    ),
+    "user.elicitation.request.items": (
+        "user.elicitation.request",
+        (
+            "items",
+            "*",
+        ),
+    ),
+    "user.elicitation.request.elicitation_request": (
+        "user.elicitation.request",
+        (
+            "elicitation",
+            "request",
+        ),
+    ),
+    "user.elicitation.result.items": (
+        "user.elicitation.result",
+        (
+            "items",
+            "*",
+        ),
+    ),
+    "user.elicitation.result.elicitation_result": (
+        "user.elicitation.result",
+        (
+            "elicitation",
+            "result",
+        ),
+    ),
+    "user.message.inbound.items": (
+        "user.message.inbound",
+        (
+            "items",
+            "*",
+        ),
+    ),
+    "user.message.inbound.message_text": (
+        "user.message.inbound",
+        (
+            "message",
+            "text",
+            "*",
+        ),
+    ),
+    "user.message.outbound.items": (
+        "user.message.outbound",
+        (
+            "items",
+            "*",
+        ),
+    ),
+    "user.message.outbound.message_payload": (
+        "user.message.outbound",
+        (
+            "message",
+            "payload",
+            "*",
+        ),
+    ),
+    "workspace.change.after.items": (
+        "workspace.change.after",
+        (
+            "items",
+            "*",
+        ),
+    ),
+    "workspace.change.before.items": (
+        "workspace.change.before",
+        (
+            "items",
+            "*",
+        ),
+    ),
+}

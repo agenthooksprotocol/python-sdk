@@ -188,3 +188,6 @@ from ._grants import ModifyRequest as ModifyRequest
 from ._grants import ModifyResponse as ModifyResponse
 from ._grants import ModifySummary as ModifySummary
 from ._grants import ModifyWorkspace as ModifyWorkspace
+from ._grants import Builder as Builder
+from ._grants import intercept as intercept
+from ._grants import observe as observe

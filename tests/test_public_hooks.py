@@ -313,27 +313,57 @@ class PublicHooksTests(unittest.TestCase):
         self.run_async(run)
 
     def test_bearer_environment_and_reference_resolution(self):
+        import httpx
         from unittest.mock import patch
 
-        registration = config()
-        backend = registration["hooks"][0]
-        backend["transport"] = {"type": "http", "url": "https://example.test"}
-        backend["authentication"] = {"type": "bearer", "tokenEnv": "AHP_TEST_BEARER"}
-        with patch.dict("os.environ", {"AHP_TEST_BEARER": "test-token"}):
-            hooks = Hooks(registration, source="urn:host", capabilities=capabilities())
-        self.assertEqual(
-            hooks._headers[backend["id"]]["Authorization"], "Bearer test-token"
-        )
-        backend["authentication"] = {"type": "bearer", "tokenRef": "vault:hook"}
-        hooks = Hooks(
-            registration,
-            source="urn:host",
-            capabilities=capabilities(),
-            resolve_credential=lambda ref: "ref-token",
-        )
-        self.assertEqual(
-            hooks._headers[backend["id"]]["Authorization"], "Bearer ref-token"
-        )
+        async def run():
+            registration = config()
+            backend = registration["hooks"][0]
+            backend["transport"] = {"type": "http", "url": "https://example.test"}
+            backend["authentication"] = {
+                "type": "bearer",
+                "tokenEnv": "AHP_TEST_BEARER",
+            }
+            seen = []
+
+            def handler(req):
+                seen.append(req.headers["authorization"])
+                msg = json.loads(req.content)
+                return httpx.Response(
+                    200,
+                    json={
+                        "jsonrpc": "2.0",
+                        "id": msg["id"],
+                        "result": {"protocolVersion": "draft", "effects": []},
+                    },
+                )
+
+            async with httpx.AsyncClient(
+                transport=httpx.MockTransport(handler)
+            ) as client:
+                with patch.dict("os.environ", {"AHP_TEST_BEARER": "test-token"}):
+                    async with Hooks(
+                        registration, source="urn:host", capabilities=capabilities()
+                    ) as hooks:
+                        hooks._transports[backend["id"]]._client = client
+                        hooks._transports[backend["id"]]._owned = False
+                        await hooks.dispatch(
+                            "tool.before", request()["params"]["event"]
+                        )
+                backend["authentication"] = {"type": "bearer", "tokenRef": "vault:hook"}
+                async with Hooks(
+                    registration,
+                    source="urn:host",
+                    capabilities=capabilities(),
+                    resolve_credential=lambda ref: "ref-token",
+                ) as hooks:
+                    hooks._transports[backend["id"]]._client = client
+                    hooks._transports[backend["id"]]._owned = False
+                    await hooks.dispatch("tool.before", request()["params"]["event"])
+                self.assertEqual(seen, ["Bearer test-token", "Bearer ref-token"])
+                self.assertFalse(client.is_closed)
+
+        self.run_async(run)
 
     def test_pending_stages_cancel_and_fallback(self):
         async def run():
@@ -462,9 +492,11 @@ class PublicHooksTests(unittest.TestCase):
 
         self.run_async(run)
 
-    def test_owned_observers_do_not_gate_and_close_cancels(self):
+    def test_owned_observers_gate_completion_and_close_cancels(self):
         async def run():
-            started, stopped = anyio.Event(), anyio.Event()
+            from agenthooksprotocol._hooks import HooksClosedError
+
+            started, stopped, completed = anyio.Event(), anyio.Event(), anyio.Event()
 
             class Hanging(MemoryTransport):
                 async def notify(self, message):
@@ -475,19 +507,98 @@ class PublicHooksTests(unittest.TestCase):
                         stopped.set()
 
             transport = Hanging()
-            async with Hooks(
+            hooks = Hooks(
                 config(mode="observe"),
                 source="urn:host",
                 capabilities=capabilities(),
                 transport=transport,
-            ) as hooks:
-                with anyio.fail_after(1):
-                    result = await hooks.dispatch(
-                        "tool.before", request()["params"]["event"]
-                    )
+            )
+
+            async def deliver():
+                with self.assertRaises(HooksClosedError):
+                    await hooks.dispatch("tool.before", request()["params"]["event"])
+                completed.set()
+
+            with anyio.fail_after(1):
+                async with anyio.create_task_group() as group:
+                    group.start_soon(deliver)
                     await started.wait()
-                self.assertNotIn("executed", result.state)
+                    self.assertFalse(completed.is_set())
+                    await hooks.aclose()
+                    self.assertTrue(stopped.is_set())
+                    await completed.wait()
+            self.assertFalse(transport.closed)
+            self.assertEqual(hooks._operations, [])
+            await hooks.aclose()
+            with self.assertRaises(HooksClosedError):
+                await hooks.dispatch("tool.before", request()["params"]["event"])
+
+        self.run_async(run)
+
+    def test_outer_budget_covers_owned_observations(self):
+        async def run():
+            stopped = anyio.Event()
+
+            class Hanging(MemoryTransport):
+                async def notify(self, message):
+                    try:
+                        await anyio.sleep_forever()
+                    finally:
+                        stopped.set()
+
+            async with Hooks(
+                config(mode="observe"),
+                source="urn:host",
+                capabilities=capabilities(),
+                transport=Hanging(),
+            ) as hooks:
+                with self.assertRaises(TimeoutError):
+                    with anyio.fail_after(0.15):
+                        await hooks.dispatch(
+                            "tool.before", request()["params"]["event"]
+                        )
+                self.assertTrue(stopped.is_set())
+                self.assertEqual(hooks._operations, [])
+                self.assertEqual(await hooks.wait(), [])
+
+        self.run_async(run)
+
+    def test_close_cancels_active_interception_without_observers(self):
+        async def run():
+            from agenthooksprotocol._hooks import HooksClosedError
+
+            started, stopped = anyio.Event(), anyio.Event()
+
+            class Hanging(MemoryTransport):
+                async def request(self, message):
+                    started.set()
+                    try:
+                        await anyio.sleep_forever()
+                    finally:
+                        stopped.set()
+
+            cfg = config()
+            cfg["hooks"][0]["subscriptions"].append(
+                config(mode="observe")["hooks"][0]["subscriptions"][0]
+            )
+            transport = Hanging()
+            hooks = Hooks(
+                cfg, source="urn:host", capabilities=capabilities(), transport=transport
+            )
+
+            async def deliver():
+                with self.assertRaises(HooksClosedError):
+                    await hooks.dispatch("tool.before", request()["params"]["event"])
+
+            with anyio.fail_after(1):
+                async with anyio.create_task_group() as group:
+                    group.start_soon(deliver)
+                    await started.wait()
+                    group.start_soon(hooks.aclose)
+                    await hooks.aclose()
             self.assertTrue(stopped.is_set())
+            self.assertEqual(transport.notifications, [])
+            self.assertFalse(transport.closed)
 
         self.run_async(run)
 
@@ -613,7 +724,14 @@ class PublicHooksTests(unittest.TestCase):
             def handler(request):
                 message = json.loads(request.content)
                 return (
-                    httpx.Response(200, json={"id": message["id"]})
+                    httpx.Response(
+                        200,
+                        json={
+                            "jsonrpc": "2.0",
+                            "id": message["id"],
+                            "result": {"protocolVersion": "draft", "effects": []},
+                        },
+                    )
                     if "id" in message
                     else httpx.Response(204)
                 )
@@ -622,7 +740,7 @@ class PublicHooksTests(unittest.TestCase):
                 transport=httpx.MockTransport(handler)
             ) as client:
                 transport = HTTPTransport("https://example.test/hooks", client=client)
-                self.assertEqual(await transport.request({"id": "one"}), {"id": "one"})
+                self.assertEqual((await transport.request({"id": "one"}))["id"], "one")
                 await transport.notify({"method": "hooks/observe"})
                 await transport.aclose()
                 self.assertFalse(client.is_closed)

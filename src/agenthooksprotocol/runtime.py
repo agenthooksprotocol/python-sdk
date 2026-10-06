@@ -7,10 +7,38 @@ from pathlib import Path
 from jsonschema import Draft202012Validator, FormatChecker
 from referencing import Registry, Resource
 from . import generated
+from .diagnostics import Code as DiagnosticCode
 
 
 class ProtocolError(ValueError):
     pass
+
+
+class OperationCancelledError(RuntimeError):
+    """An explicitly cancelled SDK operation cannot yield execution permission."""
+
+    code = DiagnosticCode.CANCELLED
+
+
+class BackendRPCError(ProtocolError):
+    """A validated, correlated remote RPC error; message/data are not retained."""
+
+    def __init__(self, code: int):
+        self.code = code
+        super().__init__("Backend returned a JSON-RPC error")
+
+
+def validate_intercept_response(validator, request, response):
+    if isinstance(response, dict) and "error" in response:
+        validator.validate("json-rpc-message", response)
+        if (
+            response.get("id") != request["id"]
+            or "result" in response
+            or "method" in response
+        ):
+            raise ProtocolError("Invalid JSON-RPC error envelope")
+        raise BackendRPCError(response["error"]["code"])
+    validator.validate("intercept-response", response)
 
 
 class Validator:
@@ -97,7 +125,7 @@ def apply_response(
 ):
     """Stage a complete response; neither argument is mutated on failure."""
     validator.validate("intercept-request", request)
-    validator.validate("intercept-response", response)
+    validate_intercept_response(validator, request, response)
     params = request["params"]
     if response["id"] != request["id"] or request["id"] != params["event"]["id"]:
         raise ProtocolError("Correlation mismatch")

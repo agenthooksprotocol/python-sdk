@@ -23,3 +23,138 @@ from ._models.effect import Operation as Operation
 from ._models.effect import Return as Return
 from ._models.effect import Target as Target
 from ._models.effect import Variant1 as Variant1
+
+from typing import Any
+from ._models import _UNSET
+
+
+def merge_content(value: Any) -> Modify:
+    return Modify(target="content", operation="merge", value=value)
+
+
+def replace_content(value: Any) -> Modify:
+    return Modify(target="content", operation="replace", value=value)
+
+
+def merge_input(value: Any) -> Modify:
+    return Modify(target="input", operation="merge", value=value)
+
+
+def replace_input(value: Any) -> Modify:
+    return Modify(target="input", operation="replace", value=value)
+
+
+def merge_instructions(value: Any) -> Modify:
+    return Modify(target="instructions", operation="merge", value=value)
+
+
+def replace_instructions(value: Any) -> Modify:
+    return Modify(target="instructions", operation="replace", value=value)
+
+
+def merge_output(value: Any) -> Modify:
+    return Modify(target="output", operation="merge", value=value)
+
+
+def replace_output(value: Any) -> Modify:
+    return Modify(target="output", operation="replace", value=value)
+
+
+def merge_prompt(value: Any) -> Modify:
+    return Modify(target="prompt", operation="merge", value=value)
+
+
+def replace_prompt(value: Any) -> Modify:
+    return Modify(target="prompt", operation="replace", value=value)
+
+
+def merge_request(value: Any) -> Modify:
+    return Modify(target="request", operation="merge", value=value)
+
+
+def replace_request(value: Any) -> Modify:
+    return Modify(target="request", operation="replace", value=value)
+
+
+def merge_response(value: Any) -> Modify:
+    return Modify(target="response", operation="merge", value=value)
+
+
+def replace_response(value: Any) -> Modify:
+    return Modify(target="response", operation="replace", value=value)
+
+
+def merge_summary(value: Any) -> Modify:
+    return Modify(target="summary", operation="merge", value=value)
+
+
+def replace_summary(value: Any) -> Modify:
+    return Modify(target="summary", operation="replace", value=value)
+
+
+def merge_workspace(value: Any) -> Modify:
+    return Modify(target="workspace", operation="merge", value=value)
+
+
+def replace_workspace(value: Any) -> Modify:
+    return Modify(target="workspace", operation="replace", value=value)
+
+
+def allow() -> Allow:
+    return Allow()
+
+
+def ask() -> Ask:
+    return Ask()
+
+
+def flow_continue(
+    *,
+    instruction: str = _UNSET,
+) -> FlowContinue:
+    return FlowContinue(instruction=instruction)
+
+
+def flow_stop(
+    *,
+    reason: str,
+) -> FlowStop:
+    return FlowStop(reason=reason)
+
+
+def inject_append(
+    *,
+    deliver_at: str,
+    value: Any,
+) -> InjectAppend:
+    return InjectAppend(deliver_at=deliver_at, value=value)
+
+
+inject_context_append = inject_append
+
+
+def message(
+    *,
+    text: str,
+) -> Message:
+    return Message(text=text)
+
+
+def return_2(
+    *,
+    value: Any,
+) -> Return:
+    return Return(value=value)
+
+
+def variant1(
+    *,
+    code: str = _UNSET,
+    extensions: dict[str, Any] = _UNSET,
+    reason: str,
+) -> Variant1:
+    return Variant1(code=code, extensions=extensions, reason=reason)
+
+
+deny = variant1
+deny = Deny

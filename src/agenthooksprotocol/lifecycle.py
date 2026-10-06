@@ -3,7 +3,7 @@
 from copy import deepcopy
 from hashlib import sha256
 from threading import RLock
-from .runtime import ProtocolError, apply_response
+from .runtime import ProtocolError, apply_response, validate_intercept_response
 from .lineage import TaskLineage
 
 
@@ -37,7 +37,7 @@ class Lifecycle:
                 raise ProtocolError("Retry changed logical request")
 
     def receive(self, request, response):
-        self.validator.validate("intercept-response", response)
+        validate_intercept_response(self.validator, request, response)
         with self.lock:
             ident = request["id"]
             if (
@@ -259,16 +259,14 @@ def content_items(value):
 
 
 def dispatch_observations(event, subscriptions, called, prepare, notify):
-    """Dispatch a settled boundary without waiting for observers.
+    """Deliver a settled boundary as one caller-owned synchronous operation.
 
     Subscriptions are the matching, authorized subscriptions. ``called`` contains
     intercept subscription IDs already invoked, not backend IDs. ``prepare``
     applies that subscription's existing permissions/selections and confirms its
     selected uploads before returning the event. Failures are best effort.
-    Daemon workers must not keep interrupted execution alive.
+    Callers own scheduling; no worker outlives this operation.
     """
-    from threading import Thread
-
     snapshot = deepcopy(event)
     called = set(called)
 
@@ -293,4 +291,4 @@ def dispatch_observations(event, subscriptions, called, prepare, notify):
         if subscription["mode"] == "observe" or (
             subscription["mode"] == "intercept" and subscription["id"] not in called
         ):
-            Thread(target=deliver, args=(subscription,), daemon=True).start()
+            deliver(subscription)

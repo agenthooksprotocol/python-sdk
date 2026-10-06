@@ -98,13 +98,11 @@ async def main() -> None:
         ) as harness:
             result = await harness.tool_before(
                 event.ToolBeforeInput(
-                    call=tool.Call(id="call-1"),
+                    call_id="call-1",
                     path=tool.Path.NATIVE,
-                    tool=tool.Tool(
-                        name="shell",
-                        origin=tool.Origin.NATIVE,
-                        input={"command": "echo original", "timeoutMs": 1000},
-                    ),
+                    name="shell",
+                    origin=tool.Origin.NATIVE,
+                    input={"command": "echo original", "timeoutMs": 1000},
                 )
             )
             assert result.decision == "allow" and result.accepted_response is not None

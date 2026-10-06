@@ -13,7 +13,7 @@ from typing import TypedDict
 import anyio
 import httpx
 
-from agenthooksprotocol import Hooks, capability, effect, event, tool
+from agenthooksprotocol import Hooks, Permission, capability, effect, event, state, tool
 from agenthooksprotocol.generated import InterceptRequest, JsonObject, JsonValue
 from agenthooksprotocol.server import asgi, hooks
 from agenthooksprotocol.transports.http import HTTPTransport
@@ -51,11 +51,7 @@ async def main() -> None:
     async def intercept(request: InterceptRequest) -> hooks.InterceptResult:
         return hooks.InterceptResult(
             effects=[
-                effect.Modify(
-                    target="input",
-                    operation="replace",
-                    value={"command": "echo reviewed", "timeoutMs": 1000},
-                ),
+                effect.replace_input({"command": "echo reviewed", "timeoutMs": 1000}),
                 effect.Allow(),
             ]
         )
@@ -70,28 +66,22 @@ async def main() -> None:
             config,
             source="urn:example:comparison",
             capabilities={
-                "tool.before": capability.Declaration(
-                    modes=[capability.Mode.INTERCEPT],
-                    grants=[
-                        capability.Allow(),
-                        capability.Deny(),
-                        capability.ModifyInput(replace=True),
-                    ],
-                ),
+                "tool.before": capability.intercept()
+                .allow()
+                .deny()
+                .modify_input(replace=True),
             },
             transport=transport,
         ) as harness:
             result = await harness.tool_before(
                 event.ToolBeforeInput(
-                    call=tool.Call(id="call-1"),
+                    call_id="call-1",
                     path=tool.Path.NATIVE,
-                    tool=tool.Tool(
-                        name="shell",
-                        origin=tool.Origin.NATIVE,
-                        input=codec.encode(arguments),
-                    ),
+                    name="shell",
+                    origin=tool.Origin.NATIVE,
+                    input=codec.encode(arguments),
                 ),
-                initial_state={"permission": "allow", "candidate": None},
+                initial_state=state.initial(Permission.NONE),
                 event_id="example-1",
             )
             # Protocol settlement has already happened. Decoding is ordinary host code.

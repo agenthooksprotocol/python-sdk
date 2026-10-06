@@ -10,9 +10,14 @@ from collections.abc import Awaitable, Callable, Mapping
 from copy import deepcopy
 import hashlib
 import json
+import math
+import re
+import sys
+
+import anyio
 from typing import Any
 
-from .runtime import ProtocolError, json_equal
+from .runtime import OperationCancelledError, ProtocolError, json_equal
 
 Reference = dict[str, Any]
 Resolver = Callable[[Reference], Awaitable[bytes]]
@@ -376,3 +381,292 @@ class PreparedContent:
         check["params"]["event"] = state["event"]
         self.validator.validate("intercept-request", check)
         return state
+
+
+class OwnedContentSource:
+    """Owned async read(size)/receive(max_bytes) stream with bounded snapshots.
+
+    Construction transfers ownership but performs no I/O. Close even unused
+    sources. Async aclose is required. Native deadline/cancellation scopes cover
+    processing; safety cleanup is shielded and bounded to one second.
+    """
+
+    def __init__(
+        self,
+        stream: Any,
+        *,
+        max_bytes: int = 4 * 1024 * 1024,
+        timeout: float = 30.0,
+        expected_size: int | None = None,
+        expected_sha256: str | None = None,
+    ) -> None:
+        if (
+            isinstance(max_bytes, bool)
+            or not isinstance(max_bytes, int)
+            or max_bytes < 0
+        ):
+            raise ValueError("max_bytes must be a nonnegative integer")
+        if (
+            isinstance(timeout, bool)
+            or not isinstance(timeout, (float, int))
+            or not math.isfinite(timeout)
+            or timeout <= 0
+        ):
+            raise ValueError("timeout must be finite and positive")
+        if expected_size is not None and (
+            isinstance(expected_size, bool)
+            or not isinstance(expected_size, int)
+            or expected_size < 0
+            or expected_size > max_bytes
+        ):
+            raise ValueError("expected_size must fit max_bytes")
+        if expected_sha256 is not None and (
+            not isinstance(expected_sha256, str)
+            or re.fullmatch(r"[0-9a-f]{64}", expected_sha256) is None
+        ):
+            raise ValueError("expected_sha256 must be a lowercase SHA-256 digest")
+        if not callable(getattr(stream, "aclose", None)) or not (
+            callable(getattr(stream, "read", None))
+            or callable(getattr(stream, "receive", None))
+        ):
+            raise TypeError("source requires async read/receive and aclose")
+        self.stream = stream
+        self.max_bytes = max_bytes
+        self.timeout = timeout
+        self.expected_size = expected_size
+        self.expected_sha256 = expected_sha256
+        self._snapshot: bytes | None = None
+        self._failed = False
+        self._closed = False
+        self._stream_closed = False
+        self._close_done = anyio.Event()
+        self._lock = anyio.Lock()
+        self._scope: Any = None
+
+    async def _close_stream(self) -> None:
+        if self._stream_closed:
+            with anyio.move_on_after(1, shield=True):
+                await self._close_done.wait()
+            return
+        self._stream_closed = True
+        try:
+            with anyio.move_on_after(1, shield=True):
+                await self.stream.aclose()
+        finally:
+            self._close_done.set()
+
+    async def snapshot(self) -> bytes:
+        async with self._lock:
+            if self._closed or self._failed:
+                raise ProtocolError("Owned content source is closed or failed")
+            if self._snapshot is not None:
+                return self._snapshot
+            try:
+                with anyio.fail_after(self.timeout) as scope:
+                    self._scope = scope
+                    chunks = bytearray()
+                    reader = getattr(self.stream, "read", None) or self.stream.receive
+                    while True:
+                        amount = min(65536, self.max_bytes - len(chunks) + 1)
+                        try:
+                            part = await reader(amount)
+                        except anyio.EndOfStream:
+                            break
+                        if not isinstance(part, bytes):
+                            raise ProtocolError("Owned content source must yield bytes")
+                        if not part:
+                            break
+                        if (
+                            len(part) > amount
+                            or len(chunks) + len(part) > self.max_bytes
+                        ):
+                            raise ProtocolError(
+                                "Owned content exceeds configured limit"
+                            )
+                        chunks.extend(part)
+                        await anyio.lowlevel.checkpoint()
+                    data = bytes(chunks)
+                    if self.expected_size is not None and self.expected_size != len(
+                        data
+                    ):
+                        raise ProtocolError("Owned content size expectation mismatch")
+                    if (
+                        self.expected_sha256 is not None
+                        and self.expected_sha256 != hashlib.sha256(data).hexdigest()
+                    ):
+                        raise ProtocolError("Owned content digest expectation mismatch")
+                    if self._closed:
+                        raise OperationCancelledError(
+                            "Owned content source closed during preparation"
+                        )
+                    self._snapshot = data
+                if self._snapshot is None:
+                    raise OperationCancelledError("Owned content preparation cancelled")
+                return self._snapshot
+            except BaseException:
+                self._failed = True
+                self._snapshot = None
+                raise
+            finally:
+                self._scope = None
+                interrupted = sys.exception() is not None
+                try:
+                    await self._close_stream()
+                except BaseException:
+                    self._failed = True
+                    self._snapshot = None
+                    if not interrupted:
+                        raise
+
+    async def aclose(self) -> None:
+        self._closed = True
+        self._snapshot = None
+        if self._scope is not None:
+            self._scope.cancel()
+        await self._close_stream()
+
+    async def __aenter__(self) -> OwnedContentSource:
+        if self._closed:
+            raise ProtocolError("Owned content source is closed")
+        return self
+
+    async def __aexit__(self, *_exc: Any) -> None:
+        await self.aclose()
+
+
+class ContentSources:
+    """Single-operation sources bound to named SDK content slots.
+
+    Host events carry metadata-only items. Each project call requires its own
+    authorized destination uploader, and allocates references independently.
+    Slots are SDK adapters, not generated wire fields. Close in operation finally.
+    """
+
+    def __init__(
+        self,
+        bindings: Mapping[str, OwnedContentSource],
+        *,
+        uploads: Mapping[str, Uploader] | None = None,
+    ) -> None:
+        # Generated from shared schema metadata; no private parallel slot list.
+        from ._boundaries import CONTENT_SOURCE_SLOTS
+
+        self._slots: dict[str, tuple[str, tuple[str | int, ...]]] = {}
+        for binding, source in bindings.items():
+            if not isinstance(binding, str) or not isinstance(
+                source, OwnedContentSource
+            ):
+                raise ValueError(
+                    "Content bindings require generated slot names and owned sources"
+                )
+            match = re.fullmatch(r"([^\[\]]+)((?:\[(?:0|[1-9][0-9]*)\])*)", binding)
+            if match is None or match[1] not in CONTENT_SOURCE_SLOTS:
+                raise ValueError("Unknown generated content source slot")
+            kind, template = CONTENT_SOURCE_SLOTS[match[1]]
+            indices = [int(value) for value in re.findall(r"\[([0-9]+)\]", match[2])]
+            if len(indices) != template.count("*"):
+                raise ValueError(
+                    "Content source slot requires one index per array component"
+                )
+            values = iter(indices)
+            path = tuple(
+                next(values) if component == "*" else component
+                for component in template
+            )
+            self._slots[binding] = (kind, path)
+        self.bindings = dict(bindings)
+        self.uploads = dict(uploads or {})
+        if any(
+            not isinstance(key, str) or not key or not callable(value)
+            for key, value in self.uploads.items()
+        ):
+            raise ValueError(
+                "Uploads must map exact backend IDs to async upload callbacks"
+            )
+        self._closed = False
+        self._references: dict[str, tuple[int, str]] = {}
+        self._close_done = anyio.Event()
+
+    async def project(
+        self,
+        event: dict[str, Any],
+        selection: dict[str, str],
+        *,
+        upload: Uploader | None = None,
+        backend: str | None = None,
+        validator: Any,
+        include_native: bool = False,
+    ) -> dict[str, Any]:
+        if self._closed:
+            raise ProtocolError("Content sources are closed")
+        view = project_content(event, selection, include_native)
+        for slot, source in self.bindings.items():
+            kind, path = self._slots[slot]
+            if event.get("type") != kind:
+                raise ProtocolError("Content source slot does not match event boundary")
+            try:
+                original = at(event, path)
+                item = at(view, path)
+            except (KeyError, IndexError, TypeError) as exc:
+                raise ProtocolError("Bound content source item is absent") from exc
+            validator.validate("content-item", original)
+            # A settled replacement or advanced caller-supplied reference is
+            # not the owned source. Never overwrite it with the original bytes.
+            reference = original.get("body")
+            if reference is not None and reference["ref"] not in self._references:
+                continue
+            available = deepcopy(original)
+            available["selection"] = "body"
+            selected = project_content(available, selection, True)
+            if selected["selection"] != "body" or original["selection"] == "omit":
+                continue
+            uploader = upload if upload is not None else self.uploads.get(backend)
+            if uploader is None:
+                raise ProtocolError(
+                    "Selected content requires an authorized backend upload callback"
+                )
+            data = await source.snapshot()
+            digest = hashlib.sha256(data).hexdigest()
+            if any(
+                key in original and original[key] != value
+                for key, value in (("size", len(data)), ("sha256", digest))
+            ):
+                raise ProtocolError(
+                    "Content source metadata disagrees with actual bytes"
+                )
+            reference = await uploader(data)
+            validator.validate("content-reference", reference)
+            identity = (len(data), digest)
+            if (reference["size"], reference["sha256"]) != identity:
+                raise ProtocolError("Uploaded descriptor does not match source bytes")
+            known = self._references.get(reference["ref"])
+            if known is not None and known != identity:
+                raise ProtocolError("Immutable content reference changed")
+            self._references[reference["ref"]] = identity
+            item.pop("gap", None)
+            item.update(selection="body", body=deepcopy(reference))
+            validator.validate("content-item", item)
+        return view
+
+    async def aclose(self) -> None:
+        if self._closed:
+            with anyio.move_on_after(1, shield=True):
+                await self._close_done.wait()
+            return
+        self._closed = True
+        try:
+            with anyio.CancelScope(shield=True):
+                async with anyio.create_task_group() as group:
+                    for source in set(self.bindings.values()):
+                        group.start_soon(source.aclose)
+        finally:
+            self._references.clear()
+            self._close_done.set()
+
+    async def __aenter__(self) -> ContentSources:
+        if self._closed:
+            raise ProtocolError("Content sources are closed")
+        return self
+
+    async def __aexit__(self, *_exc: Any) -> None:
+        await self.aclose()

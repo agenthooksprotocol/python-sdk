@@ -7,11 +7,15 @@ and `.release-please-manifest.json`.
 
 ## One-time setup
 
-1. Add the repository secret `RELEASE_PLEASE_TOKEN`: a fine-grained GitHub personal
-   access token scoped to `agenthooksprotocol/python-sdk`, with **Contents: Read
-   and write** and **Pull requests: Read and write**. Obtain organization approval
-   if required. Unlike `GITHUB_TOKEN`, this token allows the bot's PRs to trigger
-   the existing CI. Permit GitHub Actions and release PRs in repository settings.
+1. Use the existing **Agent Hooks Protocol Bot** GitHub App. Install it on this
+   repository with **Contents: read/write** and **Pull requests: read/write**.
+   Set Actions variable **`RELEASE_APP_ID`** to its App ID and Actions secret
+   **`RELEASE_APP_PRIVATE_KEY`** to a PEM private key generated in its settings.
+   Organization-level values may be shared with just the four SDK repositories.
+   The workflow mints a short-lived installation token scoped to this repository
+   and those two permissions; it is revoked when the job ends. Release PRs,
+   tags, and GitHub releases use the bot identity and trigger normal PR CI.
+   No personal access token is needed. Keep branch protection enabled.
 2. Create the GitHub environment **`release`**. Configure required reviewers if
    desired and allow deployments from **`main`** (the workflow runs on main even
    though checkout uses the released commit).

@@ -9,10 +9,10 @@ import threading
 import unittest
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from unittest.mock import patch
-from agent_hooks_protocol.lifecycle_server import Server
-from agent_hooks_protocol.lifecycle_client import Transport, run, http
-from agent_hooks_protocol.content import upload
-from agent_hooks_protocol.runtime import ProtocolError
+from agenthooksprotocol.lifecycle_server import Server
+from agenthooksprotocol.lifecycle_client import Transport, run, http
+from agenthooksprotocol.content import upload
+from agenthooksprotocol.runtime import ProtocolError
 from test_interop import request, response, jwt, FIXTURES
 
 

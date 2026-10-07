@@ -4,12 +4,12 @@ from pathlib import Path
 import sys
 import tempfile
 import unittest
-from agent_hooks_protocol.catalogue import discovery, EXECUTION_EVENTS, CHANGE_EVENTS
-from agent_hooks_protocol.lifecycle_client import run, Transport
-from agent_hooks_protocol.lifecycle_server import Server
-from agent_hooks_protocol.lineage import TaskLineage
-from agent_hooks_protocol.registration import validate_registration
-from agent_hooks_protocol.runtime import Validator, ProtocolError
+from agenthooksprotocol.catalogue import discovery, EXECUTION_EVENTS, CHANGE_EVENTS
+from agenthooksprotocol.lifecycle_client import run, Transport
+from agenthooksprotocol.lifecycle_server import Server
+from agenthooksprotocol.lineage import TaskLineage
+from agenthooksprotocol.registration import validate_registration
+from agenthooksprotocol.runtime import Validator, ProtocolError
 
 
 def note(ident, *, kind="task.change.before", parent=None, task="work"):
@@ -312,7 +312,7 @@ class CatalogueTests(unittest.TestCase):
                 "serverCommand": [
                     sys.executable,
                     "-m",
-                    "agent_hooks_protocol.lifecycle_server",
+                    "agenthooksprotocol.lifecycle_server",
                 ],
             }
             server = None

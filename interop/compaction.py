@@ -4,8 +4,119 @@
 import json, os, subprocess, sys
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from urllib.request import Request
-from agent_hooks_protocol.compaction import run_compaction
-from agent_hooks_protocol.interop import open_local, loads, LIMIT
+from agenthooksprotocol.interop import run_fixture_compaction
+from agenthooksprotocol.interop import open_local, loads, LIMIT
+
+
+def settle(snapshot, row):
+    """Run one offline backend through the same public content lifecycle as wire."""
+    from agenthooksprotocol import ContentContext
+    from agenthooksprotocol.server.hooks import Handler, InterceptResult
+    from agenthooksprotocol.interop import fixture_hooks
+    import anyio
+    import hashlib
+    import uuid
+
+    store = {}
+
+    async def upload(data):
+        reference = {
+            "ref": "urn:fixture:" + str(uuid.uuid4()),
+            "size": len(data),
+            "sha256": hashlib.sha256(data).hexdigest(),
+        }
+        store[reference["ref"]] = data
+        return reference
+
+    async def resolve(reference):
+        return store[reference["ref"]]
+
+    async def invoke():
+        boundary = snapshot["boundary"]
+        target = "instructions" if boundary == "before" else "summary"
+        text = (
+            snapshot["instructions"]
+            if boundary == "before"
+            else snapshot["bodies"][snapshot["summary"]["ref"]]
+        )
+        event = {
+            "id": "fixture:" + boundary,
+            "source": "urn:ahp:compaction-host",
+            "time": "2026-09-15T12:00:00Z",
+            "session": {"id": "fixture"},
+            "type": "context.compact." + boundary,
+        }
+        event[target] = {
+            "id": target,
+            "kind": target,
+            "mediaType": "text/plain",
+            "role": "system" if boundary == "before" else "assistant",
+            "selection": "body",
+            "body": await upload(text.encode("utf-8")),
+        }
+        if boundary == "before":
+            event.update(trigger="manual", items=[])
+        else:
+            event.update(
+                parentEventId="fixture:before",
+                removed=[],
+                execution={"status": "executed"},
+            )
+        note = {
+            "jsonrpc": "2.0",
+            "method": "hooks/observe",
+            "params": {"protocolVersion": "draft", "event": event},
+        }
+
+        async def respond(message):
+            if row.get("throw", False):
+                raise ValueError("hook failed")
+            return InterceptResult(effects=row["effects"])
+
+        async def observe(message):
+            if row.get("throw", False):
+                raise ValueError("observer failed")
+            # Notification callbacks have no response/effect authority.
+
+        if snapshot.get("applied"):
+
+            class NotificationTransport:
+                async def notify(self, message):
+                    await Handler(observe=observe).process(message)
+
+            async with fixture_hooks(note, NotificationTransport()) as hooks:
+                await hooks.notify(note)
+            return None
+        candidate = snapshot["candidate"]
+        request = {
+            "jsonrpc": "2.0",
+            "id": event["id"],
+            "method": "hooks/intercept",
+            "params": {
+                "protocolVersion": "draft",
+                "event": event,
+                "capabilities": snapshot["capabilities"],
+                "state": {
+                    "permission": "none",
+                    "candidate": {"value": candidate["body"]} if candidate else None,
+                },
+            },
+        }
+
+        class Transport:
+            async def request(self, message):
+                return await Handler(intercept=respond).process(message)
+
+        context = ContentContext(
+            resolve=resolve,
+            upload=upload,
+            bindings={target: (target,)},
+            principal=row["supplier"],
+        )
+        async with fixture_hooks(request, Transport()) as hooks:
+            return await hooks.exchange(request, content=context)
+
+    return anyio.run(invoke)
 
 
 def receive(request):
@@ -22,16 +133,14 @@ def receive(request):
             for row in rows:
 
                 def run(snapshot, row=row):
-                    if row.get("throw", False):
-                        raise ValueError("hook failed")
-                    return row["effects"]
+                    return settle(snapshot, row)
 
                 result.append(
                     (row["supplier"], row.get("failurePolicy", "fail-closed"), run)
                 )
             return result
 
-        result = run_compaction(
+        result = run_fixture_compaction(
             p["instructions"],
             hooks("before"),
             hooks("after"),

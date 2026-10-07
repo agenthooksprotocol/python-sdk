@@ -2,8 +2,8 @@ from concurrent.futures import ThreadPoolExecutor
 from copy import deepcopy
 from threading import Event
 import unittest
-from agent_hooks_protocol.lifecycle import Lifecycle
-from agent_hooks_protocol.runtime import Validator, ProtocolError, apply_response
+from agenthooksprotocol.lifecycle import Lifecycle
+from agenthooksprotocol.runtime import Validator, ProtocolError, apply_response
 from test_interop import request, response
 
 

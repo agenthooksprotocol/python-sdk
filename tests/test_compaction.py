@@ -1,6 +1,6 @@
 import unittest
 from threading import Event, Thread
-from agent_hooks_protocol.compaction import run_compaction, compaction_capabilities
+from agenthooksprotocol.compaction import run_compaction, compaction_capabilities
 
 
 def modify(target, value):

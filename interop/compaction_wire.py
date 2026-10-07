@@ -2,12 +2,14 @@
 """Canonical hooks/intercept fixture. Scheduling is local, never a wire method."""
 
 import hashlib, json, os, subprocess, sys, uuid
+import anyio
+from agenthooksprotocol.server.hooks import Handler as HookHandler, InterceptResult
 from pathlib import Path
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from urllib.request import Request
-from agent_hooks_protocol.compaction import run_compaction
-from agent_hooks_protocol.runtime import Validator
-from agent_hooks_protocol.interop import (
+from agenthooksprotocol.interop import run_fixture_compaction
+from agenthooksprotocol.runtime import Validator
+from agenthooksprotocol.interop import (
     open_local,
     loads,
     validate_descriptor,
@@ -28,8 +30,11 @@ def receive(request, sub, config, store, validator):
         validator.validate("intercept-request", request)
         if request["id"] != request["params"]["event"]["id"]:
             raise ValueError("correlation")
-        event = request["params"]["event"]
         bodies = {}
+
+        # Content authorization is the fixture host's responsibility, before
+        # invoking the public backend dispatcher. A rejected scope has no receipt.
+        event = request["params"]["event"]
         items = list(event.get("items", [])) + [
             event[k] for k in ("instructions", "summary") if k in event
         ]
@@ -39,25 +44,28 @@ def receive(request, sub, config, store, validator):
             if len(raw) != ref["size"] or digest(raw) != ref["sha256"]:
                 raise ValueError("content integrity")
             bodies[item["id"]] = raw.decode("utf-8")
-        action = config[sub]
-        if action["kind"] == "append":
-            item = event[action["target"]]
-            effects = [
-                {
-                    "type": "modify",
-                    "target": action["target"],
-                    "operation": "replace",
-                    "value": bodies[item["id"]] + action["suffix"],
-                }
-            ]
-        else:
-            effects = action["effects"]
-        response = {
-            "jsonrpc": "2.0",
-            "id": request["id"],
-            "result": {"protocolVersion": "draft", "effects": effects},
-        }
-        validator.validate("intercept-response", response)
+
+        async def intercept(message):
+            event = message["params"]["event"]
+            action = config[sub]
+            if action["kind"] == "append":
+                item = event[action["target"]]
+                effects = [
+                    {
+                        "type": "modify",
+                        "target": action["target"],
+                        "operation": "replace",
+                        "value": bodies[item["id"]] + action["suffix"],
+                    }
+                ]
+            else:
+                effects = action["effects"]
+            return InterceptResult(effects=effects)
+
+        async def process():
+            return await HookHandler(intercept=intercept).process(request)
+
+        response = anyio.run(process)
         with open(Path(store) / "receipts.jsonl", "a") as f:
             f.write(
                 json.dumps(
@@ -89,8 +97,9 @@ def exchange(plan, sub, name, snapshot, validator, trace):
         "type": "context.compact." + snapshot["boundary"],
     }
 
-    def item(item_id, kind, text, role):
-        raw = text.encode()
+    bodies = {}
+
+    def upload(raw):
         headers = {
             "Authorization": "Bearer " + credential["uploadToken"],
             "Content-Type": "application/octet-stream",
@@ -100,6 +109,11 @@ def exchange(plan, sub, name, snapshot, validator, trace):
             Request(plan["endpoint"] + "/upload", raw, headers)
         ) as response:
             descriptor = validate_descriptor(response, raw, validator)
+        bodies[descriptor["ref"]] = raw
+        return descriptor
+
+    def item(item_id, kind, text, role):
+        descriptor = upload(text.encode("utf-8"))
         return {
             "id": item_id,
             "kind": kind,
@@ -144,6 +158,12 @@ def exchange(plan, sub, name, snapshot, validator, trace):
             "protocolVersion": "draft",
             "event": event,
             "capabilities": snapshot["capabilities"],
+            "state": {
+                "permission": "none",
+                "candidate": {"value": snapshot["candidate"]["body"]}
+                if snapshot["candidate"]
+                else None,
+            },
         },
     }
     validator.validate("intercept-request", request)
@@ -174,7 +194,28 @@ def exchange(plan, sub, name, snapshot, validator, trace):
     validator.validate("intercept-response", response)
     if response["id"] != request["id"]:
         raise ValueError("correlation")
-    return response["result"]["effects"]
+    from agenthooksprotocol import ContentContext
+    from agenthooksprotocol.interop import fixture_hooks
+
+    async def resolve(reference):
+        return bodies[reference["ref"]]
+
+    async def upload_content(data):
+        return await anyio.to_thread.run_sync(upload, data)
+
+    async def settle():
+        target = "instructions" if snapshot["boundary"] == "before" else "summary"
+        context = ContentContext(
+            resolve=resolve,
+            upload=upload_content,
+            bindings={target: (target,)},
+            principal=sub,
+        )
+        invocation = fixture_hooks(request).begin(request, content=context)
+        invocation.receive(response)
+        return await invocation.accept_content()
+
+    return anyio.run(settle)
 
 
 def main():
@@ -198,7 +239,7 @@ def main():
                     for h in row[boundary]
                 ]
 
-            result = run_compaction(
+            result = run_fixture_compaction(
                 "base",
                 hooks("before"),
                 hooks("after"),
@@ -289,6 +330,7 @@ def main():
                 response = receive(json.loads(raw), sub, config, store, validator)
                 body = json.dumps(response).encode()
                 self.send_response(200)
+                self.send_header("Content-Type", "application/json")
                 self.send_header("Content-Length", str(len(body)))
                 self.end_headers()
                 self.wfile.write(body)

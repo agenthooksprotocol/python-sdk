@@ -9,9 +9,9 @@ import tempfile
 import threading
 import time
 import unittest
-from agent_hooks_protocol.lifecycle import ContentStore, Lifecycle
-from agent_hooks_protocol.lifecycle_client import run, http, Transport
-from agent_hooks_protocol.runtime import Validator, ProtocolError
+from agenthooksprotocol.lifecycle import ContentStore, Lifecycle
+from agenthooksprotocol.lifecycle_client import run, http, Transport
+from agenthooksprotocol.runtime import Validator, ProtocolError
 from test_interop import request, response
 
 
@@ -139,7 +139,7 @@ class LifecycleTests(unittest.TestCase):
                     "serverCommand": [
                         sys.executable,
                         "-m",
-                        "agent_hooks_protocol.lifecycle_server",
+                        "agenthooksprotocol.lifecycle_server",
                     ],
                     "childPidFile": str(root / "child.json"),
                 }
@@ -335,7 +335,7 @@ class LifecycleTests(unittest.TestCase):
                 command = [
                     sys.executable,
                     "-m",
-                    "agent_hooks_protocol.lifecycle_server",
+                    "agenthooksprotocol.lifecycle_server",
                 ]
                 config = {
                     "transport": transport,

@@ -3,8 +3,8 @@
 From this SDK directory:
 
 ```sh
-.venv/bin/python -m agent_hooks_protocol.lifecycle_server --config ABS_PATH
-.venv/bin/python -m agent_hooks_protocol.lifecycle_client --config ABS_PATH
+.venv/bin/python -m agenthooksprotocol.lifecycle_server --config ABS_PATH
+.venv/bin/python -m agenthooksprotocol.lifecycle_client --config ABS_PATH
 .venv/bin/python -m unittest discover -s tests
 ```
 
@@ -34,8 +34,9 @@ with the same logical event ID and no generic disposition or decision summary.
 After short-circuiting, remaining uncalled matching intercept subscriptions get
 `hooks/observe` under their existing permissions and selections. Already-called
 interceptors get no automatic second copy; explicit observation subscriptions
-remain independent. Interruption ends pending decisions immediately and does not
-wait for observer uploads or processing. Upload readiness precedes each delivered
+remain independent. Interruption ends the owning chain operation without starting
+further interception or observation work. A separately invoked explicit observe
+operation remains independent. Upload readiness precedes each delivered
 notification. There is no downgrade flag or `/view` fallback.
 
 ## Independent binary uploads
@@ -96,8 +97,9 @@ with the same logical event ID and no generic disposition or decision summary.
 After short-circuiting, remaining uncalled matching intercept subscriptions get
 `hooks/observe` under their existing permissions and selections. Already-called
 interceptors get no automatic second copy; explicit observation subscriptions
-remain independent. Interruption ends pending decisions immediately and does not
-wait for observer uploads or processing. Upload readiness precedes each delivered
+remain independent. Interruption ends the owning chain operation without starting
+further interception or observation work. A separately invoked explicit observe
+operation remains independent. Upload readiness precedes each delivered
 notification. There is no downgrade flag or `/view` fallback.
 
 The SDK-local registration evaluator checks schemas, duplicate backend IDs,
@@ -127,12 +129,24 @@ auth while omitting upload auth and inspect the actual upload receiver's headers
 
 ### Serial-chain wire coverage
 
-Shared `chain` fixtures execute actual adapter transport calls, then automatically
-notify remaining uncalled intercept subscriptions and explicit observers after
-settlement. Cases cover deny/stop/compound deny+stop, fail-open continuation,
-fail-closed short-circuiting, native observation, effective input, content
-metadata/omit projection, and already-called subscription suppression. The held
-observer-processing probe verifies interruption does not wait for observation
-responses. See the protocol repo's `spec/draft/observation-disposition.md` and
-`interop/observation-chain-scenarios.json`; helper unit tests alone are not this
-integration evidence.
+Shared `chain` fixtures run one public `Hooks.dispatch` operation over the real
+adapter transports. The SDK owns serial interception, failure policy, atomic
+settlement, content projection, and selection of remaining uncalled intercept
+subscriptions and explicit observers. The adapter supplies receiver barriers and
+records actual transport invocations; it does not fold effects or run a second
+observation-selection loop.
+
+Interruption cancels the SDK call's native scope while the receiver holds its
+response. The receiver timeline must be `received`, `cancelled`, `chain-settled`,
+then `replied`, with no chain observation receipts. The fixture drains that
+already-sent late response only after the stopped milestone and never feeds it
+back into acceptance. A new standalone observation is tested separately and
+remains deliverable. Non-interrupted calls complete their owned observations.
+
+Cases cover deny/stop/compound deny+stop, fail-open continuation, fail-closed
+short-circuiting, native observation, effective input, metadata/omit projection,
+and already-called subscription suppression. Shared verification compares exact
+receiver-captured envelopes and rejects extra notifications; local reports are
+not sufficient evidence. See the protocol repository's
+`spec/draft/observation-disposition.md` and
+`interop/observation-chain-scenarios.json`.

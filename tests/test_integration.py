@@ -2,9 +2,9 @@
 
 from copy import deepcopy
 import unittest
-from agent_hooks_protocol.runtime import Validator, ProtocolError, apply_response
-from agent_hooks_protocol.lifecycle import Lifecycle
-from agent_hooks_protocol.lineage import TaskLineage
+from agenthooksprotocol.runtime import Validator, ProtocolError, apply_response
+from agenthooksprotocol.lifecycle import Lifecycle
+from agenthooksprotocol.lineage import TaskLineage
 from test_interop import request, response
 
 
@@ -325,7 +325,7 @@ class IntegrationTests(unittest.TestCase):
             apply_response(req, response([]), self.validator)
 
     def test_elicitation_capability_extensions_do_not_grant_modes(self):
-        from agent_hooks_protocol.elicitation import validate_mode
+        from agenthooksprotocol.elicitation import validate_mode
 
         self.assertEqual(
             validate_mode("form", {"form": {}, "futureField": True}), {"form": {}}

@@ -22,7 +22,7 @@ jobs:
       release_created: ${{ steps.release.outputs.release_created }}
       sha: ${{ steps.release.outputs.sha }}
     steps:
-      - uses: googleapis/release-please-action@8b8fd2cc23b2e18957157a9d923d75aa0c6f6ad5 # v4
+      - uses: googleapis/release-please-action@5c625bfb5d1ff62eadeeb3772007f7f66fdcf071 # v4.4.1
         id: release
         with:
           token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
@@ -50,6 +50,3 @@ jobs:
       - run: python -m pip install build
       - run: python -m build
       - uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # release/v1
-        with:
-          # Publishing only; do not add package-validation checks.
-          verify-metadata: false

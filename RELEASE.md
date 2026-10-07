@@ -15,9 +15,8 @@ and `.release-please-manifest.json`.
 2. Create the GitHub environment **`release`**. Configure required reviewers if
    desired and allow deployments from **`main`** (the workflow runs on main even
    though checkout uses the released commit).
-3. As an owner of the existing PyPI project **`agenthooksprotocol`**, open its
-   **Publishing** settings and add a GitHub trusted publisher with these exact
-   values:
+3. For a new PyPI project, add an account-level **pending publisher** with
+   project name **`agenthooksprotocol`** and these exact GitHub values:
 
    | Field | Value |
    | --- | --- |
@@ -26,23 +25,21 @@ and `.release-please-manifest.json`.
    | Workflow filename | `release.yml` |
    | Environment | `release` |
 
-   No PyPI API token or password is needed. The project already has version
-   `0.0.0`, so configure its existing publisher settings, not a pending publisher.
-   For a genuinely new project, PyPI supports an account-level **pending
-   publisher** with the project name and the same workflow identity; the first
-   successful trusted upload creates the project. Pending publishers do **not**
-   reserve names and cannot claim an already registered project.
+   No PyPI API token or password is needed. The first successful trusted upload
+   creates the project. Pending publishers do **not** reserve names and cannot
+   claim an already registered project. If the project already exists, an owner
+   must instead add the same trusted publisher in its **Publishing** settings.
+   The local package version does not establish whether a PyPI project exists.
 
 ## Lifecycle
 
 - Every push to `main` calls the existing CI workflow. Only after CI succeeds does
   Release Please create/update a release PR or create a GitHub release for a
   merged release PR. Existing push/PR CI remains unchanged.
-- Review and merge the release PR to release. The initial manifest and package
-  version remain `0.0.0`; `release-as: 0.1.0` explicitly selects the first release.
-  **Remove `release-as` from `release-please-config.json` in that first release PR
-  before merging it**, leaving the generated `0.1.0` version changes intact, so
-  subsequent releases use Conventional Commits instead of a fixed version.
+- Review and merge the release PR to release. The manifest starts at `0.0.0`,
+  the sentinel for no previous release. `initial-version: 0.1.0` selects only
+  the first release; subsequent releases use Conventional Commits. No manual
+  configuration removal is needed.
 - When Release Please reports a created release, the same workflow checks out
   its exact released SHA, builds wheel and sdist with `python -m build`, and
   publishes through the `release` environment using PyPI trusted publishing.

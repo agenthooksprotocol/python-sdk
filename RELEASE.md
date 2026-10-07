@@ -59,7 +59,7 @@ Official setup references:
 [pending publisher bootstrap](https://docs.pypi.org/trusted-publishers/creating-a-project-through-oidc/),
 and [publishing action](https://github.com/pypa/gh-action-pypi-publish).
 
-## Contract pin notification
+## Contract compatibility notification
 
 After the complete **Release** workflow succeeds for a `main` push, the separate
 `release-notify.yml` workflow sends a `sdk-released` repository dispatch to
@@ -68,9 +68,13 @@ non-draft, non-prerelease GitHub release has a stable version tag pointing at th
 exact workflow run head, including annotated tag dereferencing. Ordinary Release
 Please PR updates do not send a notification.
 
-The contract receiver uses the repository, revision, and run ID in the notification
-to propose released SDK pins in one bot PR. This is event-driven: there is no
-schedule, registry probe, package installation, or additional publishing step.
+The notification triggers compatibility CI directly in the contract repository.
+For release dispatches, the receiver snapshots the latest stable SDK releases;
+normal CI snapshots SDK `main` heads. All integration shards use the same exact
+revisions recorded in an artifact, without tracked pin updates or bot PRs.
+The sender includes the repository, revision, and run ID. This is event-driven:
+the notifier adds no schedule, registry probe, package installation, or publishing
+step.
 The notifier does not check out or execute SDK code. Its repository token has only
 Actions and Contents read access for release metadata; a separate short-lived App
 token has only Contents write access to the contract repository for dispatch.
@@ -80,5 +84,5 @@ installed on **agenthooksprotocol/agent-hooks-protocol** with **Contents: read/w
 in addition to its existing SDK installation. The notifier explicitly scopes the
 App token to that target repository and revokes it at job completion. Installing
 this workflow does not replay earlier releases (including the initial `0.1.0`);
-initialize those pins through the contract receiver's manual workflow instead of
-rerunning a publishing workflow.
+after the receiver is merged, run the contract integration workflow manually for
+existing releases instead of rerunning a publishing workflow.

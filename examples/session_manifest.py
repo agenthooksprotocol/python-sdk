@@ -9,7 +9,7 @@ from typing import Any, cast
 
 import anyio
 
-from agenthooksprotocol import Hooks, event
+from agenthooksprotocol import Hooks, Session, SessionStartInputHarness, event
 from agenthooksprotocol.generated import ObserveNotification
 from agenthooksprotocol.server import hooks
 
@@ -56,9 +56,9 @@ async def main() -> dict[str, Any]:
     ) as harness:
         await harness.session_start(
             event.SessionStartInput(
-                session={"id": "example-session"},
+                session=Session(id="example-session"),
                 trigger="startup",
-                harness={"name": "example", "version": "1"},
+                harness=SessionStartInputHarness(name="example", version="1"),
                 permission_mode="default",
                 items=[],
             ),

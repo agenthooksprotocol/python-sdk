@@ -41,7 +41,6 @@ from ._models.tool import ProgressBatch as ProgressBatch
 from ._models.tool import ProgressCall as ProgressCall
 from ._models.tool import ProgressExtensions as ProgressExtensions
 from ._models.tool import ProgressGapsItem as ProgressGapsItem
-from ._models.tool import ProgressPartialOutput as ProgressPartialOutput
 from ._models.tool import ProgressSession as ProgressSession
 from ._models.tool import ProgressTool as ProgressTool
 from ._models.tool import ProgressTurn as ProgressTurn

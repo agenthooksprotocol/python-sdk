@@ -13,19 +13,12 @@ from . import ContextCompactAfterCapabilities as ContextCompactAfter
 from . import ContextCompactAfterCapabilities as ContextCompactAfterCapabilities
 from . import ContextCompactBeforeCapabilities as ContextCompactBefore
 from . import ContextCompactBeforeCapabilities as ContextCompactBeforeCapabilities
-from . import CapabilitiesEffectsItemKnown as EffectsItemKnown
-from . import CapabilitiesElicitation as Elicitation
-from . import CapabilitiesElicitationForm as ElicitationForm
-from . import CapabilitiesElicitationUrl as ElicitationUrl
 from . import CapabilitiesResponseResultManifestEventsItemEvent as Event
 from . import StaticCapabilityManifestEventsItem as EventsItem
 from . import StaticCapabilityManifestEventsItemCapabilities as EventsItemCapabilities
 from . import StaticCapabilityManifestEventsItemEvent as EventsItemEvent
 from . import StaticCapabilityManifestEventsItemModesItem as EventsItemModesItem
 from . import StaticCapabilityManifestGapsItem as GapsItem
-from . import CapabilitiesInject as Inject
-from . import CapabilitiesInjectContext as InjectContext
-from . import CapabilitiesInjectContextDeliverAtItem as InjectContextDeliverAtItem
 from . import InterceptRequestParamsCapabilities as InterceptRequestParams
 from . import InterceptRequestParamsCapabilities as InterceptRequestParamsCapabilities
 from . import StaticCapabilityManifestLimits as Limits
@@ -37,15 +30,6 @@ from . import ModelResponseAfterCapabilities as ModelResponseAfter
 from . import ModelResponseAfterCapabilities as ModelResponseAfterCapabilities
 from . import ModelSwitchBeforeCapabilities as ModelSwitchBefore
 from . import ModelSwitchBeforeCapabilities as ModelSwitchBeforeCapabilities
-from . import CapabilitiesModifyContent as ModifyContent
-from . import CapabilitiesModifyInput as ModifyInput
-from . import CapabilitiesModifyInstructions as ModifyInstructions
-from . import CapabilitiesModifyOutput as ModifyOutput
-from . import CapabilitiesModifyPrompt as ModifyPrompt
-from . import CapabilitiesModifyRequest as ModifyRequest
-from . import CapabilitiesModifyResponse as ModifyResponse
-from . import CapabilitiesModifySummary as ModifySummary
-from . import CapabilitiesModifyWorkspace as ModifyWorkspace
 from . import CapabilitiesRequest as Request
 from . import CapabilitiesRequestParams as RequestParams
 from . import CapabilitiesResponse as Response
@@ -125,19 +109,12 @@ __all__ = [
     "ContextCompactAfterCapabilities",
     "ContextCompactBefore",
     "ContextCompactBeforeCapabilities",
-    "EffectsItemKnown",
-    "Elicitation",
-    "ElicitationForm",
-    "ElicitationUrl",
     "Event",
     "EventsItem",
     "EventsItemCapabilities",
     "EventsItemEvent",
     "EventsItemModesItem",
     "GapsItem",
-    "Inject",
-    "InjectContext",
-    "InjectContextDeliverAtItem",
     "InterceptRequestParams",
     "InterceptRequestParamsCapabilities",
     "Limits",
@@ -149,15 +126,6 @@ __all__ = [
     "ModelResponseAfterCapabilities",
     "ModelSwitchBefore",
     "ModelSwitchBeforeCapabilities",
-    "ModifyContent",
-    "ModifyInput",
-    "ModifyInstructions",
-    "ModifyOutput",
-    "ModifyPrompt",
-    "ModifyRequest",
-    "ModifyResponse",
-    "ModifySummary",
-    "ModifyWorkspace",
     "Request",
     "RequestParams",
     "Response",

@@ -19,16 +19,12 @@ from ._models.capability import ContextCompactBefore as ContextCompactBefore
 from ._models.capability import (
     ContextCompactBeforeCapabilities as ContextCompactBeforeCapabilities,
 )
-from ._models.capability import EffectsItemKnown as EffectsItemKnown
-from ._models.capability import Elicitation as Elicitation
 from ._models.capability import Event as Event
 from ._models.capability import EventsItem as EventsItem
 from ._models.capability import EventsItemCapabilities as EventsItemCapabilities
 from ._models.capability import EventsItemEvent as EventsItemEvent
 from ._models.capability import EventsItemModesItem as EventsItemModesItem
 from ._models.capability import GapsItem as GapsItem
-from ._models.capability import Inject as Inject
-from ._models.capability import InjectContextDeliverAtItem as InjectContextDeliverAtItem
 from ._models.capability import InterceptRequestParams as InterceptRequestParams
 from ._models.capability import (
     InterceptRequestParamsCapabilities as InterceptRequestParamsCapabilities,

@@ -18,7 +18,7 @@ def initial(
     candidate: Candidate | None = None,
     flow: Flow = _UNSET,
     injections: list[Any] = _UNSET,
-    instructions: list[Any] = _UNSET,
+    instructions: list[str] = _UNSET,
 ) -> State:
     """Explicit native-hook starting permission, not execution authorization."""
     result = State(permission=Permission(permission), candidate=candidate)

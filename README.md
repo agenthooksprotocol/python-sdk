@@ -144,3 +144,21 @@ uv run python -m build
 ```
 
 Integration tests also use a matching sibling `../agent-hooks-protocol` checkout for shared fixtures and public synthetic certificates. The installed runtime uses its bundled schemas and does not need that checkout. No SDK API executes host tools on your behalf.
+
+### Typed composed payloads
+
+Generated facade constructors retain nested model types through schema
+compositions. MCP connection `gaps` parameters accept lists of typed gap models,
+and HTTP, SSE, stdio, and custom connection objects expose typed location and gap
+attributes. `ModelVisibleItem` has composed content constructors with typed roles.
+
+Facade objects remain mappings and additionally provide read-only attributes.
+Optional attributes return `None` when absent; mapping membership still records
+presence. Attributes conflicting with mapping methods use a trailing underscore
+(such as `items_`), so `dict.items()` keeps working. Wire parsers continue to
+return lossless mappings, not hydrated facade instances.
+
+Migration: use generated nested models instead of arbitrary mappings for typed
+constructor arguments. Runtime parsing still checks location/evidence
+alternatives and other schema constraints at its existing boundary. Application
+JSON, native payloads, and extension values remain intentionally dynamic.

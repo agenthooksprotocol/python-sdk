@@ -18,7 +18,7 @@ from . import ContextCompactBeforeCapabilities as ContextCompactBeforeCapabiliti
 from . import CapabilitiesInjectContextDeliverAtItem as ContextDeliverAtItem
 from . import CapabilitiesInjectContextDeliverAtItem as DeliverAtItem
 from . import ConfigChangeBeforeCapabilitiesEffectsItem as EffectsItem
-from . import CapabilitiesEffectsItemVariant1 as EffectsItemVariant1
+from . import CapabilitiesEffectsItemKnown as EffectsItemKnown
 from . import CapabilitiesElicitation as Elicitation
 from . import CapabilitiesElicitationForm as ElicitationForm
 from . import CapabilitiesElicitationUrl as ElicitationUrl
@@ -176,7 +176,7 @@ __all__ = [
     "ContextDeliverAtItem",
     "DeliverAtItem",
     "EffectsItem",
-    "EffectsItemVariant1",
+    "EffectsItemKnown",
     "Elicitation",
     "ElicitationForm",
     "ElicitationUrl",

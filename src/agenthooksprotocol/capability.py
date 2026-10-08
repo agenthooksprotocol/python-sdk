@@ -24,7 +24,7 @@ from ._models.capability import (
 from ._models.capability import ContextDeliverAtItem as ContextDeliverAtItem
 from ._models.capability import DeliverAtItem as DeliverAtItem
 from ._models.capability import EffectsItem as EffectsItem
-from ._models.capability import EffectsItemVariant1 as EffectsItemVariant1
+from ._models.capability import EffectsItemKnown as EffectsItemKnown
 from ._models.capability import Elicitation as Elicitation
 from ._models.capability import Event as Event
 from ._models.capability import EventsItem as EventsItem

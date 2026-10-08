@@ -176,6 +176,7 @@ class PreparedContent:
         """Release invocation bytes without touching caller-owned storage."""
         self.raw.clear()
         self.selected.clear()
+        self.context = None
 
     async def _read(self, item: dict[str, Any]) -> bytes | None:
         self.validator.validate("content-item", item)

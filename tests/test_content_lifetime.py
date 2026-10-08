@@ -49,6 +49,7 @@ class ContentLifetimeTests(unittest.TestCase):
         self.assertIsNone(pending.prepared_content)
         self.assertEqual(prepared.raw, {})
         self.assertEqual(prepared.selected, {})
+        self.assertIsNone(prepared.context)
 
     def test_accept_releases_original_without_invalidating_replacement(self):
         async def run():
@@ -119,6 +120,47 @@ class ContentLifetimeTests(unittest.TestCase):
 
         self.run_async(run)
 
+    def test_retained_terminal_handles_do_not_retain_caller_store(self):
+        async def run():
+            for terminal in ("accepted", "cancelled", "closed", "fallback"):
+                store, hooks, begin = self.pending_fixture()
+                reference = weakref.ref(store)
+                result = None
+                async with hooks:
+                    pending = begin(terminal)
+                    await pending.acquire()
+                    prepared = pending.prepared_content
+                    if terminal == "accepted":
+                        result = await pending.accept_content()
+                        returned_bytes = await store.resolve(
+                            result.event["instructions"]["body"]
+                        )
+                        self.assertEqual(returned_bytes, b"new")
+                    elif terminal == "cancelled":
+                        pending.cancel()
+                    elif terminal == "closed":
+                        await hooks.aclose()
+                    else:
+                        result = await pending.accept_content(fallback=True)
+                    self.assert_retired(pending, prepared)
+                    self.assertIsNone(pending.content)
+                    # Retirement did not destroy persistent receiver data.
+                    self.assertEqual(len(store.bodies), 2 if terminal == "accepted" else 1)
+                    del store, begin
+                    gc.collect()
+                    self.assertIsNone(reference(), terminal)
+                    if terminal != "closed":
+                        self.assertIsNone(await pending.accept_content())
+                        with self.assertRaisesRegex(RuntimeError, "Content-bound"):
+                            pending.accept()
+                # Keep the result, pending handle AND retired preparation alive.
+                if terminal == "accepted":
+                    self.assertEqual(result.state["content"]["instructions"], "new")
+                    self.assertEqual(returned_bytes, b"new")
+                    self.assertIs(pending.result, result)
+
+        self.run_async(run)
+
     def test_dropped_pending_is_not_retained_by_harness(self):
         async def run():
             _, hooks, begin = self.pending_fixture()
@@ -159,7 +201,7 @@ class ContentLifetimeTests(unittest.TestCase):
                 async def fail(data):
                     raise error
 
-                _, hooks, begin = self.pending_fixture(upload=fail)
+                store, hooks, begin = self.pending_fixture(upload=fail)
                 async with hooks:
                     pending = begin("failed")
                     await pending.acquire()
@@ -169,6 +211,12 @@ class ContentLifetimeTests(unittest.TestCase):
                     self.assert_retired(pending, prepared)
                     self.assertIsNone(pending.result)
                     self.assertEqual(hooks._operations, [])
+                    # Nonterminal failures retain the adapter for a fresh retry.
+                    self.assertIsNotNone(pending.content)
+                    pending.content.upload = store.upload
+                    result = await pending.accept_content()
+                    self.assertEqual(result.state["content"]["instructions"], "new")
+                    self.assertIsNone(pending.content)
 
         self.run_async(run)
 

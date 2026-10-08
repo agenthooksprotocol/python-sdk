@@ -156,6 +156,7 @@ class PendingInvocation:
         self.lifecycle = Lifecycle(validator, include_staged=True)
         self.lifecycle.send(self.request)
         self.content = content
+        self._content_bound = content is not None
         self.prepared_content = None
         self.response = None
         self.result = None
@@ -173,6 +174,12 @@ class PendingInvocation:
         if self.prepared_content is not None:
             self.prepared_content.retire()
             self.prepared_content = None
+        if self.request["id"] in self.lifecycle.terminal or (
+            self._owner is not None and self._owner._closed
+        ):
+            # Bound callbacks can retain an entire caller-owned content store.
+            # Detach them; never clear or otherwise mutate that shared store.
+            self.content = None
 
     def _check_open(self):
         if self._owner is not None and self._owner._closed:
@@ -215,7 +222,7 @@ class PendingInvocation:
 
     def accept(self, *, fallback: bool = False) -> HookResult | None:
         self._check_open()
-        if self.content is not None:
+        if self._content_bound:
             raise RuntimeError(
                 "Content-bound invocations require await accept_content()"
             )
@@ -224,7 +231,7 @@ class PendingInvocation:
 
     @_owned_operation
     async def accept_content(self, *, fallback: bool = False) -> HookResult | None:
-        if self.content is None:
+        if not self._content_bound:
             return self.accept(fallback=fallback)
         if self._scope is not None:
             raise RuntimeError("Invocation already has an active operation")
@@ -232,10 +239,12 @@ class PendingInvocation:
             self._retire_content()
             return None
         if fallback:
-            self._retire_content()
-            return self._publish(
-                self.lifecycle.accept(self.request["id"], fallback=True), True
-            )
+            try:
+                return self._publish(
+                    self.lifecycle.accept(self.request["id"], fallback=True), True
+                )
+            finally:
+                self._retire_content()
         token = None
         with anyio.CancelScope() as scope:
             self._scope = scope

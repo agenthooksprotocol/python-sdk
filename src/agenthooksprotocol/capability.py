@@ -21,6 +21,7 @@ from ._models.capability import (
 )
 from ._models.capability import EffectsItemKnown as EffectsItemKnown
 from ._models.capability import Elicitation as Elicitation
+from ._models.capability import Event as Event
 from ._models.capability import EventsItem as EventsItem
 from ._models.capability import EventsItemCapabilities as EventsItemCapabilities
 from ._models.capability import EventsItemEvent as EventsItemEvent

@@ -17,6 +17,7 @@ from . import CapabilitiesEffectsItemKnown as EffectsItemKnown
 from . import CapabilitiesElicitation as Elicitation
 from . import CapabilitiesElicitationForm as ElicitationForm
 from . import CapabilitiesElicitationUrl as ElicitationUrl
+from . import CapabilitiesResponseResultManifestEventsItemEvent as Event
 from . import StaticCapabilityManifestEventsItem as EventsItem
 from . import StaticCapabilityManifestEventsItemCapabilities as EventsItemCapabilities
 from . import StaticCapabilityManifestEventsItemEvent as EventsItemEvent
@@ -128,6 +129,7 @@ __all__ = [
     "Elicitation",
     "ElicitationForm",
     "ElicitationUrl",
+    "Event",
     "EventsItem",
     "EventsItemCapabilities",
     "EventsItemEvent",

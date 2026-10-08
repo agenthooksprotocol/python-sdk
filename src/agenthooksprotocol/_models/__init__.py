@@ -2019,7 +2019,7 @@ class ExecutionEventError(dict[str, Any]):
     def __init__(
         self,
         *,
-        class_2: str,
+        class_: str,
         code: str = _UNSET,
         message: str,
         native: Any = _UNSET,
@@ -2027,7 +2027,7 @@ class ExecutionEventError(dict[str, Any]):
         **extra: Any,
     ) -> None:
         super().__init__(extra)
-        self["class"] = class_2
+        self["class"] = class_
         if code is not _UNSET:
             self["code"] = code
         self["message"] = message
@@ -2178,9 +2178,7 @@ class ExecutionEventMcp(dict[str, Any]):
         self["toolName"] = tool_name
 
 
-class ExecutionEventMcpConnectionAddressFormObjectOrGapsObjectAndAddressObjectOrGapsObjectAndTransportObject(
-    dict[str, Any]
-):
+class ExecutionEventMcpConnectionCustomTransport(dict[str, Any]):
     """Keyword-only wire object; parsing remains strict and separate."""
 
     def __init__(
@@ -2202,9 +2200,7 @@ class ExecutionEventMcpConnectionAddressFormObjectOrGapsObjectAndAddressObjectOr
         self["transport"] = transport
 
 
-class ExecutionEventMcpConnectionAddressFormObjectOrGapsObjectAndAddressObjectOrGapsObjectAndTransportObjectGapsItem(
-    dict[str, Any]
-):
+class ExecutionEventMcpConnectionCustomTransportGapsItem(dict[str, Any]):
     """Keyword-only wire object; parsing remains strict and separate."""
 
     def __init__(self, *, path: str, reason: str, **extra: Any) -> None:
@@ -2213,9 +2209,63 @@ class ExecutionEventMcpConnectionAddressFormObjectOrGapsObjectAndAddressObjectOr
         self["reason"] = reason
 
 
-class ExecutionEventMcpConnectionArgsObjectOrGapsObjectAndCommandObjectOrGapsObjectAndCwdObjectOrGapsObjectAndTransportObject(
-    dict[str, Any]
-):
+class ExecutionEventMcpConnectionHttp(dict[str, Any]):
+    """Keyword-only wire object; parsing remains strict and separate."""
+
+    def __init__(
+        self,
+        *,
+        gaps: list[Any] = _UNSET,
+        transport: str = _UNSET,
+        url: str = _UNSET,
+        **extra: Any,
+    ) -> None:
+        super().__init__(extra)
+        if gaps is not _UNSET:
+            self["gaps"] = gaps
+        self["transport"] = json.loads('"http"') if transport is _UNSET else transport
+        if url is not _UNSET:
+            self["url"] = url
+
+
+class ExecutionEventMcpConnectionHttpGapsItem(dict[str, Any]):
+    """Keyword-only wire object; parsing remains strict and separate."""
+
+    def __init__(self, *, path: str, reason: str, **extra: Any) -> None:
+        super().__init__(extra)
+        self["path"] = path
+        self["reason"] = reason
+
+
+class ExecutionEventMcpConnectionSse(dict[str, Any]):
+    """Keyword-only wire object; parsing remains strict and separate."""
+
+    def __init__(
+        self,
+        *,
+        gaps: list[Any] = _UNSET,
+        transport: str = _UNSET,
+        url: str = _UNSET,
+        **extra: Any,
+    ) -> None:
+        super().__init__(extra)
+        if gaps is not _UNSET:
+            self["gaps"] = gaps
+        self["transport"] = json.loads('"sse"') if transport is _UNSET else transport
+        if url is not _UNSET:
+            self["url"] = url
+
+
+class ExecutionEventMcpConnectionSseGapsItem(dict[str, Any]):
+    """Keyword-only wire object; parsing remains strict and separate."""
+
+    def __init__(self, *, path: str, reason: str, **extra: Any) -> None:
+        super().__init__(extra)
+        self["path"] = path
+        self["reason"] = reason
+
+
+class ExecutionEventMcpConnectionStdio(dict[str, Any]):
     """Keyword-only wire object; parsing remains strict and separate."""
 
     def __init__(
@@ -2240,73 +2290,7 @@ class ExecutionEventMcpConnectionArgsObjectOrGapsObjectAndCommandObjectOrGapsObj
         self["transport"] = json.loads('"stdio"') if transport is _UNSET else transport
 
 
-class ExecutionEventMcpConnectionArgsObjectOrGapsObjectAndCommandObjectOrGapsObjectAndCwdObjectOrGapsObjectAndTransportObjectGapsItem(
-    dict[str, Any]
-):
-    """Keyword-only wire object; parsing remains strict and separate."""
-
-    def __init__(self, *, path: str, reason: str, **extra: Any) -> None:
-        super().__init__(extra)
-        self["path"] = path
-        self["reason"] = reason
-
-
-class ExecutionEventMcpConnectionGapsObjectOrUrlObjectAndTransportObjectShape03cf6907d766aa03(
-    dict[str, Any]
-):
-    """Keyword-only wire object; parsing remains strict and separate."""
-
-    def __init__(
-        self,
-        *,
-        gaps: list[Any] = _UNSET,
-        transport: str = _UNSET,
-        url: str = _UNSET,
-        **extra: Any,
-    ) -> None:
-        super().__init__(extra)
-        if gaps is not _UNSET:
-            self["gaps"] = gaps
-        self["transport"] = json.loads('"sse"') if transport is _UNSET else transport
-        if url is not _UNSET:
-            self["url"] = url
-
-
-class ExecutionEventMcpConnectionGapsObjectOrUrlObjectAndTransportObjectShape03cf6907d766aa03GapsItem(
-    dict[str, Any]
-):
-    """Keyword-only wire object; parsing remains strict and separate."""
-
-    def __init__(self, *, path: str, reason: str, **extra: Any) -> None:
-        super().__init__(extra)
-        self["path"] = path
-        self["reason"] = reason
-
-
-class ExecutionEventMcpConnectionGapsObjectOrUrlObjectAndTransportObjectShape947e67f4c644f1e8(
-    dict[str, Any]
-):
-    """Keyword-only wire object; parsing remains strict and separate."""
-
-    def __init__(
-        self,
-        *,
-        gaps: list[Any] = _UNSET,
-        transport: str = _UNSET,
-        url: str = _UNSET,
-        **extra: Any,
-    ) -> None:
-        super().__init__(extra)
-        if gaps is not _UNSET:
-            self["gaps"] = gaps
-        self["transport"] = json.loads('"http"') if transport is _UNSET else transport
-        if url is not _UNSET:
-            self["url"] = url
-
-
-class ExecutionEventMcpConnectionGapsObjectOrUrlObjectAndTransportObjectShape947e67f4c644f1e8GapsItem(
-    dict[str, Any]
-):
+class ExecutionEventMcpConnectionStdioGapsItem(dict[str, Any]):
     """Keyword-only wire object; parsing remains strict and separate."""
 
     def __init__(self, *, path: str, reason: str, **extra: Any) -> None:
@@ -2418,7 +2402,7 @@ class ExecutionEventModelErrorError(dict[str, Any]):
     def __init__(
         self,
         *,
-        class_2: str,
+        class_: str,
         code: str = _UNSET,
         message: str,
         native: Any = _UNSET,
@@ -2426,7 +2410,7 @@ class ExecutionEventModelErrorError(dict[str, Any]):
         **extra: Any,
     ) -> None:
         super().__init__(extra)
-        self["class"] = class_2
+        self["class"] = class_
         if code is not _UNSET:
             self["code"] = code
         self["message"] = message
@@ -3934,7 +3918,7 @@ class ExecutionEventTurnEndError(dict[str, Any]):
     def __init__(
         self,
         *,
-        class_2: str,
+        class_: str,
         code: str = _UNSET,
         message: str,
         native: Any = _UNSET,
@@ -3942,7 +3926,7 @@ class ExecutionEventTurnEndError(dict[str, Any]):
         **extra: Any,
     ) -> None:
         super().__init__(extra)
-        self["class"] = class_2
+        self["class"] = class_
         if code is not _UNSET:
             self["code"] = code
         self["message"] = message
@@ -4535,7 +4519,7 @@ class ExecutionEventUsage(dict[str, Any]):
 class ExecutionEventUsageCompleteness(StrEnum):
     COMPLETE = "complete"
     PARTIAL = "partial"
-    UNKNOWN_SHAPE92DB31827DB71E5A = "unknown"
+    UNKNOWN_VALUE = "unknown"
 
 
 class ExecutionEventUsageCost(dict[str, Any]):
@@ -7235,7 +7219,7 @@ class SessionEndEventOutcome(StrEnum):
     COMPLETED = "completed"
     CANCELLED = "cancelled"
     ERROR = "error"
-    UNKNOWN_SHAPE92DB31827DB71E5A = "unknown"
+    UNKNOWN_VALUE = "unknown"
 
 
 class SessionEndEventSession(dict[str, Any]):
@@ -9034,7 +9018,7 @@ class ToolAfterEventError(dict[str, Any]):
     def __init__(
         self,
         *,
-        class_2: str,
+        class_: str,
         code: str = _UNSET,
         message: str,
         native: Any = _UNSET,
@@ -9042,7 +9026,7 @@ class ToolAfterEventError(dict[str, Any]):
         **extra: Any,
     ) -> None:
         super().__init__(extra)
-        self["class"] = class_2
+        self["class"] = class_
         if code is not _UNSET:
             self["code"] = code
         self["message"] = message
@@ -12243,14 +12227,14 @@ __all__ = [
     "ExecutionEventFilechange",
     "ExecutionEventFilechangeChange",
     "ExecutionEventMcp",
-    "ExecutionEventMcpConnectionAddressFormObjectOrGapsObjectAndAddressObjectOrGapsObjectAndTransportObject",
-    "ExecutionEventMcpConnectionAddressFormObjectOrGapsObjectAndAddressObjectOrGapsObjectAndTransportObjectGapsItem",
-    "ExecutionEventMcpConnectionArgsObjectOrGapsObjectAndCommandObjectOrGapsObjectAndCwdObjectOrGapsObjectAndTransportObject",
-    "ExecutionEventMcpConnectionArgsObjectOrGapsObjectAndCommandObjectOrGapsObjectAndCwdObjectOrGapsObjectAndTransportObjectGapsItem",
-    "ExecutionEventMcpConnectionGapsObjectOrUrlObjectAndTransportObjectShape03cf6907d766aa03",
-    "ExecutionEventMcpConnectionGapsObjectOrUrlObjectAndTransportObjectShape03cf6907d766aa03GapsItem",
-    "ExecutionEventMcpConnectionGapsObjectOrUrlObjectAndTransportObjectShape947e67f4c644f1e8",
-    "ExecutionEventMcpConnectionGapsObjectOrUrlObjectAndTransportObjectShape947e67f4c644f1e8GapsItem",
+    "ExecutionEventMcpConnectionCustomTransport",
+    "ExecutionEventMcpConnectionCustomTransportGapsItem",
+    "ExecutionEventMcpConnectionHttp",
+    "ExecutionEventMcpConnectionHttpGapsItem",
+    "ExecutionEventMcpConnectionSse",
+    "ExecutionEventMcpConnectionSseGapsItem",
+    "ExecutionEventMcpConnectionStdio",
+    "ExecutionEventMcpConnectionStdioGapsItem",
     "ExecutionEventMcpProvenance",
     "ExecutionEventMcpServer",
     "ExecutionEventModel",

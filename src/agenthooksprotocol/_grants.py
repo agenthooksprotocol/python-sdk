@@ -393,7 +393,7 @@ class Builder:
         arguments: dict[str, Any] = {}
         return self._add(Message(**arguments))
 
-    def return_2(self) -> Builder:
+    def return_(self) -> Builder:
         arguments: dict[str, Any] = {}
         return self._add(Return(**arguments))
 

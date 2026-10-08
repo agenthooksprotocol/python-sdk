@@ -11,8 +11,6 @@ from ._models.capability import ConfigChangeBefore as ConfigChangeBefore
 from ._models.capability import (
     ConfigChangeBeforeCapabilities as ConfigChangeBeforeCapabilities,
 )
-from ._models.capability import Content as Content
-from ._models.capability import Context as Context
 from ._models.capability import ContextCompactAfter as ContextCompactAfter
 from ._models.capability import (
     ContextCompactAfterCapabilities as ContextCompactAfterCapabilities,
@@ -21,23 +19,15 @@ from ._models.capability import ContextCompactBefore as ContextCompactBefore
 from ._models.capability import (
     ContextCompactBeforeCapabilities as ContextCompactBeforeCapabilities,
 )
-from ._models.capability import ContextDeliverAtItem as ContextDeliverAtItem
-from ._models.capability import DeliverAtItem as DeliverAtItem
-from ._models.capability import EffectsItem as EffectsItem
 from ._models.capability import EffectsItemKnown as EffectsItemKnown
 from ._models.capability import Elicitation as Elicitation
-from ._models.capability import Event as Event
 from ._models.capability import EventsItem as EventsItem
 from ._models.capability import EventsItemCapabilities as EventsItemCapabilities
 from ._models.capability import EventsItemEvent as EventsItemEvent
 from ._models.capability import EventsItemModesItem as EventsItemModesItem
-from ._models.capability import FlowOperationsItem as FlowOperationsItem
-from ._models.capability import Form as Form
 from ._models.capability import GapsItem as GapsItem
 from ._models.capability import Inject as Inject
 from ._models.capability import InjectContextDeliverAtItem as InjectContextDeliverAtItem
-from ._models.capability import Input as Input
-from ._models.capability import Instructions as Instructions
 from ._models.capability import InterceptRequestParams as InterceptRequestParams
 from ._models.capability import (
     InterceptRequestParamsCapabilities as InterceptRequestParamsCapabilities,
@@ -45,23 +35,6 @@ from ._models.capability import (
 from ._models.capability import Limits as Limits
 from ._models.capability import ManagedPolicy as ManagedPolicy
 from ._models.capability import ManagedPolicyScopesItem as ManagedPolicyScopesItem
-from ._models.capability import Manifest as Manifest
-from ._models.capability import ManifestAuthenticationItem as ManifestAuthenticationItem
-from ._models.capability import ManifestEventsItem as ManifestEventsItem
-from ._models.capability import (
-    ManifestEventsItemCapabilities as ManifestEventsItemCapabilities,
-)
-from ._models.capability import ManifestEventsItemEvent as ManifestEventsItemEvent
-from ._models.capability import (
-    ManifestEventsItemModesItem as ManifestEventsItemModesItem,
-)
-from ._models.capability import ManifestGapsItem as ManifestGapsItem
-from ._models.capability import ManifestLimits as ManifestLimits
-from ._models.capability import ManifestManagedPolicy as ManifestManagedPolicy
-from ._models.capability import (
-    ManifestManagedPolicyScopesItem as ManifestManagedPolicyScopesItem,
-)
-from ._models.capability import ManifestTransportsItem as ManifestTransportsItem
 from ._models.capability import ModelRequestBefore as ModelRequestBefore
 from ._models.capability import (
     ModelRequestBeforeCapabilities as ModelRequestBeforeCapabilities,
@@ -74,11 +47,6 @@ from ._models.capability import ModelSwitchBefore as ModelSwitchBefore
 from ._models.capability import (
     ModelSwitchBeforeCapabilities as ModelSwitchBeforeCapabilities,
 )
-from ._models.capability import ModesItem as ModesItem
-from ._models.capability import Modify as Modify
-from ._models.capability import OperationsItem as OperationsItem
-from ._models.capability import Output as Output
-from ._models.capability import Prompt as Prompt
 from ._models.capability import Request as Request
 from ._models.capability import RequestParams as RequestParams
 from ._models.capability import Response as Response
@@ -114,7 +82,6 @@ from ._models.capability import (
 from ._models.capability import (
     ResponseResultManifestTransportsItem as ResponseResultManifestTransportsItem,
 )
-from ._models.capability import ScopesItem as ScopesItem
 from ._models.capability import SessionStart as SessionStart
 from ._models.capability import SessionStartCapabilities as SessionStartCapabilities
 from ._models.capability import StaticCapabilityManifest as StaticCapabilityManifest
@@ -124,7 +91,6 @@ from ._models.capability import (
 from ._models.capability import (
     StaticCapabilityManifestEventsItemCapabilities as StaticCapabilityManifestEventsItemCapabilities,
 )
-from ._models.capability import Summary as Summary
 from ._models.capability import TaskChangeBefore as TaskChangeBefore
 from ._models.capability import (
     TaskChangeBeforeCapabilities as TaskChangeBeforeCapabilities,
@@ -146,7 +112,6 @@ from ._models.capability import (
 )
 from ._models.capability import TurnStart as TurnStart
 from ._models.capability import TurnStartCapabilities as TurnStartCapabilities
-from ._models.capability import Url as Url
 from ._models.capability import UserElicitationRequest as UserElicitationRequest
 from ._models.capability import (
     UserElicitationRequestCapabilities as UserElicitationRequestCapabilities,
@@ -163,7 +128,6 @@ from ._models.capability import UserMessageOutbound as UserMessageOutbound
 from ._models.capability import (
     UserMessageOutboundCapabilities as UserMessageOutboundCapabilities,
 )
-from ._models.capability import Workspace as Workspace
 from ._models.capability import WorkspaceChangeBefore as WorkspaceChangeBefore
 from ._models.capability import (
     WorkspaceChangeBeforeCapabilities as WorkspaceChangeBeforeCapabilities,

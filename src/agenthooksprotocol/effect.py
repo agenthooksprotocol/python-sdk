@@ -138,7 +138,7 @@ def message(
     return Message(text=text)
 
 
-def return_2(
+def return_(
     *,
     value: Any,
 ) -> Return:

@@ -71,8 +71,8 @@ SCHEMA_REVISION: Final[str] = "draft"
 PROTOCOL_VERSION: Final[str] = "draft"
 
 # Source: schema/draft/registration.schema.json#/$defs/authentication
-__AuthenticationBearerBearerModelKnownFields = TypedDict(
-    "__AuthenticationBearerBearerModelKnownFields",
+__AuthenticationBearerField0ModelKnownFields = TypedDict(
+    "__AuthenticationBearerField0ModelKnownFields",
     {
         "tokenEnv": NotRequired[str],
         "tokenRef": NotRequired[str],
@@ -80,26 +80,24 @@ __AuthenticationBearerBearerModelKnownFields = TypedDict(
     },
     total=False,
 )
-_AuthenticationBearerBearerModel: TypeAlias = (
-    __AuthenticationBearerBearerModelKnownFields | JsonObject
+_AuthenticationBearerField0Model: TypeAlias = (
+    __AuthenticationBearerField0ModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__AuthenticationBearerTokenEnvObjectOrTokenRefObjectTokenEnvObjectModelKnownFields = TypedDict(
-    "__AuthenticationBearerTokenEnvObjectOrTokenRefObjectTokenEnvObjectModelKnownFields",
+__AuthenticationBearerField1TokenEnvObjectModelKnownFields = TypedDict(
+    "__AuthenticationBearerField1TokenEnvObjectModelKnownFields",
     {"tokenEnv": Required[JsonValue]},
     total=False,
 )
-_AuthenticationBearerTokenEnvObjectOrTokenRefObjectTokenEnvObjectModel: TypeAlias = (
-    __AuthenticationBearerTokenEnvObjectOrTokenRefObjectTokenEnvObjectModelKnownFields
-    | JsonObject
+_AuthenticationBearerField1TokenEnvObjectModel: TypeAlias = (
+    __AuthenticationBearerField1TokenEnvObjectModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__AuthenticationBearerTokenEnvObjectOrTokenRefObjectTokenRefObjectModelKnownFields = TypedDict(
-    "__AuthenticationBearerTokenEnvObjectOrTokenRefObjectTokenRefObjectModelKnownFields",
+__AuthenticationBearerField1TokenRefObjectModelKnownFields = TypedDict(
+    "__AuthenticationBearerField1TokenRefObjectModelKnownFields",
     {"tokenRef": Required[JsonValue]},
     total=False,
 )
-_AuthenticationBearerTokenEnvObjectOrTokenRefObjectTokenRefObjectModel: TypeAlias = (
-    __AuthenticationBearerTokenEnvObjectOrTokenRefObjectTokenRefObjectModelKnownFields
-    | JsonObject
+_AuthenticationBearerField1TokenRefObjectModel: TypeAlias = (
+    __AuthenticationBearerField1TokenRefObjectModelKnownFields | JsonObject
 )  # permits additional JSON fields
 __AuthenticationOauthModelKnownFields = TypedDict(
     "__AuthenticationOauthModelKnownFields",
@@ -187,246 +185,239 @@ __CapabilitiesField3InjectModelKnownFields = TypedDict(
 _CapabilitiesField3InjectModel: TypeAlias = (
     __CapabilitiesField3InjectModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__CapabilitiesField4ModifyField0ContentMergeReplaceObjectModelKnownFields = TypedDict(
-    "__CapabilitiesField4ModifyField0ContentMergeReplaceObjectModelKnownFields",
+__CapabilitiesField4ModifyField0ContentField0ModelKnownFields = TypedDict(
+    "__CapabilitiesField4ModifyField0ContentField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_CapabilitiesField4ModifyField0ContentMergeReplaceObjectModel: TypeAlias = (
-    __CapabilitiesField4ModifyField0ContentMergeReplaceObjectModelKnownFields
-    | JsonObject
+_CapabilitiesField4ModifyField0ContentField0Model: TypeAlias = (
+    __CapabilitiesField4ModifyField0ContentField0ModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__CapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__CapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__CapabilitiesField4ModifyField0ContentField1ReplaceObjectModelKnownFields = TypedDict(
+    "__CapabilitiesField4ModifyField0ContentField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_CapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __CapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_CapabilitiesField4ModifyField0ContentField1ReplaceObjectModel: TypeAlias = (
+    __CapabilitiesField4ModifyField0ContentField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__CapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__CapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__CapabilitiesField4ModifyField0ContentField1MergeObjectModelKnownFields = TypedDict(
+    "__CapabilitiesField4ModifyField0ContentField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_CapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __CapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_CapabilitiesField4ModifyField0ContentField1MergeObjectModel: TypeAlias = (
+    __CapabilitiesField4ModifyField0ContentField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__CapabilitiesField4ModifyField1InputMergeReplaceObjectModelKnownFields = TypedDict(
-    "__CapabilitiesField4ModifyField1InputMergeReplaceObjectModelKnownFields",
+__CapabilitiesField4ModifyField1InputField0ModelKnownFields = TypedDict(
+    "__CapabilitiesField4ModifyField1InputField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_CapabilitiesField4ModifyField1InputMergeReplaceObjectModel: TypeAlias = (
-    __CapabilitiesField4ModifyField1InputMergeReplaceObjectModelKnownFields | JsonObject
+_CapabilitiesField4ModifyField1InputField0Model: TypeAlias = (
+    __CapabilitiesField4ModifyField1InputField0ModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__CapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__CapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__CapabilitiesField4ModifyField1InputField1ReplaceObjectModelKnownFields = TypedDict(
+    "__CapabilitiesField4ModifyField1InputField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_CapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __CapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_CapabilitiesField4ModifyField1InputField1ReplaceObjectModel: TypeAlias = (
+    __CapabilitiesField4ModifyField1InputField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__CapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__CapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__CapabilitiesField4ModifyField1InputField1MergeObjectModelKnownFields = TypedDict(
+    "__CapabilitiesField4ModifyField1InputField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_CapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __CapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectMergeObjectModelKnownFields
-    | JsonObject
+_CapabilitiesField4ModifyField1InputField1MergeObjectModel: TypeAlias = (
+    __CapabilitiesField4ModifyField1InputField1MergeObjectModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__CapabilitiesField4ModifyField2InstructionsMergeReplaceObjectModelKnownFields = TypedDict(
-    "__CapabilitiesField4ModifyField2InstructionsMergeReplaceObjectModelKnownFields",
+__CapabilitiesField4ModifyField2InstructionsField0ModelKnownFields = TypedDict(
+    "__CapabilitiesField4ModifyField2InstructionsField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_CapabilitiesField4ModifyField2InstructionsMergeReplaceObjectModel: TypeAlias = (
-    __CapabilitiesField4ModifyField2InstructionsMergeReplaceObjectModelKnownFields
-    | JsonObject
+_CapabilitiesField4ModifyField2InstructionsField0Model: TypeAlias = (
+    __CapabilitiesField4ModifyField2InstructionsField0ModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__CapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__CapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__CapabilitiesField4ModifyField2InstructionsField1ReplaceObjectModelKnownFields = TypedDict(
+    "__CapabilitiesField4ModifyField2InstructionsField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_CapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __CapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_CapabilitiesField4ModifyField2InstructionsField1ReplaceObjectModel: TypeAlias = (
+    __CapabilitiesField4ModifyField2InstructionsField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__CapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__CapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
+__CapabilitiesField4ModifyField2InstructionsField1MergeObjectModelKnownFields = (
+    TypedDict(
+        "__CapabilitiesField4ModifyField2InstructionsField1MergeObjectModelKnownFields",
+        {"merge": Required[Literal[True]]},
+        total=False,
+    )
 )
-_CapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __CapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_CapabilitiesField4ModifyField2InstructionsField1MergeObjectModel: TypeAlias = (
+    __CapabilitiesField4ModifyField2InstructionsField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__CapabilitiesField4ModifyField3OutputMergeReplaceObjectModelKnownFields = TypedDict(
-    "__CapabilitiesField4ModifyField3OutputMergeReplaceObjectModelKnownFields",
+__CapabilitiesField4ModifyField3OutputField0ModelKnownFields = TypedDict(
+    "__CapabilitiesField4ModifyField3OutputField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_CapabilitiesField4ModifyField3OutputMergeReplaceObjectModel: TypeAlias = (
-    __CapabilitiesField4ModifyField3OutputMergeReplaceObjectModelKnownFields
-    | JsonObject
+_CapabilitiesField4ModifyField3OutputField0Model: TypeAlias = (
+    __CapabilitiesField4ModifyField3OutputField0ModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__CapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__CapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__CapabilitiesField4ModifyField3OutputField1ReplaceObjectModelKnownFields = TypedDict(
+    "__CapabilitiesField4ModifyField3OutputField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_CapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __CapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_CapabilitiesField4ModifyField3OutputField1ReplaceObjectModel: TypeAlias = (
+    __CapabilitiesField4ModifyField3OutputField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__CapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__CapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__CapabilitiesField4ModifyField3OutputField1MergeObjectModelKnownFields = TypedDict(
+    "__CapabilitiesField4ModifyField3OutputField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_CapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __CapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectMergeObjectModelKnownFields
-    | JsonObject
+_CapabilitiesField4ModifyField3OutputField1MergeObjectModel: TypeAlias = (
+    __CapabilitiesField4ModifyField3OutputField1MergeObjectModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__CapabilitiesField4ModifyField4PromptMergeReplaceObjectModelKnownFields = TypedDict(
-    "__CapabilitiesField4ModifyField4PromptMergeReplaceObjectModelKnownFields",
+__CapabilitiesField4ModifyField4PromptField0ModelKnownFields = TypedDict(
+    "__CapabilitiesField4ModifyField4PromptField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_CapabilitiesField4ModifyField4PromptMergeReplaceObjectModel: TypeAlias = (
-    __CapabilitiesField4ModifyField4PromptMergeReplaceObjectModelKnownFields
-    | JsonObject
+_CapabilitiesField4ModifyField4PromptField0Model: TypeAlias = (
+    __CapabilitiesField4ModifyField4PromptField0ModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__CapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__CapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__CapabilitiesField4ModifyField4PromptField1ReplaceObjectModelKnownFields = TypedDict(
+    "__CapabilitiesField4ModifyField4PromptField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_CapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __CapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_CapabilitiesField4ModifyField4PromptField1ReplaceObjectModel: TypeAlias = (
+    __CapabilitiesField4ModifyField4PromptField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__CapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__CapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__CapabilitiesField4ModifyField4PromptField1MergeObjectModelKnownFields = TypedDict(
+    "__CapabilitiesField4ModifyField4PromptField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_CapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __CapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectMergeObjectModelKnownFields
-    | JsonObject
+_CapabilitiesField4ModifyField4PromptField1MergeObjectModel: TypeAlias = (
+    __CapabilitiesField4ModifyField4PromptField1MergeObjectModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__CapabilitiesField4ModifyField5RequestMergeReplaceObjectModelKnownFields = TypedDict(
-    "__CapabilitiesField4ModifyField5RequestMergeReplaceObjectModelKnownFields",
+__CapabilitiesField4ModifyField5RequestField0ModelKnownFields = TypedDict(
+    "__CapabilitiesField4ModifyField5RequestField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_CapabilitiesField4ModifyField5RequestMergeReplaceObjectModel: TypeAlias = (
-    __CapabilitiesField4ModifyField5RequestMergeReplaceObjectModelKnownFields
-    | JsonObject
+_CapabilitiesField4ModifyField5RequestField0Model: TypeAlias = (
+    __CapabilitiesField4ModifyField5RequestField0ModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__CapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__CapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__CapabilitiesField4ModifyField5RequestField1ReplaceObjectModelKnownFields = TypedDict(
+    "__CapabilitiesField4ModifyField5RequestField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_CapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __CapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_CapabilitiesField4ModifyField5RequestField1ReplaceObjectModel: TypeAlias = (
+    __CapabilitiesField4ModifyField5RequestField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__CapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__CapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__CapabilitiesField4ModifyField5RequestField1MergeObjectModelKnownFields = TypedDict(
+    "__CapabilitiesField4ModifyField5RequestField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_CapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __CapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_CapabilitiesField4ModifyField5RequestField1MergeObjectModel: TypeAlias = (
+    __CapabilitiesField4ModifyField5RequestField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__CapabilitiesField4ModifyField6ResponseMergeReplaceObjectModelKnownFields = TypedDict(
-    "__CapabilitiesField4ModifyField6ResponseMergeReplaceObjectModelKnownFields",
+__CapabilitiesField4ModifyField6ResponseField0ModelKnownFields = TypedDict(
+    "__CapabilitiesField4ModifyField6ResponseField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_CapabilitiesField4ModifyField6ResponseMergeReplaceObjectModel: TypeAlias = (
-    __CapabilitiesField4ModifyField6ResponseMergeReplaceObjectModelKnownFields
-    | JsonObject
+_CapabilitiesField4ModifyField6ResponseField0Model: TypeAlias = (
+    __CapabilitiesField4ModifyField6ResponseField0ModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__CapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__CapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__CapabilitiesField4ModifyField6ResponseField1ReplaceObjectModelKnownFields = TypedDict(
+    "__CapabilitiesField4ModifyField6ResponseField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_CapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __CapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_CapabilitiesField4ModifyField6ResponseField1ReplaceObjectModel: TypeAlias = (
+    __CapabilitiesField4ModifyField6ResponseField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__CapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__CapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__CapabilitiesField4ModifyField6ResponseField1MergeObjectModelKnownFields = TypedDict(
+    "__CapabilitiesField4ModifyField6ResponseField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_CapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __CapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_CapabilitiesField4ModifyField6ResponseField1MergeObjectModel: TypeAlias = (
+    __CapabilitiesField4ModifyField6ResponseField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__CapabilitiesField4ModifyField7SummaryMergeReplaceObjectModelKnownFields = TypedDict(
-    "__CapabilitiesField4ModifyField7SummaryMergeReplaceObjectModelKnownFields",
+__CapabilitiesField4ModifyField7SummaryField0ModelKnownFields = TypedDict(
+    "__CapabilitiesField4ModifyField7SummaryField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_CapabilitiesField4ModifyField7SummaryMergeReplaceObjectModel: TypeAlias = (
-    __CapabilitiesField4ModifyField7SummaryMergeReplaceObjectModelKnownFields
-    | JsonObject
+_CapabilitiesField4ModifyField7SummaryField0Model: TypeAlias = (
+    __CapabilitiesField4ModifyField7SummaryField0ModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__CapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__CapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__CapabilitiesField4ModifyField7SummaryField1ReplaceObjectModelKnownFields = TypedDict(
+    "__CapabilitiesField4ModifyField7SummaryField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_CapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __CapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_CapabilitiesField4ModifyField7SummaryField1ReplaceObjectModel: TypeAlias = (
+    __CapabilitiesField4ModifyField7SummaryField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__CapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__CapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__CapabilitiesField4ModifyField7SummaryField1MergeObjectModelKnownFields = TypedDict(
+    "__CapabilitiesField4ModifyField7SummaryField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_CapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __CapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_CapabilitiesField4ModifyField7SummaryField1MergeObjectModel: TypeAlias = (
+    __CapabilitiesField4ModifyField7SummaryField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__CapabilitiesField4ModifyField8WorkspaceMergeReplaceObjectModelKnownFields = TypedDict(
-    "__CapabilitiesField4ModifyField8WorkspaceMergeReplaceObjectModelKnownFields",
+__CapabilitiesField4ModifyField8WorkspaceField0ModelKnownFields = TypedDict(
+    "__CapabilitiesField4ModifyField8WorkspaceField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_CapabilitiesField4ModifyField8WorkspaceMergeReplaceObjectModel: TypeAlias = (
-    __CapabilitiesField4ModifyField8WorkspaceMergeReplaceObjectModelKnownFields
-    | JsonObject
+_CapabilitiesField4ModifyField8WorkspaceField0Model: TypeAlias = (
+    __CapabilitiesField4ModifyField8WorkspaceField0ModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__CapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__CapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
+__CapabilitiesField4ModifyField8WorkspaceField1ReplaceObjectModelKnownFields = (
+    TypedDict(
+        "__CapabilitiesField4ModifyField8WorkspaceField1ReplaceObjectModelKnownFields",
+        {"replace": Required[Literal[True]]},
+        total=False,
+    )
 )
-_CapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __CapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_CapabilitiesField4ModifyField8WorkspaceField1ReplaceObjectModel: TypeAlias = (
+    __CapabilitiesField4ModifyField8WorkspaceField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__CapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__CapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__CapabilitiesField4ModifyField8WorkspaceField1MergeObjectModelKnownFields = TypedDict(
+    "__CapabilitiesField4ModifyField8WorkspaceField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_CapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __CapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_CapabilitiesField4ModifyField8WorkspaceField1MergeObjectModel: TypeAlias = (
+    __CapabilitiesField4ModifyField8WorkspaceField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
 __CapabilitiesField4ModifyModelKnownFields = TypedDict(
@@ -746,247 +737,249 @@ __ConfigChangeBeforeCapabilitiesField3InjectModelKnownFields = TypedDict(
 _ConfigChangeBeforeCapabilitiesField3InjectModel: TypeAlias = (
     __ConfigChangeBeforeCapabilitiesField3InjectModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__ConfigChangeBeforeCapabilitiesField4ModifyField0ContentMergeReplaceObjectModelKnownFields = TypedDict(
-    "__ConfigChangeBeforeCapabilitiesField4ModifyField0ContentMergeReplaceObjectModelKnownFields",
+__ConfigChangeBeforeCapabilitiesField4ModifyField0ContentField0ModelKnownFields = TypedDict(
+    "__ConfigChangeBeforeCapabilitiesField4ModifyField0ContentField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ConfigChangeBeforeCapabilitiesField4ModifyField0ContentMergeReplaceObjectModel: TypeAlias = (
-    __ConfigChangeBeforeCapabilitiesField4ModifyField0ContentMergeReplaceObjectModelKnownFields
+_ConfigChangeBeforeCapabilitiesField4ModifyField0ContentField0Model: TypeAlias = (
+    __ConfigChangeBeforeCapabilitiesField4ModifyField0ContentField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ConfigChangeBeforeCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__ConfigChangeBeforeCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__ConfigChangeBeforeCapabilitiesField4ModifyField0ContentField1ReplaceObjectModelKnownFields = TypedDict(
+    "__ConfigChangeBeforeCapabilitiesField4ModifyField0ContentField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_ConfigChangeBeforeCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __ConfigChangeBeforeCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_ConfigChangeBeforeCapabilitiesField4ModifyField0ContentField1ReplaceObjectModel: TypeAlias = (
+    __ConfigChangeBeforeCapabilitiesField4ModifyField0ContentField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ConfigChangeBeforeCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__ConfigChangeBeforeCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__ConfigChangeBeforeCapabilitiesField4ModifyField0ContentField1MergeObjectModelKnownFields = TypedDict(
+    "__ConfigChangeBeforeCapabilitiesField4ModifyField0ContentField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_ConfigChangeBeforeCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __ConfigChangeBeforeCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_ConfigChangeBeforeCapabilitiesField4ModifyField0ContentField1MergeObjectModel: TypeAlias = (
+    __ConfigChangeBeforeCapabilitiesField4ModifyField0ContentField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ConfigChangeBeforeCapabilitiesField4ModifyField1InputMergeReplaceObjectModelKnownFields = TypedDict(
-    "__ConfigChangeBeforeCapabilitiesField4ModifyField1InputMergeReplaceObjectModelKnownFields",
+__ConfigChangeBeforeCapabilitiesField4ModifyField1InputField0ModelKnownFields = (
+    TypedDict(
+        "__ConfigChangeBeforeCapabilitiesField4ModifyField1InputField0ModelKnownFields",
+        {"merge": Required[bool], "replace": Required[bool]},
+        total=False,
+    )
+)
+_ConfigChangeBeforeCapabilitiesField4ModifyField1InputField0Model: TypeAlias = (
+    __ConfigChangeBeforeCapabilitiesField4ModifyField1InputField0ModelKnownFields
+    | JsonObject
+)  # permits additional JSON fields
+__ConfigChangeBeforeCapabilitiesField4ModifyField1InputField1ReplaceObjectModelKnownFields = TypedDict(
+    "__ConfigChangeBeforeCapabilitiesField4ModifyField1InputField1ReplaceObjectModelKnownFields",
+    {"replace": Required[Literal[True]]},
+    total=False,
+)
+_ConfigChangeBeforeCapabilitiesField4ModifyField1InputField1ReplaceObjectModel: TypeAlias = (
+    __ConfigChangeBeforeCapabilitiesField4ModifyField1InputField1ReplaceObjectModelKnownFields
+    | JsonObject
+)  # permits additional JSON fields
+__ConfigChangeBeforeCapabilitiesField4ModifyField1InputField1MergeObjectModelKnownFields = TypedDict(
+    "__ConfigChangeBeforeCapabilitiesField4ModifyField1InputField1MergeObjectModelKnownFields",
+    {"merge": Required[Literal[True]]},
+    total=False,
+)
+_ConfigChangeBeforeCapabilitiesField4ModifyField1InputField1MergeObjectModel: TypeAlias = (
+    __ConfigChangeBeforeCapabilitiesField4ModifyField1InputField1MergeObjectModelKnownFields
+    | JsonObject
+)  # permits additional JSON fields
+__ConfigChangeBeforeCapabilitiesField4ModifyField2InstructionsField0ModelKnownFields = TypedDict(
+    "__ConfigChangeBeforeCapabilitiesField4ModifyField2InstructionsField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ConfigChangeBeforeCapabilitiesField4ModifyField1InputMergeReplaceObjectModel: TypeAlias = (
-    __ConfigChangeBeforeCapabilitiesField4ModifyField1InputMergeReplaceObjectModelKnownFields
+_ConfigChangeBeforeCapabilitiesField4ModifyField2InstructionsField0Model: TypeAlias = (
+    __ConfigChangeBeforeCapabilitiesField4ModifyField2InstructionsField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ConfigChangeBeforeCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__ConfigChangeBeforeCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__ConfigChangeBeforeCapabilitiesField4ModifyField2InstructionsField1ReplaceObjectModelKnownFields = TypedDict(
+    "__ConfigChangeBeforeCapabilitiesField4ModifyField2InstructionsField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_ConfigChangeBeforeCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __ConfigChangeBeforeCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_ConfigChangeBeforeCapabilitiesField4ModifyField2InstructionsField1ReplaceObjectModel: TypeAlias = (
+    __ConfigChangeBeforeCapabilitiesField4ModifyField2InstructionsField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ConfigChangeBeforeCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__ConfigChangeBeforeCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__ConfigChangeBeforeCapabilitiesField4ModifyField2InstructionsField1MergeObjectModelKnownFields = TypedDict(
+    "__ConfigChangeBeforeCapabilitiesField4ModifyField2InstructionsField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_ConfigChangeBeforeCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __ConfigChangeBeforeCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_ConfigChangeBeforeCapabilitiesField4ModifyField2InstructionsField1MergeObjectModel: TypeAlias = (
+    __ConfigChangeBeforeCapabilitiesField4ModifyField2InstructionsField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ConfigChangeBeforeCapabilitiesField4ModifyField2InstructionsMergeReplaceObjectModelKnownFields = TypedDict(
-    "__ConfigChangeBeforeCapabilitiesField4ModifyField2InstructionsMergeReplaceObjectModelKnownFields",
+__ConfigChangeBeforeCapabilitiesField4ModifyField3OutputField0ModelKnownFields = TypedDict(
+    "__ConfigChangeBeforeCapabilitiesField4ModifyField3OutputField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ConfigChangeBeforeCapabilitiesField4ModifyField2InstructionsMergeReplaceObjectModel: TypeAlias = (
-    __ConfigChangeBeforeCapabilitiesField4ModifyField2InstructionsMergeReplaceObjectModelKnownFields
+_ConfigChangeBeforeCapabilitiesField4ModifyField3OutputField0Model: TypeAlias = (
+    __ConfigChangeBeforeCapabilitiesField4ModifyField3OutputField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ConfigChangeBeforeCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__ConfigChangeBeforeCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__ConfigChangeBeforeCapabilitiesField4ModifyField3OutputField1ReplaceObjectModelKnownFields = TypedDict(
+    "__ConfigChangeBeforeCapabilitiesField4ModifyField3OutputField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_ConfigChangeBeforeCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __ConfigChangeBeforeCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_ConfigChangeBeforeCapabilitiesField4ModifyField3OutputField1ReplaceObjectModel: TypeAlias = (
+    __ConfigChangeBeforeCapabilitiesField4ModifyField3OutputField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ConfigChangeBeforeCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__ConfigChangeBeforeCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__ConfigChangeBeforeCapabilitiesField4ModifyField3OutputField1MergeObjectModelKnownFields = TypedDict(
+    "__ConfigChangeBeforeCapabilitiesField4ModifyField3OutputField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_ConfigChangeBeforeCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __ConfigChangeBeforeCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_ConfigChangeBeforeCapabilitiesField4ModifyField3OutputField1MergeObjectModel: TypeAlias = (
+    __ConfigChangeBeforeCapabilitiesField4ModifyField3OutputField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ConfigChangeBeforeCapabilitiesField4ModifyField3OutputMergeReplaceObjectModelKnownFields = TypedDict(
-    "__ConfigChangeBeforeCapabilitiesField4ModifyField3OutputMergeReplaceObjectModelKnownFields",
+__ConfigChangeBeforeCapabilitiesField4ModifyField4PromptField0ModelKnownFields = TypedDict(
+    "__ConfigChangeBeforeCapabilitiesField4ModifyField4PromptField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ConfigChangeBeforeCapabilitiesField4ModifyField3OutputMergeReplaceObjectModel: TypeAlias = (
-    __ConfigChangeBeforeCapabilitiesField4ModifyField3OutputMergeReplaceObjectModelKnownFields
+_ConfigChangeBeforeCapabilitiesField4ModifyField4PromptField0Model: TypeAlias = (
+    __ConfigChangeBeforeCapabilitiesField4ModifyField4PromptField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ConfigChangeBeforeCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__ConfigChangeBeforeCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__ConfigChangeBeforeCapabilitiesField4ModifyField4PromptField1ReplaceObjectModelKnownFields = TypedDict(
+    "__ConfigChangeBeforeCapabilitiesField4ModifyField4PromptField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_ConfigChangeBeforeCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __ConfigChangeBeforeCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_ConfigChangeBeforeCapabilitiesField4ModifyField4PromptField1ReplaceObjectModel: TypeAlias = (
+    __ConfigChangeBeforeCapabilitiesField4ModifyField4PromptField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ConfigChangeBeforeCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__ConfigChangeBeforeCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__ConfigChangeBeforeCapabilitiesField4ModifyField4PromptField1MergeObjectModelKnownFields = TypedDict(
+    "__ConfigChangeBeforeCapabilitiesField4ModifyField4PromptField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_ConfigChangeBeforeCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __ConfigChangeBeforeCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_ConfigChangeBeforeCapabilitiesField4ModifyField4PromptField1MergeObjectModel: TypeAlias = (
+    __ConfigChangeBeforeCapabilitiesField4ModifyField4PromptField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ConfigChangeBeforeCapabilitiesField4ModifyField4PromptMergeReplaceObjectModelKnownFields = TypedDict(
-    "__ConfigChangeBeforeCapabilitiesField4ModifyField4PromptMergeReplaceObjectModelKnownFields",
+__ConfigChangeBeforeCapabilitiesField4ModifyField5RequestField0ModelKnownFields = TypedDict(
+    "__ConfigChangeBeforeCapabilitiesField4ModifyField5RequestField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ConfigChangeBeforeCapabilitiesField4ModifyField4PromptMergeReplaceObjectModel: TypeAlias = (
-    __ConfigChangeBeforeCapabilitiesField4ModifyField4PromptMergeReplaceObjectModelKnownFields
+_ConfigChangeBeforeCapabilitiesField4ModifyField5RequestField0Model: TypeAlias = (
+    __ConfigChangeBeforeCapabilitiesField4ModifyField5RequestField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ConfigChangeBeforeCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__ConfigChangeBeforeCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__ConfigChangeBeforeCapabilitiesField4ModifyField5RequestField1ReplaceObjectModelKnownFields = TypedDict(
+    "__ConfigChangeBeforeCapabilitiesField4ModifyField5RequestField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_ConfigChangeBeforeCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __ConfigChangeBeforeCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_ConfigChangeBeforeCapabilitiesField4ModifyField5RequestField1ReplaceObjectModel: TypeAlias = (
+    __ConfigChangeBeforeCapabilitiesField4ModifyField5RequestField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ConfigChangeBeforeCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__ConfigChangeBeforeCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__ConfigChangeBeforeCapabilitiesField4ModifyField5RequestField1MergeObjectModelKnownFields = TypedDict(
+    "__ConfigChangeBeforeCapabilitiesField4ModifyField5RequestField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_ConfigChangeBeforeCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __ConfigChangeBeforeCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_ConfigChangeBeforeCapabilitiesField4ModifyField5RequestField1MergeObjectModel: TypeAlias = (
+    __ConfigChangeBeforeCapabilitiesField4ModifyField5RequestField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ConfigChangeBeforeCapabilitiesField4ModifyField5RequestMergeReplaceObjectModelKnownFields = TypedDict(
-    "__ConfigChangeBeforeCapabilitiesField4ModifyField5RequestMergeReplaceObjectModelKnownFields",
+__ConfigChangeBeforeCapabilitiesField4ModifyField6ResponseField0ModelKnownFields = TypedDict(
+    "__ConfigChangeBeforeCapabilitiesField4ModifyField6ResponseField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ConfigChangeBeforeCapabilitiesField4ModifyField5RequestMergeReplaceObjectModel: TypeAlias = (
-    __ConfigChangeBeforeCapabilitiesField4ModifyField5RequestMergeReplaceObjectModelKnownFields
+_ConfigChangeBeforeCapabilitiesField4ModifyField6ResponseField0Model: TypeAlias = (
+    __ConfigChangeBeforeCapabilitiesField4ModifyField6ResponseField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ConfigChangeBeforeCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__ConfigChangeBeforeCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__ConfigChangeBeforeCapabilitiesField4ModifyField6ResponseField1ReplaceObjectModelKnownFields = TypedDict(
+    "__ConfigChangeBeforeCapabilitiesField4ModifyField6ResponseField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_ConfigChangeBeforeCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __ConfigChangeBeforeCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_ConfigChangeBeforeCapabilitiesField4ModifyField6ResponseField1ReplaceObjectModel: TypeAlias = (
+    __ConfigChangeBeforeCapabilitiesField4ModifyField6ResponseField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ConfigChangeBeforeCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__ConfigChangeBeforeCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__ConfigChangeBeforeCapabilitiesField4ModifyField6ResponseField1MergeObjectModelKnownFields = TypedDict(
+    "__ConfigChangeBeforeCapabilitiesField4ModifyField6ResponseField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_ConfigChangeBeforeCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __ConfigChangeBeforeCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_ConfigChangeBeforeCapabilitiesField4ModifyField6ResponseField1MergeObjectModel: TypeAlias = (
+    __ConfigChangeBeforeCapabilitiesField4ModifyField6ResponseField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ConfigChangeBeforeCapabilitiesField4ModifyField6ResponseMergeReplaceObjectModelKnownFields = TypedDict(
-    "__ConfigChangeBeforeCapabilitiesField4ModifyField6ResponseMergeReplaceObjectModelKnownFields",
+__ConfigChangeBeforeCapabilitiesField4ModifyField7SummaryField0ModelKnownFields = TypedDict(
+    "__ConfigChangeBeforeCapabilitiesField4ModifyField7SummaryField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ConfigChangeBeforeCapabilitiesField4ModifyField6ResponseMergeReplaceObjectModel: TypeAlias = (
-    __ConfigChangeBeforeCapabilitiesField4ModifyField6ResponseMergeReplaceObjectModelKnownFields
+_ConfigChangeBeforeCapabilitiesField4ModifyField7SummaryField0Model: TypeAlias = (
+    __ConfigChangeBeforeCapabilitiesField4ModifyField7SummaryField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ConfigChangeBeforeCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__ConfigChangeBeforeCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__ConfigChangeBeforeCapabilitiesField4ModifyField7SummaryField1ReplaceObjectModelKnownFields = TypedDict(
+    "__ConfigChangeBeforeCapabilitiesField4ModifyField7SummaryField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_ConfigChangeBeforeCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __ConfigChangeBeforeCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_ConfigChangeBeforeCapabilitiesField4ModifyField7SummaryField1ReplaceObjectModel: TypeAlias = (
+    __ConfigChangeBeforeCapabilitiesField4ModifyField7SummaryField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ConfigChangeBeforeCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__ConfigChangeBeforeCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__ConfigChangeBeforeCapabilitiesField4ModifyField7SummaryField1MergeObjectModelKnownFields = TypedDict(
+    "__ConfigChangeBeforeCapabilitiesField4ModifyField7SummaryField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_ConfigChangeBeforeCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __ConfigChangeBeforeCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_ConfigChangeBeforeCapabilitiesField4ModifyField7SummaryField1MergeObjectModel: TypeAlias = (
+    __ConfigChangeBeforeCapabilitiesField4ModifyField7SummaryField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ConfigChangeBeforeCapabilitiesField4ModifyField7SummaryMergeReplaceObjectModelKnownFields = TypedDict(
-    "__ConfigChangeBeforeCapabilitiesField4ModifyField7SummaryMergeReplaceObjectModelKnownFields",
+__ConfigChangeBeforeCapabilitiesField4ModifyField8WorkspaceField0ModelKnownFields = TypedDict(
+    "__ConfigChangeBeforeCapabilitiesField4ModifyField8WorkspaceField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ConfigChangeBeforeCapabilitiesField4ModifyField7SummaryMergeReplaceObjectModel: TypeAlias = (
-    __ConfigChangeBeforeCapabilitiesField4ModifyField7SummaryMergeReplaceObjectModelKnownFields
+_ConfigChangeBeforeCapabilitiesField4ModifyField8WorkspaceField0Model: TypeAlias = (
+    __ConfigChangeBeforeCapabilitiesField4ModifyField8WorkspaceField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ConfigChangeBeforeCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__ConfigChangeBeforeCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__ConfigChangeBeforeCapabilitiesField4ModifyField8WorkspaceField1ReplaceObjectModelKnownFields = TypedDict(
+    "__ConfigChangeBeforeCapabilitiesField4ModifyField8WorkspaceField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_ConfigChangeBeforeCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __ConfigChangeBeforeCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_ConfigChangeBeforeCapabilitiesField4ModifyField8WorkspaceField1ReplaceObjectModel: TypeAlias = (
+    __ConfigChangeBeforeCapabilitiesField4ModifyField8WorkspaceField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ConfigChangeBeforeCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__ConfigChangeBeforeCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__ConfigChangeBeforeCapabilitiesField4ModifyField8WorkspaceField1MergeObjectModelKnownFields = TypedDict(
+    "__ConfigChangeBeforeCapabilitiesField4ModifyField8WorkspaceField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_ConfigChangeBeforeCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __ConfigChangeBeforeCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectMergeObjectModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ConfigChangeBeforeCapabilitiesField4ModifyField8WorkspaceMergeReplaceObjectModelKnownFields = TypedDict(
-    "__ConfigChangeBeforeCapabilitiesField4ModifyField8WorkspaceMergeReplaceObjectModelKnownFields",
-    {"merge": Required[bool], "replace": Required[bool]},
-    total=False,
-)
-_ConfigChangeBeforeCapabilitiesField4ModifyField8WorkspaceMergeReplaceObjectModel: TypeAlias = (
-    __ConfigChangeBeforeCapabilitiesField4ModifyField8WorkspaceMergeReplaceObjectModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ConfigChangeBeforeCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__ConfigChangeBeforeCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_ConfigChangeBeforeCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __ConfigChangeBeforeCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ConfigChangeBeforeCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__ConfigChangeBeforeCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_ConfigChangeBeforeCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __ConfigChangeBeforeCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_ConfigChangeBeforeCapabilitiesField4ModifyField8WorkspaceField1MergeObjectModel: TypeAlias = (
+    __ConfigChangeBeforeCapabilitiesField4ModifyField8WorkspaceField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
 __ConfigChangeBeforeCapabilitiesField4ModifyModelKnownFields = TypedDict(
@@ -1264,247 +1257,247 @@ __ContextCompactAfterCapabilitiesField3InjectModelKnownFields = TypedDict(
 _ContextCompactAfterCapabilitiesField3InjectModel: TypeAlias = (
     __ContextCompactAfterCapabilitiesField3InjectModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__ContextCompactAfterCapabilitiesField4ModifyField0ContentMergeReplaceObjectModelKnownFields = TypedDict(
-    "__ContextCompactAfterCapabilitiesField4ModifyField0ContentMergeReplaceObjectModelKnownFields",
+__ContextCompactAfterCapabilitiesField4ModifyField0ContentField0ModelKnownFields = TypedDict(
+    "__ContextCompactAfterCapabilitiesField4ModifyField0ContentField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ContextCompactAfterCapabilitiesField4ModifyField0ContentMergeReplaceObjectModel: TypeAlias = (
-    __ContextCompactAfterCapabilitiesField4ModifyField0ContentMergeReplaceObjectModelKnownFields
+_ContextCompactAfterCapabilitiesField4ModifyField0ContentField0Model: TypeAlias = (
+    __ContextCompactAfterCapabilitiesField4ModifyField0ContentField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ContextCompactAfterCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__ContextCompactAfterCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__ContextCompactAfterCapabilitiesField4ModifyField0ContentField1ReplaceObjectModelKnownFields = TypedDict(
+    "__ContextCompactAfterCapabilitiesField4ModifyField0ContentField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_ContextCompactAfterCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __ContextCompactAfterCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_ContextCompactAfterCapabilitiesField4ModifyField0ContentField1ReplaceObjectModel: TypeAlias = (
+    __ContextCompactAfterCapabilitiesField4ModifyField0ContentField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ContextCompactAfterCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__ContextCompactAfterCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__ContextCompactAfterCapabilitiesField4ModifyField0ContentField1MergeObjectModelKnownFields = TypedDict(
+    "__ContextCompactAfterCapabilitiesField4ModifyField0ContentField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_ContextCompactAfterCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __ContextCompactAfterCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_ContextCompactAfterCapabilitiesField4ModifyField0ContentField1MergeObjectModel: TypeAlias = (
+    __ContextCompactAfterCapabilitiesField4ModifyField0ContentField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ContextCompactAfterCapabilitiesField4ModifyField1InputMergeReplaceObjectModelKnownFields = TypedDict(
-    "__ContextCompactAfterCapabilitiesField4ModifyField1InputMergeReplaceObjectModelKnownFields",
+__ContextCompactAfterCapabilitiesField4ModifyField1InputField0ModelKnownFields = TypedDict(
+    "__ContextCompactAfterCapabilitiesField4ModifyField1InputField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ContextCompactAfterCapabilitiesField4ModifyField1InputMergeReplaceObjectModel: TypeAlias = (
-    __ContextCompactAfterCapabilitiesField4ModifyField1InputMergeReplaceObjectModelKnownFields
+_ContextCompactAfterCapabilitiesField4ModifyField1InputField0Model: TypeAlias = (
+    __ContextCompactAfterCapabilitiesField4ModifyField1InputField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ContextCompactAfterCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__ContextCompactAfterCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__ContextCompactAfterCapabilitiesField4ModifyField1InputField1ReplaceObjectModelKnownFields = TypedDict(
+    "__ContextCompactAfterCapabilitiesField4ModifyField1InputField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_ContextCompactAfterCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __ContextCompactAfterCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_ContextCompactAfterCapabilitiesField4ModifyField1InputField1ReplaceObjectModel: TypeAlias = (
+    __ContextCompactAfterCapabilitiesField4ModifyField1InputField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ContextCompactAfterCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__ContextCompactAfterCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__ContextCompactAfterCapabilitiesField4ModifyField1InputField1MergeObjectModelKnownFields = TypedDict(
+    "__ContextCompactAfterCapabilitiesField4ModifyField1InputField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_ContextCompactAfterCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __ContextCompactAfterCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_ContextCompactAfterCapabilitiesField4ModifyField1InputField1MergeObjectModel: TypeAlias = (
+    __ContextCompactAfterCapabilitiesField4ModifyField1InputField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ContextCompactAfterCapabilitiesField4ModifyField2InstructionsMergeReplaceObjectModelKnownFields = TypedDict(
-    "__ContextCompactAfterCapabilitiesField4ModifyField2InstructionsMergeReplaceObjectModelKnownFields",
+__ContextCompactAfterCapabilitiesField4ModifyField2InstructionsField0ModelKnownFields = TypedDict(
+    "__ContextCompactAfterCapabilitiesField4ModifyField2InstructionsField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ContextCompactAfterCapabilitiesField4ModifyField2InstructionsMergeReplaceObjectModel: TypeAlias = (
-    __ContextCompactAfterCapabilitiesField4ModifyField2InstructionsMergeReplaceObjectModelKnownFields
+_ContextCompactAfterCapabilitiesField4ModifyField2InstructionsField0Model: TypeAlias = (
+    __ContextCompactAfterCapabilitiesField4ModifyField2InstructionsField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ContextCompactAfterCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__ContextCompactAfterCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__ContextCompactAfterCapabilitiesField4ModifyField2InstructionsField1ReplaceObjectModelKnownFields = TypedDict(
+    "__ContextCompactAfterCapabilitiesField4ModifyField2InstructionsField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_ContextCompactAfterCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __ContextCompactAfterCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_ContextCompactAfterCapabilitiesField4ModifyField2InstructionsField1ReplaceObjectModel: TypeAlias = (
+    __ContextCompactAfterCapabilitiesField4ModifyField2InstructionsField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ContextCompactAfterCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__ContextCompactAfterCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__ContextCompactAfterCapabilitiesField4ModifyField2InstructionsField1MergeObjectModelKnownFields = TypedDict(
+    "__ContextCompactAfterCapabilitiesField4ModifyField2InstructionsField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_ContextCompactAfterCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __ContextCompactAfterCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_ContextCompactAfterCapabilitiesField4ModifyField2InstructionsField1MergeObjectModel: TypeAlias = (
+    __ContextCompactAfterCapabilitiesField4ModifyField2InstructionsField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ContextCompactAfterCapabilitiesField4ModifyField3OutputMergeReplaceObjectModelKnownFields = TypedDict(
-    "__ContextCompactAfterCapabilitiesField4ModifyField3OutputMergeReplaceObjectModelKnownFields",
+__ContextCompactAfterCapabilitiesField4ModifyField3OutputField0ModelKnownFields = TypedDict(
+    "__ContextCompactAfterCapabilitiesField4ModifyField3OutputField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ContextCompactAfterCapabilitiesField4ModifyField3OutputMergeReplaceObjectModel: TypeAlias = (
-    __ContextCompactAfterCapabilitiesField4ModifyField3OutputMergeReplaceObjectModelKnownFields
+_ContextCompactAfterCapabilitiesField4ModifyField3OutputField0Model: TypeAlias = (
+    __ContextCompactAfterCapabilitiesField4ModifyField3OutputField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ContextCompactAfterCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__ContextCompactAfterCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__ContextCompactAfterCapabilitiesField4ModifyField3OutputField1ReplaceObjectModelKnownFields = TypedDict(
+    "__ContextCompactAfterCapabilitiesField4ModifyField3OutputField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_ContextCompactAfterCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __ContextCompactAfterCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_ContextCompactAfterCapabilitiesField4ModifyField3OutputField1ReplaceObjectModel: TypeAlias = (
+    __ContextCompactAfterCapabilitiesField4ModifyField3OutputField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ContextCompactAfterCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__ContextCompactAfterCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__ContextCompactAfterCapabilitiesField4ModifyField3OutputField1MergeObjectModelKnownFields = TypedDict(
+    "__ContextCompactAfterCapabilitiesField4ModifyField3OutputField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_ContextCompactAfterCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __ContextCompactAfterCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_ContextCompactAfterCapabilitiesField4ModifyField3OutputField1MergeObjectModel: TypeAlias = (
+    __ContextCompactAfterCapabilitiesField4ModifyField3OutputField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ContextCompactAfterCapabilitiesField4ModifyField4PromptMergeReplaceObjectModelKnownFields = TypedDict(
-    "__ContextCompactAfterCapabilitiesField4ModifyField4PromptMergeReplaceObjectModelKnownFields",
+__ContextCompactAfterCapabilitiesField4ModifyField4PromptField0ModelKnownFields = TypedDict(
+    "__ContextCompactAfterCapabilitiesField4ModifyField4PromptField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ContextCompactAfterCapabilitiesField4ModifyField4PromptMergeReplaceObjectModel: TypeAlias = (
-    __ContextCompactAfterCapabilitiesField4ModifyField4PromptMergeReplaceObjectModelKnownFields
+_ContextCompactAfterCapabilitiesField4ModifyField4PromptField0Model: TypeAlias = (
+    __ContextCompactAfterCapabilitiesField4ModifyField4PromptField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ContextCompactAfterCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__ContextCompactAfterCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__ContextCompactAfterCapabilitiesField4ModifyField4PromptField1ReplaceObjectModelKnownFields = TypedDict(
+    "__ContextCompactAfterCapabilitiesField4ModifyField4PromptField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_ContextCompactAfterCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __ContextCompactAfterCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_ContextCompactAfterCapabilitiesField4ModifyField4PromptField1ReplaceObjectModel: TypeAlias = (
+    __ContextCompactAfterCapabilitiesField4ModifyField4PromptField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ContextCompactAfterCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__ContextCompactAfterCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__ContextCompactAfterCapabilitiesField4ModifyField4PromptField1MergeObjectModelKnownFields = TypedDict(
+    "__ContextCompactAfterCapabilitiesField4ModifyField4PromptField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_ContextCompactAfterCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __ContextCompactAfterCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_ContextCompactAfterCapabilitiesField4ModifyField4PromptField1MergeObjectModel: TypeAlias = (
+    __ContextCompactAfterCapabilitiesField4ModifyField4PromptField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ContextCompactAfterCapabilitiesField4ModifyField5RequestMergeReplaceObjectModelKnownFields = TypedDict(
-    "__ContextCompactAfterCapabilitiesField4ModifyField5RequestMergeReplaceObjectModelKnownFields",
+__ContextCompactAfterCapabilitiesField4ModifyField5RequestField0ModelKnownFields = TypedDict(
+    "__ContextCompactAfterCapabilitiesField4ModifyField5RequestField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ContextCompactAfterCapabilitiesField4ModifyField5RequestMergeReplaceObjectModel: TypeAlias = (
-    __ContextCompactAfterCapabilitiesField4ModifyField5RequestMergeReplaceObjectModelKnownFields
+_ContextCompactAfterCapabilitiesField4ModifyField5RequestField0Model: TypeAlias = (
+    __ContextCompactAfterCapabilitiesField4ModifyField5RequestField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ContextCompactAfterCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__ContextCompactAfterCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__ContextCompactAfterCapabilitiesField4ModifyField5RequestField1ReplaceObjectModelKnownFields = TypedDict(
+    "__ContextCompactAfterCapabilitiesField4ModifyField5RequestField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_ContextCompactAfterCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __ContextCompactAfterCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_ContextCompactAfterCapabilitiesField4ModifyField5RequestField1ReplaceObjectModel: TypeAlias = (
+    __ContextCompactAfterCapabilitiesField4ModifyField5RequestField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ContextCompactAfterCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__ContextCompactAfterCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__ContextCompactAfterCapabilitiesField4ModifyField5RequestField1MergeObjectModelKnownFields = TypedDict(
+    "__ContextCompactAfterCapabilitiesField4ModifyField5RequestField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_ContextCompactAfterCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __ContextCompactAfterCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_ContextCompactAfterCapabilitiesField4ModifyField5RequestField1MergeObjectModel: TypeAlias = (
+    __ContextCompactAfterCapabilitiesField4ModifyField5RequestField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ContextCompactAfterCapabilitiesField4ModifyField6ResponseMergeReplaceObjectModelKnownFields = TypedDict(
-    "__ContextCompactAfterCapabilitiesField4ModifyField6ResponseMergeReplaceObjectModelKnownFields",
+__ContextCompactAfterCapabilitiesField4ModifyField6ResponseField0ModelKnownFields = TypedDict(
+    "__ContextCompactAfterCapabilitiesField4ModifyField6ResponseField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ContextCompactAfterCapabilitiesField4ModifyField6ResponseMergeReplaceObjectModel: TypeAlias = (
-    __ContextCompactAfterCapabilitiesField4ModifyField6ResponseMergeReplaceObjectModelKnownFields
+_ContextCompactAfterCapabilitiesField4ModifyField6ResponseField0Model: TypeAlias = (
+    __ContextCompactAfterCapabilitiesField4ModifyField6ResponseField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ContextCompactAfterCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__ContextCompactAfterCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__ContextCompactAfterCapabilitiesField4ModifyField6ResponseField1ReplaceObjectModelKnownFields = TypedDict(
+    "__ContextCompactAfterCapabilitiesField4ModifyField6ResponseField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_ContextCompactAfterCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __ContextCompactAfterCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_ContextCompactAfterCapabilitiesField4ModifyField6ResponseField1ReplaceObjectModel: TypeAlias = (
+    __ContextCompactAfterCapabilitiesField4ModifyField6ResponseField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ContextCompactAfterCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__ContextCompactAfterCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__ContextCompactAfterCapabilitiesField4ModifyField6ResponseField1MergeObjectModelKnownFields = TypedDict(
+    "__ContextCompactAfterCapabilitiesField4ModifyField6ResponseField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_ContextCompactAfterCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __ContextCompactAfterCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_ContextCompactAfterCapabilitiesField4ModifyField6ResponseField1MergeObjectModel: TypeAlias = (
+    __ContextCompactAfterCapabilitiesField4ModifyField6ResponseField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ContextCompactAfterCapabilitiesField4ModifyField7SummaryMergeReplaceObjectModelKnownFields = TypedDict(
-    "__ContextCompactAfterCapabilitiesField4ModifyField7SummaryMergeReplaceObjectModelKnownFields",
+__ContextCompactAfterCapabilitiesField4ModifyField7SummaryField0ModelKnownFields = TypedDict(
+    "__ContextCompactAfterCapabilitiesField4ModifyField7SummaryField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ContextCompactAfterCapabilitiesField4ModifyField7SummaryMergeReplaceObjectModel: TypeAlias = (
-    __ContextCompactAfterCapabilitiesField4ModifyField7SummaryMergeReplaceObjectModelKnownFields
+_ContextCompactAfterCapabilitiesField4ModifyField7SummaryField0Model: TypeAlias = (
+    __ContextCompactAfterCapabilitiesField4ModifyField7SummaryField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ContextCompactAfterCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__ContextCompactAfterCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__ContextCompactAfterCapabilitiesField4ModifyField7SummaryField1ReplaceObjectModelKnownFields = TypedDict(
+    "__ContextCompactAfterCapabilitiesField4ModifyField7SummaryField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_ContextCompactAfterCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __ContextCompactAfterCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_ContextCompactAfterCapabilitiesField4ModifyField7SummaryField1ReplaceObjectModel: TypeAlias = (
+    __ContextCompactAfterCapabilitiesField4ModifyField7SummaryField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ContextCompactAfterCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__ContextCompactAfterCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__ContextCompactAfterCapabilitiesField4ModifyField7SummaryField1MergeObjectModelKnownFields = TypedDict(
+    "__ContextCompactAfterCapabilitiesField4ModifyField7SummaryField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_ContextCompactAfterCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __ContextCompactAfterCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_ContextCompactAfterCapabilitiesField4ModifyField7SummaryField1MergeObjectModel: TypeAlias = (
+    __ContextCompactAfterCapabilitiesField4ModifyField7SummaryField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ContextCompactAfterCapabilitiesField4ModifyField8WorkspaceMergeReplaceObjectModelKnownFields = TypedDict(
-    "__ContextCompactAfterCapabilitiesField4ModifyField8WorkspaceMergeReplaceObjectModelKnownFields",
+__ContextCompactAfterCapabilitiesField4ModifyField8WorkspaceField0ModelKnownFields = TypedDict(
+    "__ContextCompactAfterCapabilitiesField4ModifyField8WorkspaceField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ContextCompactAfterCapabilitiesField4ModifyField8WorkspaceMergeReplaceObjectModel: TypeAlias = (
-    __ContextCompactAfterCapabilitiesField4ModifyField8WorkspaceMergeReplaceObjectModelKnownFields
+_ContextCompactAfterCapabilitiesField4ModifyField8WorkspaceField0Model: TypeAlias = (
+    __ContextCompactAfterCapabilitiesField4ModifyField8WorkspaceField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ContextCompactAfterCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__ContextCompactAfterCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__ContextCompactAfterCapabilitiesField4ModifyField8WorkspaceField1ReplaceObjectModelKnownFields = TypedDict(
+    "__ContextCompactAfterCapabilitiesField4ModifyField8WorkspaceField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_ContextCompactAfterCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __ContextCompactAfterCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_ContextCompactAfterCapabilitiesField4ModifyField8WorkspaceField1ReplaceObjectModel: TypeAlias = (
+    __ContextCompactAfterCapabilitiesField4ModifyField8WorkspaceField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ContextCompactAfterCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__ContextCompactAfterCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__ContextCompactAfterCapabilitiesField4ModifyField8WorkspaceField1MergeObjectModelKnownFields = TypedDict(
+    "__ContextCompactAfterCapabilitiesField4ModifyField8WorkspaceField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_ContextCompactAfterCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __ContextCompactAfterCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_ContextCompactAfterCapabilitiesField4ModifyField8WorkspaceField1MergeObjectModel: TypeAlias = (
+    __ContextCompactAfterCapabilitiesField4ModifyField8WorkspaceField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
 __ContextCompactAfterCapabilitiesField4ModifyModelKnownFields = TypedDict(
@@ -1617,247 +1610,247 @@ __ContextCompactBeforeCapabilitiesField3InjectModelKnownFields = TypedDict(
 _ContextCompactBeforeCapabilitiesField3InjectModel: TypeAlias = (
     __ContextCompactBeforeCapabilitiesField3InjectModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__ContextCompactBeforeCapabilitiesField4ModifyField0ContentMergeReplaceObjectModelKnownFields = TypedDict(
-    "__ContextCompactBeforeCapabilitiesField4ModifyField0ContentMergeReplaceObjectModelKnownFields",
+__ContextCompactBeforeCapabilitiesField4ModifyField0ContentField0ModelKnownFields = TypedDict(
+    "__ContextCompactBeforeCapabilitiesField4ModifyField0ContentField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ContextCompactBeforeCapabilitiesField4ModifyField0ContentMergeReplaceObjectModel: TypeAlias = (
-    __ContextCompactBeforeCapabilitiesField4ModifyField0ContentMergeReplaceObjectModelKnownFields
+_ContextCompactBeforeCapabilitiesField4ModifyField0ContentField0Model: TypeAlias = (
+    __ContextCompactBeforeCapabilitiesField4ModifyField0ContentField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ContextCompactBeforeCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__ContextCompactBeforeCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__ContextCompactBeforeCapabilitiesField4ModifyField0ContentField1ReplaceObjectModelKnownFields = TypedDict(
+    "__ContextCompactBeforeCapabilitiesField4ModifyField0ContentField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_ContextCompactBeforeCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __ContextCompactBeforeCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_ContextCompactBeforeCapabilitiesField4ModifyField0ContentField1ReplaceObjectModel: TypeAlias = (
+    __ContextCompactBeforeCapabilitiesField4ModifyField0ContentField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ContextCompactBeforeCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__ContextCompactBeforeCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__ContextCompactBeforeCapabilitiesField4ModifyField0ContentField1MergeObjectModelKnownFields = TypedDict(
+    "__ContextCompactBeforeCapabilitiesField4ModifyField0ContentField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_ContextCompactBeforeCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __ContextCompactBeforeCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_ContextCompactBeforeCapabilitiesField4ModifyField0ContentField1MergeObjectModel: TypeAlias = (
+    __ContextCompactBeforeCapabilitiesField4ModifyField0ContentField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ContextCompactBeforeCapabilitiesField4ModifyField1InputMergeReplaceObjectModelKnownFields = TypedDict(
-    "__ContextCompactBeforeCapabilitiesField4ModifyField1InputMergeReplaceObjectModelKnownFields",
+__ContextCompactBeforeCapabilitiesField4ModifyField1InputField0ModelKnownFields = TypedDict(
+    "__ContextCompactBeforeCapabilitiesField4ModifyField1InputField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ContextCompactBeforeCapabilitiesField4ModifyField1InputMergeReplaceObjectModel: TypeAlias = (
-    __ContextCompactBeforeCapabilitiesField4ModifyField1InputMergeReplaceObjectModelKnownFields
+_ContextCompactBeforeCapabilitiesField4ModifyField1InputField0Model: TypeAlias = (
+    __ContextCompactBeforeCapabilitiesField4ModifyField1InputField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ContextCompactBeforeCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__ContextCompactBeforeCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__ContextCompactBeforeCapabilitiesField4ModifyField1InputField1ReplaceObjectModelKnownFields = TypedDict(
+    "__ContextCompactBeforeCapabilitiesField4ModifyField1InputField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_ContextCompactBeforeCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __ContextCompactBeforeCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_ContextCompactBeforeCapabilitiesField4ModifyField1InputField1ReplaceObjectModel: TypeAlias = (
+    __ContextCompactBeforeCapabilitiesField4ModifyField1InputField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ContextCompactBeforeCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__ContextCompactBeforeCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__ContextCompactBeforeCapabilitiesField4ModifyField1InputField1MergeObjectModelKnownFields = TypedDict(
+    "__ContextCompactBeforeCapabilitiesField4ModifyField1InputField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_ContextCompactBeforeCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __ContextCompactBeforeCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_ContextCompactBeforeCapabilitiesField4ModifyField1InputField1MergeObjectModel: TypeAlias = (
+    __ContextCompactBeforeCapabilitiesField4ModifyField1InputField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ContextCompactBeforeCapabilitiesField4ModifyField2InstructionsMergeReplaceObjectModelKnownFields = TypedDict(
-    "__ContextCompactBeforeCapabilitiesField4ModifyField2InstructionsMergeReplaceObjectModelKnownFields",
+__ContextCompactBeforeCapabilitiesField4ModifyField2InstructionsField0ModelKnownFields = TypedDict(
+    "__ContextCompactBeforeCapabilitiesField4ModifyField2InstructionsField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ContextCompactBeforeCapabilitiesField4ModifyField2InstructionsMergeReplaceObjectModel: TypeAlias = (
-    __ContextCompactBeforeCapabilitiesField4ModifyField2InstructionsMergeReplaceObjectModelKnownFields
+_ContextCompactBeforeCapabilitiesField4ModifyField2InstructionsField0Model: TypeAlias = (
+    __ContextCompactBeforeCapabilitiesField4ModifyField2InstructionsField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ContextCompactBeforeCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__ContextCompactBeforeCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__ContextCompactBeforeCapabilitiesField4ModifyField2InstructionsField1ReplaceObjectModelKnownFields = TypedDict(
+    "__ContextCompactBeforeCapabilitiesField4ModifyField2InstructionsField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_ContextCompactBeforeCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __ContextCompactBeforeCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_ContextCompactBeforeCapabilitiesField4ModifyField2InstructionsField1ReplaceObjectModel: TypeAlias = (
+    __ContextCompactBeforeCapabilitiesField4ModifyField2InstructionsField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ContextCompactBeforeCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__ContextCompactBeforeCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__ContextCompactBeforeCapabilitiesField4ModifyField2InstructionsField1MergeObjectModelKnownFields = TypedDict(
+    "__ContextCompactBeforeCapabilitiesField4ModifyField2InstructionsField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_ContextCompactBeforeCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __ContextCompactBeforeCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_ContextCompactBeforeCapabilitiesField4ModifyField2InstructionsField1MergeObjectModel: TypeAlias = (
+    __ContextCompactBeforeCapabilitiesField4ModifyField2InstructionsField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ContextCompactBeforeCapabilitiesField4ModifyField3OutputMergeReplaceObjectModelKnownFields = TypedDict(
-    "__ContextCompactBeforeCapabilitiesField4ModifyField3OutputMergeReplaceObjectModelKnownFields",
+__ContextCompactBeforeCapabilitiesField4ModifyField3OutputField0ModelKnownFields = TypedDict(
+    "__ContextCompactBeforeCapabilitiesField4ModifyField3OutputField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ContextCompactBeforeCapabilitiesField4ModifyField3OutputMergeReplaceObjectModel: TypeAlias = (
-    __ContextCompactBeforeCapabilitiesField4ModifyField3OutputMergeReplaceObjectModelKnownFields
+_ContextCompactBeforeCapabilitiesField4ModifyField3OutputField0Model: TypeAlias = (
+    __ContextCompactBeforeCapabilitiesField4ModifyField3OutputField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ContextCompactBeforeCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__ContextCompactBeforeCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__ContextCompactBeforeCapabilitiesField4ModifyField3OutputField1ReplaceObjectModelKnownFields = TypedDict(
+    "__ContextCompactBeforeCapabilitiesField4ModifyField3OutputField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_ContextCompactBeforeCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __ContextCompactBeforeCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_ContextCompactBeforeCapabilitiesField4ModifyField3OutputField1ReplaceObjectModel: TypeAlias = (
+    __ContextCompactBeforeCapabilitiesField4ModifyField3OutputField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ContextCompactBeforeCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__ContextCompactBeforeCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__ContextCompactBeforeCapabilitiesField4ModifyField3OutputField1MergeObjectModelKnownFields = TypedDict(
+    "__ContextCompactBeforeCapabilitiesField4ModifyField3OutputField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_ContextCompactBeforeCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __ContextCompactBeforeCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_ContextCompactBeforeCapabilitiesField4ModifyField3OutputField1MergeObjectModel: TypeAlias = (
+    __ContextCompactBeforeCapabilitiesField4ModifyField3OutputField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ContextCompactBeforeCapabilitiesField4ModifyField4PromptMergeReplaceObjectModelKnownFields = TypedDict(
-    "__ContextCompactBeforeCapabilitiesField4ModifyField4PromptMergeReplaceObjectModelKnownFields",
+__ContextCompactBeforeCapabilitiesField4ModifyField4PromptField0ModelKnownFields = TypedDict(
+    "__ContextCompactBeforeCapabilitiesField4ModifyField4PromptField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ContextCompactBeforeCapabilitiesField4ModifyField4PromptMergeReplaceObjectModel: TypeAlias = (
-    __ContextCompactBeforeCapabilitiesField4ModifyField4PromptMergeReplaceObjectModelKnownFields
+_ContextCompactBeforeCapabilitiesField4ModifyField4PromptField0Model: TypeAlias = (
+    __ContextCompactBeforeCapabilitiesField4ModifyField4PromptField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ContextCompactBeforeCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__ContextCompactBeforeCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__ContextCompactBeforeCapabilitiesField4ModifyField4PromptField1ReplaceObjectModelKnownFields = TypedDict(
+    "__ContextCompactBeforeCapabilitiesField4ModifyField4PromptField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_ContextCompactBeforeCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __ContextCompactBeforeCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_ContextCompactBeforeCapabilitiesField4ModifyField4PromptField1ReplaceObjectModel: TypeAlias = (
+    __ContextCompactBeforeCapabilitiesField4ModifyField4PromptField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ContextCompactBeforeCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__ContextCompactBeforeCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__ContextCompactBeforeCapabilitiesField4ModifyField4PromptField1MergeObjectModelKnownFields = TypedDict(
+    "__ContextCompactBeforeCapabilitiesField4ModifyField4PromptField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_ContextCompactBeforeCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __ContextCompactBeforeCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_ContextCompactBeforeCapabilitiesField4ModifyField4PromptField1MergeObjectModel: TypeAlias = (
+    __ContextCompactBeforeCapabilitiesField4ModifyField4PromptField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ContextCompactBeforeCapabilitiesField4ModifyField5RequestMergeReplaceObjectModelKnownFields = TypedDict(
-    "__ContextCompactBeforeCapabilitiesField4ModifyField5RequestMergeReplaceObjectModelKnownFields",
+__ContextCompactBeforeCapabilitiesField4ModifyField5RequestField0ModelKnownFields = TypedDict(
+    "__ContextCompactBeforeCapabilitiesField4ModifyField5RequestField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ContextCompactBeforeCapabilitiesField4ModifyField5RequestMergeReplaceObjectModel: TypeAlias = (
-    __ContextCompactBeforeCapabilitiesField4ModifyField5RequestMergeReplaceObjectModelKnownFields
+_ContextCompactBeforeCapabilitiesField4ModifyField5RequestField0Model: TypeAlias = (
+    __ContextCompactBeforeCapabilitiesField4ModifyField5RequestField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ContextCompactBeforeCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__ContextCompactBeforeCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__ContextCompactBeforeCapabilitiesField4ModifyField5RequestField1ReplaceObjectModelKnownFields = TypedDict(
+    "__ContextCompactBeforeCapabilitiesField4ModifyField5RequestField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_ContextCompactBeforeCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __ContextCompactBeforeCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_ContextCompactBeforeCapabilitiesField4ModifyField5RequestField1ReplaceObjectModel: TypeAlias = (
+    __ContextCompactBeforeCapabilitiesField4ModifyField5RequestField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ContextCompactBeforeCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__ContextCompactBeforeCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__ContextCompactBeforeCapabilitiesField4ModifyField5RequestField1MergeObjectModelKnownFields = TypedDict(
+    "__ContextCompactBeforeCapabilitiesField4ModifyField5RequestField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_ContextCompactBeforeCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __ContextCompactBeforeCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_ContextCompactBeforeCapabilitiesField4ModifyField5RequestField1MergeObjectModel: TypeAlias = (
+    __ContextCompactBeforeCapabilitiesField4ModifyField5RequestField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ContextCompactBeforeCapabilitiesField4ModifyField6ResponseMergeReplaceObjectModelKnownFields = TypedDict(
-    "__ContextCompactBeforeCapabilitiesField4ModifyField6ResponseMergeReplaceObjectModelKnownFields",
+__ContextCompactBeforeCapabilitiesField4ModifyField6ResponseField0ModelKnownFields = TypedDict(
+    "__ContextCompactBeforeCapabilitiesField4ModifyField6ResponseField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ContextCompactBeforeCapabilitiesField4ModifyField6ResponseMergeReplaceObjectModel: TypeAlias = (
-    __ContextCompactBeforeCapabilitiesField4ModifyField6ResponseMergeReplaceObjectModelKnownFields
+_ContextCompactBeforeCapabilitiesField4ModifyField6ResponseField0Model: TypeAlias = (
+    __ContextCompactBeforeCapabilitiesField4ModifyField6ResponseField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ContextCompactBeforeCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__ContextCompactBeforeCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__ContextCompactBeforeCapabilitiesField4ModifyField6ResponseField1ReplaceObjectModelKnownFields = TypedDict(
+    "__ContextCompactBeforeCapabilitiesField4ModifyField6ResponseField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_ContextCompactBeforeCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __ContextCompactBeforeCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_ContextCompactBeforeCapabilitiesField4ModifyField6ResponseField1ReplaceObjectModel: TypeAlias = (
+    __ContextCompactBeforeCapabilitiesField4ModifyField6ResponseField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ContextCompactBeforeCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__ContextCompactBeforeCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__ContextCompactBeforeCapabilitiesField4ModifyField6ResponseField1MergeObjectModelKnownFields = TypedDict(
+    "__ContextCompactBeforeCapabilitiesField4ModifyField6ResponseField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_ContextCompactBeforeCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __ContextCompactBeforeCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_ContextCompactBeforeCapabilitiesField4ModifyField6ResponseField1MergeObjectModel: TypeAlias = (
+    __ContextCompactBeforeCapabilitiesField4ModifyField6ResponseField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ContextCompactBeforeCapabilitiesField4ModifyField7SummaryMergeReplaceObjectModelKnownFields = TypedDict(
-    "__ContextCompactBeforeCapabilitiesField4ModifyField7SummaryMergeReplaceObjectModelKnownFields",
+__ContextCompactBeforeCapabilitiesField4ModifyField7SummaryField0ModelKnownFields = TypedDict(
+    "__ContextCompactBeforeCapabilitiesField4ModifyField7SummaryField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ContextCompactBeforeCapabilitiesField4ModifyField7SummaryMergeReplaceObjectModel: TypeAlias = (
-    __ContextCompactBeforeCapabilitiesField4ModifyField7SummaryMergeReplaceObjectModelKnownFields
+_ContextCompactBeforeCapabilitiesField4ModifyField7SummaryField0Model: TypeAlias = (
+    __ContextCompactBeforeCapabilitiesField4ModifyField7SummaryField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ContextCompactBeforeCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__ContextCompactBeforeCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__ContextCompactBeforeCapabilitiesField4ModifyField7SummaryField1ReplaceObjectModelKnownFields = TypedDict(
+    "__ContextCompactBeforeCapabilitiesField4ModifyField7SummaryField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_ContextCompactBeforeCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __ContextCompactBeforeCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_ContextCompactBeforeCapabilitiesField4ModifyField7SummaryField1ReplaceObjectModel: TypeAlias = (
+    __ContextCompactBeforeCapabilitiesField4ModifyField7SummaryField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ContextCompactBeforeCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__ContextCompactBeforeCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__ContextCompactBeforeCapabilitiesField4ModifyField7SummaryField1MergeObjectModelKnownFields = TypedDict(
+    "__ContextCompactBeforeCapabilitiesField4ModifyField7SummaryField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_ContextCompactBeforeCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __ContextCompactBeforeCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_ContextCompactBeforeCapabilitiesField4ModifyField7SummaryField1MergeObjectModel: TypeAlias = (
+    __ContextCompactBeforeCapabilitiesField4ModifyField7SummaryField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ContextCompactBeforeCapabilitiesField4ModifyField8WorkspaceMergeReplaceObjectModelKnownFields = TypedDict(
-    "__ContextCompactBeforeCapabilitiesField4ModifyField8WorkspaceMergeReplaceObjectModelKnownFields",
+__ContextCompactBeforeCapabilitiesField4ModifyField8WorkspaceField0ModelKnownFields = TypedDict(
+    "__ContextCompactBeforeCapabilitiesField4ModifyField8WorkspaceField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ContextCompactBeforeCapabilitiesField4ModifyField8WorkspaceMergeReplaceObjectModel: TypeAlias = (
-    __ContextCompactBeforeCapabilitiesField4ModifyField8WorkspaceMergeReplaceObjectModelKnownFields
+_ContextCompactBeforeCapabilitiesField4ModifyField8WorkspaceField0Model: TypeAlias = (
+    __ContextCompactBeforeCapabilitiesField4ModifyField8WorkspaceField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ContextCompactBeforeCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__ContextCompactBeforeCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__ContextCompactBeforeCapabilitiesField4ModifyField8WorkspaceField1ReplaceObjectModelKnownFields = TypedDict(
+    "__ContextCompactBeforeCapabilitiesField4ModifyField8WorkspaceField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_ContextCompactBeforeCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __ContextCompactBeforeCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_ContextCompactBeforeCapabilitiesField4ModifyField8WorkspaceField1ReplaceObjectModel: TypeAlias = (
+    __ContextCompactBeforeCapabilitiesField4ModifyField8WorkspaceField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ContextCompactBeforeCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__ContextCompactBeforeCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__ContextCompactBeforeCapabilitiesField4ModifyField8WorkspaceField1MergeObjectModelKnownFields = TypedDict(
+    "__ContextCompactBeforeCapabilitiesField4ModifyField8WorkspaceField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_ContextCompactBeforeCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __ContextCompactBeforeCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_ContextCompactBeforeCapabilitiesField4ModifyField8WorkspaceField1MergeObjectModel: TypeAlias = (
+    __ContextCompactBeforeCapabilitiesField4ModifyField8WorkspaceField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
 __ContextCompactBeforeCapabilitiesField4ModifyModelKnownFields = TypedDict(
@@ -2225,205 +2218,194 @@ ExecutionEventFilechange = TypedDict(
 )
 
 # Source: schema/draft/execution-event.schema.json#/$defs/mcp
-_ExecutionEventMcpField0ConnectionGapsObjectOrUrlObjectAndTransportObjectShape947e67f4c644f1e8TransportObjectField0GapsItemModel = TypedDict(
-    "_ExecutionEventMcpField0ConnectionGapsObjectOrUrlObjectAndTransportObjectShape947e67f4c644f1e8TransportObjectField0GapsItemModel",
+_ExecutionEventMcpField0ConnectionHttpField0Field0GapsItemModel = TypedDict(
+    "_ExecutionEventMcpField0ConnectionHttpField0Field0GapsItemModel",
     {"path": Required[str], "reason": Required[str]},
     total=False,
 )
-_ExecutionEventMcpField0ConnectionGapsObjectOrUrlObjectAndTransportObjectShape947e67f4c644f1e8TransportObjectModel = TypedDict(
-    "_ExecutionEventMcpField0ConnectionGapsObjectOrUrlObjectAndTransportObjectShape947e67f4c644f1e8TransportObjectModel",
+_ExecutionEventMcpField0ConnectionHttpField0Model = TypedDict(
+    "_ExecutionEventMcpField0ConnectionHttpField0Model",
     {
         "gaps": NotRequired[
-            list[
-                _ExecutionEventMcpField0ConnectionGapsObjectOrUrlObjectAndTransportObjectShape947e67f4c644f1e8TransportObjectField0GapsItemModel
-            ]
+            list[_ExecutionEventMcpField0ConnectionHttpField0Field0GapsItemModel]
         ],
         "transport": Required[Literal["http"]],
         "url": NotRequired[str],
     },
     total=False,
 )
-__ExecutionEventMcpField0ConnectionGapsObjectOrUrlObjectAndTransportObjectShape947e67f4c644f1e8GapsObjectOrUrlObjectUrlObjectModelKnownFields = TypedDict(
-    "__ExecutionEventMcpField0ConnectionGapsObjectOrUrlObjectAndTransportObjectShape947e67f4c644f1e8GapsObjectOrUrlObjectUrlObjectModelKnownFields",
+__ExecutionEventMcpField0ConnectionHttpField1UrlObjectModelKnownFields = TypedDict(
+    "__ExecutionEventMcpField0ConnectionHttpField1UrlObjectModelKnownFields",
     {"url": Required[JsonValue]},
     total=False,
 )
-_ExecutionEventMcpField0ConnectionGapsObjectOrUrlObjectAndTransportObjectShape947e67f4c644f1e8GapsObjectOrUrlObjectUrlObjectModel: TypeAlias = (
-    __ExecutionEventMcpField0ConnectionGapsObjectOrUrlObjectAndTransportObjectShape947e67f4c644f1e8GapsObjectOrUrlObjectUrlObjectModelKnownFields
-    | JsonObject
+_ExecutionEventMcpField0ConnectionHttpField1UrlObjectModel: TypeAlias = (
+    __ExecutionEventMcpField0ConnectionHttpField1UrlObjectModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__ExecutionEventMcpField0ConnectionGapsObjectOrUrlObjectAndTransportObjectShape947e67f4c644f1e8GapsObjectOrUrlObjectGapsObjectModelKnownFields = TypedDict(
-    "__ExecutionEventMcpField0ConnectionGapsObjectOrUrlObjectAndTransportObjectShape947e67f4c644f1e8GapsObjectOrUrlObjectGapsObjectModelKnownFields",
+__ExecutionEventMcpField0ConnectionHttpField1GapsObjectModelKnownFields = TypedDict(
+    "__ExecutionEventMcpField0ConnectionHttpField1GapsObjectModelKnownFields",
     {"gaps": Required[JsonValue]},
     total=False,
 )
-_ExecutionEventMcpField0ConnectionGapsObjectOrUrlObjectAndTransportObjectShape947e67f4c644f1e8GapsObjectOrUrlObjectGapsObjectModel: TypeAlias = (
-    __ExecutionEventMcpField0ConnectionGapsObjectOrUrlObjectAndTransportObjectShape947e67f4c644f1e8GapsObjectOrUrlObjectGapsObjectModelKnownFields
-    | JsonObject
+_ExecutionEventMcpField0ConnectionHttpField1GapsObjectModel: TypeAlias = (
+    __ExecutionEventMcpField0ConnectionHttpField1GapsObjectModelKnownFields | JsonObject
 )  # permits additional JSON fields
-_ExecutionEventMcpField0ConnectionGapsObjectOrUrlObjectAndTransportObjectShape03cf6907d766aa03TransportObjectField0GapsItemModel = TypedDict(
-    "_ExecutionEventMcpField0ConnectionGapsObjectOrUrlObjectAndTransportObjectShape03cf6907d766aa03TransportObjectField0GapsItemModel",
+_ExecutionEventMcpField0ConnectionSseField0Field0GapsItemModel = TypedDict(
+    "_ExecutionEventMcpField0ConnectionSseField0Field0GapsItemModel",
     {"path": Required[str], "reason": Required[str]},
     total=False,
 )
-_ExecutionEventMcpField0ConnectionGapsObjectOrUrlObjectAndTransportObjectShape03cf6907d766aa03TransportObjectModel = TypedDict(
-    "_ExecutionEventMcpField0ConnectionGapsObjectOrUrlObjectAndTransportObjectShape03cf6907d766aa03TransportObjectModel",
+_ExecutionEventMcpField0ConnectionSseField0Model = TypedDict(
+    "_ExecutionEventMcpField0ConnectionSseField0Model",
     {
         "gaps": NotRequired[
-            list[
-                _ExecutionEventMcpField0ConnectionGapsObjectOrUrlObjectAndTransportObjectShape03cf6907d766aa03TransportObjectField0GapsItemModel
-            ]
+            list[_ExecutionEventMcpField0ConnectionSseField0Field0GapsItemModel]
         ],
         "transport": Required[Literal["sse"]],
         "url": NotRequired[str],
     },
     total=False,
 )
-__ExecutionEventMcpField0ConnectionGapsObjectOrUrlObjectAndTransportObjectShape03cf6907d766aa03GapsObjectOrUrlObjectUrlObjectModelKnownFields = TypedDict(
-    "__ExecutionEventMcpField0ConnectionGapsObjectOrUrlObjectAndTransportObjectShape03cf6907d766aa03GapsObjectOrUrlObjectUrlObjectModelKnownFields",
+__ExecutionEventMcpField0ConnectionSseField1UrlObjectModelKnownFields = TypedDict(
+    "__ExecutionEventMcpField0ConnectionSseField1UrlObjectModelKnownFields",
     {"url": Required[JsonValue]},
     total=False,
 )
-_ExecutionEventMcpField0ConnectionGapsObjectOrUrlObjectAndTransportObjectShape03cf6907d766aa03GapsObjectOrUrlObjectUrlObjectModel: TypeAlias = (
-    __ExecutionEventMcpField0ConnectionGapsObjectOrUrlObjectAndTransportObjectShape03cf6907d766aa03GapsObjectOrUrlObjectUrlObjectModelKnownFields
-    | JsonObject
+_ExecutionEventMcpField0ConnectionSseField1UrlObjectModel: TypeAlias = (
+    __ExecutionEventMcpField0ConnectionSseField1UrlObjectModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__ExecutionEventMcpField0ConnectionGapsObjectOrUrlObjectAndTransportObjectShape03cf6907d766aa03GapsObjectOrUrlObjectGapsObjectModelKnownFields = TypedDict(
-    "__ExecutionEventMcpField0ConnectionGapsObjectOrUrlObjectAndTransportObjectShape03cf6907d766aa03GapsObjectOrUrlObjectGapsObjectModelKnownFields",
+__ExecutionEventMcpField0ConnectionSseField1GapsObjectModelKnownFields = TypedDict(
+    "__ExecutionEventMcpField0ConnectionSseField1GapsObjectModelKnownFields",
     {"gaps": Required[JsonValue]},
     total=False,
 )
-_ExecutionEventMcpField0ConnectionGapsObjectOrUrlObjectAndTransportObjectShape03cf6907d766aa03GapsObjectOrUrlObjectGapsObjectModel: TypeAlias = (
-    __ExecutionEventMcpField0ConnectionGapsObjectOrUrlObjectAndTransportObjectShape03cf6907d766aa03GapsObjectOrUrlObjectGapsObjectModelKnownFields
-    | JsonObject
+_ExecutionEventMcpField0ConnectionSseField1GapsObjectModel: TypeAlias = (
+    __ExecutionEventMcpField0ConnectionSseField1GapsObjectModelKnownFields | JsonObject
 )  # permits additional JSON fields
-_ExecutionEventMcpField0ConnectionArgsObjectOrGapsObjectAndCommandObjectOrGapsObjectAndCwdObjectOrGapsObjectAndTransportObjectTransportObjectField3GapsItemModel = TypedDict(
-    "_ExecutionEventMcpField0ConnectionArgsObjectOrGapsObjectAndCommandObjectOrGapsObjectAndCwdObjectOrGapsObjectAndTransportObjectTransportObjectField3GapsItemModel",
+_ExecutionEventMcpField0ConnectionStdioField0Field3GapsItemModel = TypedDict(
+    "_ExecutionEventMcpField0ConnectionStdioField0Field3GapsItemModel",
     {"path": Required[str], "reason": Required[str]},
     total=False,
 )
-_ExecutionEventMcpField0ConnectionArgsObjectOrGapsObjectAndCommandObjectOrGapsObjectAndCwdObjectOrGapsObjectAndTransportObjectTransportObjectModel = TypedDict(
-    "_ExecutionEventMcpField0ConnectionArgsObjectOrGapsObjectAndCommandObjectOrGapsObjectAndCwdObjectOrGapsObjectAndTransportObjectTransportObjectModel",
+_ExecutionEventMcpField0ConnectionStdioField0Model = TypedDict(
+    "_ExecutionEventMcpField0ConnectionStdioField0Model",
     {
         "args": NotRequired[list[str]],
         "command": NotRequired[str],
         "cwd": NotRequired[str],
         "gaps": NotRequired[
-            list[
-                _ExecutionEventMcpField0ConnectionArgsObjectOrGapsObjectAndCommandObjectOrGapsObjectAndCwdObjectOrGapsObjectAndTransportObjectTransportObjectField3GapsItemModel
-            ]
+            list[_ExecutionEventMcpField0ConnectionStdioField0Field3GapsItemModel]
         ],
         "transport": Required[Literal["stdio"]],
     },
     total=False,
 )
-__ExecutionEventMcpField0ConnectionArgsObjectOrGapsObjectAndCommandObjectOrGapsObjectAndCwdObjectOrGapsObjectAndTransportObjectCommandObjectOrGapsObjectCommandObjectModelKnownFields = TypedDict(
-    "__ExecutionEventMcpField0ConnectionArgsObjectOrGapsObjectAndCommandObjectOrGapsObjectAndCwdObjectOrGapsObjectAndTransportObjectCommandObjectOrGapsObjectCommandObjectModelKnownFields",
+__ExecutionEventMcpField0ConnectionStdioField1CommandObjectModelKnownFields = TypedDict(
+    "__ExecutionEventMcpField0ConnectionStdioField1CommandObjectModelKnownFields",
     {"command": Required[JsonValue]},
     total=False,
 )
-_ExecutionEventMcpField0ConnectionArgsObjectOrGapsObjectAndCommandObjectOrGapsObjectAndCwdObjectOrGapsObjectAndTransportObjectCommandObjectOrGapsObjectCommandObjectModel: TypeAlias = (
-    __ExecutionEventMcpField0ConnectionArgsObjectOrGapsObjectAndCommandObjectOrGapsObjectAndCwdObjectOrGapsObjectAndTransportObjectCommandObjectOrGapsObjectCommandObjectModelKnownFields
+_ExecutionEventMcpField0ConnectionStdioField1CommandObjectModel: TypeAlias = (
+    __ExecutionEventMcpField0ConnectionStdioField1CommandObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ExecutionEventMcpField0ConnectionArgsObjectOrGapsObjectAndCommandObjectOrGapsObjectAndCwdObjectOrGapsObjectAndTransportObjectCommandObjectOrGapsObjectGapsObjectModelKnownFields = TypedDict(
-    "__ExecutionEventMcpField0ConnectionArgsObjectOrGapsObjectAndCommandObjectOrGapsObjectAndCwdObjectOrGapsObjectAndTransportObjectCommandObjectOrGapsObjectGapsObjectModelKnownFields",
+__ExecutionEventMcpField0ConnectionStdioField1GapsObjectModelKnownFields = TypedDict(
+    "__ExecutionEventMcpField0ConnectionStdioField1GapsObjectModelKnownFields",
     {"gaps": Required[JsonValue]},
     total=False,
 )
-_ExecutionEventMcpField0ConnectionArgsObjectOrGapsObjectAndCommandObjectOrGapsObjectAndCwdObjectOrGapsObjectAndTransportObjectCommandObjectOrGapsObjectGapsObjectModel: TypeAlias = (
-    __ExecutionEventMcpField0ConnectionArgsObjectOrGapsObjectAndCommandObjectOrGapsObjectAndCwdObjectOrGapsObjectAndTransportObjectCommandObjectOrGapsObjectGapsObjectModelKnownFields
+_ExecutionEventMcpField0ConnectionStdioField1GapsObjectModel: TypeAlias = (
+    __ExecutionEventMcpField0ConnectionStdioField1GapsObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ExecutionEventMcpField0ConnectionArgsObjectOrGapsObjectAndCommandObjectOrGapsObjectAndCwdObjectOrGapsObjectAndTransportObjectArgsObjectOrGapsObjectArgsObjectModelKnownFields = TypedDict(
-    "__ExecutionEventMcpField0ConnectionArgsObjectOrGapsObjectAndCommandObjectOrGapsObjectAndCwdObjectOrGapsObjectAndTransportObjectArgsObjectOrGapsObjectArgsObjectModelKnownFields",
+__ExecutionEventMcpField0ConnectionStdioField2ArgsObjectModelKnownFields = TypedDict(
+    "__ExecutionEventMcpField0ConnectionStdioField2ArgsObjectModelKnownFields",
     {"args": Required[JsonValue]},
     total=False,
 )
-_ExecutionEventMcpField0ConnectionArgsObjectOrGapsObjectAndCommandObjectOrGapsObjectAndCwdObjectOrGapsObjectAndTransportObjectArgsObjectOrGapsObjectArgsObjectModel: TypeAlias = (
-    __ExecutionEventMcpField0ConnectionArgsObjectOrGapsObjectAndCommandObjectOrGapsObjectAndCwdObjectOrGapsObjectAndTransportObjectArgsObjectOrGapsObjectArgsObjectModelKnownFields
+_ExecutionEventMcpField0ConnectionStdioField2ArgsObjectModel: TypeAlias = (
+    __ExecutionEventMcpField0ConnectionStdioField2ArgsObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ExecutionEventMcpField0ConnectionArgsObjectOrGapsObjectAndCommandObjectOrGapsObjectAndCwdObjectOrGapsObjectAndTransportObjectArgsObjectOrGapsObjectGapsObjectModelKnownFields = TypedDict(
-    "__ExecutionEventMcpField0ConnectionArgsObjectOrGapsObjectAndCommandObjectOrGapsObjectAndCwdObjectOrGapsObjectAndTransportObjectArgsObjectOrGapsObjectGapsObjectModelKnownFields",
+__ExecutionEventMcpField0ConnectionStdioField2GapsObjectModelKnownFields = TypedDict(
+    "__ExecutionEventMcpField0ConnectionStdioField2GapsObjectModelKnownFields",
     {"gaps": Required[JsonValue]},
     total=False,
 )
-_ExecutionEventMcpField0ConnectionArgsObjectOrGapsObjectAndCommandObjectOrGapsObjectAndCwdObjectOrGapsObjectAndTransportObjectArgsObjectOrGapsObjectGapsObjectModel: TypeAlias = (
-    __ExecutionEventMcpField0ConnectionArgsObjectOrGapsObjectAndCommandObjectOrGapsObjectAndCwdObjectOrGapsObjectAndTransportObjectArgsObjectOrGapsObjectGapsObjectModelKnownFields
+_ExecutionEventMcpField0ConnectionStdioField2GapsObjectModel: TypeAlias = (
+    __ExecutionEventMcpField0ConnectionStdioField2GapsObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ExecutionEventMcpField0ConnectionArgsObjectOrGapsObjectAndCommandObjectOrGapsObjectAndCwdObjectOrGapsObjectAndTransportObjectCwdObjectOrGapsObjectCwdObjectModelKnownFields = TypedDict(
-    "__ExecutionEventMcpField0ConnectionArgsObjectOrGapsObjectAndCommandObjectOrGapsObjectAndCwdObjectOrGapsObjectAndTransportObjectCwdObjectOrGapsObjectCwdObjectModelKnownFields",
+__ExecutionEventMcpField0ConnectionStdioField3CwdObjectModelKnownFields = TypedDict(
+    "__ExecutionEventMcpField0ConnectionStdioField3CwdObjectModelKnownFields",
     {"cwd": Required[JsonValue]},
     total=False,
 )
-_ExecutionEventMcpField0ConnectionArgsObjectOrGapsObjectAndCommandObjectOrGapsObjectAndCwdObjectOrGapsObjectAndTransportObjectCwdObjectOrGapsObjectCwdObjectModel: TypeAlias = (
-    __ExecutionEventMcpField0ConnectionArgsObjectOrGapsObjectAndCommandObjectOrGapsObjectAndCwdObjectOrGapsObjectAndTransportObjectCwdObjectOrGapsObjectCwdObjectModelKnownFields
-    | JsonObject
+_ExecutionEventMcpField0ConnectionStdioField3CwdObjectModel: TypeAlias = (
+    __ExecutionEventMcpField0ConnectionStdioField3CwdObjectModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__ExecutionEventMcpField0ConnectionArgsObjectOrGapsObjectAndCommandObjectOrGapsObjectAndCwdObjectOrGapsObjectAndTransportObjectCwdObjectOrGapsObjectGapsObjectModelKnownFields = TypedDict(
-    "__ExecutionEventMcpField0ConnectionArgsObjectOrGapsObjectAndCommandObjectOrGapsObjectAndCwdObjectOrGapsObjectAndTransportObjectCwdObjectOrGapsObjectGapsObjectModelKnownFields",
+__ExecutionEventMcpField0ConnectionStdioField3GapsObjectModelKnownFields = TypedDict(
+    "__ExecutionEventMcpField0ConnectionStdioField3GapsObjectModelKnownFields",
     {"gaps": Required[JsonValue]},
     total=False,
 )
-_ExecutionEventMcpField0ConnectionArgsObjectOrGapsObjectAndCommandObjectOrGapsObjectAndCwdObjectOrGapsObjectAndTransportObjectCwdObjectOrGapsObjectGapsObjectModel: TypeAlias = (
-    __ExecutionEventMcpField0ConnectionArgsObjectOrGapsObjectAndCommandObjectOrGapsObjectAndCwdObjectOrGapsObjectAndTransportObjectCwdObjectOrGapsObjectGapsObjectModelKnownFields
+_ExecutionEventMcpField0ConnectionStdioField3GapsObjectModel: TypeAlias = (
+    __ExecutionEventMcpField0ConnectionStdioField3GapsObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-_ExecutionEventMcpField0ConnectionAddressFormObjectOrGapsObjectAndAddressObjectOrGapsObjectAndTransportObjectTransportObjectField2GapsItemModel = TypedDict(
-    "_ExecutionEventMcpField0ConnectionAddressFormObjectOrGapsObjectAndAddressObjectOrGapsObjectAndTransportObjectTransportObjectField2GapsItemModel",
+_ExecutionEventMcpField0ConnectionCustomTransportField0Field2GapsItemModel = TypedDict(
+    "_ExecutionEventMcpField0ConnectionCustomTransportField0Field2GapsItemModel",
     {"path": Required[str], "reason": Required[str]},
     total=False,
 )
-_ExecutionEventMcpField0ConnectionAddressFormObjectOrGapsObjectAndAddressObjectOrGapsObjectAndTransportObjectTransportObjectModel = TypedDict(
-    "_ExecutionEventMcpField0ConnectionAddressFormObjectOrGapsObjectAndAddressObjectOrGapsObjectAndTransportObjectTransportObjectModel",
+_ExecutionEventMcpField0ConnectionCustomTransportField0Model = TypedDict(
+    "_ExecutionEventMcpField0ConnectionCustomTransportField0Model",
     {
         "address": NotRequired[str],
         "addressForm": NotRequired[str],
         "gaps": NotRequired[
             list[
-                _ExecutionEventMcpField0ConnectionAddressFormObjectOrGapsObjectAndAddressObjectOrGapsObjectAndTransportObjectTransportObjectField2GapsItemModel
+                _ExecutionEventMcpField0ConnectionCustomTransportField0Field2GapsItemModel
             ]
         ],
         "transport": Required[str],
     },
     total=False,
 )
-__ExecutionEventMcpField0ConnectionAddressFormObjectOrGapsObjectAndAddressObjectOrGapsObjectAndTransportObjectAddressFormObjectOrGapsObjectAddressFormObjectModelKnownFields = TypedDict(
-    "__ExecutionEventMcpField0ConnectionAddressFormObjectOrGapsObjectAndAddressObjectOrGapsObjectAndTransportObjectAddressFormObjectOrGapsObjectAddressFormObjectModelKnownFields",
+__ExecutionEventMcpField0ConnectionCustomTransportField1AddressFormObjectModelKnownFields = TypedDict(
+    "__ExecutionEventMcpField0ConnectionCustomTransportField1AddressFormObjectModelKnownFields",
     {"addressForm": Required[JsonValue]},
     total=False,
 )
-_ExecutionEventMcpField0ConnectionAddressFormObjectOrGapsObjectAndAddressObjectOrGapsObjectAndTransportObjectAddressFormObjectOrGapsObjectAddressFormObjectModel: TypeAlias = (
-    __ExecutionEventMcpField0ConnectionAddressFormObjectOrGapsObjectAndAddressObjectOrGapsObjectAndTransportObjectAddressFormObjectOrGapsObjectAddressFormObjectModelKnownFields
+_ExecutionEventMcpField0ConnectionCustomTransportField1AddressFormObjectModel: TypeAlias = (
+    __ExecutionEventMcpField0ConnectionCustomTransportField1AddressFormObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ExecutionEventMcpField0ConnectionAddressFormObjectOrGapsObjectAndAddressObjectOrGapsObjectAndTransportObjectAddressFormObjectOrGapsObjectGapsObjectModelKnownFields = TypedDict(
-    "__ExecutionEventMcpField0ConnectionAddressFormObjectOrGapsObjectAndAddressObjectOrGapsObjectAndTransportObjectAddressFormObjectOrGapsObjectGapsObjectModelKnownFields",
+__ExecutionEventMcpField0ConnectionCustomTransportField1GapsObjectModelKnownFields = TypedDict(
+    "__ExecutionEventMcpField0ConnectionCustomTransportField1GapsObjectModelKnownFields",
     {"gaps": Required[JsonValue]},
     total=False,
 )
-_ExecutionEventMcpField0ConnectionAddressFormObjectOrGapsObjectAndAddressObjectOrGapsObjectAndTransportObjectAddressFormObjectOrGapsObjectGapsObjectModel: TypeAlias = (
-    __ExecutionEventMcpField0ConnectionAddressFormObjectOrGapsObjectAndAddressObjectOrGapsObjectAndTransportObjectAddressFormObjectOrGapsObjectGapsObjectModelKnownFields
+_ExecutionEventMcpField0ConnectionCustomTransportField1GapsObjectModel: TypeAlias = (
+    __ExecutionEventMcpField0ConnectionCustomTransportField1GapsObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ExecutionEventMcpField0ConnectionAddressFormObjectOrGapsObjectAndAddressObjectOrGapsObjectAndTransportObjectAddressObjectOrGapsObjectAddressObjectModelKnownFields = TypedDict(
-    "__ExecutionEventMcpField0ConnectionAddressFormObjectOrGapsObjectAndAddressObjectOrGapsObjectAndTransportObjectAddressObjectOrGapsObjectAddressObjectModelKnownFields",
+__ExecutionEventMcpField0ConnectionCustomTransportField2AddressObjectModelKnownFields = TypedDict(
+    "__ExecutionEventMcpField0ConnectionCustomTransportField2AddressObjectModelKnownFields",
     {"address": Required[JsonValue]},
     total=False,
 )
-_ExecutionEventMcpField0ConnectionAddressFormObjectOrGapsObjectAndAddressObjectOrGapsObjectAndTransportObjectAddressObjectOrGapsObjectAddressObjectModel: TypeAlias = (
-    __ExecutionEventMcpField0ConnectionAddressFormObjectOrGapsObjectAndAddressObjectOrGapsObjectAndTransportObjectAddressObjectOrGapsObjectAddressObjectModelKnownFields
+_ExecutionEventMcpField0ConnectionCustomTransportField2AddressObjectModel: TypeAlias = (
+    __ExecutionEventMcpField0ConnectionCustomTransportField2AddressObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ExecutionEventMcpField0ConnectionAddressFormObjectOrGapsObjectAndAddressObjectOrGapsObjectAndTransportObjectAddressObjectOrGapsObjectGapsObjectModelKnownFields = TypedDict(
-    "__ExecutionEventMcpField0ConnectionAddressFormObjectOrGapsObjectAndAddressObjectOrGapsObjectAndTransportObjectAddressObjectOrGapsObjectGapsObjectModelKnownFields",
+__ExecutionEventMcpField0ConnectionCustomTransportField2GapsObjectModelKnownFields = TypedDict(
+    "__ExecutionEventMcpField0ConnectionCustomTransportField2GapsObjectModelKnownFields",
     {"gaps": Required[JsonValue]},
     total=False,
 )
-_ExecutionEventMcpField0ConnectionAddressFormObjectOrGapsObjectAndAddressObjectOrGapsObjectAndTransportObjectAddressObjectOrGapsObjectGapsObjectModel: TypeAlias = (
-    __ExecutionEventMcpField0ConnectionAddressFormObjectOrGapsObjectAndAddressObjectOrGapsObjectAndTransportObjectAddressObjectOrGapsObjectGapsObjectModelKnownFields
+_ExecutionEventMcpField0ConnectionCustomTransportField2GapsObjectModel: TypeAlias = (
+    __ExecutionEventMcpField0ConnectionCustomTransportField2GapsObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
 _ExecutionEventMcpField2ServerModel = TypedDict(
@@ -2448,13 +2430,13 @@ ExecutionEventModel = TypedDict(
 )
 
 # Source: schema/draft/execution-event.schema.json#/$defs/model.error
-__ExecutionEventModelErrorField2ExecutionStatusObjectModelKnownFields = TypedDict(
-    "__ExecutionEventModelErrorField2ExecutionStatusObjectModelKnownFields",
+__ExecutionEventModelErrorField2ExecutionField1ModelKnownFields = TypedDict(
+    "__ExecutionEventModelErrorField2ExecutionField1ModelKnownFields",
     {"status": NotRequired[Literal["executed"]]},
     total=False,
 )
-_ExecutionEventModelErrorField2ExecutionStatusObjectModel: TypeAlias = (
-    __ExecutionEventModelErrorField2ExecutionStatusObjectModelKnownFields | JsonObject
+_ExecutionEventModelErrorField2ExecutionField1Model: TypeAlias = (
+    __ExecutionEventModelErrorField2ExecutionField1ModelKnownFields | JsonObject
 )  # permits additional JSON fields
 __ExecutionEventModelErrorField4GapsItemModelKnownFields = TypedDict(
     "__ExecutionEventModelErrorField4GapsItemModelKnownFields",
@@ -3336,13 +3318,13 @@ InteractionEventUserAttention: TypeAlias = (
 )  # permits additional JSON fields
 
 # Source: schema/draft/interaction-event.schema.json#/$defs/user.elicitation.request
-__InteractionEventUserElicitationRequestField0ElicitationField1RequestMediaTypeObjectModelKnownFields = TypedDict(
-    "__InteractionEventUserElicitationRequestField0ElicitationField1RequestMediaTypeObjectModelKnownFields",
+__InteractionEventUserElicitationRequestField0ElicitationField1RequestField1ModelKnownFields = TypedDict(
+    "__InteractionEventUserElicitationRequestField0ElicitationField1RequestField1ModelKnownFields",
     {"mediaType": NotRequired[Literal["application/json"]]},
     total=False,
 )
-_InteractionEventUserElicitationRequestField0ElicitationField1RequestMediaTypeObjectModel: TypeAlias = (
-    __InteractionEventUserElicitationRequestField0ElicitationField1RequestMediaTypeObjectModelKnownFields
+_InteractionEventUserElicitationRequestField0ElicitationField1RequestField1Model: TypeAlias = (
+    __InteractionEventUserElicitationRequestField0ElicitationField1RequestField1ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
 _InteractionEventUserElicitationRequestField0ElicitationModel = TypedDict(
@@ -3369,13 +3351,13 @@ InteractionEventUserElicitationRequest: TypeAlias = (
 )  # permits additional JSON fields
 
 # Source: schema/draft/interaction-event.schema.json#/$defs/user.elicitation.result
-__InteractionEventUserElicitationResultField0ElicitationField2ResultMediaTypeObjectModelKnownFields = TypedDict(
-    "__InteractionEventUserElicitationResultField0ElicitationField2ResultMediaTypeObjectModelKnownFields",
+__InteractionEventUserElicitationResultField0ElicitationField2ResultField1ModelKnownFields = TypedDict(
+    "__InteractionEventUserElicitationResultField0ElicitationField2ResultField1ModelKnownFields",
     {"mediaType": NotRequired[Literal["application/json"]]},
     total=False,
 )
-_InteractionEventUserElicitationResultField0ElicitationField2ResultMediaTypeObjectModel: TypeAlias = (
-    __InteractionEventUserElicitationResultField0ElicitationField2ResultMediaTypeObjectModelKnownFields
+_InteractionEventUserElicitationResultField0ElicitationField2ResultField1Model: TypeAlias = (
+    __InteractionEventUserElicitationResultField0ElicitationField2ResultField1ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
 _InteractionEventUserElicitationResultField0ElicitationModel = TypedDict(
@@ -3565,247 +3547,247 @@ _InterceptRequestField3ParamsField0CapabilitiesField3InjectModel: TypeAlias = (
     __InterceptRequestField3ParamsField0CapabilitiesField3InjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField0ContentMergeReplaceObjectModelKnownFields = TypedDict(
-    "__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField0ContentMergeReplaceObjectModelKnownFields",
+__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField0ContentField0ModelKnownFields = TypedDict(
+    "__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField0ContentField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_InterceptRequestField3ParamsField0CapabilitiesField4ModifyField0ContentMergeReplaceObjectModel: TypeAlias = (
-    __InterceptRequestField3ParamsField0CapabilitiesField4ModifyField0ContentMergeReplaceObjectModelKnownFields
+_InterceptRequestField3ParamsField0CapabilitiesField4ModifyField0ContentField0Model: TypeAlias = (
+    __InterceptRequestField3ParamsField0CapabilitiesField4ModifyField0ContentField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField0ContentField1ReplaceObjectModelKnownFields = TypedDict(
+    "__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField0ContentField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_InterceptRequestField3ParamsField0CapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __InterceptRequestField3ParamsField0CapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_InterceptRequestField3ParamsField0CapabilitiesField4ModifyField0ContentField1ReplaceObjectModel: TypeAlias = (
+    __InterceptRequestField3ParamsField0CapabilitiesField4ModifyField0ContentField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField0ContentField1MergeObjectModelKnownFields = TypedDict(
+    "__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField0ContentField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_InterceptRequestField3ParamsField0CapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __InterceptRequestField3ParamsField0CapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_InterceptRequestField3ParamsField0CapabilitiesField4ModifyField0ContentField1MergeObjectModel: TypeAlias = (
+    __InterceptRequestField3ParamsField0CapabilitiesField4ModifyField0ContentField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField1InputMergeReplaceObjectModelKnownFields = TypedDict(
-    "__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField1InputMergeReplaceObjectModelKnownFields",
+__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField1InputField0ModelKnownFields = TypedDict(
+    "__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField1InputField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_InterceptRequestField3ParamsField0CapabilitiesField4ModifyField1InputMergeReplaceObjectModel: TypeAlias = (
-    __InterceptRequestField3ParamsField0CapabilitiesField4ModifyField1InputMergeReplaceObjectModelKnownFields
+_InterceptRequestField3ParamsField0CapabilitiesField4ModifyField1InputField0Model: TypeAlias = (
+    __InterceptRequestField3ParamsField0CapabilitiesField4ModifyField1InputField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField1InputField1ReplaceObjectModelKnownFields = TypedDict(
+    "__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField1InputField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_InterceptRequestField3ParamsField0CapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __InterceptRequestField3ParamsField0CapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_InterceptRequestField3ParamsField0CapabilitiesField4ModifyField1InputField1ReplaceObjectModel: TypeAlias = (
+    __InterceptRequestField3ParamsField0CapabilitiesField4ModifyField1InputField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField1InputField1MergeObjectModelKnownFields = TypedDict(
+    "__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField1InputField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_InterceptRequestField3ParamsField0CapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __InterceptRequestField3ParamsField0CapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_InterceptRequestField3ParamsField0CapabilitiesField4ModifyField1InputField1MergeObjectModel: TypeAlias = (
+    __InterceptRequestField3ParamsField0CapabilitiesField4ModifyField1InputField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField2InstructionsMergeReplaceObjectModelKnownFields = TypedDict(
-    "__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField2InstructionsMergeReplaceObjectModelKnownFields",
+__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField2InstructionsField0ModelKnownFields = TypedDict(
+    "__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField2InstructionsField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_InterceptRequestField3ParamsField0CapabilitiesField4ModifyField2InstructionsMergeReplaceObjectModel: TypeAlias = (
-    __InterceptRequestField3ParamsField0CapabilitiesField4ModifyField2InstructionsMergeReplaceObjectModelKnownFields
+_InterceptRequestField3ParamsField0CapabilitiesField4ModifyField2InstructionsField0Model: TypeAlias = (
+    __InterceptRequestField3ParamsField0CapabilitiesField4ModifyField2InstructionsField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField2InstructionsField1ReplaceObjectModelKnownFields = TypedDict(
+    "__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField2InstructionsField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_InterceptRequestField3ParamsField0CapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __InterceptRequestField3ParamsField0CapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_InterceptRequestField3ParamsField0CapabilitiesField4ModifyField2InstructionsField1ReplaceObjectModel: TypeAlias = (
+    __InterceptRequestField3ParamsField0CapabilitiesField4ModifyField2InstructionsField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField2InstructionsField1MergeObjectModelKnownFields = TypedDict(
+    "__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField2InstructionsField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_InterceptRequestField3ParamsField0CapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __InterceptRequestField3ParamsField0CapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_InterceptRequestField3ParamsField0CapabilitiesField4ModifyField2InstructionsField1MergeObjectModel: TypeAlias = (
+    __InterceptRequestField3ParamsField0CapabilitiesField4ModifyField2InstructionsField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField3OutputMergeReplaceObjectModelKnownFields = TypedDict(
-    "__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField3OutputMergeReplaceObjectModelKnownFields",
+__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField3OutputField0ModelKnownFields = TypedDict(
+    "__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField3OutputField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_InterceptRequestField3ParamsField0CapabilitiesField4ModifyField3OutputMergeReplaceObjectModel: TypeAlias = (
-    __InterceptRequestField3ParamsField0CapabilitiesField4ModifyField3OutputMergeReplaceObjectModelKnownFields
+_InterceptRequestField3ParamsField0CapabilitiesField4ModifyField3OutputField0Model: TypeAlias = (
+    __InterceptRequestField3ParamsField0CapabilitiesField4ModifyField3OutputField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField3OutputField1ReplaceObjectModelKnownFields = TypedDict(
+    "__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField3OutputField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_InterceptRequestField3ParamsField0CapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __InterceptRequestField3ParamsField0CapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_InterceptRequestField3ParamsField0CapabilitiesField4ModifyField3OutputField1ReplaceObjectModel: TypeAlias = (
+    __InterceptRequestField3ParamsField0CapabilitiesField4ModifyField3OutputField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField3OutputField1MergeObjectModelKnownFields = TypedDict(
+    "__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField3OutputField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_InterceptRequestField3ParamsField0CapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __InterceptRequestField3ParamsField0CapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_InterceptRequestField3ParamsField0CapabilitiesField4ModifyField3OutputField1MergeObjectModel: TypeAlias = (
+    __InterceptRequestField3ParamsField0CapabilitiesField4ModifyField3OutputField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField4PromptMergeReplaceObjectModelKnownFields = TypedDict(
-    "__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField4PromptMergeReplaceObjectModelKnownFields",
+__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField4PromptField0ModelKnownFields = TypedDict(
+    "__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField4PromptField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_InterceptRequestField3ParamsField0CapabilitiesField4ModifyField4PromptMergeReplaceObjectModel: TypeAlias = (
-    __InterceptRequestField3ParamsField0CapabilitiesField4ModifyField4PromptMergeReplaceObjectModelKnownFields
+_InterceptRequestField3ParamsField0CapabilitiesField4ModifyField4PromptField0Model: TypeAlias = (
+    __InterceptRequestField3ParamsField0CapabilitiesField4ModifyField4PromptField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField4PromptField1ReplaceObjectModelKnownFields = TypedDict(
+    "__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField4PromptField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_InterceptRequestField3ParamsField0CapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __InterceptRequestField3ParamsField0CapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_InterceptRequestField3ParamsField0CapabilitiesField4ModifyField4PromptField1ReplaceObjectModel: TypeAlias = (
+    __InterceptRequestField3ParamsField0CapabilitiesField4ModifyField4PromptField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField4PromptField1MergeObjectModelKnownFields = TypedDict(
+    "__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField4PromptField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_InterceptRequestField3ParamsField0CapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __InterceptRequestField3ParamsField0CapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_InterceptRequestField3ParamsField0CapabilitiesField4ModifyField4PromptField1MergeObjectModel: TypeAlias = (
+    __InterceptRequestField3ParamsField0CapabilitiesField4ModifyField4PromptField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField5RequestMergeReplaceObjectModelKnownFields = TypedDict(
-    "__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField5RequestMergeReplaceObjectModelKnownFields",
+__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField5RequestField0ModelKnownFields = TypedDict(
+    "__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField5RequestField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_InterceptRequestField3ParamsField0CapabilitiesField4ModifyField5RequestMergeReplaceObjectModel: TypeAlias = (
-    __InterceptRequestField3ParamsField0CapabilitiesField4ModifyField5RequestMergeReplaceObjectModelKnownFields
+_InterceptRequestField3ParamsField0CapabilitiesField4ModifyField5RequestField0Model: TypeAlias = (
+    __InterceptRequestField3ParamsField0CapabilitiesField4ModifyField5RequestField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField5RequestField1ReplaceObjectModelKnownFields = TypedDict(
+    "__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField5RequestField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_InterceptRequestField3ParamsField0CapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __InterceptRequestField3ParamsField0CapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_InterceptRequestField3ParamsField0CapabilitiesField4ModifyField5RequestField1ReplaceObjectModel: TypeAlias = (
+    __InterceptRequestField3ParamsField0CapabilitiesField4ModifyField5RequestField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField5RequestField1MergeObjectModelKnownFields = TypedDict(
+    "__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField5RequestField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_InterceptRequestField3ParamsField0CapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __InterceptRequestField3ParamsField0CapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_InterceptRequestField3ParamsField0CapabilitiesField4ModifyField5RequestField1MergeObjectModel: TypeAlias = (
+    __InterceptRequestField3ParamsField0CapabilitiesField4ModifyField5RequestField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField6ResponseMergeReplaceObjectModelKnownFields = TypedDict(
-    "__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField6ResponseMergeReplaceObjectModelKnownFields",
+__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField6ResponseField0ModelKnownFields = TypedDict(
+    "__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField6ResponseField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_InterceptRequestField3ParamsField0CapabilitiesField4ModifyField6ResponseMergeReplaceObjectModel: TypeAlias = (
-    __InterceptRequestField3ParamsField0CapabilitiesField4ModifyField6ResponseMergeReplaceObjectModelKnownFields
+_InterceptRequestField3ParamsField0CapabilitiesField4ModifyField6ResponseField0Model: TypeAlias = (
+    __InterceptRequestField3ParamsField0CapabilitiesField4ModifyField6ResponseField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField6ResponseField1ReplaceObjectModelKnownFields = TypedDict(
+    "__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField6ResponseField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_InterceptRequestField3ParamsField0CapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __InterceptRequestField3ParamsField0CapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_InterceptRequestField3ParamsField0CapabilitiesField4ModifyField6ResponseField1ReplaceObjectModel: TypeAlias = (
+    __InterceptRequestField3ParamsField0CapabilitiesField4ModifyField6ResponseField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField6ResponseField1MergeObjectModelKnownFields = TypedDict(
+    "__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField6ResponseField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_InterceptRequestField3ParamsField0CapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __InterceptRequestField3ParamsField0CapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_InterceptRequestField3ParamsField0CapabilitiesField4ModifyField6ResponseField1MergeObjectModel: TypeAlias = (
+    __InterceptRequestField3ParamsField0CapabilitiesField4ModifyField6ResponseField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField7SummaryMergeReplaceObjectModelKnownFields = TypedDict(
-    "__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField7SummaryMergeReplaceObjectModelKnownFields",
+__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField7SummaryField0ModelKnownFields = TypedDict(
+    "__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField7SummaryField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_InterceptRequestField3ParamsField0CapabilitiesField4ModifyField7SummaryMergeReplaceObjectModel: TypeAlias = (
-    __InterceptRequestField3ParamsField0CapabilitiesField4ModifyField7SummaryMergeReplaceObjectModelKnownFields
+_InterceptRequestField3ParamsField0CapabilitiesField4ModifyField7SummaryField0Model: TypeAlias = (
+    __InterceptRequestField3ParamsField0CapabilitiesField4ModifyField7SummaryField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField7SummaryField1ReplaceObjectModelKnownFields = TypedDict(
+    "__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField7SummaryField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_InterceptRequestField3ParamsField0CapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __InterceptRequestField3ParamsField0CapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_InterceptRequestField3ParamsField0CapabilitiesField4ModifyField7SummaryField1ReplaceObjectModel: TypeAlias = (
+    __InterceptRequestField3ParamsField0CapabilitiesField4ModifyField7SummaryField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField7SummaryField1MergeObjectModelKnownFields = TypedDict(
+    "__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField7SummaryField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_InterceptRequestField3ParamsField0CapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __InterceptRequestField3ParamsField0CapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_InterceptRequestField3ParamsField0CapabilitiesField4ModifyField7SummaryField1MergeObjectModel: TypeAlias = (
+    __InterceptRequestField3ParamsField0CapabilitiesField4ModifyField7SummaryField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField8WorkspaceMergeReplaceObjectModelKnownFields = TypedDict(
-    "__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField8WorkspaceMergeReplaceObjectModelKnownFields",
+__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField8WorkspaceField0ModelKnownFields = TypedDict(
+    "__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField8WorkspaceField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_InterceptRequestField3ParamsField0CapabilitiesField4ModifyField8WorkspaceMergeReplaceObjectModel: TypeAlias = (
-    __InterceptRequestField3ParamsField0CapabilitiesField4ModifyField8WorkspaceMergeReplaceObjectModelKnownFields
+_InterceptRequestField3ParamsField0CapabilitiesField4ModifyField8WorkspaceField0Model: TypeAlias = (
+    __InterceptRequestField3ParamsField0CapabilitiesField4ModifyField8WorkspaceField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField8WorkspaceField1ReplaceObjectModelKnownFields = TypedDict(
+    "__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField8WorkspaceField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_InterceptRequestField3ParamsField0CapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __InterceptRequestField3ParamsField0CapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_InterceptRequestField3ParamsField0CapabilitiesField4ModifyField8WorkspaceField1ReplaceObjectModel: TypeAlias = (
+    __InterceptRequestField3ParamsField0CapabilitiesField4ModifyField8WorkspaceField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField8WorkspaceField1MergeObjectModelKnownFields = TypedDict(
+    "__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField8WorkspaceField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_InterceptRequestField3ParamsField0CapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __InterceptRequestField3ParamsField0CapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_InterceptRequestField3ParamsField0CapabilitiesField4ModifyField8WorkspaceField1MergeObjectModel: TypeAlias = (
+    __InterceptRequestField3ParamsField0CapabilitiesField4ModifyField8WorkspaceField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
 __InterceptRequestField3ParamsField0CapabilitiesField4ModifyModelKnownFields = (
@@ -4443,247 +4425,249 @@ __ModelRequestBeforeCapabilitiesField3InjectModelKnownFields = TypedDict(
 _ModelRequestBeforeCapabilitiesField3InjectModel: TypeAlias = (
     __ModelRequestBeforeCapabilitiesField3InjectModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__ModelRequestBeforeCapabilitiesField4ModifyField0ContentMergeReplaceObjectModelKnownFields = TypedDict(
-    "__ModelRequestBeforeCapabilitiesField4ModifyField0ContentMergeReplaceObjectModelKnownFields",
+__ModelRequestBeforeCapabilitiesField4ModifyField0ContentField0ModelKnownFields = TypedDict(
+    "__ModelRequestBeforeCapabilitiesField4ModifyField0ContentField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ModelRequestBeforeCapabilitiesField4ModifyField0ContentMergeReplaceObjectModel: TypeAlias = (
-    __ModelRequestBeforeCapabilitiesField4ModifyField0ContentMergeReplaceObjectModelKnownFields
+_ModelRequestBeforeCapabilitiesField4ModifyField0ContentField0Model: TypeAlias = (
+    __ModelRequestBeforeCapabilitiesField4ModifyField0ContentField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ModelRequestBeforeCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__ModelRequestBeforeCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__ModelRequestBeforeCapabilitiesField4ModifyField0ContentField1ReplaceObjectModelKnownFields = TypedDict(
+    "__ModelRequestBeforeCapabilitiesField4ModifyField0ContentField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_ModelRequestBeforeCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __ModelRequestBeforeCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_ModelRequestBeforeCapabilitiesField4ModifyField0ContentField1ReplaceObjectModel: TypeAlias = (
+    __ModelRequestBeforeCapabilitiesField4ModifyField0ContentField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ModelRequestBeforeCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__ModelRequestBeforeCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__ModelRequestBeforeCapabilitiesField4ModifyField0ContentField1MergeObjectModelKnownFields = TypedDict(
+    "__ModelRequestBeforeCapabilitiesField4ModifyField0ContentField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_ModelRequestBeforeCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __ModelRequestBeforeCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_ModelRequestBeforeCapabilitiesField4ModifyField0ContentField1MergeObjectModel: TypeAlias = (
+    __ModelRequestBeforeCapabilitiesField4ModifyField0ContentField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ModelRequestBeforeCapabilitiesField4ModifyField1InputMergeReplaceObjectModelKnownFields = TypedDict(
-    "__ModelRequestBeforeCapabilitiesField4ModifyField1InputMergeReplaceObjectModelKnownFields",
+__ModelRequestBeforeCapabilitiesField4ModifyField1InputField0ModelKnownFields = (
+    TypedDict(
+        "__ModelRequestBeforeCapabilitiesField4ModifyField1InputField0ModelKnownFields",
+        {"merge": Required[bool], "replace": Required[bool]},
+        total=False,
+    )
+)
+_ModelRequestBeforeCapabilitiesField4ModifyField1InputField0Model: TypeAlias = (
+    __ModelRequestBeforeCapabilitiesField4ModifyField1InputField0ModelKnownFields
+    | JsonObject
+)  # permits additional JSON fields
+__ModelRequestBeforeCapabilitiesField4ModifyField1InputField1ReplaceObjectModelKnownFields = TypedDict(
+    "__ModelRequestBeforeCapabilitiesField4ModifyField1InputField1ReplaceObjectModelKnownFields",
+    {"replace": Required[Literal[True]]},
+    total=False,
+)
+_ModelRequestBeforeCapabilitiesField4ModifyField1InputField1ReplaceObjectModel: TypeAlias = (
+    __ModelRequestBeforeCapabilitiesField4ModifyField1InputField1ReplaceObjectModelKnownFields
+    | JsonObject
+)  # permits additional JSON fields
+__ModelRequestBeforeCapabilitiesField4ModifyField1InputField1MergeObjectModelKnownFields = TypedDict(
+    "__ModelRequestBeforeCapabilitiesField4ModifyField1InputField1MergeObjectModelKnownFields",
+    {"merge": Required[Literal[True]]},
+    total=False,
+)
+_ModelRequestBeforeCapabilitiesField4ModifyField1InputField1MergeObjectModel: TypeAlias = (
+    __ModelRequestBeforeCapabilitiesField4ModifyField1InputField1MergeObjectModelKnownFields
+    | JsonObject
+)  # permits additional JSON fields
+__ModelRequestBeforeCapabilitiesField4ModifyField2InstructionsField0ModelKnownFields = TypedDict(
+    "__ModelRequestBeforeCapabilitiesField4ModifyField2InstructionsField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ModelRequestBeforeCapabilitiesField4ModifyField1InputMergeReplaceObjectModel: TypeAlias = (
-    __ModelRequestBeforeCapabilitiesField4ModifyField1InputMergeReplaceObjectModelKnownFields
+_ModelRequestBeforeCapabilitiesField4ModifyField2InstructionsField0Model: TypeAlias = (
+    __ModelRequestBeforeCapabilitiesField4ModifyField2InstructionsField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ModelRequestBeforeCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__ModelRequestBeforeCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__ModelRequestBeforeCapabilitiesField4ModifyField2InstructionsField1ReplaceObjectModelKnownFields = TypedDict(
+    "__ModelRequestBeforeCapabilitiesField4ModifyField2InstructionsField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_ModelRequestBeforeCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __ModelRequestBeforeCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_ModelRequestBeforeCapabilitiesField4ModifyField2InstructionsField1ReplaceObjectModel: TypeAlias = (
+    __ModelRequestBeforeCapabilitiesField4ModifyField2InstructionsField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ModelRequestBeforeCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__ModelRequestBeforeCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__ModelRequestBeforeCapabilitiesField4ModifyField2InstructionsField1MergeObjectModelKnownFields = TypedDict(
+    "__ModelRequestBeforeCapabilitiesField4ModifyField2InstructionsField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_ModelRequestBeforeCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __ModelRequestBeforeCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_ModelRequestBeforeCapabilitiesField4ModifyField2InstructionsField1MergeObjectModel: TypeAlias = (
+    __ModelRequestBeforeCapabilitiesField4ModifyField2InstructionsField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ModelRequestBeforeCapabilitiesField4ModifyField2InstructionsMergeReplaceObjectModelKnownFields = TypedDict(
-    "__ModelRequestBeforeCapabilitiesField4ModifyField2InstructionsMergeReplaceObjectModelKnownFields",
+__ModelRequestBeforeCapabilitiesField4ModifyField3OutputField0ModelKnownFields = TypedDict(
+    "__ModelRequestBeforeCapabilitiesField4ModifyField3OutputField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ModelRequestBeforeCapabilitiesField4ModifyField2InstructionsMergeReplaceObjectModel: TypeAlias = (
-    __ModelRequestBeforeCapabilitiesField4ModifyField2InstructionsMergeReplaceObjectModelKnownFields
+_ModelRequestBeforeCapabilitiesField4ModifyField3OutputField0Model: TypeAlias = (
+    __ModelRequestBeforeCapabilitiesField4ModifyField3OutputField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ModelRequestBeforeCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__ModelRequestBeforeCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__ModelRequestBeforeCapabilitiesField4ModifyField3OutputField1ReplaceObjectModelKnownFields = TypedDict(
+    "__ModelRequestBeforeCapabilitiesField4ModifyField3OutputField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_ModelRequestBeforeCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __ModelRequestBeforeCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_ModelRequestBeforeCapabilitiesField4ModifyField3OutputField1ReplaceObjectModel: TypeAlias = (
+    __ModelRequestBeforeCapabilitiesField4ModifyField3OutputField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ModelRequestBeforeCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__ModelRequestBeforeCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__ModelRequestBeforeCapabilitiesField4ModifyField3OutputField1MergeObjectModelKnownFields = TypedDict(
+    "__ModelRequestBeforeCapabilitiesField4ModifyField3OutputField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_ModelRequestBeforeCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __ModelRequestBeforeCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_ModelRequestBeforeCapabilitiesField4ModifyField3OutputField1MergeObjectModel: TypeAlias = (
+    __ModelRequestBeforeCapabilitiesField4ModifyField3OutputField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ModelRequestBeforeCapabilitiesField4ModifyField3OutputMergeReplaceObjectModelKnownFields = TypedDict(
-    "__ModelRequestBeforeCapabilitiesField4ModifyField3OutputMergeReplaceObjectModelKnownFields",
+__ModelRequestBeforeCapabilitiesField4ModifyField4PromptField0ModelKnownFields = TypedDict(
+    "__ModelRequestBeforeCapabilitiesField4ModifyField4PromptField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ModelRequestBeforeCapabilitiesField4ModifyField3OutputMergeReplaceObjectModel: TypeAlias = (
-    __ModelRequestBeforeCapabilitiesField4ModifyField3OutputMergeReplaceObjectModelKnownFields
+_ModelRequestBeforeCapabilitiesField4ModifyField4PromptField0Model: TypeAlias = (
+    __ModelRequestBeforeCapabilitiesField4ModifyField4PromptField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ModelRequestBeforeCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__ModelRequestBeforeCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__ModelRequestBeforeCapabilitiesField4ModifyField4PromptField1ReplaceObjectModelKnownFields = TypedDict(
+    "__ModelRequestBeforeCapabilitiesField4ModifyField4PromptField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_ModelRequestBeforeCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __ModelRequestBeforeCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_ModelRequestBeforeCapabilitiesField4ModifyField4PromptField1ReplaceObjectModel: TypeAlias = (
+    __ModelRequestBeforeCapabilitiesField4ModifyField4PromptField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ModelRequestBeforeCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__ModelRequestBeforeCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__ModelRequestBeforeCapabilitiesField4ModifyField4PromptField1MergeObjectModelKnownFields = TypedDict(
+    "__ModelRequestBeforeCapabilitiesField4ModifyField4PromptField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_ModelRequestBeforeCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __ModelRequestBeforeCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_ModelRequestBeforeCapabilitiesField4ModifyField4PromptField1MergeObjectModel: TypeAlias = (
+    __ModelRequestBeforeCapabilitiesField4ModifyField4PromptField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ModelRequestBeforeCapabilitiesField4ModifyField4PromptMergeReplaceObjectModelKnownFields = TypedDict(
-    "__ModelRequestBeforeCapabilitiesField4ModifyField4PromptMergeReplaceObjectModelKnownFields",
+__ModelRequestBeforeCapabilitiesField4ModifyField5RequestField0ModelKnownFields = TypedDict(
+    "__ModelRequestBeforeCapabilitiesField4ModifyField5RequestField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ModelRequestBeforeCapabilitiesField4ModifyField4PromptMergeReplaceObjectModel: TypeAlias = (
-    __ModelRequestBeforeCapabilitiesField4ModifyField4PromptMergeReplaceObjectModelKnownFields
+_ModelRequestBeforeCapabilitiesField4ModifyField5RequestField0Model: TypeAlias = (
+    __ModelRequestBeforeCapabilitiesField4ModifyField5RequestField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ModelRequestBeforeCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__ModelRequestBeforeCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__ModelRequestBeforeCapabilitiesField4ModifyField5RequestField1ReplaceObjectModelKnownFields = TypedDict(
+    "__ModelRequestBeforeCapabilitiesField4ModifyField5RequestField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_ModelRequestBeforeCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __ModelRequestBeforeCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_ModelRequestBeforeCapabilitiesField4ModifyField5RequestField1ReplaceObjectModel: TypeAlias = (
+    __ModelRequestBeforeCapabilitiesField4ModifyField5RequestField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ModelRequestBeforeCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__ModelRequestBeforeCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__ModelRequestBeforeCapabilitiesField4ModifyField5RequestField1MergeObjectModelKnownFields = TypedDict(
+    "__ModelRequestBeforeCapabilitiesField4ModifyField5RequestField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_ModelRequestBeforeCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __ModelRequestBeforeCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_ModelRequestBeforeCapabilitiesField4ModifyField5RequestField1MergeObjectModel: TypeAlias = (
+    __ModelRequestBeforeCapabilitiesField4ModifyField5RequestField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ModelRequestBeforeCapabilitiesField4ModifyField5RequestMergeReplaceObjectModelKnownFields = TypedDict(
-    "__ModelRequestBeforeCapabilitiesField4ModifyField5RequestMergeReplaceObjectModelKnownFields",
+__ModelRequestBeforeCapabilitiesField4ModifyField6ResponseField0ModelKnownFields = TypedDict(
+    "__ModelRequestBeforeCapabilitiesField4ModifyField6ResponseField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ModelRequestBeforeCapabilitiesField4ModifyField5RequestMergeReplaceObjectModel: TypeAlias = (
-    __ModelRequestBeforeCapabilitiesField4ModifyField5RequestMergeReplaceObjectModelKnownFields
+_ModelRequestBeforeCapabilitiesField4ModifyField6ResponseField0Model: TypeAlias = (
+    __ModelRequestBeforeCapabilitiesField4ModifyField6ResponseField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ModelRequestBeforeCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__ModelRequestBeforeCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__ModelRequestBeforeCapabilitiesField4ModifyField6ResponseField1ReplaceObjectModelKnownFields = TypedDict(
+    "__ModelRequestBeforeCapabilitiesField4ModifyField6ResponseField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_ModelRequestBeforeCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __ModelRequestBeforeCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_ModelRequestBeforeCapabilitiesField4ModifyField6ResponseField1ReplaceObjectModel: TypeAlias = (
+    __ModelRequestBeforeCapabilitiesField4ModifyField6ResponseField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ModelRequestBeforeCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__ModelRequestBeforeCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__ModelRequestBeforeCapabilitiesField4ModifyField6ResponseField1MergeObjectModelKnownFields = TypedDict(
+    "__ModelRequestBeforeCapabilitiesField4ModifyField6ResponseField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_ModelRequestBeforeCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __ModelRequestBeforeCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_ModelRequestBeforeCapabilitiesField4ModifyField6ResponseField1MergeObjectModel: TypeAlias = (
+    __ModelRequestBeforeCapabilitiesField4ModifyField6ResponseField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ModelRequestBeforeCapabilitiesField4ModifyField6ResponseMergeReplaceObjectModelKnownFields = TypedDict(
-    "__ModelRequestBeforeCapabilitiesField4ModifyField6ResponseMergeReplaceObjectModelKnownFields",
+__ModelRequestBeforeCapabilitiesField4ModifyField7SummaryField0ModelKnownFields = TypedDict(
+    "__ModelRequestBeforeCapabilitiesField4ModifyField7SummaryField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ModelRequestBeforeCapabilitiesField4ModifyField6ResponseMergeReplaceObjectModel: TypeAlias = (
-    __ModelRequestBeforeCapabilitiesField4ModifyField6ResponseMergeReplaceObjectModelKnownFields
+_ModelRequestBeforeCapabilitiesField4ModifyField7SummaryField0Model: TypeAlias = (
+    __ModelRequestBeforeCapabilitiesField4ModifyField7SummaryField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ModelRequestBeforeCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__ModelRequestBeforeCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__ModelRequestBeforeCapabilitiesField4ModifyField7SummaryField1ReplaceObjectModelKnownFields = TypedDict(
+    "__ModelRequestBeforeCapabilitiesField4ModifyField7SummaryField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_ModelRequestBeforeCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __ModelRequestBeforeCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_ModelRequestBeforeCapabilitiesField4ModifyField7SummaryField1ReplaceObjectModel: TypeAlias = (
+    __ModelRequestBeforeCapabilitiesField4ModifyField7SummaryField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ModelRequestBeforeCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__ModelRequestBeforeCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__ModelRequestBeforeCapabilitiesField4ModifyField7SummaryField1MergeObjectModelKnownFields = TypedDict(
+    "__ModelRequestBeforeCapabilitiesField4ModifyField7SummaryField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_ModelRequestBeforeCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __ModelRequestBeforeCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_ModelRequestBeforeCapabilitiesField4ModifyField7SummaryField1MergeObjectModel: TypeAlias = (
+    __ModelRequestBeforeCapabilitiesField4ModifyField7SummaryField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ModelRequestBeforeCapabilitiesField4ModifyField7SummaryMergeReplaceObjectModelKnownFields = TypedDict(
-    "__ModelRequestBeforeCapabilitiesField4ModifyField7SummaryMergeReplaceObjectModelKnownFields",
+__ModelRequestBeforeCapabilitiesField4ModifyField8WorkspaceField0ModelKnownFields = TypedDict(
+    "__ModelRequestBeforeCapabilitiesField4ModifyField8WorkspaceField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ModelRequestBeforeCapabilitiesField4ModifyField7SummaryMergeReplaceObjectModel: TypeAlias = (
-    __ModelRequestBeforeCapabilitiesField4ModifyField7SummaryMergeReplaceObjectModelKnownFields
+_ModelRequestBeforeCapabilitiesField4ModifyField8WorkspaceField0Model: TypeAlias = (
+    __ModelRequestBeforeCapabilitiesField4ModifyField8WorkspaceField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ModelRequestBeforeCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__ModelRequestBeforeCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__ModelRequestBeforeCapabilitiesField4ModifyField8WorkspaceField1ReplaceObjectModelKnownFields = TypedDict(
+    "__ModelRequestBeforeCapabilitiesField4ModifyField8WorkspaceField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_ModelRequestBeforeCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __ModelRequestBeforeCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_ModelRequestBeforeCapabilitiesField4ModifyField8WorkspaceField1ReplaceObjectModel: TypeAlias = (
+    __ModelRequestBeforeCapabilitiesField4ModifyField8WorkspaceField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ModelRequestBeforeCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__ModelRequestBeforeCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__ModelRequestBeforeCapabilitiesField4ModifyField8WorkspaceField1MergeObjectModelKnownFields = TypedDict(
+    "__ModelRequestBeforeCapabilitiesField4ModifyField8WorkspaceField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_ModelRequestBeforeCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __ModelRequestBeforeCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectMergeObjectModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ModelRequestBeforeCapabilitiesField4ModifyField8WorkspaceMergeReplaceObjectModelKnownFields = TypedDict(
-    "__ModelRequestBeforeCapabilitiesField4ModifyField8WorkspaceMergeReplaceObjectModelKnownFields",
-    {"merge": Required[bool], "replace": Required[bool]},
-    total=False,
-)
-_ModelRequestBeforeCapabilitiesField4ModifyField8WorkspaceMergeReplaceObjectModel: TypeAlias = (
-    __ModelRequestBeforeCapabilitiesField4ModifyField8WorkspaceMergeReplaceObjectModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ModelRequestBeforeCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__ModelRequestBeforeCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_ModelRequestBeforeCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __ModelRequestBeforeCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ModelRequestBeforeCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__ModelRequestBeforeCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_ModelRequestBeforeCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __ModelRequestBeforeCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_ModelRequestBeforeCapabilitiesField4ModifyField8WorkspaceField1MergeObjectModel: TypeAlias = (
+    __ModelRequestBeforeCapabilitiesField4ModifyField8WorkspaceField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
 __ModelRequestBeforeCapabilitiesField4ModifyModelKnownFields = TypedDict(
@@ -4792,247 +4776,249 @@ __ModelResponseAfterCapabilitiesField3InjectModelKnownFields = TypedDict(
 _ModelResponseAfterCapabilitiesField3InjectModel: TypeAlias = (
     __ModelResponseAfterCapabilitiesField3InjectModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__ModelResponseAfterCapabilitiesField4ModifyField0ContentMergeReplaceObjectModelKnownFields = TypedDict(
-    "__ModelResponseAfterCapabilitiesField4ModifyField0ContentMergeReplaceObjectModelKnownFields",
+__ModelResponseAfterCapabilitiesField4ModifyField0ContentField0ModelKnownFields = TypedDict(
+    "__ModelResponseAfterCapabilitiesField4ModifyField0ContentField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ModelResponseAfterCapabilitiesField4ModifyField0ContentMergeReplaceObjectModel: TypeAlias = (
-    __ModelResponseAfterCapabilitiesField4ModifyField0ContentMergeReplaceObjectModelKnownFields
+_ModelResponseAfterCapabilitiesField4ModifyField0ContentField0Model: TypeAlias = (
+    __ModelResponseAfterCapabilitiesField4ModifyField0ContentField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ModelResponseAfterCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__ModelResponseAfterCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__ModelResponseAfterCapabilitiesField4ModifyField0ContentField1ReplaceObjectModelKnownFields = TypedDict(
+    "__ModelResponseAfterCapabilitiesField4ModifyField0ContentField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_ModelResponseAfterCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __ModelResponseAfterCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_ModelResponseAfterCapabilitiesField4ModifyField0ContentField1ReplaceObjectModel: TypeAlias = (
+    __ModelResponseAfterCapabilitiesField4ModifyField0ContentField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ModelResponseAfterCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__ModelResponseAfterCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__ModelResponseAfterCapabilitiesField4ModifyField0ContentField1MergeObjectModelKnownFields = TypedDict(
+    "__ModelResponseAfterCapabilitiesField4ModifyField0ContentField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_ModelResponseAfterCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __ModelResponseAfterCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_ModelResponseAfterCapabilitiesField4ModifyField0ContentField1MergeObjectModel: TypeAlias = (
+    __ModelResponseAfterCapabilitiesField4ModifyField0ContentField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ModelResponseAfterCapabilitiesField4ModifyField1InputMergeReplaceObjectModelKnownFields = TypedDict(
-    "__ModelResponseAfterCapabilitiesField4ModifyField1InputMergeReplaceObjectModelKnownFields",
+__ModelResponseAfterCapabilitiesField4ModifyField1InputField0ModelKnownFields = (
+    TypedDict(
+        "__ModelResponseAfterCapabilitiesField4ModifyField1InputField0ModelKnownFields",
+        {"merge": Required[bool], "replace": Required[bool]},
+        total=False,
+    )
+)
+_ModelResponseAfterCapabilitiesField4ModifyField1InputField0Model: TypeAlias = (
+    __ModelResponseAfterCapabilitiesField4ModifyField1InputField0ModelKnownFields
+    | JsonObject
+)  # permits additional JSON fields
+__ModelResponseAfterCapabilitiesField4ModifyField1InputField1ReplaceObjectModelKnownFields = TypedDict(
+    "__ModelResponseAfterCapabilitiesField4ModifyField1InputField1ReplaceObjectModelKnownFields",
+    {"replace": Required[Literal[True]]},
+    total=False,
+)
+_ModelResponseAfterCapabilitiesField4ModifyField1InputField1ReplaceObjectModel: TypeAlias = (
+    __ModelResponseAfterCapabilitiesField4ModifyField1InputField1ReplaceObjectModelKnownFields
+    | JsonObject
+)  # permits additional JSON fields
+__ModelResponseAfterCapabilitiesField4ModifyField1InputField1MergeObjectModelKnownFields = TypedDict(
+    "__ModelResponseAfterCapabilitiesField4ModifyField1InputField1MergeObjectModelKnownFields",
+    {"merge": Required[Literal[True]]},
+    total=False,
+)
+_ModelResponseAfterCapabilitiesField4ModifyField1InputField1MergeObjectModel: TypeAlias = (
+    __ModelResponseAfterCapabilitiesField4ModifyField1InputField1MergeObjectModelKnownFields
+    | JsonObject
+)  # permits additional JSON fields
+__ModelResponseAfterCapabilitiesField4ModifyField2InstructionsField0ModelKnownFields = TypedDict(
+    "__ModelResponseAfterCapabilitiesField4ModifyField2InstructionsField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ModelResponseAfterCapabilitiesField4ModifyField1InputMergeReplaceObjectModel: TypeAlias = (
-    __ModelResponseAfterCapabilitiesField4ModifyField1InputMergeReplaceObjectModelKnownFields
+_ModelResponseAfterCapabilitiesField4ModifyField2InstructionsField0Model: TypeAlias = (
+    __ModelResponseAfterCapabilitiesField4ModifyField2InstructionsField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ModelResponseAfterCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__ModelResponseAfterCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__ModelResponseAfterCapabilitiesField4ModifyField2InstructionsField1ReplaceObjectModelKnownFields = TypedDict(
+    "__ModelResponseAfterCapabilitiesField4ModifyField2InstructionsField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_ModelResponseAfterCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __ModelResponseAfterCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_ModelResponseAfterCapabilitiesField4ModifyField2InstructionsField1ReplaceObjectModel: TypeAlias = (
+    __ModelResponseAfterCapabilitiesField4ModifyField2InstructionsField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ModelResponseAfterCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__ModelResponseAfterCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__ModelResponseAfterCapabilitiesField4ModifyField2InstructionsField1MergeObjectModelKnownFields = TypedDict(
+    "__ModelResponseAfterCapabilitiesField4ModifyField2InstructionsField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_ModelResponseAfterCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __ModelResponseAfterCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_ModelResponseAfterCapabilitiesField4ModifyField2InstructionsField1MergeObjectModel: TypeAlias = (
+    __ModelResponseAfterCapabilitiesField4ModifyField2InstructionsField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ModelResponseAfterCapabilitiesField4ModifyField2InstructionsMergeReplaceObjectModelKnownFields = TypedDict(
-    "__ModelResponseAfterCapabilitiesField4ModifyField2InstructionsMergeReplaceObjectModelKnownFields",
+__ModelResponseAfterCapabilitiesField4ModifyField3OutputField0ModelKnownFields = TypedDict(
+    "__ModelResponseAfterCapabilitiesField4ModifyField3OutputField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ModelResponseAfterCapabilitiesField4ModifyField2InstructionsMergeReplaceObjectModel: TypeAlias = (
-    __ModelResponseAfterCapabilitiesField4ModifyField2InstructionsMergeReplaceObjectModelKnownFields
+_ModelResponseAfterCapabilitiesField4ModifyField3OutputField0Model: TypeAlias = (
+    __ModelResponseAfterCapabilitiesField4ModifyField3OutputField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ModelResponseAfterCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__ModelResponseAfterCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__ModelResponseAfterCapabilitiesField4ModifyField3OutputField1ReplaceObjectModelKnownFields = TypedDict(
+    "__ModelResponseAfterCapabilitiesField4ModifyField3OutputField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_ModelResponseAfterCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __ModelResponseAfterCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_ModelResponseAfterCapabilitiesField4ModifyField3OutputField1ReplaceObjectModel: TypeAlias = (
+    __ModelResponseAfterCapabilitiesField4ModifyField3OutputField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ModelResponseAfterCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__ModelResponseAfterCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__ModelResponseAfterCapabilitiesField4ModifyField3OutputField1MergeObjectModelKnownFields = TypedDict(
+    "__ModelResponseAfterCapabilitiesField4ModifyField3OutputField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_ModelResponseAfterCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __ModelResponseAfterCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_ModelResponseAfterCapabilitiesField4ModifyField3OutputField1MergeObjectModel: TypeAlias = (
+    __ModelResponseAfterCapabilitiesField4ModifyField3OutputField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ModelResponseAfterCapabilitiesField4ModifyField3OutputMergeReplaceObjectModelKnownFields = TypedDict(
-    "__ModelResponseAfterCapabilitiesField4ModifyField3OutputMergeReplaceObjectModelKnownFields",
+__ModelResponseAfterCapabilitiesField4ModifyField4PromptField0ModelKnownFields = TypedDict(
+    "__ModelResponseAfterCapabilitiesField4ModifyField4PromptField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ModelResponseAfterCapabilitiesField4ModifyField3OutputMergeReplaceObjectModel: TypeAlias = (
-    __ModelResponseAfterCapabilitiesField4ModifyField3OutputMergeReplaceObjectModelKnownFields
+_ModelResponseAfterCapabilitiesField4ModifyField4PromptField0Model: TypeAlias = (
+    __ModelResponseAfterCapabilitiesField4ModifyField4PromptField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ModelResponseAfterCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__ModelResponseAfterCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__ModelResponseAfterCapabilitiesField4ModifyField4PromptField1ReplaceObjectModelKnownFields = TypedDict(
+    "__ModelResponseAfterCapabilitiesField4ModifyField4PromptField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_ModelResponseAfterCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __ModelResponseAfterCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_ModelResponseAfterCapabilitiesField4ModifyField4PromptField1ReplaceObjectModel: TypeAlias = (
+    __ModelResponseAfterCapabilitiesField4ModifyField4PromptField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ModelResponseAfterCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__ModelResponseAfterCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__ModelResponseAfterCapabilitiesField4ModifyField4PromptField1MergeObjectModelKnownFields = TypedDict(
+    "__ModelResponseAfterCapabilitiesField4ModifyField4PromptField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_ModelResponseAfterCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __ModelResponseAfterCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_ModelResponseAfterCapabilitiesField4ModifyField4PromptField1MergeObjectModel: TypeAlias = (
+    __ModelResponseAfterCapabilitiesField4ModifyField4PromptField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ModelResponseAfterCapabilitiesField4ModifyField4PromptMergeReplaceObjectModelKnownFields = TypedDict(
-    "__ModelResponseAfterCapabilitiesField4ModifyField4PromptMergeReplaceObjectModelKnownFields",
+__ModelResponseAfterCapabilitiesField4ModifyField5RequestField0ModelKnownFields = TypedDict(
+    "__ModelResponseAfterCapabilitiesField4ModifyField5RequestField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ModelResponseAfterCapabilitiesField4ModifyField4PromptMergeReplaceObjectModel: TypeAlias = (
-    __ModelResponseAfterCapabilitiesField4ModifyField4PromptMergeReplaceObjectModelKnownFields
+_ModelResponseAfterCapabilitiesField4ModifyField5RequestField0Model: TypeAlias = (
+    __ModelResponseAfterCapabilitiesField4ModifyField5RequestField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ModelResponseAfterCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__ModelResponseAfterCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__ModelResponseAfterCapabilitiesField4ModifyField5RequestField1ReplaceObjectModelKnownFields = TypedDict(
+    "__ModelResponseAfterCapabilitiesField4ModifyField5RequestField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_ModelResponseAfterCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __ModelResponseAfterCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_ModelResponseAfterCapabilitiesField4ModifyField5RequestField1ReplaceObjectModel: TypeAlias = (
+    __ModelResponseAfterCapabilitiesField4ModifyField5RequestField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ModelResponseAfterCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__ModelResponseAfterCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__ModelResponseAfterCapabilitiesField4ModifyField5RequestField1MergeObjectModelKnownFields = TypedDict(
+    "__ModelResponseAfterCapabilitiesField4ModifyField5RequestField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_ModelResponseAfterCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __ModelResponseAfterCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_ModelResponseAfterCapabilitiesField4ModifyField5RequestField1MergeObjectModel: TypeAlias = (
+    __ModelResponseAfterCapabilitiesField4ModifyField5RequestField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ModelResponseAfterCapabilitiesField4ModifyField5RequestMergeReplaceObjectModelKnownFields = TypedDict(
-    "__ModelResponseAfterCapabilitiesField4ModifyField5RequestMergeReplaceObjectModelKnownFields",
+__ModelResponseAfterCapabilitiesField4ModifyField6ResponseField0ModelKnownFields = TypedDict(
+    "__ModelResponseAfterCapabilitiesField4ModifyField6ResponseField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ModelResponseAfterCapabilitiesField4ModifyField5RequestMergeReplaceObjectModel: TypeAlias = (
-    __ModelResponseAfterCapabilitiesField4ModifyField5RequestMergeReplaceObjectModelKnownFields
+_ModelResponseAfterCapabilitiesField4ModifyField6ResponseField0Model: TypeAlias = (
+    __ModelResponseAfterCapabilitiesField4ModifyField6ResponseField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ModelResponseAfterCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__ModelResponseAfterCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__ModelResponseAfterCapabilitiesField4ModifyField6ResponseField1ReplaceObjectModelKnownFields = TypedDict(
+    "__ModelResponseAfterCapabilitiesField4ModifyField6ResponseField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_ModelResponseAfterCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __ModelResponseAfterCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_ModelResponseAfterCapabilitiesField4ModifyField6ResponseField1ReplaceObjectModel: TypeAlias = (
+    __ModelResponseAfterCapabilitiesField4ModifyField6ResponseField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ModelResponseAfterCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__ModelResponseAfterCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__ModelResponseAfterCapabilitiesField4ModifyField6ResponseField1MergeObjectModelKnownFields = TypedDict(
+    "__ModelResponseAfterCapabilitiesField4ModifyField6ResponseField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_ModelResponseAfterCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __ModelResponseAfterCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_ModelResponseAfterCapabilitiesField4ModifyField6ResponseField1MergeObjectModel: TypeAlias = (
+    __ModelResponseAfterCapabilitiesField4ModifyField6ResponseField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ModelResponseAfterCapabilitiesField4ModifyField6ResponseMergeReplaceObjectModelKnownFields = TypedDict(
-    "__ModelResponseAfterCapabilitiesField4ModifyField6ResponseMergeReplaceObjectModelKnownFields",
+__ModelResponseAfterCapabilitiesField4ModifyField7SummaryField0ModelKnownFields = TypedDict(
+    "__ModelResponseAfterCapabilitiesField4ModifyField7SummaryField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ModelResponseAfterCapabilitiesField4ModifyField6ResponseMergeReplaceObjectModel: TypeAlias = (
-    __ModelResponseAfterCapabilitiesField4ModifyField6ResponseMergeReplaceObjectModelKnownFields
+_ModelResponseAfterCapabilitiesField4ModifyField7SummaryField0Model: TypeAlias = (
+    __ModelResponseAfterCapabilitiesField4ModifyField7SummaryField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ModelResponseAfterCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__ModelResponseAfterCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__ModelResponseAfterCapabilitiesField4ModifyField7SummaryField1ReplaceObjectModelKnownFields = TypedDict(
+    "__ModelResponseAfterCapabilitiesField4ModifyField7SummaryField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_ModelResponseAfterCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __ModelResponseAfterCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_ModelResponseAfterCapabilitiesField4ModifyField7SummaryField1ReplaceObjectModel: TypeAlias = (
+    __ModelResponseAfterCapabilitiesField4ModifyField7SummaryField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ModelResponseAfterCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__ModelResponseAfterCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__ModelResponseAfterCapabilitiesField4ModifyField7SummaryField1MergeObjectModelKnownFields = TypedDict(
+    "__ModelResponseAfterCapabilitiesField4ModifyField7SummaryField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_ModelResponseAfterCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __ModelResponseAfterCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_ModelResponseAfterCapabilitiesField4ModifyField7SummaryField1MergeObjectModel: TypeAlias = (
+    __ModelResponseAfterCapabilitiesField4ModifyField7SummaryField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ModelResponseAfterCapabilitiesField4ModifyField7SummaryMergeReplaceObjectModelKnownFields = TypedDict(
-    "__ModelResponseAfterCapabilitiesField4ModifyField7SummaryMergeReplaceObjectModelKnownFields",
+__ModelResponseAfterCapabilitiesField4ModifyField8WorkspaceField0ModelKnownFields = TypedDict(
+    "__ModelResponseAfterCapabilitiesField4ModifyField8WorkspaceField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ModelResponseAfterCapabilitiesField4ModifyField7SummaryMergeReplaceObjectModel: TypeAlias = (
-    __ModelResponseAfterCapabilitiesField4ModifyField7SummaryMergeReplaceObjectModelKnownFields
+_ModelResponseAfterCapabilitiesField4ModifyField8WorkspaceField0Model: TypeAlias = (
+    __ModelResponseAfterCapabilitiesField4ModifyField8WorkspaceField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ModelResponseAfterCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__ModelResponseAfterCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__ModelResponseAfterCapabilitiesField4ModifyField8WorkspaceField1ReplaceObjectModelKnownFields = TypedDict(
+    "__ModelResponseAfterCapabilitiesField4ModifyField8WorkspaceField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_ModelResponseAfterCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __ModelResponseAfterCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_ModelResponseAfterCapabilitiesField4ModifyField8WorkspaceField1ReplaceObjectModel: TypeAlias = (
+    __ModelResponseAfterCapabilitiesField4ModifyField8WorkspaceField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ModelResponseAfterCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__ModelResponseAfterCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__ModelResponseAfterCapabilitiesField4ModifyField8WorkspaceField1MergeObjectModelKnownFields = TypedDict(
+    "__ModelResponseAfterCapabilitiesField4ModifyField8WorkspaceField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_ModelResponseAfterCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __ModelResponseAfterCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectMergeObjectModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ModelResponseAfterCapabilitiesField4ModifyField8WorkspaceMergeReplaceObjectModelKnownFields = TypedDict(
-    "__ModelResponseAfterCapabilitiesField4ModifyField8WorkspaceMergeReplaceObjectModelKnownFields",
-    {"merge": Required[bool], "replace": Required[bool]},
-    total=False,
-)
-_ModelResponseAfterCapabilitiesField4ModifyField8WorkspaceMergeReplaceObjectModel: TypeAlias = (
-    __ModelResponseAfterCapabilitiesField4ModifyField8WorkspaceMergeReplaceObjectModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ModelResponseAfterCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__ModelResponseAfterCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_ModelResponseAfterCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __ModelResponseAfterCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ModelResponseAfterCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__ModelResponseAfterCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_ModelResponseAfterCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __ModelResponseAfterCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_ModelResponseAfterCapabilitiesField4ModifyField8WorkspaceField1MergeObjectModel: TypeAlias = (
+    __ModelResponseAfterCapabilitiesField4ModifyField8WorkspaceField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
 __ModelResponseAfterCapabilitiesField4ModifyModelKnownFields = TypedDict(
@@ -5140,247 +5126,253 @@ __ModelSwitchBeforeCapabilitiesField3InjectModelKnownFields = TypedDict(
 _ModelSwitchBeforeCapabilitiesField3InjectModel: TypeAlias = (
     __ModelSwitchBeforeCapabilitiesField3InjectModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__ModelSwitchBeforeCapabilitiesField4ModifyField0ContentMergeReplaceObjectModelKnownFields = TypedDict(
-    "__ModelSwitchBeforeCapabilitiesField4ModifyField0ContentMergeReplaceObjectModelKnownFields",
+__ModelSwitchBeforeCapabilitiesField4ModifyField0ContentField0ModelKnownFields = TypedDict(
+    "__ModelSwitchBeforeCapabilitiesField4ModifyField0ContentField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ModelSwitchBeforeCapabilitiesField4ModifyField0ContentMergeReplaceObjectModel: TypeAlias = (
-    __ModelSwitchBeforeCapabilitiesField4ModifyField0ContentMergeReplaceObjectModelKnownFields
+_ModelSwitchBeforeCapabilitiesField4ModifyField0ContentField0Model: TypeAlias = (
+    __ModelSwitchBeforeCapabilitiesField4ModifyField0ContentField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ModelSwitchBeforeCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__ModelSwitchBeforeCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__ModelSwitchBeforeCapabilitiesField4ModifyField0ContentField1ReplaceObjectModelKnownFields = TypedDict(
+    "__ModelSwitchBeforeCapabilitiesField4ModifyField0ContentField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_ModelSwitchBeforeCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __ModelSwitchBeforeCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_ModelSwitchBeforeCapabilitiesField4ModifyField0ContentField1ReplaceObjectModel: TypeAlias = (
+    __ModelSwitchBeforeCapabilitiesField4ModifyField0ContentField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ModelSwitchBeforeCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__ModelSwitchBeforeCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__ModelSwitchBeforeCapabilitiesField4ModifyField0ContentField1MergeObjectModelKnownFields = TypedDict(
+    "__ModelSwitchBeforeCapabilitiesField4ModifyField0ContentField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_ModelSwitchBeforeCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __ModelSwitchBeforeCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_ModelSwitchBeforeCapabilitiesField4ModifyField0ContentField1MergeObjectModel: TypeAlias = (
+    __ModelSwitchBeforeCapabilitiesField4ModifyField0ContentField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ModelSwitchBeforeCapabilitiesField4ModifyField1InputMergeReplaceObjectModelKnownFields = TypedDict(
-    "__ModelSwitchBeforeCapabilitiesField4ModifyField1InputMergeReplaceObjectModelKnownFields",
+__ModelSwitchBeforeCapabilitiesField4ModifyField1InputField0ModelKnownFields = (
+    TypedDict(
+        "__ModelSwitchBeforeCapabilitiesField4ModifyField1InputField0ModelKnownFields",
+        {"merge": Required[bool], "replace": Required[bool]},
+        total=False,
+    )
+)
+_ModelSwitchBeforeCapabilitiesField4ModifyField1InputField0Model: TypeAlias = (
+    __ModelSwitchBeforeCapabilitiesField4ModifyField1InputField0ModelKnownFields
+    | JsonObject
+)  # permits additional JSON fields
+__ModelSwitchBeforeCapabilitiesField4ModifyField1InputField1ReplaceObjectModelKnownFields = TypedDict(
+    "__ModelSwitchBeforeCapabilitiesField4ModifyField1InputField1ReplaceObjectModelKnownFields",
+    {"replace": Required[Literal[True]]},
+    total=False,
+)
+_ModelSwitchBeforeCapabilitiesField4ModifyField1InputField1ReplaceObjectModel: TypeAlias = (
+    __ModelSwitchBeforeCapabilitiesField4ModifyField1InputField1ReplaceObjectModelKnownFields
+    | JsonObject
+)  # permits additional JSON fields
+__ModelSwitchBeforeCapabilitiesField4ModifyField1InputField1MergeObjectModelKnownFields = TypedDict(
+    "__ModelSwitchBeforeCapabilitiesField4ModifyField1InputField1MergeObjectModelKnownFields",
+    {"merge": Required[Literal[True]]},
+    total=False,
+)
+_ModelSwitchBeforeCapabilitiesField4ModifyField1InputField1MergeObjectModel: TypeAlias = (
+    __ModelSwitchBeforeCapabilitiesField4ModifyField1InputField1MergeObjectModelKnownFields
+    | JsonObject
+)  # permits additional JSON fields
+__ModelSwitchBeforeCapabilitiesField4ModifyField2InstructionsField0ModelKnownFields = TypedDict(
+    "__ModelSwitchBeforeCapabilitiesField4ModifyField2InstructionsField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ModelSwitchBeforeCapabilitiesField4ModifyField1InputMergeReplaceObjectModel: TypeAlias = (
-    __ModelSwitchBeforeCapabilitiesField4ModifyField1InputMergeReplaceObjectModelKnownFields
+_ModelSwitchBeforeCapabilitiesField4ModifyField2InstructionsField0Model: TypeAlias = (
+    __ModelSwitchBeforeCapabilitiesField4ModifyField2InstructionsField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ModelSwitchBeforeCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__ModelSwitchBeforeCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__ModelSwitchBeforeCapabilitiesField4ModifyField2InstructionsField1ReplaceObjectModelKnownFields = TypedDict(
+    "__ModelSwitchBeforeCapabilitiesField4ModifyField2InstructionsField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_ModelSwitchBeforeCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __ModelSwitchBeforeCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_ModelSwitchBeforeCapabilitiesField4ModifyField2InstructionsField1ReplaceObjectModel: TypeAlias = (
+    __ModelSwitchBeforeCapabilitiesField4ModifyField2InstructionsField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ModelSwitchBeforeCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__ModelSwitchBeforeCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__ModelSwitchBeforeCapabilitiesField4ModifyField2InstructionsField1MergeObjectModelKnownFields = TypedDict(
+    "__ModelSwitchBeforeCapabilitiesField4ModifyField2InstructionsField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_ModelSwitchBeforeCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __ModelSwitchBeforeCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_ModelSwitchBeforeCapabilitiesField4ModifyField2InstructionsField1MergeObjectModel: TypeAlias = (
+    __ModelSwitchBeforeCapabilitiesField4ModifyField2InstructionsField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ModelSwitchBeforeCapabilitiesField4ModifyField2InstructionsMergeReplaceObjectModelKnownFields = TypedDict(
-    "__ModelSwitchBeforeCapabilitiesField4ModifyField2InstructionsMergeReplaceObjectModelKnownFields",
+__ModelSwitchBeforeCapabilitiesField4ModifyField3OutputField0ModelKnownFields = (
+    TypedDict(
+        "__ModelSwitchBeforeCapabilitiesField4ModifyField3OutputField0ModelKnownFields",
+        {"merge": Required[bool], "replace": Required[bool]},
+        total=False,
+    )
+)
+_ModelSwitchBeforeCapabilitiesField4ModifyField3OutputField0Model: TypeAlias = (
+    __ModelSwitchBeforeCapabilitiesField4ModifyField3OutputField0ModelKnownFields
+    | JsonObject
+)  # permits additional JSON fields
+__ModelSwitchBeforeCapabilitiesField4ModifyField3OutputField1ReplaceObjectModelKnownFields = TypedDict(
+    "__ModelSwitchBeforeCapabilitiesField4ModifyField3OutputField1ReplaceObjectModelKnownFields",
+    {"replace": Required[Literal[True]]},
+    total=False,
+)
+_ModelSwitchBeforeCapabilitiesField4ModifyField3OutputField1ReplaceObjectModel: TypeAlias = (
+    __ModelSwitchBeforeCapabilitiesField4ModifyField3OutputField1ReplaceObjectModelKnownFields
+    | JsonObject
+)  # permits additional JSON fields
+__ModelSwitchBeforeCapabilitiesField4ModifyField3OutputField1MergeObjectModelKnownFields = TypedDict(
+    "__ModelSwitchBeforeCapabilitiesField4ModifyField3OutputField1MergeObjectModelKnownFields",
+    {"merge": Required[Literal[True]]},
+    total=False,
+)
+_ModelSwitchBeforeCapabilitiesField4ModifyField3OutputField1MergeObjectModel: TypeAlias = (
+    __ModelSwitchBeforeCapabilitiesField4ModifyField3OutputField1MergeObjectModelKnownFields
+    | JsonObject
+)  # permits additional JSON fields
+__ModelSwitchBeforeCapabilitiesField4ModifyField4PromptField0ModelKnownFields = (
+    TypedDict(
+        "__ModelSwitchBeforeCapabilitiesField4ModifyField4PromptField0ModelKnownFields",
+        {"merge": Required[bool], "replace": Required[bool]},
+        total=False,
+    )
+)
+_ModelSwitchBeforeCapabilitiesField4ModifyField4PromptField0Model: TypeAlias = (
+    __ModelSwitchBeforeCapabilitiesField4ModifyField4PromptField0ModelKnownFields
+    | JsonObject
+)  # permits additional JSON fields
+__ModelSwitchBeforeCapabilitiesField4ModifyField4PromptField1ReplaceObjectModelKnownFields = TypedDict(
+    "__ModelSwitchBeforeCapabilitiesField4ModifyField4PromptField1ReplaceObjectModelKnownFields",
+    {"replace": Required[Literal[True]]},
+    total=False,
+)
+_ModelSwitchBeforeCapabilitiesField4ModifyField4PromptField1ReplaceObjectModel: TypeAlias = (
+    __ModelSwitchBeforeCapabilitiesField4ModifyField4PromptField1ReplaceObjectModelKnownFields
+    | JsonObject
+)  # permits additional JSON fields
+__ModelSwitchBeforeCapabilitiesField4ModifyField4PromptField1MergeObjectModelKnownFields = TypedDict(
+    "__ModelSwitchBeforeCapabilitiesField4ModifyField4PromptField1MergeObjectModelKnownFields",
+    {"merge": Required[Literal[True]]},
+    total=False,
+)
+_ModelSwitchBeforeCapabilitiesField4ModifyField4PromptField1MergeObjectModel: TypeAlias = (
+    __ModelSwitchBeforeCapabilitiesField4ModifyField4PromptField1MergeObjectModelKnownFields
+    | JsonObject
+)  # permits additional JSON fields
+__ModelSwitchBeforeCapabilitiesField4ModifyField5RequestField0ModelKnownFields = TypedDict(
+    "__ModelSwitchBeforeCapabilitiesField4ModifyField5RequestField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ModelSwitchBeforeCapabilitiesField4ModifyField2InstructionsMergeReplaceObjectModel: TypeAlias = (
-    __ModelSwitchBeforeCapabilitiesField4ModifyField2InstructionsMergeReplaceObjectModelKnownFields
+_ModelSwitchBeforeCapabilitiesField4ModifyField5RequestField0Model: TypeAlias = (
+    __ModelSwitchBeforeCapabilitiesField4ModifyField5RequestField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ModelSwitchBeforeCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__ModelSwitchBeforeCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__ModelSwitchBeforeCapabilitiesField4ModifyField5RequestField1ReplaceObjectModelKnownFields = TypedDict(
+    "__ModelSwitchBeforeCapabilitiesField4ModifyField5RequestField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_ModelSwitchBeforeCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __ModelSwitchBeforeCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_ModelSwitchBeforeCapabilitiesField4ModifyField5RequestField1ReplaceObjectModel: TypeAlias = (
+    __ModelSwitchBeforeCapabilitiesField4ModifyField5RequestField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ModelSwitchBeforeCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__ModelSwitchBeforeCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__ModelSwitchBeforeCapabilitiesField4ModifyField5RequestField1MergeObjectModelKnownFields = TypedDict(
+    "__ModelSwitchBeforeCapabilitiesField4ModifyField5RequestField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_ModelSwitchBeforeCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __ModelSwitchBeforeCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_ModelSwitchBeforeCapabilitiesField4ModifyField5RequestField1MergeObjectModel: TypeAlias = (
+    __ModelSwitchBeforeCapabilitiesField4ModifyField5RequestField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ModelSwitchBeforeCapabilitiesField4ModifyField3OutputMergeReplaceObjectModelKnownFields = TypedDict(
-    "__ModelSwitchBeforeCapabilitiesField4ModifyField3OutputMergeReplaceObjectModelKnownFields",
+__ModelSwitchBeforeCapabilitiesField4ModifyField6ResponseField0ModelKnownFields = TypedDict(
+    "__ModelSwitchBeforeCapabilitiesField4ModifyField6ResponseField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ModelSwitchBeforeCapabilitiesField4ModifyField3OutputMergeReplaceObjectModel: TypeAlias = (
-    __ModelSwitchBeforeCapabilitiesField4ModifyField3OutputMergeReplaceObjectModelKnownFields
+_ModelSwitchBeforeCapabilitiesField4ModifyField6ResponseField0Model: TypeAlias = (
+    __ModelSwitchBeforeCapabilitiesField4ModifyField6ResponseField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ModelSwitchBeforeCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__ModelSwitchBeforeCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__ModelSwitchBeforeCapabilitiesField4ModifyField6ResponseField1ReplaceObjectModelKnownFields = TypedDict(
+    "__ModelSwitchBeforeCapabilitiesField4ModifyField6ResponseField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_ModelSwitchBeforeCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __ModelSwitchBeforeCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_ModelSwitchBeforeCapabilitiesField4ModifyField6ResponseField1ReplaceObjectModel: TypeAlias = (
+    __ModelSwitchBeforeCapabilitiesField4ModifyField6ResponseField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ModelSwitchBeforeCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__ModelSwitchBeforeCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__ModelSwitchBeforeCapabilitiesField4ModifyField6ResponseField1MergeObjectModelKnownFields = TypedDict(
+    "__ModelSwitchBeforeCapabilitiesField4ModifyField6ResponseField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_ModelSwitchBeforeCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __ModelSwitchBeforeCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_ModelSwitchBeforeCapabilitiesField4ModifyField6ResponseField1MergeObjectModel: TypeAlias = (
+    __ModelSwitchBeforeCapabilitiesField4ModifyField6ResponseField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ModelSwitchBeforeCapabilitiesField4ModifyField4PromptMergeReplaceObjectModelKnownFields = TypedDict(
-    "__ModelSwitchBeforeCapabilitiesField4ModifyField4PromptMergeReplaceObjectModelKnownFields",
+__ModelSwitchBeforeCapabilitiesField4ModifyField7SummaryField0ModelKnownFields = TypedDict(
+    "__ModelSwitchBeforeCapabilitiesField4ModifyField7SummaryField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ModelSwitchBeforeCapabilitiesField4ModifyField4PromptMergeReplaceObjectModel: TypeAlias = (
-    __ModelSwitchBeforeCapabilitiesField4ModifyField4PromptMergeReplaceObjectModelKnownFields
+_ModelSwitchBeforeCapabilitiesField4ModifyField7SummaryField0Model: TypeAlias = (
+    __ModelSwitchBeforeCapabilitiesField4ModifyField7SummaryField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ModelSwitchBeforeCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__ModelSwitchBeforeCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__ModelSwitchBeforeCapabilitiesField4ModifyField7SummaryField1ReplaceObjectModelKnownFields = TypedDict(
+    "__ModelSwitchBeforeCapabilitiesField4ModifyField7SummaryField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_ModelSwitchBeforeCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __ModelSwitchBeforeCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_ModelSwitchBeforeCapabilitiesField4ModifyField7SummaryField1ReplaceObjectModel: TypeAlias = (
+    __ModelSwitchBeforeCapabilitiesField4ModifyField7SummaryField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ModelSwitchBeforeCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__ModelSwitchBeforeCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__ModelSwitchBeforeCapabilitiesField4ModifyField7SummaryField1MergeObjectModelKnownFields = TypedDict(
+    "__ModelSwitchBeforeCapabilitiesField4ModifyField7SummaryField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_ModelSwitchBeforeCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __ModelSwitchBeforeCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_ModelSwitchBeforeCapabilitiesField4ModifyField7SummaryField1MergeObjectModel: TypeAlias = (
+    __ModelSwitchBeforeCapabilitiesField4ModifyField7SummaryField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ModelSwitchBeforeCapabilitiesField4ModifyField5RequestMergeReplaceObjectModelKnownFields = TypedDict(
-    "__ModelSwitchBeforeCapabilitiesField4ModifyField5RequestMergeReplaceObjectModelKnownFields",
+__ModelSwitchBeforeCapabilitiesField4ModifyField8WorkspaceField0ModelKnownFields = TypedDict(
+    "__ModelSwitchBeforeCapabilitiesField4ModifyField8WorkspaceField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ModelSwitchBeforeCapabilitiesField4ModifyField5RequestMergeReplaceObjectModel: TypeAlias = (
-    __ModelSwitchBeforeCapabilitiesField4ModifyField5RequestMergeReplaceObjectModelKnownFields
+_ModelSwitchBeforeCapabilitiesField4ModifyField8WorkspaceField0Model: TypeAlias = (
+    __ModelSwitchBeforeCapabilitiesField4ModifyField8WorkspaceField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ModelSwitchBeforeCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__ModelSwitchBeforeCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__ModelSwitchBeforeCapabilitiesField4ModifyField8WorkspaceField1ReplaceObjectModelKnownFields = TypedDict(
+    "__ModelSwitchBeforeCapabilitiesField4ModifyField8WorkspaceField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_ModelSwitchBeforeCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __ModelSwitchBeforeCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_ModelSwitchBeforeCapabilitiesField4ModifyField8WorkspaceField1ReplaceObjectModel: TypeAlias = (
+    __ModelSwitchBeforeCapabilitiesField4ModifyField8WorkspaceField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ModelSwitchBeforeCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__ModelSwitchBeforeCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__ModelSwitchBeforeCapabilitiesField4ModifyField8WorkspaceField1MergeObjectModelKnownFields = TypedDict(
+    "__ModelSwitchBeforeCapabilitiesField4ModifyField8WorkspaceField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_ModelSwitchBeforeCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __ModelSwitchBeforeCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectMergeObjectModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ModelSwitchBeforeCapabilitiesField4ModifyField6ResponseMergeReplaceObjectModelKnownFields = TypedDict(
-    "__ModelSwitchBeforeCapabilitiesField4ModifyField6ResponseMergeReplaceObjectModelKnownFields",
-    {"merge": Required[bool], "replace": Required[bool]},
-    total=False,
-)
-_ModelSwitchBeforeCapabilitiesField4ModifyField6ResponseMergeReplaceObjectModel: TypeAlias = (
-    __ModelSwitchBeforeCapabilitiesField4ModifyField6ResponseMergeReplaceObjectModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ModelSwitchBeforeCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__ModelSwitchBeforeCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_ModelSwitchBeforeCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __ModelSwitchBeforeCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ModelSwitchBeforeCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__ModelSwitchBeforeCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_ModelSwitchBeforeCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __ModelSwitchBeforeCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectMergeObjectModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ModelSwitchBeforeCapabilitiesField4ModifyField7SummaryMergeReplaceObjectModelKnownFields = TypedDict(
-    "__ModelSwitchBeforeCapabilitiesField4ModifyField7SummaryMergeReplaceObjectModelKnownFields",
-    {"merge": Required[bool], "replace": Required[bool]},
-    total=False,
-)
-_ModelSwitchBeforeCapabilitiesField4ModifyField7SummaryMergeReplaceObjectModel: TypeAlias = (
-    __ModelSwitchBeforeCapabilitiesField4ModifyField7SummaryMergeReplaceObjectModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ModelSwitchBeforeCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__ModelSwitchBeforeCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_ModelSwitchBeforeCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __ModelSwitchBeforeCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ModelSwitchBeforeCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__ModelSwitchBeforeCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_ModelSwitchBeforeCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __ModelSwitchBeforeCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectMergeObjectModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ModelSwitchBeforeCapabilitiesField4ModifyField8WorkspaceMergeReplaceObjectModelKnownFields = TypedDict(
-    "__ModelSwitchBeforeCapabilitiesField4ModifyField8WorkspaceMergeReplaceObjectModelKnownFields",
-    {"merge": Required[bool], "replace": Required[bool]},
-    total=False,
-)
-_ModelSwitchBeforeCapabilitiesField4ModifyField8WorkspaceMergeReplaceObjectModel: TypeAlias = (
-    __ModelSwitchBeforeCapabilitiesField4ModifyField8WorkspaceMergeReplaceObjectModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ModelSwitchBeforeCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__ModelSwitchBeforeCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_ModelSwitchBeforeCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __ModelSwitchBeforeCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ModelSwitchBeforeCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__ModelSwitchBeforeCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_ModelSwitchBeforeCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __ModelSwitchBeforeCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_ModelSwitchBeforeCapabilitiesField4ModifyField8WorkspaceField1MergeObjectModel: TypeAlias = (
+    __ModelSwitchBeforeCapabilitiesField4ModifyField8WorkspaceField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
 __ModelSwitchBeforeCapabilitiesField4ModifyModelKnownFields = TypedDict(
@@ -5422,11 +5414,11 @@ ModelSwitchBeforeCapabilities: TypeAlias = (
 ModelSwitchBeforeEvent: TypeAlias = "ExecutionEventModelSwitchBefore"
 
 # Source: schema/draft/content-item.schema.json#/$defs/modelVisibleItem
-__ModelVisibleItemRoleObjectModelKnownFields = TypedDict(
-    "__ModelVisibleItemRoleObjectModelKnownFields", {"role": Required[str]}, total=False
+__ModelVisibleItemField1ModelKnownFields = TypedDict(
+    "__ModelVisibleItemField1ModelKnownFields", {"role": Required[str]}, total=False
 )
-_ModelVisibleItemRoleObjectModel: TypeAlias = (
-    __ModelVisibleItemRoleObjectModelKnownFields | JsonObject
+_ModelVisibleItemField1Model: TypeAlias = (
+    __ModelVisibleItemField1ModelKnownFields | JsonObject
 )  # permits additional JSON fields
 ModelVisibleItem: TypeAlias = JsonValue
 
@@ -5682,247 +5674,246 @@ __SessionStartCapabilitiesField3InjectModelKnownFields = TypedDict(
 _SessionStartCapabilitiesField3InjectModel: TypeAlias = (
     __SessionStartCapabilitiesField3InjectModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__SessionStartCapabilitiesField4ModifyField0ContentMergeReplaceObjectModelKnownFields = TypedDict(
-    "__SessionStartCapabilitiesField4ModifyField0ContentMergeReplaceObjectModelKnownFields",
+__SessionStartCapabilitiesField4ModifyField0ContentField0ModelKnownFields = TypedDict(
+    "__SessionStartCapabilitiesField4ModifyField0ContentField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_SessionStartCapabilitiesField4ModifyField0ContentMergeReplaceObjectModel: TypeAlias = (
-    __SessionStartCapabilitiesField4ModifyField0ContentMergeReplaceObjectModelKnownFields
+_SessionStartCapabilitiesField4ModifyField0ContentField0Model: TypeAlias = (
+    __SessionStartCapabilitiesField4ModifyField0ContentField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__SessionStartCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__SessionStartCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__SessionStartCapabilitiesField4ModifyField0ContentField1ReplaceObjectModelKnownFields = TypedDict(
+    "__SessionStartCapabilitiesField4ModifyField0ContentField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_SessionStartCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __SessionStartCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_SessionStartCapabilitiesField4ModifyField0ContentField1ReplaceObjectModel: TypeAlias = (
+    __SessionStartCapabilitiesField4ModifyField0ContentField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__SessionStartCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__SessionStartCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__SessionStartCapabilitiesField4ModifyField0ContentField1MergeObjectModelKnownFields = TypedDict(
+    "__SessionStartCapabilitiesField4ModifyField0ContentField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_SessionStartCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __SessionStartCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_SessionStartCapabilitiesField4ModifyField0ContentField1MergeObjectModel: TypeAlias = (
+    __SessionStartCapabilitiesField4ModifyField0ContentField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__SessionStartCapabilitiesField4ModifyField1InputMergeReplaceObjectModelKnownFields = TypedDict(
-    "__SessionStartCapabilitiesField4ModifyField1InputMergeReplaceObjectModelKnownFields",
+__SessionStartCapabilitiesField4ModifyField1InputField0ModelKnownFields = TypedDict(
+    "__SessionStartCapabilitiesField4ModifyField1InputField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_SessionStartCapabilitiesField4ModifyField1InputMergeReplaceObjectModel: TypeAlias = (
-    __SessionStartCapabilitiesField4ModifyField1InputMergeReplaceObjectModelKnownFields
-    | JsonObject
+_SessionStartCapabilitiesField4ModifyField1InputField0Model: TypeAlias = (
+    __SessionStartCapabilitiesField4ModifyField1InputField0ModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__SessionStartCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__SessionStartCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__SessionStartCapabilitiesField4ModifyField1InputField1ReplaceObjectModelKnownFields = TypedDict(
+    "__SessionStartCapabilitiesField4ModifyField1InputField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_SessionStartCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __SessionStartCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_SessionStartCapabilitiesField4ModifyField1InputField1ReplaceObjectModel: TypeAlias = (
+    __SessionStartCapabilitiesField4ModifyField1InputField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__SessionStartCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__SessionStartCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__SessionStartCapabilitiesField4ModifyField1InputField1MergeObjectModelKnownFields = TypedDict(
+    "__SessionStartCapabilitiesField4ModifyField1InputField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_SessionStartCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __SessionStartCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_SessionStartCapabilitiesField4ModifyField1InputField1MergeObjectModel: TypeAlias = (
+    __SessionStartCapabilitiesField4ModifyField1InputField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__SessionStartCapabilitiesField4ModifyField2InstructionsMergeReplaceObjectModelKnownFields = TypedDict(
-    "__SessionStartCapabilitiesField4ModifyField2InstructionsMergeReplaceObjectModelKnownFields",
+__SessionStartCapabilitiesField4ModifyField2InstructionsField0ModelKnownFields = TypedDict(
+    "__SessionStartCapabilitiesField4ModifyField2InstructionsField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_SessionStartCapabilitiesField4ModifyField2InstructionsMergeReplaceObjectModel: TypeAlias = (
-    __SessionStartCapabilitiesField4ModifyField2InstructionsMergeReplaceObjectModelKnownFields
+_SessionStartCapabilitiesField4ModifyField2InstructionsField0Model: TypeAlias = (
+    __SessionStartCapabilitiesField4ModifyField2InstructionsField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__SessionStartCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__SessionStartCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__SessionStartCapabilitiesField4ModifyField2InstructionsField1ReplaceObjectModelKnownFields = TypedDict(
+    "__SessionStartCapabilitiesField4ModifyField2InstructionsField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_SessionStartCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __SessionStartCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_SessionStartCapabilitiesField4ModifyField2InstructionsField1ReplaceObjectModel: TypeAlias = (
+    __SessionStartCapabilitiesField4ModifyField2InstructionsField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__SessionStartCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__SessionStartCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__SessionStartCapabilitiesField4ModifyField2InstructionsField1MergeObjectModelKnownFields = TypedDict(
+    "__SessionStartCapabilitiesField4ModifyField2InstructionsField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_SessionStartCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __SessionStartCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_SessionStartCapabilitiesField4ModifyField2InstructionsField1MergeObjectModel: TypeAlias = (
+    __SessionStartCapabilitiesField4ModifyField2InstructionsField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__SessionStartCapabilitiesField4ModifyField3OutputMergeReplaceObjectModelKnownFields = TypedDict(
-    "__SessionStartCapabilitiesField4ModifyField3OutputMergeReplaceObjectModelKnownFields",
+__SessionStartCapabilitiesField4ModifyField3OutputField0ModelKnownFields = TypedDict(
+    "__SessionStartCapabilitiesField4ModifyField3OutputField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_SessionStartCapabilitiesField4ModifyField3OutputMergeReplaceObjectModel: TypeAlias = (
-    __SessionStartCapabilitiesField4ModifyField3OutputMergeReplaceObjectModelKnownFields
+_SessionStartCapabilitiesField4ModifyField3OutputField0Model: TypeAlias = (
+    __SessionStartCapabilitiesField4ModifyField3OutputField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__SessionStartCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__SessionStartCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__SessionStartCapabilitiesField4ModifyField3OutputField1ReplaceObjectModelKnownFields = TypedDict(
+    "__SessionStartCapabilitiesField4ModifyField3OutputField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_SessionStartCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __SessionStartCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_SessionStartCapabilitiesField4ModifyField3OutputField1ReplaceObjectModel: TypeAlias = (
+    __SessionStartCapabilitiesField4ModifyField3OutputField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__SessionStartCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__SessionStartCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__SessionStartCapabilitiesField4ModifyField3OutputField1MergeObjectModelKnownFields = TypedDict(
+    "__SessionStartCapabilitiesField4ModifyField3OutputField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_SessionStartCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __SessionStartCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_SessionStartCapabilitiesField4ModifyField3OutputField1MergeObjectModel: TypeAlias = (
+    __SessionStartCapabilitiesField4ModifyField3OutputField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__SessionStartCapabilitiesField4ModifyField4PromptMergeReplaceObjectModelKnownFields = TypedDict(
-    "__SessionStartCapabilitiesField4ModifyField4PromptMergeReplaceObjectModelKnownFields",
+__SessionStartCapabilitiesField4ModifyField4PromptField0ModelKnownFields = TypedDict(
+    "__SessionStartCapabilitiesField4ModifyField4PromptField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_SessionStartCapabilitiesField4ModifyField4PromptMergeReplaceObjectModel: TypeAlias = (
-    __SessionStartCapabilitiesField4ModifyField4PromptMergeReplaceObjectModelKnownFields
+_SessionStartCapabilitiesField4ModifyField4PromptField0Model: TypeAlias = (
+    __SessionStartCapabilitiesField4ModifyField4PromptField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__SessionStartCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__SessionStartCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__SessionStartCapabilitiesField4ModifyField4PromptField1ReplaceObjectModelKnownFields = TypedDict(
+    "__SessionStartCapabilitiesField4ModifyField4PromptField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_SessionStartCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __SessionStartCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_SessionStartCapabilitiesField4ModifyField4PromptField1ReplaceObjectModel: TypeAlias = (
+    __SessionStartCapabilitiesField4ModifyField4PromptField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__SessionStartCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__SessionStartCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__SessionStartCapabilitiesField4ModifyField4PromptField1MergeObjectModelKnownFields = TypedDict(
+    "__SessionStartCapabilitiesField4ModifyField4PromptField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_SessionStartCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __SessionStartCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_SessionStartCapabilitiesField4ModifyField4PromptField1MergeObjectModel: TypeAlias = (
+    __SessionStartCapabilitiesField4ModifyField4PromptField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__SessionStartCapabilitiesField4ModifyField5RequestMergeReplaceObjectModelKnownFields = TypedDict(
-    "__SessionStartCapabilitiesField4ModifyField5RequestMergeReplaceObjectModelKnownFields",
+__SessionStartCapabilitiesField4ModifyField5RequestField0ModelKnownFields = TypedDict(
+    "__SessionStartCapabilitiesField4ModifyField5RequestField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_SessionStartCapabilitiesField4ModifyField5RequestMergeReplaceObjectModel: TypeAlias = (
-    __SessionStartCapabilitiesField4ModifyField5RequestMergeReplaceObjectModelKnownFields
+_SessionStartCapabilitiesField4ModifyField5RequestField0Model: TypeAlias = (
+    __SessionStartCapabilitiesField4ModifyField5RequestField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__SessionStartCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__SessionStartCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__SessionStartCapabilitiesField4ModifyField5RequestField1ReplaceObjectModelKnownFields = TypedDict(
+    "__SessionStartCapabilitiesField4ModifyField5RequestField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_SessionStartCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __SessionStartCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_SessionStartCapabilitiesField4ModifyField5RequestField1ReplaceObjectModel: TypeAlias = (
+    __SessionStartCapabilitiesField4ModifyField5RequestField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__SessionStartCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__SessionStartCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__SessionStartCapabilitiesField4ModifyField5RequestField1MergeObjectModelKnownFields = TypedDict(
+    "__SessionStartCapabilitiesField4ModifyField5RequestField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_SessionStartCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __SessionStartCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_SessionStartCapabilitiesField4ModifyField5RequestField1MergeObjectModel: TypeAlias = (
+    __SessionStartCapabilitiesField4ModifyField5RequestField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__SessionStartCapabilitiesField4ModifyField6ResponseMergeReplaceObjectModelKnownFields = TypedDict(
-    "__SessionStartCapabilitiesField4ModifyField6ResponseMergeReplaceObjectModelKnownFields",
+__SessionStartCapabilitiesField4ModifyField6ResponseField0ModelKnownFields = TypedDict(
+    "__SessionStartCapabilitiesField4ModifyField6ResponseField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_SessionStartCapabilitiesField4ModifyField6ResponseMergeReplaceObjectModel: TypeAlias = (
-    __SessionStartCapabilitiesField4ModifyField6ResponseMergeReplaceObjectModelKnownFields
+_SessionStartCapabilitiesField4ModifyField6ResponseField0Model: TypeAlias = (
+    __SessionStartCapabilitiesField4ModifyField6ResponseField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__SessionStartCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__SessionStartCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__SessionStartCapabilitiesField4ModifyField6ResponseField1ReplaceObjectModelKnownFields = TypedDict(
+    "__SessionStartCapabilitiesField4ModifyField6ResponseField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_SessionStartCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __SessionStartCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_SessionStartCapabilitiesField4ModifyField6ResponseField1ReplaceObjectModel: TypeAlias = (
+    __SessionStartCapabilitiesField4ModifyField6ResponseField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__SessionStartCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__SessionStartCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__SessionStartCapabilitiesField4ModifyField6ResponseField1MergeObjectModelKnownFields = TypedDict(
+    "__SessionStartCapabilitiesField4ModifyField6ResponseField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_SessionStartCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __SessionStartCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_SessionStartCapabilitiesField4ModifyField6ResponseField1MergeObjectModel: TypeAlias = (
+    __SessionStartCapabilitiesField4ModifyField6ResponseField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__SessionStartCapabilitiesField4ModifyField7SummaryMergeReplaceObjectModelKnownFields = TypedDict(
-    "__SessionStartCapabilitiesField4ModifyField7SummaryMergeReplaceObjectModelKnownFields",
+__SessionStartCapabilitiesField4ModifyField7SummaryField0ModelKnownFields = TypedDict(
+    "__SessionStartCapabilitiesField4ModifyField7SummaryField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_SessionStartCapabilitiesField4ModifyField7SummaryMergeReplaceObjectModel: TypeAlias = (
-    __SessionStartCapabilitiesField4ModifyField7SummaryMergeReplaceObjectModelKnownFields
+_SessionStartCapabilitiesField4ModifyField7SummaryField0Model: TypeAlias = (
+    __SessionStartCapabilitiesField4ModifyField7SummaryField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__SessionStartCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__SessionStartCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__SessionStartCapabilitiesField4ModifyField7SummaryField1ReplaceObjectModelKnownFields = TypedDict(
+    "__SessionStartCapabilitiesField4ModifyField7SummaryField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_SessionStartCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __SessionStartCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_SessionStartCapabilitiesField4ModifyField7SummaryField1ReplaceObjectModel: TypeAlias = (
+    __SessionStartCapabilitiesField4ModifyField7SummaryField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__SessionStartCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__SessionStartCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__SessionStartCapabilitiesField4ModifyField7SummaryField1MergeObjectModelKnownFields = TypedDict(
+    "__SessionStartCapabilitiesField4ModifyField7SummaryField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_SessionStartCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __SessionStartCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_SessionStartCapabilitiesField4ModifyField7SummaryField1MergeObjectModel: TypeAlias = (
+    __SessionStartCapabilitiesField4ModifyField7SummaryField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__SessionStartCapabilitiesField4ModifyField8WorkspaceMergeReplaceObjectModelKnownFields = TypedDict(
-    "__SessionStartCapabilitiesField4ModifyField8WorkspaceMergeReplaceObjectModelKnownFields",
+__SessionStartCapabilitiesField4ModifyField8WorkspaceField0ModelKnownFields = TypedDict(
+    "__SessionStartCapabilitiesField4ModifyField8WorkspaceField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_SessionStartCapabilitiesField4ModifyField8WorkspaceMergeReplaceObjectModel: TypeAlias = (
-    __SessionStartCapabilitiesField4ModifyField8WorkspaceMergeReplaceObjectModelKnownFields
+_SessionStartCapabilitiesField4ModifyField8WorkspaceField0Model: TypeAlias = (
+    __SessionStartCapabilitiesField4ModifyField8WorkspaceField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__SessionStartCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__SessionStartCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__SessionStartCapabilitiesField4ModifyField8WorkspaceField1ReplaceObjectModelKnownFields = TypedDict(
+    "__SessionStartCapabilitiesField4ModifyField8WorkspaceField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_SessionStartCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __SessionStartCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_SessionStartCapabilitiesField4ModifyField8WorkspaceField1ReplaceObjectModel: TypeAlias = (
+    __SessionStartCapabilitiesField4ModifyField8WorkspaceField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__SessionStartCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__SessionStartCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__SessionStartCapabilitiesField4ModifyField8WorkspaceField1MergeObjectModelKnownFields = TypedDict(
+    "__SessionStartCapabilitiesField4ModifyField8WorkspaceField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_SessionStartCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __SessionStartCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_SessionStartCapabilitiesField4ModifyField8WorkspaceField1MergeObjectModel: TypeAlias = (
+    __SessionStartCapabilitiesField4ModifyField8WorkspaceField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
 __SessionStartCapabilitiesField4ModifyModelKnownFields = TypedDict(
@@ -6155,247 +6146,257 @@ __TaskChangeBeforeCapabilitiesField3InjectModelKnownFields = TypedDict(
 _TaskChangeBeforeCapabilitiesField3InjectModel: TypeAlias = (
     __TaskChangeBeforeCapabilitiesField3InjectModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__TaskChangeBeforeCapabilitiesField4ModifyField0ContentMergeReplaceObjectModelKnownFields = TypedDict(
-    "__TaskChangeBeforeCapabilitiesField4ModifyField0ContentMergeReplaceObjectModelKnownFields",
-    {"merge": Required[bool], "replace": Required[bool]},
-    total=False,
+__TaskChangeBeforeCapabilitiesField4ModifyField0ContentField0ModelKnownFields = (
+    TypedDict(
+        "__TaskChangeBeforeCapabilitiesField4ModifyField0ContentField0ModelKnownFields",
+        {"merge": Required[bool], "replace": Required[bool]},
+        total=False,
+    )
 )
-_TaskChangeBeforeCapabilitiesField4ModifyField0ContentMergeReplaceObjectModel: TypeAlias = (
-    __TaskChangeBeforeCapabilitiesField4ModifyField0ContentMergeReplaceObjectModelKnownFields
+_TaskChangeBeforeCapabilitiesField4ModifyField0ContentField0Model: TypeAlias = (
+    __TaskChangeBeforeCapabilitiesField4ModifyField0ContentField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__TaskChangeBeforeCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__TaskChangeBeforeCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__TaskChangeBeforeCapabilitiesField4ModifyField0ContentField1ReplaceObjectModelKnownFields = TypedDict(
+    "__TaskChangeBeforeCapabilitiesField4ModifyField0ContentField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_TaskChangeBeforeCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __TaskChangeBeforeCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_TaskChangeBeforeCapabilitiesField4ModifyField0ContentField1ReplaceObjectModel: TypeAlias = (
+    __TaskChangeBeforeCapabilitiesField4ModifyField0ContentField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__TaskChangeBeforeCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__TaskChangeBeforeCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__TaskChangeBeforeCapabilitiesField4ModifyField0ContentField1MergeObjectModelKnownFields = TypedDict(
+    "__TaskChangeBeforeCapabilitiesField4ModifyField0ContentField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_TaskChangeBeforeCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __TaskChangeBeforeCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_TaskChangeBeforeCapabilitiesField4ModifyField0ContentField1MergeObjectModel: TypeAlias = (
+    __TaskChangeBeforeCapabilitiesField4ModifyField0ContentField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__TaskChangeBeforeCapabilitiesField4ModifyField1InputMergeReplaceObjectModelKnownFields = TypedDict(
-    "__TaskChangeBeforeCapabilitiesField4ModifyField1InputMergeReplaceObjectModelKnownFields",
+__TaskChangeBeforeCapabilitiesField4ModifyField1InputField0ModelKnownFields = TypedDict(
+    "__TaskChangeBeforeCapabilitiesField4ModifyField1InputField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_TaskChangeBeforeCapabilitiesField4ModifyField1InputMergeReplaceObjectModel: TypeAlias = (
-    __TaskChangeBeforeCapabilitiesField4ModifyField1InputMergeReplaceObjectModelKnownFields
+_TaskChangeBeforeCapabilitiesField4ModifyField1InputField0Model: TypeAlias = (
+    __TaskChangeBeforeCapabilitiesField4ModifyField1InputField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__TaskChangeBeforeCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__TaskChangeBeforeCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__TaskChangeBeforeCapabilitiesField4ModifyField1InputField1ReplaceObjectModelKnownFields = TypedDict(
+    "__TaskChangeBeforeCapabilitiesField4ModifyField1InputField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_TaskChangeBeforeCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __TaskChangeBeforeCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_TaskChangeBeforeCapabilitiesField4ModifyField1InputField1ReplaceObjectModel: TypeAlias = (
+    __TaskChangeBeforeCapabilitiesField4ModifyField1InputField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__TaskChangeBeforeCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__TaskChangeBeforeCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__TaskChangeBeforeCapabilitiesField4ModifyField1InputField1MergeObjectModelKnownFields = TypedDict(
+    "__TaskChangeBeforeCapabilitiesField4ModifyField1InputField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_TaskChangeBeforeCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __TaskChangeBeforeCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_TaskChangeBeforeCapabilitiesField4ModifyField1InputField1MergeObjectModel: TypeAlias = (
+    __TaskChangeBeforeCapabilitiesField4ModifyField1InputField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__TaskChangeBeforeCapabilitiesField4ModifyField2InstructionsMergeReplaceObjectModelKnownFields = TypedDict(
-    "__TaskChangeBeforeCapabilitiesField4ModifyField2InstructionsMergeReplaceObjectModelKnownFields",
+__TaskChangeBeforeCapabilitiesField4ModifyField2InstructionsField0ModelKnownFields = TypedDict(
+    "__TaskChangeBeforeCapabilitiesField4ModifyField2InstructionsField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_TaskChangeBeforeCapabilitiesField4ModifyField2InstructionsMergeReplaceObjectModel: TypeAlias = (
-    __TaskChangeBeforeCapabilitiesField4ModifyField2InstructionsMergeReplaceObjectModelKnownFields
+_TaskChangeBeforeCapabilitiesField4ModifyField2InstructionsField0Model: TypeAlias = (
+    __TaskChangeBeforeCapabilitiesField4ModifyField2InstructionsField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__TaskChangeBeforeCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__TaskChangeBeforeCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__TaskChangeBeforeCapabilitiesField4ModifyField2InstructionsField1ReplaceObjectModelKnownFields = TypedDict(
+    "__TaskChangeBeforeCapabilitiesField4ModifyField2InstructionsField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_TaskChangeBeforeCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __TaskChangeBeforeCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_TaskChangeBeforeCapabilitiesField4ModifyField2InstructionsField1ReplaceObjectModel: TypeAlias = (
+    __TaskChangeBeforeCapabilitiesField4ModifyField2InstructionsField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__TaskChangeBeforeCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__TaskChangeBeforeCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__TaskChangeBeforeCapabilitiesField4ModifyField2InstructionsField1MergeObjectModelKnownFields = TypedDict(
+    "__TaskChangeBeforeCapabilitiesField4ModifyField2InstructionsField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_TaskChangeBeforeCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __TaskChangeBeforeCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_TaskChangeBeforeCapabilitiesField4ModifyField2InstructionsField1MergeObjectModel: TypeAlias = (
+    __TaskChangeBeforeCapabilitiesField4ModifyField2InstructionsField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__TaskChangeBeforeCapabilitiesField4ModifyField3OutputMergeReplaceObjectModelKnownFields = TypedDict(
-    "__TaskChangeBeforeCapabilitiesField4ModifyField3OutputMergeReplaceObjectModelKnownFields",
+__TaskChangeBeforeCapabilitiesField4ModifyField3OutputField0ModelKnownFields = (
+    TypedDict(
+        "__TaskChangeBeforeCapabilitiesField4ModifyField3OutputField0ModelKnownFields",
+        {"merge": Required[bool], "replace": Required[bool]},
+        total=False,
+    )
+)
+_TaskChangeBeforeCapabilitiesField4ModifyField3OutputField0Model: TypeAlias = (
+    __TaskChangeBeforeCapabilitiesField4ModifyField3OutputField0ModelKnownFields
+    | JsonObject
+)  # permits additional JSON fields
+__TaskChangeBeforeCapabilitiesField4ModifyField3OutputField1ReplaceObjectModelKnownFields = TypedDict(
+    "__TaskChangeBeforeCapabilitiesField4ModifyField3OutputField1ReplaceObjectModelKnownFields",
+    {"replace": Required[Literal[True]]},
+    total=False,
+)
+_TaskChangeBeforeCapabilitiesField4ModifyField3OutputField1ReplaceObjectModel: TypeAlias = (
+    __TaskChangeBeforeCapabilitiesField4ModifyField3OutputField1ReplaceObjectModelKnownFields
+    | JsonObject
+)  # permits additional JSON fields
+__TaskChangeBeforeCapabilitiesField4ModifyField3OutputField1MergeObjectModelKnownFields = TypedDict(
+    "__TaskChangeBeforeCapabilitiesField4ModifyField3OutputField1MergeObjectModelKnownFields",
+    {"merge": Required[Literal[True]]},
+    total=False,
+)
+_TaskChangeBeforeCapabilitiesField4ModifyField3OutputField1MergeObjectModel: TypeAlias = (
+    __TaskChangeBeforeCapabilitiesField4ModifyField3OutputField1MergeObjectModelKnownFields
+    | JsonObject
+)  # permits additional JSON fields
+__TaskChangeBeforeCapabilitiesField4ModifyField4PromptField0ModelKnownFields = (
+    TypedDict(
+        "__TaskChangeBeforeCapabilitiesField4ModifyField4PromptField0ModelKnownFields",
+        {"merge": Required[bool], "replace": Required[bool]},
+        total=False,
+    )
+)
+_TaskChangeBeforeCapabilitiesField4ModifyField4PromptField0Model: TypeAlias = (
+    __TaskChangeBeforeCapabilitiesField4ModifyField4PromptField0ModelKnownFields
+    | JsonObject
+)  # permits additional JSON fields
+__TaskChangeBeforeCapabilitiesField4ModifyField4PromptField1ReplaceObjectModelKnownFields = TypedDict(
+    "__TaskChangeBeforeCapabilitiesField4ModifyField4PromptField1ReplaceObjectModelKnownFields",
+    {"replace": Required[Literal[True]]},
+    total=False,
+)
+_TaskChangeBeforeCapabilitiesField4ModifyField4PromptField1ReplaceObjectModel: TypeAlias = (
+    __TaskChangeBeforeCapabilitiesField4ModifyField4PromptField1ReplaceObjectModelKnownFields
+    | JsonObject
+)  # permits additional JSON fields
+__TaskChangeBeforeCapabilitiesField4ModifyField4PromptField1MergeObjectModelKnownFields = TypedDict(
+    "__TaskChangeBeforeCapabilitiesField4ModifyField4PromptField1MergeObjectModelKnownFields",
+    {"merge": Required[Literal[True]]},
+    total=False,
+)
+_TaskChangeBeforeCapabilitiesField4ModifyField4PromptField1MergeObjectModel: TypeAlias = (
+    __TaskChangeBeforeCapabilitiesField4ModifyField4PromptField1MergeObjectModelKnownFields
+    | JsonObject
+)  # permits additional JSON fields
+__TaskChangeBeforeCapabilitiesField4ModifyField5RequestField0ModelKnownFields = (
+    TypedDict(
+        "__TaskChangeBeforeCapabilitiesField4ModifyField5RequestField0ModelKnownFields",
+        {"merge": Required[bool], "replace": Required[bool]},
+        total=False,
+    )
+)
+_TaskChangeBeforeCapabilitiesField4ModifyField5RequestField0Model: TypeAlias = (
+    __TaskChangeBeforeCapabilitiesField4ModifyField5RequestField0ModelKnownFields
+    | JsonObject
+)  # permits additional JSON fields
+__TaskChangeBeforeCapabilitiesField4ModifyField5RequestField1ReplaceObjectModelKnownFields = TypedDict(
+    "__TaskChangeBeforeCapabilitiesField4ModifyField5RequestField1ReplaceObjectModelKnownFields",
+    {"replace": Required[Literal[True]]},
+    total=False,
+)
+_TaskChangeBeforeCapabilitiesField4ModifyField5RequestField1ReplaceObjectModel: TypeAlias = (
+    __TaskChangeBeforeCapabilitiesField4ModifyField5RequestField1ReplaceObjectModelKnownFields
+    | JsonObject
+)  # permits additional JSON fields
+__TaskChangeBeforeCapabilitiesField4ModifyField5RequestField1MergeObjectModelKnownFields = TypedDict(
+    "__TaskChangeBeforeCapabilitiesField4ModifyField5RequestField1MergeObjectModelKnownFields",
+    {"merge": Required[Literal[True]]},
+    total=False,
+)
+_TaskChangeBeforeCapabilitiesField4ModifyField5RequestField1MergeObjectModel: TypeAlias = (
+    __TaskChangeBeforeCapabilitiesField4ModifyField5RequestField1MergeObjectModelKnownFields
+    | JsonObject
+)  # permits additional JSON fields
+__TaskChangeBeforeCapabilitiesField4ModifyField6ResponseField0ModelKnownFields = TypedDict(
+    "__TaskChangeBeforeCapabilitiesField4ModifyField6ResponseField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_TaskChangeBeforeCapabilitiesField4ModifyField3OutputMergeReplaceObjectModel: TypeAlias = (
-    __TaskChangeBeforeCapabilitiesField4ModifyField3OutputMergeReplaceObjectModelKnownFields
+_TaskChangeBeforeCapabilitiesField4ModifyField6ResponseField0Model: TypeAlias = (
+    __TaskChangeBeforeCapabilitiesField4ModifyField6ResponseField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__TaskChangeBeforeCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__TaskChangeBeforeCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__TaskChangeBeforeCapabilitiesField4ModifyField6ResponseField1ReplaceObjectModelKnownFields = TypedDict(
+    "__TaskChangeBeforeCapabilitiesField4ModifyField6ResponseField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_TaskChangeBeforeCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __TaskChangeBeforeCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_TaskChangeBeforeCapabilitiesField4ModifyField6ResponseField1ReplaceObjectModel: TypeAlias = (
+    __TaskChangeBeforeCapabilitiesField4ModifyField6ResponseField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__TaskChangeBeforeCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__TaskChangeBeforeCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__TaskChangeBeforeCapabilitiesField4ModifyField6ResponseField1MergeObjectModelKnownFields = TypedDict(
+    "__TaskChangeBeforeCapabilitiesField4ModifyField6ResponseField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_TaskChangeBeforeCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __TaskChangeBeforeCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_TaskChangeBeforeCapabilitiesField4ModifyField6ResponseField1MergeObjectModel: TypeAlias = (
+    __TaskChangeBeforeCapabilitiesField4ModifyField6ResponseField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__TaskChangeBeforeCapabilitiesField4ModifyField4PromptMergeReplaceObjectModelKnownFields = TypedDict(
-    "__TaskChangeBeforeCapabilitiesField4ModifyField4PromptMergeReplaceObjectModelKnownFields",
+__TaskChangeBeforeCapabilitiesField4ModifyField7SummaryField0ModelKnownFields = (
+    TypedDict(
+        "__TaskChangeBeforeCapabilitiesField4ModifyField7SummaryField0ModelKnownFields",
+        {"merge": Required[bool], "replace": Required[bool]},
+        total=False,
+    )
+)
+_TaskChangeBeforeCapabilitiesField4ModifyField7SummaryField0Model: TypeAlias = (
+    __TaskChangeBeforeCapabilitiesField4ModifyField7SummaryField0ModelKnownFields
+    | JsonObject
+)  # permits additional JSON fields
+__TaskChangeBeforeCapabilitiesField4ModifyField7SummaryField1ReplaceObjectModelKnownFields = TypedDict(
+    "__TaskChangeBeforeCapabilitiesField4ModifyField7SummaryField1ReplaceObjectModelKnownFields",
+    {"replace": Required[Literal[True]]},
+    total=False,
+)
+_TaskChangeBeforeCapabilitiesField4ModifyField7SummaryField1ReplaceObjectModel: TypeAlias = (
+    __TaskChangeBeforeCapabilitiesField4ModifyField7SummaryField1ReplaceObjectModelKnownFields
+    | JsonObject
+)  # permits additional JSON fields
+__TaskChangeBeforeCapabilitiesField4ModifyField7SummaryField1MergeObjectModelKnownFields = TypedDict(
+    "__TaskChangeBeforeCapabilitiesField4ModifyField7SummaryField1MergeObjectModelKnownFields",
+    {"merge": Required[Literal[True]]},
+    total=False,
+)
+_TaskChangeBeforeCapabilitiesField4ModifyField7SummaryField1MergeObjectModel: TypeAlias = (
+    __TaskChangeBeforeCapabilitiesField4ModifyField7SummaryField1MergeObjectModelKnownFields
+    | JsonObject
+)  # permits additional JSON fields
+__TaskChangeBeforeCapabilitiesField4ModifyField8WorkspaceField0ModelKnownFields = TypedDict(
+    "__TaskChangeBeforeCapabilitiesField4ModifyField8WorkspaceField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_TaskChangeBeforeCapabilitiesField4ModifyField4PromptMergeReplaceObjectModel: TypeAlias = (
-    __TaskChangeBeforeCapabilitiesField4ModifyField4PromptMergeReplaceObjectModelKnownFields
+_TaskChangeBeforeCapabilitiesField4ModifyField8WorkspaceField0Model: TypeAlias = (
+    __TaskChangeBeforeCapabilitiesField4ModifyField8WorkspaceField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__TaskChangeBeforeCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__TaskChangeBeforeCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__TaskChangeBeforeCapabilitiesField4ModifyField8WorkspaceField1ReplaceObjectModelKnownFields = TypedDict(
+    "__TaskChangeBeforeCapabilitiesField4ModifyField8WorkspaceField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_TaskChangeBeforeCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __TaskChangeBeforeCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_TaskChangeBeforeCapabilitiesField4ModifyField8WorkspaceField1ReplaceObjectModel: TypeAlias = (
+    __TaskChangeBeforeCapabilitiesField4ModifyField8WorkspaceField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__TaskChangeBeforeCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__TaskChangeBeforeCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__TaskChangeBeforeCapabilitiesField4ModifyField8WorkspaceField1MergeObjectModelKnownFields = TypedDict(
+    "__TaskChangeBeforeCapabilitiesField4ModifyField8WorkspaceField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_TaskChangeBeforeCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __TaskChangeBeforeCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectMergeObjectModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__TaskChangeBeforeCapabilitiesField4ModifyField5RequestMergeReplaceObjectModelKnownFields = TypedDict(
-    "__TaskChangeBeforeCapabilitiesField4ModifyField5RequestMergeReplaceObjectModelKnownFields",
-    {"merge": Required[bool], "replace": Required[bool]},
-    total=False,
-)
-_TaskChangeBeforeCapabilitiesField4ModifyField5RequestMergeReplaceObjectModel: TypeAlias = (
-    __TaskChangeBeforeCapabilitiesField4ModifyField5RequestMergeReplaceObjectModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__TaskChangeBeforeCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__TaskChangeBeforeCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_TaskChangeBeforeCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __TaskChangeBeforeCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__TaskChangeBeforeCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__TaskChangeBeforeCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_TaskChangeBeforeCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __TaskChangeBeforeCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectMergeObjectModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__TaskChangeBeforeCapabilitiesField4ModifyField6ResponseMergeReplaceObjectModelKnownFields = TypedDict(
-    "__TaskChangeBeforeCapabilitiesField4ModifyField6ResponseMergeReplaceObjectModelKnownFields",
-    {"merge": Required[bool], "replace": Required[bool]},
-    total=False,
-)
-_TaskChangeBeforeCapabilitiesField4ModifyField6ResponseMergeReplaceObjectModel: TypeAlias = (
-    __TaskChangeBeforeCapabilitiesField4ModifyField6ResponseMergeReplaceObjectModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__TaskChangeBeforeCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__TaskChangeBeforeCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_TaskChangeBeforeCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __TaskChangeBeforeCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__TaskChangeBeforeCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__TaskChangeBeforeCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_TaskChangeBeforeCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __TaskChangeBeforeCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectMergeObjectModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__TaskChangeBeforeCapabilitiesField4ModifyField7SummaryMergeReplaceObjectModelKnownFields = TypedDict(
-    "__TaskChangeBeforeCapabilitiesField4ModifyField7SummaryMergeReplaceObjectModelKnownFields",
-    {"merge": Required[bool], "replace": Required[bool]},
-    total=False,
-)
-_TaskChangeBeforeCapabilitiesField4ModifyField7SummaryMergeReplaceObjectModel: TypeAlias = (
-    __TaskChangeBeforeCapabilitiesField4ModifyField7SummaryMergeReplaceObjectModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__TaskChangeBeforeCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__TaskChangeBeforeCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_TaskChangeBeforeCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __TaskChangeBeforeCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__TaskChangeBeforeCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__TaskChangeBeforeCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_TaskChangeBeforeCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __TaskChangeBeforeCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectMergeObjectModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__TaskChangeBeforeCapabilitiesField4ModifyField8WorkspaceMergeReplaceObjectModelKnownFields = TypedDict(
-    "__TaskChangeBeforeCapabilitiesField4ModifyField8WorkspaceMergeReplaceObjectModelKnownFields",
-    {"merge": Required[bool], "replace": Required[bool]},
-    total=False,
-)
-_TaskChangeBeforeCapabilitiesField4ModifyField8WorkspaceMergeReplaceObjectModel: TypeAlias = (
-    __TaskChangeBeforeCapabilitiesField4ModifyField8WorkspaceMergeReplaceObjectModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__TaskChangeBeforeCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__TaskChangeBeforeCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_TaskChangeBeforeCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __TaskChangeBeforeCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__TaskChangeBeforeCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__TaskChangeBeforeCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_TaskChangeBeforeCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __TaskChangeBeforeCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_TaskChangeBeforeCapabilitiesField4ModifyField8WorkspaceField1MergeObjectModel: TypeAlias = (
+    __TaskChangeBeforeCapabilitiesField4ModifyField8WorkspaceField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
 __TaskChangeBeforeCapabilitiesField4ModifyModelKnownFields = TypedDict(
@@ -6838,247 +6839,240 @@ __ToolAfterCapabilitiesField3InjectModelKnownFields = TypedDict(
 _ToolAfterCapabilitiesField3InjectModel: TypeAlias = (
     __ToolAfterCapabilitiesField3InjectModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__ToolAfterCapabilitiesField4ModifyField0ContentMergeReplaceObjectModelKnownFields = TypedDict(
-    "__ToolAfterCapabilitiesField4ModifyField0ContentMergeReplaceObjectModelKnownFields",
+__ToolAfterCapabilitiesField4ModifyField0ContentField0ModelKnownFields = TypedDict(
+    "__ToolAfterCapabilitiesField4ModifyField0ContentField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ToolAfterCapabilitiesField4ModifyField0ContentMergeReplaceObjectModel: TypeAlias = (
-    __ToolAfterCapabilitiesField4ModifyField0ContentMergeReplaceObjectModelKnownFields
-    | JsonObject
+_ToolAfterCapabilitiesField4ModifyField0ContentField0Model: TypeAlias = (
+    __ToolAfterCapabilitiesField4ModifyField0ContentField0ModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__ToolAfterCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__ToolAfterCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__ToolAfterCapabilitiesField4ModifyField0ContentField1ReplaceObjectModelKnownFields = TypedDict(
+    "__ToolAfterCapabilitiesField4ModifyField0ContentField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_ToolAfterCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __ToolAfterCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_ToolAfterCapabilitiesField4ModifyField0ContentField1ReplaceObjectModel: TypeAlias = (
+    __ToolAfterCapabilitiesField4ModifyField0ContentField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ToolAfterCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__ToolAfterCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__ToolAfterCapabilitiesField4ModifyField0ContentField1MergeObjectModelKnownFields = TypedDict(
+    "__ToolAfterCapabilitiesField4ModifyField0ContentField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_ToolAfterCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __ToolAfterCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_ToolAfterCapabilitiesField4ModifyField0ContentField1MergeObjectModel: TypeAlias = (
+    __ToolAfterCapabilitiesField4ModifyField0ContentField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ToolAfterCapabilitiesField4ModifyField1InputMergeReplaceObjectModelKnownFields = TypedDict(
-    "__ToolAfterCapabilitiesField4ModifyField1InputMergeReplaceObjectModelKnownFields",
+__ToolAfterCapabilitiesField4ModifyField1InputField0ModelKnownFields = TypedDict(
+    "__ToolAfterCapabilitiesField4ModifyField1InputField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ToolAfterCapabilitiesField4ModifyField1InputMergeReplaceObjectModel: TypeAlias = (
-    __ToolAfterCapabilitiesField4ModifyField1InputMergeReplaceObjectModelKnownFields
-    | JsonObject
+_ToolAfterCapabilitiesField4ModifyField1InputField0Model: TypeAlias = (
+    __ToolAfterCapabilitiesField4ModifyField1InputField0ModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__ToolAfterCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__ToolAfterCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__ToolAfterCapabilitiesField4ModifyField1InputField1ReplaceObjectModelKnownFields = TypedDict(
+    "__ToolAfterCapabilitiesField4ModifyField1InputField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_ToolAfterCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __ToolAfterCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_ToolAfterCapabilitiesField4ModifyField1InputField1ReplaceObjectModel: TypeAlias = (
+    __ToolAfterCapabilitiesField4ModifyField1InputField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ToolAfterCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__ToolAfterCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__ToolAfterCapabilitiesField4ModifyField1InputField1MergeObjectModelKnownFields = TypedDict(
+    "__ToolAfterCapabilitiesField4ModifyField1InputField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_ToolAfterCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __ToolAfterCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_ToolAfterCapabilitiesField4ModifyField1InputField1MergeObjectModel: TypeAlias = (
+    __ToolAfterCapabilitiesField4ModifyField1InputField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ToolAfterCapabilitiesField4ModifyField2InstructionsMergeReplaceObjectModelKnownFields = TypedDict(
-    "__ToolAfterCapabilitiesField4ModifyField2InstructionsMergeReplaceObjectModelKnownFields",
+__ToolAfterCapabilitiesField4ModifyField2InstructionsField0ModelKnownFields = TypedDict(
+    "__ToolAfterCapabilitiesField4ModifyField2InstructionsField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ToolAfterCapabilitiesField4ModifyField2InstructionsMergeReplaceObjectModel: TypeAlias = (
-    __ToolAfterCapabilitiesField4ModifyField2InstructionsMergeReplaceObjectModelKnownFields
+_ToolAfterCapabilitiesField4ModifyField2InstructionsField0Model: TypeAlias = (
+    __ToolAfterCapabilitiesField4ModifyField2InstructionsField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ToolAfterCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__ToolAfterCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__ToolAfterCapabilitiesField4ModifyField2InstructionsField1ReplaceObjectModelKnownFields = TypedDict(
+    "__ToolAfterCapabilitiesField4ModifyField2InstructionsField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_ToolAfterCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __ToolAfterCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_ToolAfterCapabilitiesField4ModifyField2InstructionsField1ReplaceObjectModel: TypeAlias = (
+    __ToolAfterCapabilitiesField4ModifyField2InstructionsField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ToolAfterCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__ToolAfterCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__ToolAfterCapabilitiesField4ModifyField2InstructionsField1MergeObjectModelKnownFields = TypedDict(
+    "__ToolAfterCapabilitiesField4ModifyField2InstructionsField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_ToolAfterCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __ToolAfterCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_ToolAfterCapabilitiesField4ModifyField2InstructionsField1MergeObjectModel: TypeAlias = (
+    __ToolAfterCapabilitiesField4ModifyField2InstructionsField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ToolAfterCapabilitiesField4ModifyField3OutputMergeReplaceObjectModelKnownFields = TypedDict(
-    "__ToolAfterCapabilitiesField4ModifyField3OutputMergeReplaceObjectModelKnownFields",
+__ToolAfterCapabilitiesField4ModifyField3OutputField0ModelKnownFields = TypedDict(
+    "__ToolAfterCapabilitiesField4ModifyField3OutputField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ToolAfterCapabilitiesField4ModifyField3OutputMergeReplaceObjectModel: TypeAlias = (
-    __ToolAfterCapabilitiesField4ModifyField3OutputMergeReplaceObjectModelKnownFields
-    | JsonObject
+_ToolAfterCapabilitiesField4ModifyField3OutputField0Model: TypeAlias = (
+    __ToolAfterCapabilitiesField4ModifyField3OutputField0ModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__ToolAfterCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__ToolAfterCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__ToolAfterCapabilitiesField4ModifyField3OutputField1ReplaceObjectModelKnownFields = TypedDict(
+    "__ToolAfterCapabilitiesField4ModifyField3OutputField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_ToolAfterCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __ToolAfterCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_ToolAfterCapabilitiesField4ModifyField3OutputField1ReplaceObjectModel: TypeAlias = (
+    __ToolAfterCapabilitiesField4ModifyField3OutputField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ToolAfterCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__ToolAfterCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__ToolAfterCapabilitiesField4ModifyField3OutputField1MergeObjectModelKnownFields = TypedDict(
+    "__ToolAfterCapabilitiesField4ModifyField3OutputField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_ToolAfterCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __ToolAfterCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_ToolAfterCapabilitiesField4ModifyField3OutputField1MergeObjectModel: TypeAlias = (
+    __ToolAfterCapabilitiesField4ModifyField3OutputField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ToolAfterCapabilitiesField4ModifyField4PromptMergeReplaceObjectModelKnownFields = TypedDict(
-    "__ToolAfterCapabilitiesField4ModifyField4PromptMergeReplaceObjectModelKnownFields",
+__ToolAfterCapabilitiesField4ModifyField4PromptField0ModelKnownFields = TypedDict(
+    "__ToolAfterCapabilitiesField4ModifyField4PromptField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ToolAfterCapabilitiesField4ModifyField4PromptMergeReplaceObjectModel: TypeAlias = (
-    __ToolAfterCapabilitiesField4ModifyField4PromptMergeReplaceObjectModelKnownFields
-    | JsonObject
+_ToolAfterCapabilitiesField4ModifyField4PromptField0Model: TypeAlias = (
+    __ToolAfterCapabilitiesField4ModifyField4PromptField0ModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__ToolAfterCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__ToolAfterCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__ToolAfterCapabilitiesField4ModifyField4PromptField1ReplaceObjectModelKnownFields = TypedDict(
+    "__ToolAfterCapabilitiesField4ModifyField4PromptField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_ToolAfterCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __ToolAfterCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_ToolAfterCapabilitiesField4ModifyField4PromptField1ReplaceObjectModel: TypeAlias = (
+    __ToolAfterCapabilitiesField4ModifyField4PromptField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ToolAfterCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__ToolAfterCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__ToolAfterCapabilitiesField4ModifyField4PromptField1MergeObjectModelKnownFields = TypedDict(
+    "__ToolAfterCapabilitiesField4ModifyField4PromptField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_ToolAfterCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __ToolAfterCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_ToolAfterCapabilitiesField4ModifyField4PromptField1MergeObjectModel: TypeAlias = (
+    __ToolAfterCapabilitiesField4ModifyField4PromptField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ToolAfterCapabilitiesField4ModifyField5RequestMergeReplaceObjectModelKnownFields = TypedDict(
-    "__ToolAfterCapabilitiesField4ModifyField5RequestMergeReplaceObjectModelKnownFields",
+__ToolAfterCapabilitiesField4ModifyField5RequestField0ModelKnownFields = TypedDict(
+    "__ToolAfterCapabilitiesField4ModifyField5RequestField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ToolAfterCapabilitiesField4ModifyField5RequestMergeReplaceObjectModel: TypeAlias = (
-    __ToolAfterCapabilitiesField4ModifyField5RequestMergeReplaceObjectModelKnownFields
-    | JsonObject
+_ToolAfterCapabilitiesField4ModifyField5RequestField0Model: TypeAlias = (
+    __ToolAfterCapabilitiesField4ModifyField5RequestField0ModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__ToolAfterCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__ToolAfterCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__ToolAfterCapabilitiesField4ModifyField5RequestField1ReplaceObjectModelKnownFields = TypedDict(
+    "__ToolAfterCapabilitiesField4ModifyField5RequestField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_ToolAfterCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __ToolAfterCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_ToolAfterCapabilitiesField4ModifyField5RequestField1ReplaceObjectModel: TypeAlias = (
+    __ToolAfterCapabilitiesField4ModifyField5RequestField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ToolAfterCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__ToolAfterCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__ToolAfterCapabilitiesField4ModifyField5RequestField1MergeObjectModelKnownFields = TypedDict(
+    "__ToolAfterCapabilitiesField4ModifyField5RequestField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_ToolAfterCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __ToolAfterCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_ToolAfterCapabilitiesField4ModifyField5RequestField1MergeObjectModel: TypeAlias = (
+    __ToolAfterCapabilitiesField4ModifyField5RequestField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ToolAfterCapabilitiesField4ModifyField6ResponseMergeReplaceObjectModelKnownFields = TypedDict(
-    "__ToolAfterCapabilitiesField4ModifyField6ResponseMergeReplaceObjectModelKnownFields",
+__ToolAfterCapabilitiesField4ModifyField6ResponseField0ModelKnownFields = TypedDict(
+    "__ToolAfterCapabilitiesField4ModifyField6ResponseField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ToolAfterCapabilitiesField4ModifyField6ResponseMergeReplaceObjectModel: TypeAlias = (
-    __ToolAfterCapabilitiesField4ModifyField6ResponseMergeReplaceObjectModelKnownFields
-    | JsonObject
+_ToolAfterCapabilitiesField4ModifyField6ResponseField0Model: TypeAlias = (
+    __ToolAfterCapabilitiesField4ModifyField6ResponseField0ModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__ToolAfterCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__ToolAfterCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__ToolAfterCapabilitiesField4ModifyField6ResponseField1ReplaceObjectModelKnownFields = TypedDict(
+    "__ToolAfterCapabilitiesField4ModifyField6ResponseField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_ToolAfterCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __ToolAfterCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_ToolAfterCapabilitiesField4ModifyField6ResponseField1ReplaceObjectModel: TypeAlias = (
+    __ToolAfterCapabilitiesField4ModifyField6ResponseField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ToolAfterCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__ToolAfterCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__ToolAfterCapabilitiesField4ModifyField6ResponseField1MergeObjectModelKnownFields = TypedDict(
+    "__ToolAfterCapabilitiesField4ModifyField6ResponseField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_ToolAfterCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __ToolAfterCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_ToolAfterCapabilitiesField4ModifyField6ResponseField1MergeObjectModel: TypeAlias = (
+    __ToolAfterCapabilitiesField4ModifyField6ResponseField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ToolAfterCapabilitiesField4ModifyField7SummaryMergeReplaceObjectModelKnownFields = TypedDict(
-    "__ToolAfterCapabilitiesField4ModifyField7SummaryMergeReplaceObjectModelKnownFields",
+__ToolAfterCapabilitiesField4ModifyField7SummaryField0ModelKnownFields = TypedDict(
+    "__ToolAfterCapabilitiesField4ModifyField7SummaryField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ToolAfterCapabilitiesField4ModifyField7SummaryMergeReplaceObjectModel: TypeAlias = (
-    __ToolAfterCapabilitiesField4ModifyField7SummaryMergeReplaceObjectModelKnownFields
-    | JsonObject
+_ToolAfterCapabilitiesField4ModifyField7SummaryField0Model: TypeAlias = (
+    __ToolAfterCapabilitiesField4ModifyField7SummaryField0ModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__ToolAfterCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__ToolAfterCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__ToolAfterCapabilitiesField4ModifyField7SummaryField1ReplaceObjectModelKnownFields = TypedDict(
+    "__ToolAfterCapabilitiesField4ModifyField7SummaryField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_ToolAfterCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __ToolAfterCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_ToolAfterCapabilitiesField4ModifyField7SummaryField1ReplaceObjectModel: TypeAlias = (
+    __ToolAfterCapabilitiesField4ModifyField7SummaryField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ToolAfterCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__ToolAfterCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__ToolAfterCapabilitiesField4ModifyField7SummaryField1MergeObjectModelKnownFields = TypedDict(
+    "__ToolAfterCapabilitiesField4ModifyField7SummaryField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_ToolAfterCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __ToolAfterCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_ToolAfterCapabilitiesField4ModifyField7SummaryField1MergeObjectModel: TypeAlias = (
+    __ToolAfterCapabilitiesField4ModifyField7SummaryField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ToolAfterCapabilitiesField4ModifyField8WorkspaceMergeReplaceObjectModelKnownFields = TypedDict(
-    "__ToolAfterCapabilitiesField4ModifyField8WorkspaceMergeReplaceObjectModelKnownFields",
+__ToolAfterCapabilitiesField4ModifyField8WorkspaceField0ModelKnownFields = TypedDict(
+    "__ToolAfterCapabilitiesField4ModifyField8WorkspaceField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ToolAfterCapabilitiesField4ModifyField8WorkspaceMergeReplaceObjectModel: TypeAlias = (
-    __ToolAfterCapabilitiesField4ModifyField8WorkspaceMergeReplaceObjectModelKnownFields
+_ToolAfterCapabilitiesField4ModifyField8WorkspaceField0Model: TypeAlias = (
+    __ToolAfterCapabilitiesField4ModifyField8WorkspaceField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ToolAfterCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__ToolAfterCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__ToolAfterCapabilitiesField4ModifyField8WorkspaceField1ReplaceObjectModelKnownFields = TypedDict(
+    "__ToolAfterCapabilitiesField4ModifyField8WorkspaceField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_ToolAfterCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __ToolAfterCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_ToolAfterCapabilitiesField4ModifyField8WorkspaceField1ReplaceObjectModel: TypeAlias = (
+    __ToolAfterCapabilitiesField4ModifyField8WorkspaceField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ToolAfterCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__ToolAfterCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__ToolAfterCapabilitiesField4ModifyField8WorkspaceField1MergeObjectModelKnownFields = TypedDict(
+    "__ToolAfterCapabilitiesField4ModifyField8WorkspaceField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_ToolAfterCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __ToolAfterCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_ToolAfterCapabilitiesField4ModifyField8WorkspaceField1MergeObjectModel: TypeAlias = (
+    __ToolAfterCapabilitiesField4ModifyField8WorkspaceField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
 __ToolAfterCapabilitiesField4ModifyModelKnownFields = TypedDict(
@@ -7226,247 +7220,251 @@ __ToolBatchAfterCapabilitiesField3InjectModelKnownFields = TypedDict(
 _ToolBatchAfterCapabilitiesField3InjectModel: TypeAlias = (
     __ToolBatchAfterCapabilitiesField3InjectModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__ToolBatchAfterCapabilitiesField4ModifyField0ContentMergeReplaceObjectModelKnownFields = TypedDict(
-    "__ToolBatchAfterCapabilitiesField4ModifyField0ContentMergeReplaceObjectModelKnownFields",
+__ToolBatchAfterCapabilitiesField4ModifyField0ContentField0ModelKnownFields = TypedDict(
+    "__ToolBatchAfterCapabilitiesField4ModifyField0ContentField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ToolBatchAfterCapabilitiesField4ModifyField0ContentMergeReplaceObjectModel: TypeAlias = (
-    __ToolBatchAfterCapabilitiesField4ModifyField0ContentMergeReplaceObjectModelKnownFields
+_ToolBatchAfterCapabilitiesField4ModifyField0ContentField0Model: TypeAlias = (
+    __ToolBatchAfterCapabilitiesField4ModifyField0ContentField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ToolBatchAfterCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__ToolBatchAfterCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__ToolBatchAfterCapabilitiesField4ModifyField0ContentField1ReplaceObjectModelKnownFields = TypedDict(
+    "__ToolBatchAfterCapabilitiesField4ModifyField0ContentField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_ToolBatchAfterCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __ToolBatchAfterCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_ToolBatchAfterCapabilitiesField4ModifyField0ContentField1ReplaceObjectModel: TypeAlias = (
+    __ToolBatchAfterCapabilitiesField4ModifyField0ContentField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ToolBatchAfterCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__ToolBatchAfterCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__ToolBatchAfterCapabilitiesField4ModifyField0ContentField1MergeObjectModelKnownFields = TypedDict(
+    "__ToolBatchAfterCapabilitiesField4ModifyField0ContentField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_ToolBatchAfterCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __ToolBatchAfterCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_ToolBatchAfterCapabilitiesField4ModifyField0ContentField1MergeObjectModel: TypeAlias = (
+    __ToolBatchAfterCapabilitiesField4ModifyField0ContentField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ToolBatchAfterCapabilitiesField4ModifyField1InputMergeReplaceObjectModelKnownFields = TypedDict(
-    "__ToolBatchAfterCapabilitiesField4ModifyField1InputMergeReplaceObjectModelKnownFields",
+__ToolBatchAfterCapabilitiesField4ModifyField1InputField0ModelKnownFields = TypedDict(
+    "__ToolBatchAfterCapabilitiesField4ModifyField1InputField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ToolBatchAfterCapabilitiesField4ModifyField1InputMergeReplaceObjectModel: TypeAlias = (
-    __ToolBatchAfterCapabilitiesField4ModifyField1InputMergeReplaceObjectModelKnownFields
+_ToolBatchAfterCapabilitiesField4ModifyField1InputField0Model: TypeAlias = (
+    __ToolBatchAfterCapabilitiesField4ModifyField1InputField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ToolBatchAfterCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__ToolBatchAfterCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__ToolBatchAfterCapabilitiesField4ModifyField1InputField1ReplaceObjectModelKnownFields = TypedDict(
+    "__ToolBatchAfterCapabilitiesField4ModifyField1InputField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_ToolBatchAfterCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __ToolBatchAfterCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_ToolBatchAfterCapabilitiesField4ModifyField1InputField1ReplaceObjectModel: TypeAlias = (
+    __ToolBatchAfterCapabilitiesField4ModifyField1InputField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ToolBatchAfterCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__ToolBatchAfterCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__ToolBatchAfterCapabilitiesField4ModifyField1InputField1MergeObjectModelKnownFields = TypedDict(
+    "__ToolBatchAfterCapabilitiesField4ModifyField1InputField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_ToolBatchAfterCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __ToolBatchAfterCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_ToolBatchAfterCapabilitiesField4ModifyField1InputField1MergeObjectModel: TypeAlias = (
+    __ToolBatchAfterCapabilitiesField4ModifyField1InputField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ToolBatchAfterCapabilitiesField4ModifyField2InstructionsMergeReplaceObjectModelKnownFields = TypedDict(
-    "__ToolBatchAfterCapabilitiesField4ModifyField2InstructionsMergeReplaceObjectModelKnownFields",
+__ToolBatchAfterCapabilitiesField4ModifyField2InstructionsField0ModelKnownFields = TypedDict(
+    "__ToolBatchAfterCapabilitiesField4ModifyField2InstructionsField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ToolBatchAfterCapabilitiesField4ModifyField2InstructionsMergeReplaceObjectModel: TypeAlias = (
-    __ToolBatchAfterCapabilitiesField4ModifyField2InstructionsMergeReplaceObjectModelKnownFields
+_ToolBatchAfterCapabilitiesField4ModifyField2InstructionsField0Model: TypeAlias = (
+    __ToolBatchAfterCapabilitiesField4ModifyField2InstructionsField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ToolBatchAfterCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__ToolBatchAfterCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__ToolBatchAfterCapabilitiesField4ModifyField2InstructionsField1ReplaceObjectModelKnownFields = TypedDict(
+    "__ToolBatchAfterCapabilitiesField4ModifyField2InstructionsField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_ToolBatchAfterCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __ToolBatchAfterCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_ToolBatchAfterCapabilitiesField4ModifyField2InstructionsField1ReplaceObjectModel: TypeAlias = (
+    __ToolBatchAfterCapabilitiesField4ModifyField2InstructionsField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ToolBatchAfterCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__ToolBatchAfterCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__ToolBatchAfterCapabilitiesField4ModifyField2InstructionsField1MergeObjectModelKnownFields = TypedDict(
+    "__ToolBatchAfterCapabilitiesField4ModifyField2InstructionsField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_ToolBatchAfterCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __ToolBatchAfterCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_ToolBatchAfterCapabilitiesField4ModifyField2InstructionsField1MergeObjectModel: TypeAlias = (
+    __ToolBatchAfterCapabilitiesField4ModifyField2InstructionsField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ToolBatchAfterCapabilitiesField4ModifyField3OutputMergeReplaceObjectModelKnownFields = TypedDict(
-    "__ToolBatchAfterCapabilitiesField4ModifyField3OutputMergeReplaceObjectModelKnownFields",
+__ToolBatchAfterCapabilitiesField4ModifyField3OutputField0ModelKnownFields = TypedDict(
+    "__ToolBatchAfterCapabilitiesField4ModifyField3OutputField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ToolBatchAfterCapabilitiesField4ModifyField3OutputMergeReplaceObjectModel: TypeAlias = (
-    __ToolBatchAfterCapabilitiesField4ModifyField3OutputMergeReplaceObjectModelKnownFields
+_ToolBatchAfterCapabilitiesField4ModifyField3OutputField0Model: TypeAlias = (
+    __ToolBatchAfterCapabilitiesField4ModifyField3OutputField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ToolBatchAfterCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__ToolBatchAfterCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__ToolBatchAfterCapabilitiesField4ModifyField3OutputField1ReplaceObjectModelKnownFields = TypedDict(
+    "__ToolBatchAfterCapabilitiesField4ModifyField3OutputField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_ToolBatchAfterCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __ToolBatchAfterCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_ToolBatchAfterCapabilitiesField4ModifyField3OutputField1ReplaceObjectModel: TypeAlias = (
+    __ToolBatchAfterCapabilitiesField4ModifyField3OutputField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ToolBatchAfterCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__ToolBatchAfterCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__ToolBatchAfterCapabilitiesField4ModifyField3OutputField1MergeObjectModelKnownFields = TypedDict(
+    "__ToolBatchAfterCapabilitiesField4ModifyField3OutputField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_ToolBatchAfterCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __ToolBatchAfterCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_ToolBatchAfterCapabilitiesField4ModifyField3OutputField1MergeObjectModel: TypeAlias = (
+    __ToolBatchAfterCapabilitiesField4ModifyField3OutputField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ToolBatchAfterCapabilitiesField4ModifyField4PromptMergeReplaceObjectModelKnownFields = TypedDict(
-    "__ToolBatchAfterCapabilitiesField4ModifyField4PromptMergeReplaceObjectModelKnownFields",
+__ToolBatchAfterCapabilitiesField4ModifyField4PromptField0ModelKnownFields = TypedDict(
+    "__ToolBatchAfterCapabilitiesField4ModifyField4PromptField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ToolBatchAfterCapabilitiesField4ModifyField4PromptMergeReplaceObjectModel: TypeAlias = (
-    __ToolBatchAfterCapabilitiesField4ModifyField4PromptMergeReplaceObjectModelKnownFields
+_ToolBatchAfterCapabilitiesField4ModifyField4PromptField0Model: TypeAlias = (
+    __ToolBatchAfterCapabilitiesField4ModifyField4PromptField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ToolBatchAfterCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__ToolBatchAfterCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__ToolBatchAfterCapabilitiesField4ModifyField4PromptField1ReplaceObjectModelKnownFields = TypedDict(
+    "__ToolBatchAfterCapabilitiesField4ModifyField4PromptField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_ToolBatchAfterCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __ToolBatchAfterCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_ToolBatchAfterCapabilitiesField4ModifyField4PromptField1ReplaceObjectModel: TypeAlias = (
+    __ToolBatchAfterCapabilitiesField4ModifyField4PromptField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ToolBatchAfterCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__ToolBatchAfterCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__ToolBatchAfterCapabilitiesField4ModifyField4PromptField1MergeObjectModelKnownFields = TypedDict(
+    "__ToolBatchAfterCapabilitiesField4ModifyField4PromptField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_ToolBatchAfterCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __ToolBatchAfterCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_ToolBatchAfterCapabilitiesField4ModifyField4PromptField1MergeObjectModel: TypeAlias = (
+    __ToolBatchAfterCapabilitiesField4ModifyField4PromptField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ToolBatchAfterCapabilitiesField4ModifyField5RequestMergeReplaceObjectModelKnownFields = TypedDict(
-    "__ToolBatchAfterCapabilitiesField4ModifyField5RequestMergeReplaceObjectModelKnownFields",
+__ToolBatchAfterCapabilitiesField4ModifyField5RequestField0ModelKnownFields = TypedDict(
+    "__ToolBatchAfterCapabilitiesField4ModifyField5RequestField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ToolBatchAfterCapabilitiesField4ModifyField5RequestMergeReplaceObjectModel: TypeAlias = (
-    __ToolBatchAfterCapabilitiesField4ModifyField5RequestMergeReplaceObjectModelKnownFields
+_ToolBatchAfterCapabilitiesField4ModifyField5RequestField0Model: TypeAlias = (
+    __ToolBatchAfterCapabilitiesField4ModifyField5RequestField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ToolBatchAfterCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__ToolBatchAfterCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__ToolBatchAfterCapabilitiesField4ModifyField5RequestField1ReplaceObjectModelKnownFields = TypedDict(
+    "__ToolBatchAfterCapabilitiesField4ModifyField5RequestField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_ToolBatchAfterCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __ToolBatchAfterCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_ToolBatchAfterCapabilitiesField4ModifyField5RequestField1ReplaceObjectModel: TypeAlias = (
+    __ToolBatchAfterCapabilitiesField4ModifyField5RequestField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ToolBatchAfterCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__ToolBatchAfterCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__ToolBatchAfterCapabilitiesField4ModifyField5RequestField1MergeObjectModelKnownFields = TypedDict(
+    "__ToolBatchAfterCapabilitiesField4ModifyField5RequestField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_ToolBatchAfterCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __ToolBatchAfterCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_ToolBatchAfterCapabilitiesField4ModifyField5RequestField1MergeObjectModel: TypeAlias = (
+    __ToolBatchAfterCapabilitiesField4ModifyField5RequestField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ToolBatchAfterCapabilitiesField4ModifyField6ResponseMergeReplaceObjectModelKnownFields = TypedDict(
-    "__ToolBatchAfterCapabilitiesField4ModifyField6ResponseMergeReplaceObjectModelKnownFields",
+__ToolBatchAfterCapabilitiesField4ModifyField6ResponseField0ModelKnownFields = (
+    TypedDict(
+        "__ToolBatchAfterCapabilitiesField4ModifyField6ResponseField0ModelKnownFields",
+        {"merge": Required[bool], "replace": Required[bool]},
+        total=False,
+    )
+)
+_ToolBatchAfterCapabilitiesField4ModifyField6ResponseField0Model: TypeAlias = (
+    __ToolBatchAfterCapabilitiesField4ModifyField6ResponseField0ModelKnownFields
+    | JsonObject
+)  # permits additional JSON fields
+__ToolBatchAfterCapabilitiesField4ModifyField6ResponseField1ReplaceObjectModelKnownFields = TypedDict(
+    "__ToolBatchAfterCapabilitiesField4ModifyField6ResponseField1ReplaceObjectModelKnownFields",
+    {"replace": Required[Literal[True]]},
+    total=False,
+)
+_ToolBatchAfterCapabilitiesField4ModifyField6ResponseField1ReplaceObjectModel: TypeAlias = (
+    __ToolBatchAfterCapabilitiesField4ModifyField6ResponseField1ReplaceObjectModelKnownFields
+    | JsonObject
+)  # permits additional JSON fields
+__ToolBatchAfterCapabilitiesField4ModifyField6ResponseField1MergeObjectModelKnownFields = TypedDict(
+    "__ToolBatchAfterCapabilitiesField4ModifyField6ResponseField1MergeObjectModelKnownFields",
+    {"merge": Required[Literal[True]]},
+    total=False,
+)
+_ToolBatchAfterCapabilitiesField4ModifyField6ResponseField1MergeObjectModel: TypeAlias = (
+    __ToolBatchAfterCapabilitiesField4ModifyField6ResponseField1MergeObjectModelKnownFields
+    | JsonObject
+)  # permits additional JSON fields
+__ToolBatchAfterCapabilitiesField4ModifyField7SummaryField0ModelKnownFields = TypedDict(
+    "__ToolBatchAfterCapabilitiesField4ModifyField7SummaryField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ToolBatchAfterCapabilitiesField4ModifyField6ResponseMergeReplaceObjectModel: TypeAlias = (
-    __ToolBatchAfterCapabilitiesField4ModifyField6ResponseMergeReplaceObjectModelKnownFields
+_ToolBatchAfterCapabilitiesField4ModifyField7SummaryField0Model: TypeAlias = (
+    __ToolBatchAfterCapabilitiesField4ModifyField7SummaryField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ToolBatchAfterCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__ToolBatchAfterCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__ToolBatchAfterCapabilitiesField4ModifyField7SummaryField1ReplaceObjectModelKnownFields = TypedDict(
+    "__ToolBatchAfterCapabilitiesField4ModifyField7SummaryField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_ToolBatchAfterCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __ToolBatchAfterCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_ToolBatchAfterCapabilitiesField4ModifyField7SummaryField1ReplaceObjectModel: TypeAlias = (
+    __ToolBatchAfterCapabilitiesField4ModifyField7SummaryField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ToolBatchAfterCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__ToolBatchAfterCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__ToolBatchAfterCapabilitiesField4ModifyField7SummaryField1MergeObjectModelKnownFields = TypedDict(
+    "__ToolBatchAfterCapabilitiesField4ModifyField7SummaryField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_ToolBatchAfterCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __ToolBatchAfterCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_ToolBatchAfterCapabilitiesField4ModifyField7SummaryField1MergeObjectModel: TypeAlias = (
+    __ToolBatchAfterCapabilitiesField4ModifyField7SummaryField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ToolBatchAfterCapabilitiesField4ModifyField7SummaryMergeReplaceObjectModelKnownFields = TypedDict(
-    "__ToolBatchAfterCapabilitiesField4ModifyField7SummaryMergeReplaceObjectModelKnownFields",
-    {"merge": Required[bool], "replace": Required[bool]},
-    total=False,
+__ToolBatchAfterCapabilitiesField4ModifyField8WorkspaceField0ModelKnownFields = (
+    TypedDict(
+        "__ToolBatchAfterCapabilitiesField4ModifyField8WorkspaceField0ModelKnownFields",
+        {"merge": Required[bool], "replace": Required[bool]},
+        total=False,
+    )
 )
-_ToolBatchAfterCapabilitiesField4ModifyField7SummaryMergeReplaceObjectModel: TypeAlias = (
-    __ToolBatchAfterCapabilitiesField4ModifyField7SummaryMergeReplaceObjectModelKnownFields
+_ToolBatchAfterCapabilitiesField4ModifyField8WorkspaceField0Model: TypeAlias = (
+    __ToolBatchAfterCapabilitiesField4ModifyField8WorkspaceField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ToolBatchAfterCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__ToolBatchAfterCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__ToolBatchAfterCapabilitiesField4ModifyField8WorkspaceField1ReplaceObjectModelKnownFields = TypedDict(
+    "__ToolBatchAfterCapabilitiesField4ModifyField8WorkspaceField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_ToolBatchAfterCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __ToolBatchAfterCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_ToolBatchAfterCapabilitiesField4ModifyField8WorkspaceField1ReplaceObjectModel: TypeAlias = (
+    __ToolBatchAfterCapabilitiesField4ModifyField8WorkspaceField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ToolBatchAfterCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__ToolBatchAfterCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__ToolBatchAfterCapabilitiesField4ModifyField8WorkspaceField1MergeObjectModelKnownFields = TypedDict(
+    "__ToolBatchAfterCapabilitiesField4ModifyField8WorkspaceField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_ToolBatchAfterCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __ToolBatchAfterCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectMergeObjectModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ToolBatchAfterCapabilitiesField4ModifyField8WorkspaceMergeReplaceObjectModelKnownFields = TypedDict(
-    "__ToolBatchAfterCapabilitiesField4ModifyField8WorkspaceMergeReplaceObjectModelKnownFields",
-    {"merge": Required[bool], "replace": Required[bool]},
-    total=False,
-)
-_ToolBatchAfterCapabilitiesField4ModifyField8WorkspaceMergeReplaceObjectModel: TypeAlias = (
-    __ToolBatchAfterCapabilitiesField4ModifyField8WorkspaceMergeReplaceObjectModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ToolBatchAfterCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__ToolBatchAfterCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_ToolBatchAfterCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __ToolBatchAfterCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ToolBatchAfterCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__ToolBatchAfterCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_ToolBatchAfterCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __ToolBatchAfterCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_ToolBatchAfterCapabilitiesField4ModifyField8WorkspaceField1MergeObjectModel: TypeAlias = (
+    __ToolBatchAfterCapabilitiesField4ModifyField8WorkspaceField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
 __ToolBatchAfterCapabilitiesField4ModifyModelKnownFields = TypedDict(
@@ -7562,247 +7560,243 @@ __ToolBeforeCapabilitiesField3InjectModelKnownFields = TypedDict(
 _ToolBeforeCapabilitiesField3InjectModel: TypeAlias = (
     __ToolBeforeCapabilitiesField3InjectModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__ToolBeforeCapabilitiesField4ModifyField0ContentMergeReplaceObjectModelKnownFields = TypedDict(
-    "__ToolBeforeCapabilitiesField4ModifyField0ContentMergeReplaceObjectModelKnownFields",
+__ToolBeforeCapabilitiesField4ModifyField0ContentField0ModelKnownFields = TypedDict(
+    "__ToolBeforeCapabilitiesField4ModifyField0ContentField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ToolBeforeCapabilitiesField4ModifyField0ContentMergeReplaceObjectModel: TypeAlias = (
-    __ToolBeforeCapabilitiesField4ModifyField0ContentMergeReplaceObjectModelKnownFields
-    | JsonObject
+_ToolBeforeCapabilitiesField4ModifyField0ContentField0Model: TypeAlias = (
+    __ToolBeforeCapabilitiesField4ModifyField0ContentField0ModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__ToolBeforeCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__ToolBeforeCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__ToolBeforeCapabilitiesField4ModifyField0ContentField1ReplaceObjectModelKnownFields = TypedDict(
+    "__ToolBeforeCapabilitiesField4ModifyField0ContentField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_ToolBeforeCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __ToolBeforeCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_ToolBeforeCapabilitiesField4ModifyField0ContentField1ReplaceObjectModel: TypeAlias = (
+    __ToolBeforeCapabilitiesField4ModifyField0ContentField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ToolBeforeCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__ToolBeforeCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__ToolBeforeCapabilitiesField4ModifyField0ContentField1MergeObjectModelKnownFields = TypedDict(
+    "__ToolBeforeCapabilitiesField4ModifyField0ContentField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_ToolBeforeCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __ToolBeforeCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_ToolBeforeCapabilitiesField4ModifyField0ContentField1MergeObjectModel: TypeAlias = (
+    __ToolBeforeCapabilitiesField4ModifyField0ContentField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ToolBeforeCapabilitiesField4ModifyField1InputMergeReplaceObjectModelKnownFields = TypedDict(
-    "__ToolBeforeCapabilitiesField4ModifyField1InputMergeReplaceObjectModelKnownFields",
+__ToolBeforeCapabilitiesField4ModifyField1InputField0ModelKnownFields = TypedDict(
+    "__ToolBeforeCapabilitiesField4ModifyField1InputField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ToolBeforeCapabilitiesField4ModifyField1InputMergeReplaceObjectModel: TypeAlias = (
-    __ToolBeforeCapabilitiesField4ModifyField1InputMergeReplaceObjectModelKnownFields
-    | JsonObject
+_ToolBeforeCapabilitiesField4ModifyField1InputField0Model: TypeAlias = (
+    __ToolBeforeCapabilitiesField4ModifyField1InputField0ModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__ToolBeforeCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__ToolBeforeCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__ToolBeforeCapabilitiesField4ModifyField1InputField1ReplaceObjectModelKnownFields = TypedDict(
+    "__ToolBeforeCapabilitiesField4ModifyField1InputField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_ToolBeforeCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __ToolBeforeCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_ToolBeforeCapabilitiesField4ModifyField1InputField1ReplaceObjectModel: TypeAlias = (
+    __ToolBeforeCapabilitiesField4ModifyField1InputField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ToolBeforeCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__ToolBeforeCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__ToolBeforeCapabilitiesField4ModifyField1InputField1MergeObjectModelKnownFields = TypedDict(
+    "__ToolBeforeCapabilitiesField4ModifyField1InputField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_ToolBeforeCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __ToolBeforeCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_ToolBeforeCapabilitiesField4ModifyField1InputField1MergeObjectModel: TypeAlias = (
+    __ToolBeforeCapabilitiesField4ModifyField1InputField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ToolBeforeCapabilitiesField4ModifyField2InstructionsMergeReplaceObjectModelKnownFields = TypedDict(
-    "__ToolBeforeCapabilitiesField4ModifyField2InstructionsMergeReplaceObjectModelKnownFields",
+__ToolBeforeCapabilitiesField4ModifyField2InstructionsField0ModelKnownFields = (
+    TypedDict(
+        "__ToolBeforeCapabilitiesField4ModifyField2InstructionsField0ModelKnownFields",
+        {"merge": Required[bool], "replace": Required[bool]},
+        total=False,
+    )
+)
+_ToolBeforeCapabilitiesField4ModifyField2InstructionsField0Model: TypeAlias = (
+    __ToolBeforeCapabilitiesField4ModifyField2InstructionsField0ModelKnownFields
+    | JsonObject
+)  # permits additional JSON fields
+__ToolBeforeCapabilitiesField4ModifyField2InstructionsField1ReplaceObjectModelKnownFields = TypedDict(
+    "__ToolBeforeCapabilitiesField4ModifyField2InstructionsField1ReplaceObjectModelKnownFields",
+    {"replace": Required[Literal[True]]},
+    total=False,
+)
+_ToolBeforeCapabilitiesField4ModifyField2InstructionsField1ReplaceObjectModel: TypeAlias = (
+    __ToolBeforeCapabilitiesField4ModifyField2InstructionsField1ReplaceObjectModelKnownFields
+    | JsonObject
+)  # permits additional JSON fields
+__ToolBeforeCapabilitiesField4ModifyField2InstructionsField1MergeObjectModelKnownFields = TypedDict(
+    "__ToolBeforeCapabilitiesField4ModifyField2InstructionsField1MergeObjectModelKnownFields",
+    {"merge": Required[Literal[True]]},
+    total=False,
+)
+_ToolBeforeCapabilitiesField4ModifyField2InstructionsField1MergeObjectModel: TypeAlias = (
+    __ToolBeforeCapabilitiesField4ModifyField2InstructionsField1MergeObjectModelKnownFields
+    | JsonObject
+)  # permits additional JSON fields
+__ToolBeforeCapabilitiesField4ModifyField3OutputField0ModelKnownFields = TypedDict(
+    "__ToolBeforeCapabilitiesField4ModifyField3OutputField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ToolBeforeCapabilitiesField4ModifyField2InstructionsMergeReplaceObjectModel: TypeAlias = (
-    __ToolBeforeCapabilitiesField4ModifyField2InstructionsMergeReplaceObjectModelKnownFields
-    | JsonObject
+_ToolBeforeCapabilitiesField4ModifyField3OutputField0Model: TypeAlias = (
+    __ToolBeforeCapabilitiesField4ModifyField3OutputField0ModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__ToolBeforeCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__ToolBeforeCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__ToolBeforeCapabilitiesField4ModifyField3OutputField1ReplaceObjectModelKnownFields = TypedDict(
+    "__ToolBeforeCapabilitiesField4ModifyField3OutputField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_ToolBeforeCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __ToolBeforeCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_ToolBeforeCapabilitiesField4ModifyField3OutputField1ReplaceObjectModel: TypeAlias = (
+    __ToolBeforeCapabilitiesField4ModifyField3OutputField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ToolBeforeCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__ToolBeforeCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__ToolBeforeCapabilitiesField4ModifyField3OutputField1MergeObjectModelKnownFields = TypedDict(
+    "__ToolBeforeCapabilitiesField4ModifyField3OutputField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_ToolBeforeCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __ToolBeforeCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_ToolBeforeCapabilitiesField4ModifyField3OutputField1MergeObjectModel: TypeAlias = (
+    __ToolBeforeCapabilitiesField4ModifyField3OutputField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ToolBeforeCapabilitiesField4ModifyField3OutputMergeReplaceObjectModelKnownFields = TypedDict(
-    "__ToolBeforeCapabilitiesField4ModifyField3OutputMergeReplaceObjectModelKnownFields",
+__ToolBeforeCapabilitiesField4ModifyField4PromptField0ModelKnownFields = TypedDict(
+    "__ToolBeforeCapabilitiesField4ModifyField4PromptField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ToolBeforeCapabilitiesField4ModifyField3OutputMergeReplaceObjectModel: TypeAlias = (
-    __ToolBeforeCapabilitiesField4ModifyField3OutputMergeReplaceObjectModelKnownFields
-    | JsonObject
+_ToolBeforeCapabilitiesField4ModifyField4PromptField0Model: TypeAlias = (
+    __ToolBeforeCapabilitiesField4ModifyField4PromptField0ModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__ToolBeforeCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__ToolBeforeCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__ToolBeforeCapabilitiesField4ModifyField4PromptField1ReplaceObjectModelKnownFields = TypedDict(
+    "__ToolBeforeCapabilitiesField4ModifyField4PromptField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_ToolBeforeCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __ToolBeforeCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_ToolBeforeCapabilitiesField4ModifyField4PromptField1ReplaceObjectModel: TypeAlias = (
+    __ToolBeforeCapabilitiesField4ModifyField4PromptField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ToolBeforeCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__ToolBeforeCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__ToolBeforeCapabilitiesField4ModifyField4PromptField1MergeObjectModelKnownFields = TypedDict(
+    "__ToolBeforeCapabilitiesField4ModifyField4PromptField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_ToolBeforeCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __ToolBeforeCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_ToolBeforeCapabilitiesField4ModifyField4PromptField1MergeObjectModel: TypeAlias = (
+    __ToolBeforeCapabilitiesField4ModifyField4PromptField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ToolBeforeCapabilitiesField4ModifyField4PromptMergeReplaceObjectModelKnownFields = TypedDict(
-    "__ToolBeforeCapabilitiesField4ModifyField4PromptMergeReplaceObjectModelKnownFields",
+__ToolBeforeCapabilitiesField4ModifyField5RequestField0ModelKnownFields = TypedDict(
+    "__ToolBeforeCapabilitiesField4ModifyField5RequestField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ToolBeforeCapabilitiesField4ModifyField4PromptMergeReplaceObjectModel: TypeAlias = (
-    __ToolBeforeCapabilitiesField4ModifyField4PromptMergeReplaceObjectModelKnownFields
-    | JsonObject
+_ToolBeforeCapabilitiesField4ModifyField5RequestField0Model: TypeAlias = (
+    __ToolBeforeCapabilitiesField4ModifyField5RequestField0ModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__ToolBeforeCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__ToolBeforeCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__ToolBeforeCapabilitiesField4ModifyField5RequestField1ReplaceObjectModelKnownFields = TypedDict(
+    "__ToolBeforeCapabilitiesField4ModifyField5RequestField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_ToolBeforeCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __ToolBeforeCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_ToolBeforeCapabilitiesField4ModifyField5RequestField1ReplaceObjectModel: TypeAlias = (
+    __ToolBeforeCapabilitiesField4ModifyField5RequestField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ToolBeforeCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__ToolBeforeCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__ToolBeforeCapabilitiesField4ModifyField5RequestField1MergeObjectModelKnownFields = TypedDict(
+    "__ToolBeforeCapabilitiesField4ModifyField5RequestField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_ToolBeforeCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __ToolBeforeCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_ToolBeforeCapabilitiesField4ModifyField5RequestField1MergeObjectModel: TypeAlias = (
+    __ToolBeforeCapabilitiesField4ModifyField5RequestField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ToolBeforeCapabilitiesField4ModifyField5RequestMergeReplaceObjectModelKnownFields = TypedDict(
-    "__ToolBeforeCapabilitiesField4ModifyField5RequestMergeReplaceObjectModelKnownFields",
+__ToolBeforeCapabilitiesField4ModifyField6ResponseField0ModelKnownFields = TypedDict(
+    "__ToolBeforeCapabilitiesField4ModifyField6ResponseField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ToolBeforeCapabilitiesField4ModifyField5RequestMergeReplaceObjectModel: TypeAlias = (
-    __ToolBeforeCapabilitiesField4ModifyField5RequestMergeReplaceObjectModelKnownFields
+_ToolBeforeCapabilitiesField4ModifyField6ResponseField0Model: TypeAlias = (
+    __ToolBeforeCapabilitiesField4ModifyField6ResponseField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ToolBeforeCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__ToolBeforeCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__ToolBeforeCapabilitiesField4ModifyField6ResponseField1ReplaceObjectModelKnownFields = TypedDict(
+    "__ToolBeforeCapabilitiesField4ModifyField6ResponseField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_ToolBeforeCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __ToolBeforeCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_ToolBeforeCapabilitiesField4ModifyField6ResponseField1ReplaceObjectModel: TypeAlias = (
+    __ToolBeforeCapabilitiesField4ModifyField6ResponseField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ToolBeforeCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__ToolBeforeCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__ToolBeforeCapabilitiesField4ModifyField6ResponseField1MergeObjectModelKnownFields = TypedDict(
+    "__ToolBeforeCapabilitiesField4ModifyField6ResponseField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_ToolBeforeCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __ToolBeforeCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_ToolBeforeCapabilitiesField4ModifyField6ResponseField1MergeObjectModel: TypeAlias = (
+    __ToolBeforeCapabilitiesField4ModifyField6ResponseField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ToolBeforeCapabilitiesField4ModifyField6ResponseMergeReplaceObjectModelKnownFields = TypedDict(
-    "__ToolBeforeCapabilitiesField4ModifyField6ResponseMergeReplaceObjectModelKnownFields",
+__ToolBeforeCapabilitiesField4ModifyField7SummaryField0ModelKnownFields = TypedDict(
+    "__ToolBeforeCapabilitiesField4ModifyField7SummaryField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ToolBeforeCapabilitiesField4ModifyField6ResponseMergeReplaceObjectModel: TypeAlias = (
-    __ToolBeforeCapabilitiesField4ModifyField6ResponseMergeReplaceObjectModelKnownFields
-    | JsonObject
+_ToolBeforeCapabilitiesField4ModifyField7SummaryField0Model: TypeAlias = (
+    __ToolBeforeCapabilitiesField4ModifyField7SummaryField0ModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__ToolBeforeCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__ToolBeforeCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__ToolBeforeCapabilitiesField4ModifyField7SummaryField1ReplaceObjectModelKnownFields = TypedDict(
+    "__ToolBeforeCapabilitiesField4ModifyField7SummaryField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_ToolBeforeCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __ToolBeforeCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_ToolBeforeCapabilitiesField4ModifyField7SummaryField1ReplaceObjectModel: TypeAlias = (
+    __ToolBeforeCapabilitiesField4ModifyField7SummaryField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ToolBeforeCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__ToolBeforeCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__ToolBeforeCapabilitiesField4ModifyField7SummaryField1MergeObjectModelKnownFields = TypedDict(
+    "__ToolBeforeCapabilitiesField4ModifyField7SummaryField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_ToolBeforeCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __ToolBeforeCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_ToolBeforeCapabilitiesField4ModifyField7SummaryField1MergeObjectModel: TypeAlias = (
+    __ToolBeforeCapabilitiesField4ModifyField7SummaryField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ToolBeforeCapabilitiesField4ModifyField7SummaryMergeReplaceObjectModelKnownFields = TypedDict(
-    "__ToolBeforeCapabilitiesField4ModifyField7SummaryMergeReplaceObjectModelKnownFields",
+__ToolBeforeCapabilitiesField4ModifyField8WorkspaceField0ModelKnownFields = TypedDict(
+    "__ToolBeforeCapabilitiesField4ModifyField8WorkspaceField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ToolBeforeCapabilitiesField4ModifyField7SummaryMergeReplaceObjectModel: TypeAlias = (
-    __ToolBeforeCapabilitiesField4ModifyField7SummaryMergeReplaceObjectModelKnownFields
+_ToolBeforeCapabilitiesField4ModifyField8WorkspaceField0Model: TypeAlias = (
+    __ToolBeforeCapabilitiesField4ModifyField8WorkspaceField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ToolBeforeCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__ToolBeforeCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__ToolBeforeCapabilitiesField4ModifyField8WorkspaceField1ReplaceObjectModelKnownFields = TypedDict(
+    "__ToolBeforeCapabilitiesField4ModifyField8WorkspaceField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_ToolBeforeCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __ToolBeforeCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_ToolBeforeCapabilitiesField4ModifyField8WorkspaceField1ReplaceObjectModel: TypeAlias = (
+    __ToolBeforeCapabilitiesField4ModifyField8WorkspaceField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ToolBeforeCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__ToolBeforeCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__ToolBeforeCapabilitiesField4ModifyField8WorkspaceField1MergeObjectModelKnownFields = TypedDict(
+    "__ToolBeforeCapabilitiesField4ModifyField8WorkspaceField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_ToolBeforeCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __ToolBeforeCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectMergeObjectModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ToolBeforeCapabilitiesField4ModifyField8WorkspaceMergeReplaceObjectModelKnownFields = TypedDict(
-    "__ToolBeforeCapabilitiesField4ModifyField8WorkspaceMergeReplaceObjectModelKnownFields",
-    {"merge": Required[bool], "replace": Required[bool]},
-    total=False,
-)
-_ToolBeforeCapabilitiesField4ModifyField8WorkspaceMergeReplaceObjectModel: TypeAlias = (
-    __ToolBeforeCapabilitiesField4ModifyField8WorkspaceMergeReplaceObjectModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ToolBeforeCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__ToolBeforeCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_ToolBeforeCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __ToolBeforeCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ToolBeforeCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__ToolBeforeCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_ToolBeforeCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __ToolBeforeCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_ToolBeforeCapabilitiesField4ModifyField8WorkspaceField1MergeObjectModel: TypeAlias = (
+    __ToolBeforeCapabilitiesField4ModifyField8WorkspaceField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
 __ToolBeforeCapabilitiesField4ModifyModelKnownFields = TypedDict(
@@ -7958,247 +7952,247 @@ __ToolPermissionRequestCapabilitiesField3InjectModelKnownFields = TypedDict(
 _ToolPermissionRequestCapabilitiesField3InjectModel: TypeAlias = (
     __ToolPermissionRequestCapabilitiesField3InjectModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__ToolPermissionRequestCapabilitiesField4ModifyField0ContentMergeReplaceObjectModelKnownFields = TypedDict(
-    "__ToolPermissionRequestCapabilitiesField4ModifyField0ContentMergeReplaceObjectModelKnownFields",
+__ToolPermissionRequestCapabilitiesField4ModifyField0ContentField0ModelKnownFields = TypedDict(
+    "__ToolPermissionRequestCapabilitiesField4ModifyField0ContentField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ToolPermissionRequestCapabilitiesField4ModifyField0ContentMergeReplaceObjectModel: TypeAlias = (
-    __ToolPermissionRequestCapabilitiesField4ModifyField0ContentMergeReplaceObjectModelKnownFields
+_ToolPermissionRequestCapabilitiesField4ModifyField0ContentField0Model: TypeAlias = (
+    __ToolPermissionRequestCapabilitiesField4ModifyField0ContentField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ToolPermissionRequestCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__ToolPermissionRequestCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__ToolPermissionRequestCapabilitiesField4ModifyField0ContentField1ReplaceObjectModelKnownFields = TypedDict(
+    "__ToolPermissionRequestCapabilitiesField4ModifyField0ContentField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_ToolPermissionRequestCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __ToolPermissionRequestCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_ToolPermissionRequestCapabilitiesField4ModifyField0ContentField1ReplaceObjectModel: TypeAlias = (
+    __ToolPermissionRequestCapabilitiesField4ModifyField0ContentField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ToolPermissionRequestCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__ToolPermissionRequestCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__ToolPermissionRequestCapabilitiesField4ModifyField0ContentField1MergeObjectModelKnownFields = TypedDict(
+    "__ToolPermissionRequestCapabilitiesField4ModifyField0ContentField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_ToolPermissionRequestCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __ToolPermissionRequestCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_ToolPermissionRequestCapabilitiesField4ModifyField0ContentField1MergeObjectModel: TypeAlias = (
+    __ToolPermissionRequestCapabilitiesField4ModifyField0ContentField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ToolPermissionRequestCapabilitiesField4ModifyField1InputMergeReplaceObjectModelKnownFields = TypedDict(
-    "__ToolPermissionRequestCapabilitiesField4ModifyField1InputMergeReplaceObjectModelKnownFields",
+__ToolPermissionRequestCapabilitiesField4ModifyField1InputField0ModelKnownFields = TypedDict(
+    "__ToolPermissionRequestCapabilitiesField4ModifyField1InputField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ToolPermissionRequestCapabilitiesField4ModifyField1InputMergeReplaceObjectModel: TypeAlias = (
-    __ToolPermissionRequestCapabilitiesField4ModifyField1InputMergeReplaceObjectModelKnownFields
+_ToolPermissionRequestCapabilitiesField4ModifyField1InputField0Model: TypeAlias = (
+    __ToolPermissionRequestCapabilitiesField4ModifyField1InputField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ToolPermissionRequestCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__ToolPermissionRequestCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__ToolPermissionRequestCapabilitiesField4ModifyField1InputField1ReplaceObjectModelKnownFields = TypedDict(
+    "__ToolPermissionRequestCapabilitiesField4ModifyField1InputField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_ToolPermissionRequestCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __ToolPermissionRequestCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_ToolPermissionRequestCapabilitiesField4ModifyField1InputField1ReplaceObjectModel: TypeAlias = (
+    __ToolPermissionRequestCapabilitiesField4ModifyField1InputField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ToolPermissionRequestCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__ToolPermissionRequestCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__ToolPermissionRequestCapabilitiesField4ModifyField1InputField1MergeObjectModelKnownFields = TypedDict(
+    "__ToolPermissionRequestCapabilitiesField4ModifyField1InputField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_ToolPermissionRequestCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __ToolPermissionRequestCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_ToolPermissionRequestCapabilitiesField4ModifyField1InputField1MergeObjectModel: TypeAlias = (
+    __ToolPermissionRequestCapabilitiesField4ModifyField1InputField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ToolPermissionRequestCapabilitiesField4ModifyField2InstructionsMergeReplaceObjectModelKnownFields = TypedDict(
-    "__ToolPermissionRequestCapabilitiesField4ModifyField2InstructionsMergeReplaceObjectModelKnownFields",
+__ToolPermissionRequestCapabilitiesField4ModifyField2InstructionsField0ModelKnownFields = TypedDict(
+    "__ToolPermissionRequestCapabilitiesField4ModifyField2InstructionsField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ToolPermissionRequestCapabilitiesField4ModifyField2InstructionsMergeReplaceObjectModel: TypeAlias = (
-    __ToolPermissionRequestCapabilitiesField4ModifyField2InstructionsMergeReplaceObjectModelKnownFields
+_ToolPermissionRequestCapabilitiesField4ModifyField2InstructionsField0Model: TypeAlias = (
+    __ToolPermissionRequestCapabilitiesField4ModifyField2InstructionsField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ToolPermissionRequestCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__ToolPermissionRequestCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__ToolPermissionRequestCapabilitiesField4ModifyField2InstructionsField1ReplaceObjectModelKnownFields = TypedDict(
+    "__ToolPermissionRequestCapabilitiesField4ModifyField2InstructionsField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_ToolPermissionRequestCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __ToolPermissionRequestCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_ToolPermissionRequestCapabilitiesField4ModifyField2InstructionsField1ReplaceObjectModel: TypeAlias = (
+    __ToolPermissionRequestCapabilitiesField4ModifyField2InstructionsField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ToolPermissionRequestCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__ToolPermissionRequestCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__ToolPermissionRequestCapabilitiesField4ModifyField2InstructionsField1MergeObjectModelKnownFields = TypedDict(
+    "__ToolPermissionRequestCapabilitiesField4ModifyField2InstructionsField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_ToolPermissionRequestCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __ToolPermissionRequestCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_ToolPermissionRequestCapabilitiesField4ModifyField2InstructionsField1MergeObjectModel: TypeAlias = (
+    __ToolPermissionRequestCapabilitiesField4ModifyField2InstructionsField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ToolPermissionRequestCapabilitiesField4ModifyField3OutputMergeReplaceObjectModelKnownFields = TypedDict(
-    "__ToolPermissionRequestCapabilitiesField4ModifyField3OutputMergeReplaceObjectModelKnownFields",
+__ToolPermissionRequestCapabilitiesField4ModifyField3OutputField0ModelKnownFields = TypedDict(
+    "__ToolPermissionRequestCapabilitiesField4ModifyField3OutputField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ToolPermissionRequestCapabilitiesField4ModifyField3OutputMergeReplaceObjectModel: TypeAlias = (
-    __ToolPermissionRequestCapabilitiesField4ModifyField3OutputMergeReplaceObjectModelKnownFields
+_ToolPermissionRequestCapabilitiesField4ModifyField3OutputField0Model: TypeAlias = (
+    __ToolPermissionRequestCapabilitiesField4ModifyField3OutputField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ToolPermissionRequestCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__ToolPermissionRequestCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__ToolPermissionRequestCapabilitiesField4ModifyField3OutputField1ReplaceObjectModelKnownFields = TypedDict(
+    "__ToolPermissionRequestCapabilitiesField4ModifyField3OutputField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_ToolPermissionRequestCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __ToolPermissionRequestCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_ToolPermissionRequestCapabilitiesField4ModifyField3OutputField1ReplaceObjectModel: TypeAlias = (
+    __ToolPermissionRequestCapabilitiesField4ModifyField3OutputField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ToolPermissionRequestCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__ToolPermissionRequestCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__ToolPermissionRequestCapabilitiesField4ModifyField3OutputField1MergeObjectModelKnownFields = TypedDict(
+    "__ToolPermissionRequestCapabilitiesField4ModifyField3OutputField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_ToolPermissionRequestCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __ToolPermissionRequestCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_ToolPermissionRequestCapabilitiesField4ModifyField3OutputField1MergeObjectModel: TypeAlias = (
+    __ToolPermissionRequestCapabilitiesField4ModifyField3OutputField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ToolPermissionRequestCapabilitiesField4ModifyField4PromptMergeReplaceObjectModelKnownFields = TypedDict(
-    "__ToolPermissionRequestCapabilitiesField4ModifyField4PromptMergeReplaceObjectModelKnownFields",
+__ToolPermissionRequestCapabilitiesField4ModifyField4PromptField0ModelKnownFields = TypedDict(
+    "__ToolPermissionRequestCapabilitiesField4ModifyField4PromptField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ToolPermissionRequestCapabilitiesField4ModifyField4PromptMergeReplaceObjectModel: TypeAlias = (
-    __ToolPermissionRequestCapabilitiesField4ModifyField4PromptMergeReplaceObjectModelKnownFields
+_ToolPermissionRequestCapabilitiesField4ModifyField4PromptField0Model: TypeAlias = (
+    __ToolPermissionRequestCapabilitiesField4ModifyField4PromptField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ToolPermissionRequestCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__ToolPermissionRequestCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__ToolPermissionRequestCapabilitiesField4ModifyField4PromptField1ReplaceObjectModelKnownFields = TypedDict(
+    "__ToolPermissionRequestCapabilitiesField4ModifyField4PromptField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_ToolPermissionRequestCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __ToolPermissionRequestCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_ToolPermissionRequestCapabilitiesField4ModifyField4PromptField1ReplaceObjectModel: TypeAlias = (
+    __ToolPermissionRequestCapabilitiesField4ModifyField4PromptField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ToolPermissionRequestCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__ToolPermissionRequestCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__ToolPermissionRequestCapabilitiesField4ModifyField4PromptField1MergeObjectModelKnownFields = TypedDict(
+    "__ToolPermissionRequestCapabilitiesField4ModifyField4PromptField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_ToolPermissionRequestCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __ToolPermissionRequestCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_ToolPermissionRequestCapabilitiesField4ModifyField4PromptField1MergeObjectModel: TypeAlias = (
+    __ToolPermissionRequestCapabilitiesField4ModifyField4PromptField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ToolPermissionRequestCapabilitiesField4ModifyField5RequestMergeReplaceObjectModelKnownFields = TypedDict(
-    "__ToolPermissionRequestCapabilitiesField4ModifyField5RequestMergeReplaceObjectModelKnownFields",
+__ToolPermissionRequestCapabilitiesField4ModifyField5RequestField0ModelKnownFields = TypedDict(
+    "__ToolPermissionRequestCapabilitiesField4ModifyField5RequestField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ToolPermissionRequestCapabilitiesField4ModifyField5RequestMergeReplaceObjectModel: TypeAlias = (
-    __ToolPermissionRequestCapabilitiesField4ModifyField5RequestMergeReplaceObjectModelKnownFields
+_ToolPermissionRequestCapabilitiesField4ModifyField5RequestField0Model: TypeAlias = (
+    __ToolPermissionRequestCapabilitiesField4ModifyField5RequestField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ToolPermissionRequestCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__ToolPermissionRequestCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__ToolPermissionRequestCapabilitiesField4ModifyField5RequestField1ReplaceObjectModelKnownFields = TypedDict(
+    "__ToolPermissionRequestCapabilitiesField4ModifyField5RequestField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_ToolPermissionRequestCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __ToolPermissionRequestCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_ToolPermissionRequestCapabilitiesField4ModifyField5RequestField1ReplaceObjectModel: TypeAlias = (
+    __ToolPermissionRequestCapabilitiesField4ModifyField5RequestField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ToolPermissionRequestCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__ToolPermissionRequestCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__ToolPermissionRequestCapabilitiesField4ModifyField5RequestField1MergeObjectModelKnownFields = TypedDict(
+    "__ToolPermissionRequestCapabilitiesField4ModifyField5RequestField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_ToolPermissionRequestCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __ToolPermissionRequestCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_ToolPermissionRequestCapabilitiesField4ModifyField5RequestField1MergeObjectModel: TypeAlias = (
+    __ToolPermissionRequestCapabilitiesField4ModifyField5RequestField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ToolPermissionRequestCapabilitiesField4ModifyField6ResponseMergeReplaceObjectModelKnownFields = TypedDict(
-    "__ToolPermissionRequestCapabilitiesField4ModifyField6ResponseMergeReplaceObjectModelKnownFields",
+__ToolPermissionRequestCapabilitiesField4ModifyField6ResponseField0ModelKnownFields = TypedDict(
+    "__ToolPermissionRequestCapabilitiesField4ModifyField6ResponseField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ToolPermissionRequestCapabilitiesField4ModifyField6ResponseMergeReplaceObjectModel: TypeAlias = (
-    __ToolPermissionRequestCapabilitiesField4ModifyField6ResponseMergeReplaceObjectModelKnownFields
+_ToolPermissionRequestCapabilitiesField4ModifyField6ResponseField0Model: TypeAlias = (
+    __ToolPermissionRequestCapabilitiesField4ModifyField6ResponseField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ToolPermissionRequestCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__ToolPermissionRequestCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__ToolPermissionRequestCapabilitiesField4ModifyField6ResponseField1ReplaceObjectModelKnownFields = TypedDict(
+    "__ToolPermissionRequestCapabilitiesField4ModifyField6ResponseField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_ToolPermissionRequestCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __ToolPermissionRequestCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_ToolPermissionRequestCapabilitiesField4ModifyField6ResponseField1ReplaceObjectModel: TypeAlias = (
+    __ToolPermissionRequestCapabilitiesField4ModifyField6ResponseField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ToolPermissionRequestCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__ToolPermissionRequestCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__ToolPermissionRequestCapabilitiesField4ModifyField6ResponseField1MergeObjectModelKnownFields = TypedDict(
+    "__ToolPermissionRequestCapabilitiesField4ModifyField6ResponseField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_ToolPermissionRequestCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __ToolPermissionRequestCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_ToolPermissionRequestCapabilitiesField4ModifyField6ResponseField1MergeObjectModel: TypeAlias = (
+    __ToolPermissionRequestCapabilitiesField4ModifyField6ResponseField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ToolPermissionRequestCapabilitiesField4ModifyField7SummaryMergeReplaceObjectModelKnownFields = TypedDict(
-    "__ToolPermissionRequestCapabilitiesField4ModifyField7SummaryMergeReplaceObjectModelKnownFields",
+__ToolPermissionRequestCapabilitiesField4ModifyField7SummaryField0ModelKnownFields = TypedDict(
+    "__ToolPermissionRequestCapabilitiesField4ModifyField7SummaryField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ToolPermissionRequestCapabilitiesField4ModifyField7SummaryMergeReplaceObjectModel: TypeAlias = (
-    __ToolPermissionRequestCapabilitiesField4ModifyField7SummaryMergeReplaceObjectModelKnownFields
+_ToolPermissionRequestCapabilitiesField4ModifyField7SummaryField0Model: TypeAlias = (
+    __ToolPermissionRequestCapabilitiesField4ModifyField7SummaryField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ToolPermissionRequestCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__ToolPermissionRequestCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__ToolPermissionRequestCapabilitiesField4ModifyField7SummaryField1ReplaceObjectModelKnownFields = TypedDict(
+    "__ToolPermissionRequestCapabilitiesField4ModifyField7SummaryField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_ToolPermissionRequestCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __ToolPermissionRequestCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_ToolPermissionRequestCapabilitiesField4ModifyField7SummaryField1ReplaceObjectModel: TypeAlias = (
+    __ToolPermissionRequestCapabilitiesField4ModifyField7SummaryField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ToolPermissionRequestCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__ToolPermissionRequestCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__ToolPermissionRequestCapabilitiesField4ModifyField7SummaryField1MergeObjectModelKnownFields = TypedDict(
+    "__ToolPermissionRequestCapabilitiesField4ModifyField7SummaryField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_ToolPermissionRequestCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __ToolPermissionRequestCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_ToolPermissionRequestCapabilitiesField4ModifyField7SummaryField1MergeObjectModel: TypeAlias = (
+    __ToolPermissionRequestCapabilitiesField4ModifyField7SummaryField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ToolPermissionRequestCapabilitiesField4ModifyField8WorkspaceMergeReplaceObjectModelKnownFields = TypedDict(
-    "__ToolPermissionRequestCapabilitiesField4ModifyField8WorkspaceMergeReplaceObjectModelKnownFields",
+__ToolPermissionRequestCapabilitiesField4ModifyField8WorkspaceField0ModelKnownFields = TypedDict(
+    "__ToolPermissionRequestCapabilitiesField4ModifyField8WorkspaceField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ToolPermissionRequestCapabilitiesField4ModifyField8WorkspaceMergeReplaceObjectModel: TypeAlias = (
-    __ToolPermissionRequestCapabilitiesField4ModifyField8WorkspaceMergeReplaceObjectModelKnownFields
+_ToolPermissionRequestCapabilitiesField4ModifyField8WorkspaceField0Model: TypeAlias = (
+    __ToolPermissionRequestCapabilitiesField4ModifyField8WorkspaceField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ToolPermissionRequestCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__ToolPermissionRequestCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__ToolPermissionRequestCapabilitiesField4ModifyField8WorkspaceField1ReplaceObjectModelKnownFields = TypedDict(
+    "__ToolPermissionRequestCapabilitiesField4ModifyField8WorkspaceField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_ToolPermissionRequestCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __ToolPermissionRequestCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_ToolPermissionRequestCapabilitiesField4ModifyField8WorkspaceField1ReplaceObjectModel: TypeAlias = (
+    __ToolPermissionRequestCapabilitiesField4ModifyField8WorkspaceField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ToolPermissionRequestCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__ToolPermissionRequestCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__ToolPermissionRequestCapabilitiesField4ModifyField8WorkspaceField1MergeObjectModelKnownFields = TypedDict(
+    "__ToolPermissionRequestCapabilitiesField4ModifyField8WorkspaceField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_ToolPermissionRequestCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __ToolPermissionRequestCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_ToolPermissionRequestCapabilitiesField4ModifyField8WorkspaceField1MergeObjectModel: TypeAlias = (
+    __ToolPermissionRequestCapabilitiesField4ModifyField8WorkspaceField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
 __ToolPermissionRequestCapabilitiesField4ModifyModelKnownFields = TypedDict(
@@ -8311,247 +8305,257 @@ __TurnFinishBeforeCapabilitiesField3InjectModelKnownFields = TypedDict(
 _TurnFinishBeforeCapabilitiesField3InjectModel: TypeAlias = (
     __TurnFinishBeforeCapabilitiesField3InjectModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__TurnFinishBeforeCapabilitiesField4ModifyField0ContentMergeReplaceObjectModelKnownFields = TypedDict(
-    "__TurnFinishBeforeCapabilitiesField4ModifyField0ContentMergeReplaceObjectModelKnownFields",
-    {"merge": Required[bool], "replace": Required[bool]},
-    total=False,
+__TurnFinishBeforeCapabilitiesField4ModifyField0ContentField0ModelKnownFields = (
+    TypedDict(
+        "__TurnFinishBeforeCapabilitiesField4ModifyField0ContentField0ModelKnownFields",
+        {"merge": Required[bool], "replace": Required[bool]},
+        total=False,
+    )
 )
-_TurnFinishBeforeCapabilitiesField4ModifyField0ContentMergeReplaceObjectModel: TypeAlias = (
-    __TurnFinishBeforeCapabilitiesField4ModifyField0ContentMergeReplaceObjectModelKnownFields
+_TurnFinishBeforeCapabilitiesField4ModifyField0ContentField0Model: TypeAlias = (
+    __TurnFinishBeforeCapabilitiesField4ModifyField0ContentField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__TurnFinishBeforeCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__TurnFinishBeforeCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__TurnFinishBeforeCapabilitiesField4ModifyField0ContentField1ReplaceObjectModelKnownFields = TypedDict(
+    "__TurnFinishBeforeCapabilitiesField4ModifyField0ContentField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_TurnFinishBeforeCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __TurnFinishBeforeCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_TurnFinishBeforeCapabilitiesField4ModifyField0ContentField1ReplaceObjectModel: TypeAlias = (
+    __TurnFinishBeforeCapabilitiesField4ModifyField0ContentField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__TurnFinishBeforeCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__TurnFinishBeforeCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__TurnFinishBeforeCapabilitiesField4ModifyField0ContentField1MergeObjectModelKnownFields = TypedDict(
+    "__TurnFinishBeforeCapabilitiesField4ModifyField0ContentField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_TurnFinishBeforeCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __TurnFinishBeforeCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_TurnFinishBeforeCapabilitiesField4ModifyField0ContentField1MergeObjectModel: TypeAlias = (
+    __TurnFinishBeforeCapabilitiesField4ModifyField0ContentField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__TurnFinishBeforeCapabilitiesField4ModifyField1InputMergeReplaceObjectModelKnownFields = TypedDict(
-    "__TurnFinishBeforeCapabilitiesField4ModifyField1InputMergeReplaceObjectModelKnownFields",
+__TurnFinishBeforeCapabilitiesField4ModifyField1InputField0ModelKnownFields = TypedDict(
+    "__TurnFinishBeforeCapabilitiesField4ModifyField1InputField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_TurnFinishBeforeCapabilitiesField4ModifyField1InputMergeReplaceObjectModel: TypeAlias = (
-    __TurnFinishBeforeCapabilitiesField4ModifyField1InputMergeReplaceObjectModelKnownFields
+_TurnFinishBeforeCapabilitiesField4ModifyField1InputField0Model: TypeAlias = (
+    __TurnFinishBeforeCapabilitiesField4ModifyField1InputField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__TurnFinishBeforeCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__TurnFinishBeforeCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__TurnFinishBeforeCapabilitiesField4ModifyField1InputField1ReplaceObjectModelKnownFields = TypedDict(
+    "__TurnFinishBeforeCapabilitiesField4ModifyField1InputField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_TurnFinishBeforeCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __TurnFinishBeforeCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_TurnFinishBeforeCapabilitiesField4ModifyField1InputField1ReplaceObjectModel: TypeAlias = (
+    __TurnFinishBeforeCapabilitiesField4ModifyField1InputField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__TurnFinishBeforeCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__TurnFinishBeforeCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__TurnFinishBeforeCapabilitiesField4ModifyField1InputField1MergeObjectModelKnownFields = TypedDict(
+    "__TurnFinishBeforeCapabilitiesField4ModifyField1InputField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_TurnFinishBeforeCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __TurnFinishBeforeCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_TurnFinishBeforeCapabilitiesField4ModifyField1InputField1MergeObjectModel: TypeAlias = (
+    __TurnFinishBeforeCapabilitiesField4ModifyField1InputField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__TurnFinishBeforeCapabilitiesField4ModifyField2InstructionsMergeReplaceObjectModelKnownFields = TypedDict(
-    "__TurnFinishBeforeCapabilitiesField4ModifyField2InstructionsMergeReplaceObjectModelKnownFields",
+__TurnFinishBeforeCapabilitiesField4ModifyField2InstructionsField0ModelKnownFields = TypedDict(
+    "__TurnFinishBeforeCapabilitiesField4ModifyField2InstructionsField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_TurnFinishBeforeCapabilitiesField4ModifyField2InstructionsMergeReplaceObjectModel: TypeAlias = (
-    __TurnFinishBeforeCapabilitiesField4ModifyField2InstructionsMergeReplaceObjectModelKnownFields
+_TurnFinishBeforeCapabilitiesField4ModifyField2InstructionsField0Model: TypeAlias = (
+    __TurnFinishBeforeCapabilitiesField4ModifyField2InstructionsField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__TurnFinishBeforeCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__TurnFinishBeforeCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__TurnFinishBeforeCapabilitiesField4ModifyField2InstructionsField1ReplaceObjectModelKnownFields = TypedDict(
+    "__TurnFinishBeforeCapabilitiesField4ModifyField2InstructionsField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_TurnFinishBeforeCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __TurnFinishBeforeCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_TurnFinishBeforeCapabilitiesField4ModifyField2InstructionsField1ReplaceObjectModel: TypeAlias = (
+    __TurnFinishBeforeCapabilitiesField4ModifyField2InstructionsField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__TurnFinishBeforeCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__TurnFinishBeforeCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__TurnFinishBeforeCapabilitiesField4ModifyField2InstructionsField1MergeObjectModelKnownFields = TypedDict(
+    "__TurnFinishBeforeCapabilitiesField4ModifyField2InstructionsField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_TurnFinishBeforeCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __TurnFinishBeforeCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_TurnFinishBeforeCapabilitiesField4ModifyField2InstructionsField1MergeObjectModel: TypeAlias = (
+    __TurnFinishBeforeCapabilitiesField4ModifyField2InstructionsField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__TurnFinishBeforeCapabilitiesField4ModifyField3OutputMergeReplaceObjectModelKnownFields = TypedDict(
-    "__TurnFinishBeforeCapabilitiesField4ModifyField3OutputMergeReplaceObjectModelKnownFields",
+__TurnFinishBeforeCapabilitiesField4ModifyField3OutputField0ModelKnownFields = (
+    TypedDict(
+        "__TurnFinishBeforeCapabilitiesField4ModifyField3OutputField0ModelKnownFields",
+        {"merge": Required[bool], "replace": Required[bool]},
+        total=False,
+    )
+)
+_TurnFinishBeforeCapabilitiesField4ModifyField3OutputField0Model: TypeAlias = (
+    __TurnFinishBeforeCapabilitiesField4ModifyField3OutputField0ModelKnownFields
+    | JsonObject
+)  # permits additional JSON fields
+__TurnFinishBeforeCapabilitiesField4ModifyField3OutputField1ReplaceObjectModelKnownFields = TypedDict(
+    "__TurnFinishBeforeCapabilitiesField4ModifyField3OutputField1ReplaceObjectModelKnownFields",
+    {"replace": Required[Literal[True]]},
+    total=False,
+)
+_TurnFinishBeforeCapabilitiesField4ModifyField3OutputField1ReplaceObjectModel: TypeAlias = (
+    __TurnFinishBeforeCapabilitiesField4ModifyField3OutputField1ReplaceObjectModelKnownFields
+    | JsonObject
+)  # permits additional JSON fields
+__TurnFinishBeforeCapabilitiesField4ModifyField3OutputField1MergeObjectModelKnownFields = TypedDict(
+    "__TurnFinishBeforeCapabilitiesField4ModifyField3OutputField1MergeObjectModelKnownFields",
+    {"merge": Required[Literal[True]]},
+    total=False,
+)
+_TurnFinishBeforeCapabilitiesField4ModifyField3OutputField1MergeObjectModel: TypeAlias = (
+    __TurnFinishBeforeCapabilitiesField4ModifyField3OutputField1MergeObjectModelKnownFields
+    | JsonObject
+)  # permits additional JSON fields
+__TurnFinishBeforeCapabilitiesField4ModifyField4PromptField0ModelKnownFields = (
+    TypedDict(
+        "__TurnFinishBeforeCapabilitiesField4ModifyField4PromptField0ModelKnownFields",
+        {"merge": Required[bool], "replace": Required[bool]},
+        total=False,
+    )
+)
+_TurnFinishBeforeCapabilitiesField4ModifyField4PromptField0Model: TypeAlias = (
+    __TurnFinishBeforeCapabilitiesField4ModifyField4PromptField0ModelKnownFields
+    | JsonObject
+)  # permits additional JSON fields
+__TurnFinishBeforeCapabilitiesField4ModifyField4PromptField1ReplaceObjectModelKnownFields = TypedDict(
+    "__TurnFinishBeforeCapabilitiesField4ModifyField4PromptField1ReplaceObjectModelKnownFields",
+    {"replace": Required[Literal[True]]},
+    total=False,
+)
+_TurnFinishBeforeCapabilitiesField4ModifyField4PromptField1ReplaceObjectModel: TypeAlias = (
+    __TurnFinishBeforeCapabilitiesField4ModifyField4PromptField1ReplaceObjectModelKnownFields
+    | JsonObject
+)  # permits additional JSON fields
+__TurnFinishBeforeCapabilitiesField4ModifyField4PromptField1MergeObjectModelKnownFields = TypedDict(
+    "__TurnFinishBeforeCapabilitiesField4ModifyField4PromptField1MergeObjectModelKnownFields",
+    {"merge": Required[Literal[True]]},
+    total=False,
+)
+_TurnFinishBeforeCapabilitiesField4ModifyField4PromptField1MergeObjectModel: TypeAlias = (
+    __TurnFinishBeforeCapabilitiesField4ModifyField4PromptField1MergeObjectModelKnownFields
+    | JsonObject
+)  # permits additional JSON fields
+__TurnFinishBeforeCapabilitiesField4ModifyField5RequestField0ModelKnownFields = (
+    TypedDict(
+        "__TurnFinishBeforeCapabilitiesField4ModifyField5RequestField0ModelKnownFields",
+        {"merge": Required[bool], "replace": Required[bool]},
+        total=False,
+    )
+)
+_TurnFinishBeforeCapabilitiesField4ModifyField5RequestField0Model: TypeAlias = (
+    __TurnFinishBeforeCapabilitiesField4ModifyField5RequestField0ModelKnownFields
+    | JsonObject
+)  # permits additional JSON fields
+__TurnFinishBeforeCapabilitiesField4ModifyField5RequestField1ReplaceObjectModelKnownFields = TypedDict(
+    "__TurnFinishBeforeCapabilitiesField4ModifyField5RequestField1ReplaceObjectModelKnownFields",
+    {"replace": Required[Literal[True]]},
+    total=False,
+)
+_TurnFinishBeforeCapabilitiesField4ModifyField5RequestField1ReplaceObjectModel: TypeAlias = (
+    __TurnFinishBeforeCapabilitiesField4ModifyField5RequestField1ReplaceObjectModelKnownFields
+    | JsonObject
+)  # permits additional JSON fields
+__TurnFinishBeforeCapabilitiesField4ModifyField5RequestField1MergeObjectModelKnownFields = TypedDict(
+    "__TurnFinishBeforeCapabilitiesField4ModifyField5RequestField1MergeObjectModelKnownFields",
+    {"merge": Required[Literal[True]]},
+    total=False,
+)
+_TurnFinishBeforeCapabilitiesField4ModifyField5RequestField1MergeObjectModel: TypeAlias = (
+    __TurnFinishBeforeCapabilitiesField4ModifyField5RequestField1MergeObjectModelKnownFields
+    | JsonObject
+)  # permits additional JSON fields
+__TurnFinishBeforeCapabilitiesField4ModifyField6ResponseField0ModelKnownFields = TypedDict(
+    "__TurnFinishBeforeCapabilitiesField4ModifyField6ResponseField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_TurnFinishBeforeCapabilitiesField4ModifyField3OutputMergeReplaceObjectModel: TypeAlias = (
-    __TurnFinishBeforeCapabilitiesField4ModifyField3OutputMergeReplaceObjectModelKnownFields
+_TurnFinishBeforeCapabilitiesField4ModifyField6ResponseField0Model: TypeAlias = (
+    __TurnFinishBeforeCapabilitiesField4ModifyField6ResponseField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__TurnFinishBeforeCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__TurnFinishBeforeCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__TurnFinishBeforeCapabilitiesField4ModifyField6ResponseField1ReplaceObjectModelKnownFields = TypedDict(
+    "__TurnFinishBeforeCapabilitiesField4ModifyField6ResponseField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_TurnFinishBeforeCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __TurnFinishBeforeCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_TurnFinishBeforeCapabilitiesField4ModifyField6ResponseField1ReplaceObjectModel: TypeAlias = (
+    __TurnFinishBeforeCapabilitiesField4ModifyField6ResponseField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__TurnFinishBeforeCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__TurnFinishBeforeCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__TurnFinishBeforeCapabilitiesField4ModifyField6ResponseField1MergeObjectModelKnownFields = TypedDict(
+    "__TurnFinishBeforeCapabilitiesField4ModifyField6ResponseField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_TurnFinishBeforeCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __TurnFinishBeforeCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_TurnFinishBeforeCapabilitiesField4ModifyField6ResponseField1MergeObjectModel: TypeAlias = (
+    __TurnFinishBeforeCapabilitiesField4ModifyField6ResponseField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__TurnFinishBeforeCapabilitiesField4ModifyField4PromptMergeReplaceObjectModelKnownFields = TypedDict(
-    "__TurnFinishBeforeCapabilitiesField4ModifyField4PromptMergeReplaceObjectModelKnownFields",
+__TurnFinishBeforeCapabilitiesField4ModifyField7SummaryField0ModelKnownFields = (
+    TypedDict(
+        "__TurnFinishBeforeCapabilitiesField4ModifyField7SummaryField0ModelKnownFields",
+        {"merge": Required[bool], "replace": Required[bool]},
+        total=False,
+    )
+)
+_TurnFinishBeforeCapabilitiesField4ModifyField7SummaryField0Model: TypeAlias = (
+    __TurnFinishBeforeCapabilitiesField4ModifyField7SummaryField0ModelKnownFields
+    | JsonObject
+)  # permits additional JSON fields
+__TurnFinishBeforeCapabilitiesField4ModifyField7SummaryField1ReplaceObjectModelKnownFields = TypedDict(
+    "__TurnFinishBeforeCapabilitiesField4ModifyField7SummaryField1ReplaceObjectModelKnownFields",
+    {"replace": Required[Literal[True]]},
+    total=False,
+)
+_TurnFinishBeforeCapabilitiesField4ModifyField7SummaryField1ReplaceObjectModel: TypeAlias = (
+    __TurnFinishBeforeCapabilitiesField4ModifyField7SummaryField1ReplaceObjectModelKnownFields
+    | JsonObject
+)  # permits additional JSON fields
+__TurnFinishBeforeCapabilitiesField4ModifyField7SummaryField1MergeObjectModelKnownFields = TypedDict(
+    "__TurnFinishBeforeCapabilitiesField4ModifyField7SummaryField1MergeObjectModelKnownFields",
+    {"merge": Required[Literal[True]]},
+    total=False,
+)
+_TurnFinishBeforeCapabilitiesField4ModifyField7SummaryField1MergeObjectModel: TypeAlias = (
+    __TurnFinishBeforeCapabilitiesField4ModifyField7SummaryField1MergeObjectModelKnownFields
+    | JsonObject
+)  # permits additional JSON fields
+__TurnFinishBeforeCapabilitiesField4ModifyField8WorkspaceField0ModelKnownFields = TypedDict(
+    "__TurnFinishBeforeCapabilitiesField4ModifyField8WorkspaceField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_TurnFinishBeforeCapabilitiesField4ModifyField4PromptMergeReplaceObjectModel: TypeAlias = (
-    __TurnFinishBeforeCapabilitiesField4ModifyField4PromptMergeReplaceObjectModelKnownFields
+_TurnFinishBeforeCapabilitiesField4ModifyField8WorkspaceField0Model: TypeAlias = (
+    __TurnFinishBeforeCapabilitiesField4ModifyField8WorkspaceField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__TurnFinishBeforeCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__TurnFinishBeforeCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__TurnFinishBeforeCapabilitiesField4ModifyField8WorkspaceField1ReplaceObjectModelKnownFields = TypedDict(
+    "__TurnFinishBeforeCapabilitiesField4ModifyField8WorkspaceField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_TurnFinishBeforeCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __TurnFinishBeforeCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_TurnFinishBeforeCapabilitiesField4ModifyField8WorkspaceField1ReplaceObjectModel: TypeAlias = (
+    __TurnFinishBeforeCapabilitiesField4ModifyField8WorkspaceField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__TurnFinishBeforeCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__TurnFinishBeforeCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__TurnFinishBeforeCapabilitiesField4ModifyField8WorkspaceField1MergeObjectModelKnownFields = TypedDict(
+    "__TurnFinishBeforeCapabilitiesField4ModifyField8WorkspaceField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_TurnFinishBeforeCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __TurnFinishBeforeCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectMergeObjectModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__TurnFinishBeforeCapabilitiesField4ModifyField5RequestMergeReplaceObjectModelKnownFields = TypedDict(
-    "__TurnFinishBeforeCapabilitiesField4ModifyField5RequestMergeReplaceObjectModelKnownFields",
-    {"merge": Required[bool], "replace": Required[bool]},
-    total=False,
-)
-_TurnFinishBeforeCapabilitiesField4ModifyField5RequestMergeReplaceObjectModel: TypeAlias = (
-    __TurnFinishBeforeCapabilitiesField4ModifyField5RequestMergeReplaceObjectModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__TurnFinishBeforeCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__TurnFinishBeforeCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_TurnFinishBeforeCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __TurnFinishBeforeCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__TurnFinishBeforeCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__TurnFinishBeforeCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_TurnFinishBeforeCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __TurnFinishBeforeCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectMergeObjectModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__TurnFinishBeforeCapabilitiesField4ModifyField6ResponseMergeReplaceObjectModelKnownFields = TypedDict(
-    "__TurnFinishBeforeCapabilitiesField4ModifyField6ResponseMergeReplaceObjectModelKnownFields",
-    {"merge": Required[bool], "replace": Required[bool]},
-    total=False,
-)
-_TurnFinishBeforeCapabilitiesField4ModifyField6ResponseMergeReplaceObjectModel: TypeAlias = (
-    __TurnFinishBeforeCapabilitiesField4ModifyField6ResponseMergeReplaceObjectModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__TurnFinishBeforeCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__TurnFinishBeforeCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_TurnFinishBeforeCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __TurnFinishBeforeCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__TurnFinishBeforeCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__TurnFinishBeforeCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_TurnFinishBeforeCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __TurnFinishBeforeCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectMergeObjectModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__TurnFinishBeforeCapabilitiesField4ModifyField7SummaryMergeReplaceObjectModelKnownFields = TypedDict(
-    "__TurnFinishBeforeCapabilitiesField4ModifyField7SummaryMergeReplaceObjectModelKnownFields",
-    {"merge": Required[bool], "replace": Required[bool]},
-    total=False,
-)
-_TurnFinishBeforeCapabilitiesField4ModifyField7SummaryMergeReplaceObjectModel: TypeAlias = (
-    __TurnFinishBeforeCapabilitiesField4ModifyField7SummaryMergeReplaceObjectModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__TurnFinishBeforeCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__TurnFinishBeforeCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_TurnFinishBeforeCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __TurnFinishBeforeCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__TurnFinishBeforeCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__TurnFinishBeforeCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_TurnFinishBeforeCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __TurnFinishBeforeCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectMergeObjectModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__TurnFinishBeforeCapabilitiesField4ModifyField8WorkspaceMergeReplaceObjectModelKnownFields = TypedDict(
-    "__TurnFinishBeforeCapabilitiesField4ModifyField8WorkspaceMergeReplaceObjectModelKnownFields",
-    {"merge": Required[bool], "replace": Required[bool]},
-    total=False,
-)
-_TurnFinishBeforeCapabilitiesField4ModifyField8WorkspaceMergeReplaceObjectModel: TypeAlias = (
-    __TurnFinishBeforeCapabilitiesField4ModifyField8WorkspaceMergeReplaceObjectModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__TurnFinishBeforeCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__TurnFinishBeforeCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_TurnFinishBeforeCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __TurnFinishBeforeCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__TurnFinishBeforeCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__TurnFinishBeforeCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_TurnFinishBeforeCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __TurnFinishBeforeCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_TurnFinishBeforeCapabilitiesField4ModifyField8WorkspaceField1MergeObjectModel: TypeAlias = (
+    __TurnFinishBeforeCapabilitiesField4ModifyField8WorkspaceField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
 __TurnFinishBeforeCapabilitiesField4ModifyModelKnownFields = TypedDict(
@@ -8648,247 +8652,240 @@ __TurnStartCapabilitiesField3InjectModelKnownFields = TypedDict(
 _TurnStartCapabilitiesField3InjectModel: TypeAlias = (
     __TurnStartCapabilitiesField3InjectModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__TurnStartCapabilitiesField4ModifyField0ContentMergeReplaceObjectModelKnownFields = TypedDict(
-    "__TurnStartCapabilitiesField4ModifyField0ContentMergeReplaceObjectModelKnownFields",
+__TurnStartCapabilitiesField4ModifyField0ContentField0ModelKnownFields = TypedDict(
+    "__TurnStartCapabilitiesField4ModifyField0ContentField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_TurnStartCapabilitiesField4ModifyField0ContentMergeReplaceObjectModel: TypeAlias = (
-    __TurnStartCapabilitiesField4ModifyField0ContentMergeReplaceObjectModelKnownFields
-    | JsonObject
+_TurnStartCapabilitiesField4ModifyField0ContentField0Model: TypeAlias = (
+    __TurnStartCapabilitiesField4ModifyField0ContentField0ModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__TurnStartCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__TurnStartCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__TurnStartCapabilitiesField4ModifyField0ContentField1ReplaceObjectModelKnownFields = TypedDict(
+    "__TurnStartCapabilitiesField4ModifyField0ContentField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_TurnStartCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __TurnStartCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_TurnStartCapabilitiesField4ModifyField0ContentField1ReplaceObjectModel: TypeAlias = (
+    __TurnStartCapabilitiesField4ModifyField0ContentField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__TurnStartCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__TurnStartCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__TurnStartCapabilitiesField4ModifyField0ContentField1MergeObjectModelKnownFields = TypedDict(
+    "__TurnStartCapabilitiesField4ModifyField0ContentField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_TurnStartCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __TurnStartCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_TurnStartCapabilitiesField4ModifyField0ContentField1MergeObjectModel: TypeAlias = (
+    __TurnStartCapabilitiesField4ModifyField0ContentField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__TurnStartCapabilitiesField4ModifyField1InputMergeReplaceObjectModelKnownFields = TypedDict(
-    "__TurnStartCapabilitiesField4ModifyField1InputMergeReplaceObjectModelKnownFields",
+__TurnStartCapabilitiesField4ModifyField1InputField0ModelKnownFields = TypedDict(
+    "__TurnStartCapabilitiesField4ModifyField1InputField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_TurnStartCapabilitiesField4ModifyField1InputMergeReplaceObjectModel: TypeAlias = (
-    __TurnStartCapabilitiesField4ModifyField1InputMergeReplaceObjectModelKnownFields
-    | JsonObject
+_TurnStartCapabilitiesField4ModifyField1InputField0Model: TypeAlias = (
+    __TurnStartCapabilitiesField4ModifyField1InputField0ModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__TurnStartCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__TurnStartCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__TurnStartCapabilitiesField4ModifyField1InputField1ReplaceObjectModelKnownFields = TypedDict(
+    "__TurnStartCapabilitiesField4ModifyField1InputField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_TurnStartCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __TurnStartCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_TurnStartCapabilitiesField4ModifyField1InputField1ReplaceObjectModel: TypeAlias = (
+    __TurnStartCapabilitiesField4ModifyField1InputField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__TurnStartCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__TurnStartCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__TurnStartCapabilitiesField4ModifyField1InputField1MergeObjectModelKnownFields = TypedDict(
+    "__TurnStartCapabilitiesField4ModifyField1InputField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_TurnStartCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __TurnStartCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_TurnStartCapabilitiesField4ModifyField1InputField1MergeObjectModel: TypeAlias = (
+    __TurnStartCapabilitiesField4ModifyField1InputField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__TurnStartCapabilitiesField4ModifyField2InstructionsMergeReplaceObjectModelKnownFields = TypedDict(
-    "__TurnStartCapabilitiesField4ModifyField2InstructionsMergeReplaceObjectModelKnownFields",
+__TurnStartCapabilitiesField4ModifyField2InstructionsField0ModelKnownFields = TypedDict(
+    "__TurnStartCapabilitiesField4ModifyField2InstructionsField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_TurnStartCapabilitiesField4ModifyField2InstructionsMergeReplaceObjectModel: TypeAlias = (
-    __TurnStartCapabilitiesField4ModifyField2InstructionsMergeReplaceObjectModelKnownFields
+_TurnStartCapabilitiesField4ModifyField2InstructionsField0Model: TypeAlias = (
+    __TurnStartCapabilitiesField4ModifyField2InstructionsField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__TurnStartCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__TurnStartCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__TurnStartCapabilitiesField4ModifyField2InstructionsField1ReplaceObjectModelKnownFields = TypedDict(
+    "__TurnStartCapabilitiesField4ModifyField2InstructionsField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_TurnStartCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __TurnStartCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_TurnStartCapabilitiesField4ModifyField2InstructionsField1ReplaceObjectModel: TypeAlias = (
+    __TurnStartCapabilitiesField4ModifyField2InstructionsField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__TurnStartCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__TurnStartCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__TurnStartCapabilitiesField4ModifyField2InstructionsField1MergeObjectModelKnownFields = TypedDict(
+    "__TurnStartCapabilitiesField4ModifyField2InstructionsField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_TurnStartCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __TurnStartCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_TurnStartCapabilitiesField4ModifyField2InstructionsField1MergeObjectModel: TypeAlias = (
+    __TurnStartCapabilitiesField4ModifyField2InstructionsField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__TurnStartCapabilitiesField4ModifyField3OutputMergeReplaceObjectModelKnownFields = TypedDict(
-    "__TurnStartCapabilitiesField4ModifyField3OutputMergeReplaceObjectModelKnownFields",
+__TurnStartCapabilitiesField4ModifyField3OutputField0ModelKnownFields = TypedDict(
+    "__TurnStartCapabilitiesField4ModifyField3OutputField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_TurnStartCapabilitiesField4ModifyField3OutputMergeReplaceObjectModel: TypeAlias = (
-    __TurnStartCapabilitiesField4ModifyField3OutputMergeReplaceObjectModelKnownFields
-    | JsonObject
+_TurnStartCapabilitiesField4ModifyField3OutputField0Model: TypeAlias = (
+    __TurnStartCapabilitiesField4ModifyField3OutputField0ModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__TurnStartCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__TurnStartCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__TurnStartCapabilitiesField4ModifyField3OutputField1ReplaceObjectModelKnownFields = TypedDict(
+    "__TurnStartCapabilitiesField4ModifyField3OutputField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_TurnStartCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __TurnStartCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_TurnStartCapabilitiesField4ModifyField3OutputField1ReplaceObjectModel: TypeAlias = (
+    __TurnStartCapabilitiesField4ModifyField3OutputField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__TurnStartCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__TurnStartCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__TurnStartCapabilitiesField4ModifyField3OutputField1MergeObjectModelKnownFields = TypedDict(
+    "__TurnStartCapabilitiesField4ModifyField3OutputField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_TurnStartCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __TurnStartCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_TurnStartCapabilitiesField4ModifyField3OutputField1MergeObjectModel: TypeAlias = (
+    __TurnStartCapabilitiesField4ModifyField3OutputField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__TurnStartCapabilitiesField4ModifyField4PromptMergeReplaceObjectModelKnownFields = TypedDict(
-    "__TurnStartCapabilitiesField4ModifyField4PromptMergeReplaceObjectModelKnownFields",
+__TurnStartCapabilitiesField4ModifyField4PromptField0ModelKnownFields = TypedDict(
+    "__TurnStartCapabilitiesField4ModifyField4PromptField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_TurnStartCapabilitiesField4ModifyField4PromptMergeReplaceObjectModel: TypeAlias = (
-    __TurnStartCapabilitiesField4ModifyField4PromptMergeReplaceObjectModelKnownFields
-    | JsonObject
+_TurnStartCapabilitiesField4ModifyField4PromptField0Model: TypeAlias = (
+    __TurnStartCapabilitiesField4ModifyField4PromptField0ModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__TurnStartCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__TurnStartCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__TurnStartCapabilitiesField4ModifyField4PromptField1ReplaceObjectModelKnownFields = TypedDict(
+    "__TurnStartCapabilitiesField4ModifyField4PromptField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_TurnStartCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __TurnStartCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_TurnStartCapabilitiesField4ModifyField4PromptField1ReplaceObjectModel: TypeAlias = (
+    __TurnStartCapabilitiesField4ModifyField4PromptField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__TurnStartCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__TurnStartCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__TurnStartCapabilitiesField4ModifyField4PromptField1MergeObjectModelKnownFields = TypedDict(
+    "__TurnStartCapabilitiesField4ModifyField4PromptField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_TurnStartCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __TurnStartCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_TurnStartCapabilitiesField4ModifyField4PromptField1MergeObjectModel: TypeAlias = (
+    __TurnStartCapabilitiesField4ModifyField4PromptField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__TurnStartCapabilitiesField4ModifyField5RequestMergeReplaceObjectModelKnownFields = TypedDict(
-    "__TurnStartCapabilitiesField4ModifyField5RequestMergeReplaceObjectModelKnownFields",
+__TurnStartCapabilitiesField4ModifyField5RequestField0ModelKnownFields = TypedDict(
+    "__TurnStartCapabilitiesField4ModifyField5RequestField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_TurnStartCapabilitiesField4ModifyField5RequestMergeReplaceObjectModel: TypeAlias = (
-    __TurnStartCapabilitiesField4ModifyField5RequestMergeReplaceObjectModelKnownFields
-    | JsonObject
+_TurnStartCapabilitiesField4ModifyField5RequestField0Model: TypeAlias = (
+    __TurnStartCapabilitiesField4ModifyField5RequestField0ModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__TurnStartCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__TurnStartCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__TurnStartCapabilitiesField4ModifyField5RequestField1ReplaceObjectModelKnownFields = TypedDict(
+    "__TurnStartCapabilitiesField4ModifyField5RequestField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_TurnStartCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __TurnStartCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_TurnStartCapabilitiesField4ModifyField5RequestField1ReplaceObjectModel: TypeAlias = (
+    __TurnStartCapabilitiesField4ModifyField5RequestField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__TurnStartCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__TurnStartCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__TurnStartCapabilitiesField4ModifyField5RequestField1MergeObjectModelKnownFields = TypedDict(
+    "__TurnStartCapabilitiesField4ModifyField5RequestField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_TurnStartCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __TurnStartCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_TurnStartCapabilitiesField4ModifyField5RequestField1MergeObjectModel: TypeAlias = (
+    __TurnStartCapabilitiesField4ModifyField5RequestField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__TurnStartCapabilitiesField4ModifyField6ResponseMergeReplaceObjectModelKnownFields = TypedDict(
-    "__TurnStartCapabilitiesField4ModifyField6ResponseMergeReplaceObjectModelKnownFields",
+__TurnStartCapabilitiesField4ModifyField6ResponseField0ModelKnownFields = TypedDict(
+    "__TurnStartCapabilitiesField4ModifyField6ResponseField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_TurnStartCapabilitiesField4ModifyField6ResponseMergeReplaceObjectModel: TypeAlias = (
-    __TurnStartCapabilitiesField4ModifyField6ResponseMergeReplaceObjectModelKnownFields
-    | JsonObject
+_TurnStartCapabilitiesField4ModifyField6ResponseField0Model: TypeAlias = (
+    __TurnStartCapabilitiesField4ModifyField6ResponseField0ModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__TurnStartCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__TurnStartCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__TurnStartCapabilitiesField4ModifyField6ResponseField1ReplaceObjectModelKnownFields = TypedDict(
+    "__TurnStartCapabilitiesField4ModifyField6ResponseField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_TurnStartCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __TurnStartCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_TurnStartCapabilitiesField4ModifyField6ResponseField1ReplaceObjectModel: TypeAlias = (
+    __TurnStartCapabilitiesField4ModifyField6ResponseField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__TurnStartCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__TurnStartCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__TurnStartCapabilitiesField4ModifyField6ResponseField1MergeObjectModelKnownFields = TypedDict(
+    "__TurnStartCapabilitiesField4ModifyField6ResponseField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_TurnStartCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __TurnStartCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_TurnStartCapabilitiesField4ModifyField6ResponseField1MergeObjectModel: TypeAlias = (
+    __TurnStartCapabilitiesField4ModifyField6ResponseField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__TurnStartCapabilitiesField4ModifyField7SummaryMergeReplaceObjectModelKnownFields = TypedDict(
-    "__TurnStartCapabilitiesField4ModifyField7SummaryMergeReplaceObjectModelKnownFields",
+__TurnStartCapabilitiesField4ModifyField7SummaryField0ModelKnownFields = TypedDict(
+    "__TurnStartCapabilitiesField4ModifyField7SummaryField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_TurnStartCapabilitiesField4ModifyField7SummaryMergeReplaceObjectModel: TypeAlias = (
-    __TurnStartCapabilitiesField4ModifyField7SummaryMergeReplaceObjectModelKnownFields
-    | JsonObject
+_TurnStartCapabilitiesField4ModifyField7SummaryField0Model: TypeAlias = (
+    __TurnStartCapabilitiesField4ModifyField7SummaryField0ModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__TurnStartCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__TurnStartCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__TurnStartCapabilitiesField4ModifyField7SummaryField1ReplaceObjectModelKnownFields = TypedDict(
+    "__TurnStartCapabilitiesField4ModifyField7SummaryField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_TurnStartCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __TurnStartCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_TurnStartCapabilitiesField4ModifyField7SummaryField1ReplaceObjectModel: TypeAlias = (
+    __TurnStartCapabilitiesField4ModifyField7SummaryField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__TurnStartCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__TurnStartCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__TurnStartCapabilitiesField4ModifyField7SummaryField1MergeObjectModelKnownFields = TypedDict(
+    "__TurnStartCapabilitiesField4ModifyField7SummaryField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_TurnStartCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __TurnStartCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_TurnStartCapabilitiesField4ModifyField7SummaryField1MergeObjectModel: TypeAlias = (
+    __TurnStartCapabilitiesField4ModifyField7SummaryField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__TurnStartCapabilitiesField4ModifyField8WorkspaceMergeReplaceObjectModelKnownFields = TypedDict(
-    "__TurnStartCapabilitiesField4ModifyField8WorkspaceMergeReplaceObjectModelKnownFields",
+__TurnStartCapabilitiesField4ModifyField8WorkspaceField0ModelKnownFields = TypedDict(
+    "__TurnStartCapabilitiesField4ModifyField8WorkspaceField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_TurnStartCapabilitiesField4ModifyField8WorkspaceMergeReplaceObjectModel: TypeAlias = (
-    __TurnStartCapabilitiesField4ModifyField8WorkspaceMergeReplaceObjectModelKnownFields
+_TurnStartCapabilitiesField4ModifyField8WorkspaceField0Model: TypeAlias = (
+    __TurnStartCapabilitiesField4ModifyField8WorkspaceField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__TurnStartCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__TurnStartCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__TurnStartCapabilitiesField4ModifyField8WorkspaceField1ReplaceObjectModelKnownFields = TypedDict(
+    "__TurnStartCapabilitiesField4ModifyField8WorkspaceField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_TurnStartCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __TurnStartCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_TurnStartCapabilitiesField4ModifyField8WorkspaceField1ReplaceObjectModel: TypeAlias = (
+    __TurnStartCapabilitiesField4ModifyField8WorkspaceField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__TurnStartCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__TurnStartCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__TurnStartCapabilitiesField4ModifyField8WorkspaceField1MergeObjectModelKnownFields = TypedDict(
+    "__TurnStartCapabilitiesField4ModifyField8WorkspaceField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_TurnStartCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __TurnStartCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_TurnStartCapabilitiesField4ModifyField8WorkspaceField1MergeObjectModel: TypeAlias = (
+    __TurnStartCapabilitiesField4ModifyField8WorkspaceField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
 __TurnStartCapabilitiesField4ModifyModelKnownFields = TypedDict(
@@ -9046,247 +9043,247 @@ __UserElicitationRequestCapabilitiesField3InjectModelKnownFields = TypedDict(
 _UserElicitationRequestCapabilitiesField3InjectModel: TypeAlias = (
     __UserElicitationRequestCapabilitiesField3InjectModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__UserElicitationRequestCapabilitiesField4ModifyField0ContentMergeReplaceObjectModelKnownFields = TypedDict(
-    "__UserElicitationRequestCapabilitiesField4ModifyField0ContentMergeReplaceObjectModelKnownFields",
+__UserElicitationRequestCapabilitiesField4ModifyField0ContentField0ModelKnownFields = TypedDict(
+    "__UserElicitationRequestCapabilitiesField4ModifyField0ContentField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_UserElicitationRequestCapabilitiesField4ModifyField0ContentMergeReplaceObjectModel: TypeAlias = (
-    __UserElicitationRequestCapabilitiesField4ModifyField0ContentMergeReplaceObjectModelKnownFields
+_UserElicitationRequestCapabilitiesField4ModifyField0ContentField0Model: TypeAlias = (
+    __UserElicitationRequestCapabilitiesField4ModifyField0ContentField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserElicitationRequestCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__UserElicitationRequestCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__UserElicitationRequestCapabilitiesField4ModifyField0ContentField1ReplaceObjectModelKnownFields = TypedDict(
+    "__UserElicitationRequestCapabilitiesField4ModifyField0ContentField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_UserElicitationRequestCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __UserElicitationRequestCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_UserElicitationRequestCapabilitiesField4ModifyField0ContentField1ReplaceObjectModel: TypeAlias = (
+    __UserElicitationRequestCapabilitiesField4ModifyField0ContentField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserElicitationRequestCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__UserElicitationRequestCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__UserElicitationRequestCapabilitiesField4ModifyField0ContentField1MergeObjectModelKnownFields = TypedDict(
+    "__UserElicitationRequestCapabilitiesField4ModifyField0ContentField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_UserElicitationRequestCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __UserElicitationRequestCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_UserElicitationRequestCapabilitiesField4ModifyField0ContentField1MergeObjectModel: TypeAlias = (
+    __UserElicitationRequestCapabilitiesField4ModifyField0ContentField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserElicitationRequestCapabilitiesField4ModifyField1InputMergeReplaceObjectModelKnownFields = TypedDict(
-    "__UserElicitationRequestCapabilitiesField4ModifyField1InputMergeReplaceObjectModelKnownFields",
+__UserElicitationRequestCapabilitiesField4ModifyField1InputField0ModelKnownFields = TypedDict(
+    "__UserElicitationRequestCapabilitiesField4ModifyField1InputField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_UserElicitationRequestCapabilitiesField4ModifyField1InputMergeReplaceObjectModel: TypeAlias = (
-    __UserElicitationRequestCapabilitiesField4ModifyField1InputMergeReplaceObjectModelKnownFields
+_UserElicitationRequestCapabilitiesField4ModifyField1InputField0Model: TypeAlias = (
+    __UserElicitationRequestCapabilitiesField4ModifyField1InputField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserElicitationRequestCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__UserElicitationRequestCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__UserElicitationRequestCapabilitiesField4ModifyField1InputField1ReplaceObjectModelKnownFields = TypedDict(
+    "__UserElicitationRequestCapabilitiesField4ModifyField1InputField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_UserElicitationRequestCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __UserElicitationRequestCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_UserElicitationRequestCapabilitiesField4ModifyField1InputField1ReplaceObjectModel: TypeAlias = (
+    __UserElicitationRequestCapabilitiesField4ModifyField1InputField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserElicitationRequestCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__UserElicitationRequestCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__UserElicitationRequestCapabilitiesField4ModifyField1InputField1MergeObjectModelKnownFields = TypedDict(
+    "__UserElicitationRequestCapabilitiesField4ModifyField1InputField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_UserElicitationRequestCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __UserElicitationRequestCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_UserElicitationRequestCapabilitiesField4ModifyField1InputField1MergeObjectModel: TypeAlias = (
+    __UserElicitationRequestCapabilitiesField4ModifyField1InputField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserElicitationRequestCapabilitiesField4ModifyField2InstructionsMergeReplaceObjectModelKnownFields = TypedDict(
-    "__UserElicitationRequestCapabilitiesField4ModifyField2InstructionsMergeReplaceObjectModelKnownFields",
+__UserElicitationRequestCapabilitiesField4ModifyField2InstructionsField0ModelKnownFields = TypedDict(
+    "__UserElicitationRequestCapabilitiesField4ModifyField2InstructionsField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_UserElicitationRequestCapabilitiesField4ModifyField2InstructionsMergeReplaceObjectModel: TypeAlias = (
-    __UserElicitationRequestCapabilitiesField4ModifyField2InstructionsMergeReplaceObjectModelKnownFields
+_UserElicitationRequestCapabilitiesField4ModifyField2InstructionsField0Model: TypeAlias = (
+    __UserElicitationRequestCapabilitiesField4ModifyField2InstructionsField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserElicitationRequestCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__UserElicitationRequestCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__UserElicitationRequestCapabilitiesField4ModifyField2InstructionsField1ReplaceObjectModelKnownFields = TypedDict(
+    "__UserElicitationRequestCapabilitiesField4ModifyField2InstructionsField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_UserElicitationRequestCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __UserElicitationRequestCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_UserElicitationRequestCapabilitiesField4ModifyField2InstructionsField1ReplaceObjectModel: TypeAlias = (
+    __UserElicitationRequestCapabilitiesField4ModifyField2InstructionsField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserElicitationRequestCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__UserElicitationRequestCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__UserElicitationRequestCapabilitiesField4ModifyField2InstructionsField1MergeObjectModelKnownFields = TypedDict(
+    "__UserElicitationRequestCapabilitiesField4ModifyField2InstructionsField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_UserElicitationRequestCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __UserElicitationRequestCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_UserElicitationRequestCapabilitiesField4ModifyField2InstructionsField1MergeObjectModel: TypeAlias = (
+    __UserElicitationRequestCapabilitiesField4ModifyField2InstructionsField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserElicitationRequestCapabilitiesField4ModifyField3OutputMergeReplaceObjectModelKnownFields = TypedDict(
-    "__UserElicitationRequestCapabilitiesField4ModifyField3OutputMergeReplaceObjectModelKnownFields",
+__UserElicitationRequestCapabilitiesField4ModifyField3OutputField0ModelKnownFields = TypedDict(
+    "__UserElicitationRequestCapabilitiesField4ModifyField3OutputField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_UserElicitationRequestCapabilitiesField4ModifyField3OutputMergeReplaceObjectModel: TypeAlias = (
-    __UserElicitationRequestCapabilitiesField4ModifyField3OutputMergeReplaceObjectModelKnownFields
+_UserElicitationRequestCapabilitiesField4ModifyField3OutputField0Model: TypeAlias = (
+    __UserElicitationRequestCapabilitiesField4ModifyField3OutputField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserElicitationRequestCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__UserElicitationRequestCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__UserElicitationRequestCapabilitiesField4ModifyField3OutputField1ReplaceObjectModelKnownFields = TypedDict(
+    "__UserElicitationRequestCapabilitiesField4ModifyField3OutputField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_UserElicitationRequestCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __UserElicitationRequestCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_UserElicitationRequestCapabilitiesField4ModifyField3OutputField1ReplaceObjectModel: TypeAlias = (
+    __UserElicitationRequestCapabilitiesField4ModifyField3OutputField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserElicitationRequestCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__UserElicitationRequestCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__UserElicitationRequestCapabilitiesField4ModifyField3OutputField1MergeObjectModelKnownFields = TypedDict(
+    "__UserElicitationRequestCapabilitiesField4ModifyField3OutputField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_UserElicitationRequestCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __UserElicitationRequestCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_UserElicitationRequestCapabilitiesField4ModifyField3OutputField1MergeObjectModel: TypeAlias = (
+    __UserElicitationRequestCapabilitiesField4ModifyField3OutputField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserElicitationRequestCapabilitiesField4ModifyField4PromptMergeReplaceObjectModelKnownFields = TypedDict(
-    "__UserElicitationRequestCapabilitiesField4ModifyField4PromptMergeReplaceObjectModelKnownFields",
+__UserElicitationRequestCapabilitiesField4ModifyField4PromptField0ModelKnownFields = TypedDict(
+    "__UserElicitationRequestCapabilitiesField4ModifyField4PromptField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_UserElicitationRequestCapabilitiesField4ModifyField4PromptMergeReplaceObjectModel: TypeAlias = (
-    __UserElicitationRequestCapabilitiesField4ModifyField4PromptMergeReplaceObjectModelKnownFields
+_UserElicitationRequestCapabilitiesField4ModifyField4PromptField0Model: TypeAlias = (
+    __UserElicitationRequestCapabilitiesField4ModifyField4PromptField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserElicitationRequestCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__UserElicitationRequestCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__UserElicitationRequestCapabilitiesField4ModifyField4PromptField1ReplaceObjectModelKnownFields = TypedDict(
+    "__UserElicitationRequestCapabilitiesField4ModifyField4PromptField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_UserElicitationRequestCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __UserElicitationRequestCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_UserElicitationRequestCapabilitiesField4ModifyField4PromptField1ReplaceObjectModel: TypeAlias = (
+    __UserElicitationRequestCapabilitiesField4ModifyField4PromptField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserElicitationRequestCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__UserElicitationRequestCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__UserElicitationRequestCapabilitiesField4ModifyField4PromptField1MergeObjectModelKnownFields = TypedDict(
+    "__UserElicitationRequestCapabilitiesField4ModifyField4PromptField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_UserElicitationRequestCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __UserElicitationRequestCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_UserElicitationRequestCapabilitiesField4ModifyField4PromptField1MergeObjectModel: TypeAlias = (
+    __UserElicitationRequestCapabilitiesField4ModifyField4PromptField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserElicitationRequestCapabilitiesField4ModifyField5RequestMergeReplaceObjectModelKnownFields = TypedDict(
-    "__UserElicitationRequestCapabilitiesField4ModifyField5RequestMergeReplaceObjectModelKnownFields",
+__UserElicitationRequestCapabilitiesField4ModifyField5RequestField0ModelKnownFields = TypedDict(
+    "__UserElicitationRequestCapabilitiesField4ModifyField5RequestField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_UserElicitationRequestCapabilitiesField4ModifyField5RequestMergeReplaceObjectModel: TypeAlias = (
-    __UserElicitationRequestCapabilitiesField4ModifyField5RequestMergeReplaceObjectModelKnownFields
+_UserElicitationRequestCapabilitiesField4ModifyField5RequestField0Model: TypeAlias = (
+    __UserElicitationRequestCapabilitiesField4ModifyField5RequestField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserElicitationRequestCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__UserElicitationRequestCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__UserElicitationRequestCapabilitiesField4ModifyField5RequestField1ReplaceObjectModelKnownFields = TypedDict(
+    "__UserElicitationRequestCapabilitiesField4ModifyField5RequestField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_UserElicitationRequestCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __UserElicitationRequestCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_UserElicitationRequestCapabilitiesField4ModifyField5RequestField1ReplaceObjectModel: TypeAlias = (
+    __UserElicitationRequestCapabilitiesField4ModifyField5RequestField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserElicitationRequestCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__UserElicitationRequestCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__UserElicitationRequestCapabilitiesField4ModifyField5RequestField1MergeObjectModelKnownFields = TypedDict(
+    "__UserElicitationRequestCapabilitiesField4ModifyField5RequestField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_UserElicitationRequestCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __UserElicitationRequestCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_UserElicitationRequestCapabilitiesField4ModifyField5RequestField1MergeObjectModel: TypeAlias = (
+    __UserElicitationRequestCapabilitiesField4ModifyField5RequestField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserElicitationRequestCapabilitiesField4ModifyField6ResponseMergeReplaceObjectModelKnownFields = TypedDict(
-    "__UserElicitationRequestCapabilitiesField4ModifyField6ResponseMergeReplaceObjectModelKnownFields",
+__UserElicitationRequestCapabilitiesField4ModifyField6ResponseField0ModelKnownFields = TypedDict(
+    "__UserElicitationRequestCapabilitiesField4ModifyField6ResponseField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_UserElicitationRequestCapabilitiesField4ModifyField6ResponseMergeReplaceObjectModel: TypeAlias = (
-    __UserElicitationRequestCapabilitiesField4ModifyField6ResponseMergeReplaceObjectModelKnownFields
+_UserElicitationRequestCapabilitiesField4ModifyField6ResponseField0Model: TypeAlias = (
+    __UserElicitationRequestCapabilitiesField4ModifyField6ResponseField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserElicitationRequestCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__UserElicitationRequestCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__UserElicitationRequestCapabilitiesField4ModifyField6ResponseField1ReplaceObjectModelKnownFields = TypedDict(
+    "__UserElicitationRequestCapabilitiesField4ModifyField6ResponseField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_UserElicitationRequestCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __UserElicitationRequestCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_UserElicitationRequestCapabilitiesField4ModifyField6ResponseField1ReplaceObjectModel: TypeAlias = (
+    __UserElicitationRequestCapabilitiesField4ModifyField6ResponseField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserElicitationRequestCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__UserElicitationRequestCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__UserElicitationRequestCapabilitiesField4ModifyField6ResponseField1MergeObjectModelKnownFields = TypedDict(
+    "__UserElicitationRequestCapabilitiesField4ModifyField6ResponseField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_UserElicitationRequestCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __UserElicitationRequestCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_UserElicitationRequestCapabilitiesField4ModifyField6ResponseField1MergeObjectModel: TypeAlias = (
+    __UserElicitationRequestCapabilitiesField4ModifyField6ResponseField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserElicitationRequestCapabilitiesField4ModifyField7SummaryMergeReplaceObjectModelKnownFields = TypedDict(
-    "__UserElicitationRequestCapabilitiesField4ModifyField7SummaryMergeReplaceObjectModelKnownFields",
+__UserElicitationRequestCapabilitiesField4ModifyField7SummaryField0ModelKnownFields = TypedDict(
+    "__UserElicitationRequestCapabilitiesField4ModifyField7SummaryField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_UserElicitationRequestCapabilitiesField4ModifyField7SummaryMergeReplaceObjectModel: TypeAlias = (
-    __UserElicitationRequestCapabilitiesField4ModifyField7SummaryMergeReplaceObjectModelKnownFields
+_UserElicitationRequestCapabilitiesField4ModifyField7SummaryField0Model: TypeAlias = (
+    __UserElicitationRequestCapabilitiesField4ModifyField7SummaryField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserElicitationRequestCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__UserElicitationRequestCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__UserElicitationRequestCapabilitiesField4ModifyField7SummaryField1ReplaceObjectModelKnownFields = TypedDict(
+    "__UserElicitationRequestCapabilitiesField4ModifyField7SummaryField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_UserElicitationRequestCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __UserElicitationRequestCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_UserElicitationRequestCapabilitiesField4ModifyField7SummaryField1ReplaceObjectModel: TypeAlias = (
+    __UserElicitationRequestCapabilitiesField4ModifyField7SummaryField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserElicitationRequestCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__UserElicitationRequestCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__UserElicitationRequestCapabilitiesField4ModifyField7SummaryField1MergeObjectModelKnownFields = TypedDict(
+    "__UserElicitationRequestCapabilitiesField4ModifyField7SummaryField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_UserElicitationRequestCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __UserElicitationRequestCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_UserElicitationRequestCapabilitiesField4ModifyField7SummaryField1MergeObjectModel: TypeAlias = (
+    __UserElicitationRequestCapabilitiesField4ModifyField7SummaryField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserElicitationRequestCapabilitiesField4ModifyField8WorkspaceMergeReplaceObjectModelKnownFields = TypedDict(
-    "__UserElicitationRequestCapabilitiesField4ModifyField8WorkspaceMergeReplaceObjectModelKnownFields",
+__UserElicitationRequestCapabilitiesField4ModifyField8WorkspaceField0ModelKnownFields = TypedDict(
+    "__UserElicitationRequestCapabilitiesField4ModifyField8WorkspaceField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_UserElicitationRequestCapabilitiesField4ModifyField8WorkspaceMergeReplaceObjectModel: TypeAlias = (
-    __UserElicitationRequestCapabilitiesField4ModifyField8WorkspaceMergeReplaceObjectModelKnownFields
+_UserElicitationRequestCapabilitiesField4ModifyField8WorkspaceField0Model: TypeAlias = (
+    __UserElicitationRequestCapabilitiesField4ModifyField8WorkspaceField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserElicitationRequestCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__UserElicitationRequestCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__UserElicitationRequestCapabilitiesField4ModifyField8WorkspaceField1ReplaceObjectModelKnownFields = TypedDict(
+    "__UserElicitationRequestCapabilitiesField4ModifyField8WorkspaceField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_UserElicitationRequestCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __UserElicitationRequestCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_UserElicitationRequestCapabilitiesField4ModifyField8WorkspaceField1ReplaceObjectModel: TypeAlias = (
+    __UserElicitationRequestCapabilitiesField4ModifyField8WorkspaceField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserElicitationRequestCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__UserElicitationRequestCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__UserElicitationRequestCapabilitiesField4ModifyField8WorkspaceField1MergeObjectModelKnownFields = TypedDict(
+    "__UserElicitationRequestCapabilitiesField4ModifyField8WorkspaceField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_UserElicitationRequestCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __UserElicitationRequestCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_UserElicitationRequestCapabilitiesField4ModifyField8WorkspaceField1MergeObjectModel: TypeAlias = (
+    __UserElicitationRequestCapabilitiesField4ModifyField8WorkspaceField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
 __UserElicitationRequestCapabilitiesField4ModifyModelKnownFields = TypedDict(
@@ -9341,13 +9338,13 @@ __UserElicitationRequestEventField10TurnModelKnownFields = TypedDict(
 _UserElicitationRequestEventField10TurnModel: TypeAlias = (
     __UserElicitationRequestEventField10TurnModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__UserElicitationRequestEventField12ElicitationField1RequestMediaTypeObjectModelKnownFields = TypedDict(
-    "__UserElicitationRequestEventField12ElicitationField1RequestMediaTypeObjectModelKnownFields",
+__UserElicitationRequestEventField12ElicitationField1RequestField1ModelKnownFields = TypedDict(
+    "__UserElicitationRequestEventField12ElicitationField1RequestField1ModelKnownFields",
     {"mediaType": NotRequired[Literal["application/json"]]},
     total=False,
 )
-_UserElicitationRequestEventField12ElicitationField1RequestMediaTypeObjectModel: TypeAlias = (
-    __UserElicitationRequestEventField12ElicitationField1RequestMediaTypeObjectModelKnownFields
+_UserElicitationRequestEventField12ElicitationField1RequestField1Model: TypeAlias = (
+    __UserElicitationRequestEventField12ElicitationField1RequestField1ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
 _UserElicitationRequestEventField12ElicitationModel = TypedDict(
@@ -9454,247 +9451,247 @@ __UserElicitationResultCapabilitiesField3InjectModelKnownFields = TypedDict(
 _UserElicitationResultCapabilitiesField3InjectModel: TypeAlias = (
     __UserElicitationResultCapabilitiesField3InjectModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__UserElicitationResultCapabilitiesField4ModifyField0ContentMergeReplaceObjectModelKnownFields = TypedDict(
-    "__UserElicitationResultCapabilitiesField4ModifyField0ContentMergeReplaceObjectModelKnownFields",
+__UserElicitationResultCapabilitiesField4ModifyField0ContentField0ModelKnownFields = TypedDict(
+    "__UserElicitationResultCapabilitiesField4ModifyField0ContentField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_UserElicitationResultCapabilitiesField4ModifyField0ContentMergeReplaceObjectModel: TypeAlias = (
-    __UserElicitationResultCapabilitiesField4ModifyField0ContentMergeReplaceObjectModelKnownFields
+_UserElicitationResultCapabilitiesField4ModifyField0ContentField0Model: TypeAlias = (
+    __UserElicitationResultCapabilitiesField4ModifyField0ContentField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserElicitationResultCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__UserElicitationResultCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__UserElicitationResultCapabilitiesField4ModifyField0ContentField1ReplaceObjectModelKnownFields = TypedDict(
+    "__UserElicitationResultCapabilitiesField4ModifyField0ContentField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_UserElicitationResultCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __UserElicitationResultCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_UserElicitationResultCapabilitiesField4ModifyField0ContentField1ReplaceObjectModel: TypeAlias = (
+    __UserElicitationResultCapabilitiesField4ModifyField0ContentField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserElicitationResultCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__UserElicitationResultCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__UserElicitationResultCapabilitiesField4ModifyField0ContentField1MergeObjectModelKnownFields = TypedDict(
+    "__UserElicitationResultCapabilitiesField4ModifyField0ContentField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_UserElicitationResultCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __UserElicitationResultCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_UserElicitationResultCapabilitiesField4ModifyField0ContentField1MergeObjectModel: TypeAlias = (
+    __UserElicitationResultCapabilitiesField4ModifyField0ContentField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserElicitationResultCapabilitiesField4ModifyField1InputMergeReplaceObjectModelKnownFields = TypedDict(
-    "__UserElicitationResultCapabilitiesField4ModifyField1InputMergeReplaceObjectModelKnownFields",
+__UserElicitationResultCapabilitiesField4ModifyField1InputField0ModelKnownFields = TypedDict(
+    "__UserElicitationResultCapabilitiesField4ModifyField1InputField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_UserElicitationResultCapabilitiesField4ModifyField1InputMergeReplaceObjectModel: TypeAlias = (
-    __UserElicitationResultCapabilitiesField4ModifyField1InputMergeReplaceObjectModelKnownFields
+_UserElicitationResultCapabilitiesField4ModifyField1InputField0Model: TypeAlias = (
+    __UserElicitationResultCapabilitiesField4ModifyField1InputField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserElicitationResultCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__UserElicitationResultCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__UserElicitationResultCapabilitiesField4ModifyField1InputField1ReplaceObjectModelKnownFields = TypedDict(
+    "__UserElicitationResultCapabilitiesField4ModifyField1InputField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_UserElicitationResultCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __UserElicitationResultCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_UserElicitationResultCapabilitiesField4ModifyField1InputField1ReplaceObjectModel: TypeAlias = (
+    __UserElicitationResultCapabilitiesField4ModifyField1InputField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserElicitationResultCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__UserElicitationResultCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__UserElicitationResultCapabilitiesField4ModifyField1InputField1MergeObjectModelKnownFields = TypedDict(
+    "__UserElicitationResultCapabilitiesField4ModifyField1InputField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_UserElicitationResultCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __UserElicitationResultCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_UserElicitationResultCapabilitiesField4ModifyField1InputField1MergeObjectModel: TypeAlias = (
+    __UserElicitationResultCapabilitiesField4ModifyField1InputField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserElicitationResultCapabilitiesField4ModifyField2InstructionsMergeReplaceObjectModelKnownFields = TypedDict(
-    "__UserElicitationResultCapabilitiesField4ModifyField2InstructionsMergeReplaceObjectModelKnownFields",
+__UserElicitationResultCapabilitiesField4ModifyField2InstructionsField0ModelKnownFields = TypedDict(
+    "__UserElicitationResultCapabilitiesField4ModifyField2InstructionsField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_UserElicitationResultCapabilitiesField4ModifyField2InstructionsMergeReplaceObjectModel: TypeAlias = (
-    __UserElicitationResultCapabilitiesField4ModifyField2InstructionsMergeReplaceObjectModelKnownFields
+_UserElicitationResultCapabilitiesField4ModifyField2InstructionsField0Model: TypeAlias = (
+    __UserElicitationResultCapabilitiesField4ModifyField2InstructionsField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserElicitationResultCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__UserElicitationResultCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__UserElicitationResultCapabilitiesField4ModifyField2InstructionsField1ReplaceObjectModelKnownFields = TypedDict(
+    "__UserElicitationResultCapabilitiesField4ModifyField2InstructionsField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_UserElicitationResultCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __UserElicitationResultCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_UserElicitationResultCapabilitiesField4ModifyField2InstructionsField1ReplaceObjectModel: TypeAlias = (
+    __UserElicitationResultCapabilitiesField4ModifyField2InstructionsField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserElicitationResultCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__UserElicitationResultCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__UserElicitationResultCapabilitiesField4ModifyField2InstructionsField1MergeObjectModelKnownFields = TypedDict(
+    "__UserElicitationResultCapabilitiesField4ModifyField2InstructionsField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_UserElicitationResultCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __UserElicitationResultCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_UserElicitationResultCapabilitiesField4ModifyField2InstructionsField1MergeObjectModel: TypeAlias = (
+    __UserElicitationResultCapabilitiesField4ModifyField2InstructionsField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserElicitationResultCapabilitiesField4ModifyField3OutputMergeReplaceObjectModelKnownFields = TypedDict(
-    "__UserElicitationResultCapabilitiesField4ModifyField3OutputMergeReplaceObjectModelKnownFields",
+__UserElicitationResultCapabilitiesField4ModifyField3OutputField0ModelKnownFields = TypedDict(
+    "__UserElicitationResultCapabilitiesField4ModifyField3OutputField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_UserElicitationResultCapabilitiesField4ModifyField3OutputMergeReplaceObjectModel: TypeAlias = (
-    __UserElicitationResultCapabilitiesField4ModifyField3OutputMergeReplaceObjectModelKnownFields
+_UserElicitationResultCapabilitiesField4ModifyField3OutputField0Model: TypeAlias = (
+    __UserElicitationResultCapabilitiesField4ModifyField3OutputField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserElicitationResultCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__UserElicitationResultCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__UserElicitationResultCapabilitiesField4ModifyField3OutputField1ReplaceObjectModelKnownFields = TypedDict(
+    "__UserElicitationResultCapabilitiesField4ModifyField3OutputField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_UserElicitationResultCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __UserElicitationResultCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_UserElicitationResultCapabilitiesField4ModifyField3OutputField1ReplaceObjectModel: TypeAlias = (
+    __UserElicitationResultCapabilitiesField4ModifyField3OutputField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserElicitationResultCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__UserElicitationResultCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__UserElicitationResultCapabilitiesField4ModifyField3OutputField1MergeObjectModelKnownFields = TypedDict(
+    "__UserElicitationResultCapabilitiesField4ModifyField3OutputField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_UserElicitationResultCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __UserElicitationResultCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_UserElicitationResultCapabilitiesField4ModifyField3OutputField1MergeObjectModel: TypeAlias = (
+    __UserElicitationResultCapabilitiesField4ModifyField3OutputField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserElicitationResultCapabilitiesField4ModifyField4PromptMergeReplaceObjectModelKnownFields = TypedDict(
-    "__UserElicitationResultCapabilitiesField4ModifyField4PromptMergeReplaceObjectModelKnownFields",
+__UserElicitationResultCapabilitiesField4ModifyField4PromptField0ModelKnownFields = TypedDict(
+    "__UserElicitationResultCapabilitiesField4ModifyField4PromptField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_UserElicitationResultCapabilitiesField4ModifyField4PromptMergeReplaceObjectModel: TypeAlias = (
-    __UserElicitationResultCapabilitiesField4ModifyField4PromptMergeReplaceObjectModelKnownFields
+_UserElicitationResultCapabilitiesField4ModifyField4PromptField0Model: TypeAlias = (
+    __UserElicitationResultCapabilitiesField4ModifyField4PromptField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserElicitationResultCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__UserElicitationResultCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__UserElicitationResultCapabilitiesField4ModifyField4PromptField1ReplaceObjectModelKnownFields = TypedDict(
+    "__UserElicitationResultCapabilitiesField4ModifyField4PromptField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_UserElicitationResultCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __UserElicitationResultCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_UserElicitationResultCapabilitiesField4ModifyField4PromptField1ReplaceObjectModel: TypeAlias = (
+    __UserElicitationResultCapabilitiesField4ModifyField4PromptField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserElicitationResultCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__UserElicitationResultCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__UserElicitationResultCapabilitiesField4ModifyField4PromptField1MergeObjectModelKnownFields = TypedDict(
+    "__UserElicitationResultCapabilitiesField4ModifyField4PromptField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_UserElicitationResultCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __UserElicitationResultCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_UserElicitationResultCapabilitiesField4ModifyField4PromptField1MergeObjectModel: TypeAlias = (
+    __UserElicitationResultCapabilitiesField4ModifyField4PromptField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserElicitationResultCapabilitiesField4ModifyField5RequestMergeReplaceObjectModelKnownFields = TypedDict(
-    "__UserElicitationResultCapabilitiesField4ModifyField5RequestMergeReplaceObjectModelKnownFields",
+__UserElicitationResultCapabilitiesField4ModifyField5RequestField0ModelKnownFields = TypedDict(
+    "__UserElicitationResultCapabilitiesField4ModifyField5RequestField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_UserElicitationResultCapabilitiesField4ModifyField5RequestMergeReplaceObjectModel: TypeAlias = (
-    __UserElicitationResultCapabilitiesField4ModifyField5RequestMergeReplaceObjectModelKnownFields
+_UserElicitationResultCapabilitiesField4ModifyField5RequestField0Model: TypeAlias = (
+    __UserElicitationResultCapabilitiesField4ModifyField5RequestField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserElicitationResultCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__UserElicitationResultCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__UserElicitationResultCapabilitiesField4ModifyField5RequestField1ReplaceObjectModelKnownFields = TypedDict(
+    "__UserElicitationResultCapabilitiesField4ModifyField5RequestField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_UserElicitationResultCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __UserElicitationResultCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_UserElicitationResultCapabilitiesField4ModifyField5RequestField1ReplaceObjectModel: TypeAlias = (
+    __UserElicitationResultCapabilitiesField4ModifyField5RequestField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserElicitationResultCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__UserElicitationResultCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__UserElicitationResultCapabilitiesField4ModifyField5RequestField1MergeObjectModelKnownFields = TypedDict(
+    "__UserElicitationResultCapabilitiesField4ModifyField5RequestField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_UserElicitationResultCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __UserElicitationResultCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_UserElicitationResultCapabilitiesField4ModifyField5RequestField1MergeObjectModel: TypeAlias = (
+    __UserElicitationResultCapabilitiesField4ModifyField5RequestField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserElicitationResultCapabilitiesField4ModifyField6ResponseMergeReplaceObjectModelKnownFields = TypedDict(
-    "__UserElicitationResultCapabilitiesField4ModifyField6ResponseMergeReplaceObjectModelKnownFields",
+__UserElicitationResultCapabilitiesField4ModifyField6ResponseField0ModelKnownFields = TypedDict(
+    "__UserElicitationResultCapabilitiesField4ModifyField6ResponseField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_UserElicitationResultCapabilitiesField4ModifyField6ResponseMergeReplaceObjectModel: TypeAlias = (
-    __UserElicitationResultCapabilitiesField4ModifyField6ResponseMergeReplaceObjectModelKnownFields
+_UserElicitationResultCapabilitiesField4ModifyField6ResponseField0Model: TypeAlias = (
+    __UserElicitationResultCapabilitiesField4ModifyField6ResponseField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserElicitationResultCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__UserElicitationResultCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__UserElicitationResultCapabilitiesField4ModifyField6ResponseField1ReplaceObjectModelKnownFields = TypedDict(
+    "__UserElicitationResultCapabilitiesField4ModifyField6ResponseField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_UserElicitationResultCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __UserElicitationResultCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_UserElicitationResultCapabilitiesField4ModifyField6ResponseField1ReplaceObjectModel: TypeAlias = (
+    __UserElicitationResultCapabilitiesField4ModifyField6ResponseField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserElicitationResultCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__UserElicitationResultCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__UserElicitationResultCapabilitiesField4ModifyField6ResponseField1MergeObjectModelKnownFields = TypedDict(
+    "__UserElicitationResultCapabilitiesField4ModifyField6ResponseField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_UserElicitationResultCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __UserElicitationResultCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_UserElicitationResultCapabilitiesField4ModifyField6ResponseField1MergeObjectModel: TypeAlias = (
+    __UserElicitationResultCapabilitiesField4ModifyField6ResponseField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserElicitationResultCapabilitiesField4ModifyField7SummaryMergeReplaceObjectModelKnownFields = TypedDict(
-    "__UserElicitationResultCapabilitiesField4ModifyField7SummaryMergeReplaceObjectModelKnownFields",
+__UserElicitationResultCapabilitiesField4ModifyField7SummaryField0ModelKnownFields = TypedDict(
+    "__UserElicitationResultCapabilitiesField4ModifyField7SummaryField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_UserElicitationResultCapabilitiesField4ModifyField7SummaryMergeReplaceObjectModel: TypeAlias = (
-    __UserElicitationResultCapabilitiesField4ModifyField7SummaryMergeReplaceObjectModelKnownFields
+_UserElicitationResultCapabilitiesField4ModifyField7SummaryField0Model: TypeAlias = (
+    __UserElicitationResultCapabilitiesField4ModifyField7SummaryField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserElicitationResultCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__UserElicitationResultCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__UserElicitationResultCapabilitiesField4ModifyField7SummaryField1ReplaceObjectModelKnownFields = TypedDict(
+    "__UserElicitationResultCapabilitiesField4ModifyField7SummaryField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_UserElicitationResultCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __UserElicitationResultCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_UserElicitationResultCapabilitiesField4ModifyField7SummaryField1ReplaceObjectModel: TypeAlias = (
+    __UserElicitationResultCapabilitiesField4ModifyField7SummaryField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserElicitationResultCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__UserElicitationResultCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__UserElicitationResultCapabilitiesField4ModifyField7SummaryField1MergeObjectModelKnownFields = TypedDict(
+    "__UserElicitationResultCapabilitiesField4ModifyField7SummaryField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_UserElicitationResultCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __UserElicitationResultCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_UserElicitationResultCapabilitiesField4ModifyField7SummaryField1MergeObjectModel: TypeAlias = (
+    __UserElicitationResultCapabilitiesField4ModifyField7SummaryField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserElicitationResultCapabilitiesField4ModifyField8WorkspaceMergeReplaceObjectModelKnownFields = TypedDict(
-    "__UserElicitationResultCapabilitiesField4ModifyField8WorkspaceMergeReplaceObjectModelKnownFields",
+__UserElicitationResultCapabilitiesField4ModifyField8WorkspaceField0ModelKnownFields = TypedDict(
+    "__UserElicitationResultCapabilitiesField4ModifyField8WorkspaceField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_UserElicitationResultCapabilitiesField4ModifyField8WorkspaceMergeReplaceObjectModel: TypeAlias = (
-    __UserElicitationResultCapabilitiesField4ModifyField8WorkspaceMergeReplaceObjectModelKnownFields
+_UserElicitationResultCapabilitiesField4ModifyField8WorkspaceField0Model: TypeAlias = (
+    __UserElicitationResultCapabilitiesField4ModifyField8WorkspaceField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserElicitationResultCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__UserElicitationResultCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__UserElicitationResultCapabilitiesField4ModifyField8WorkspaceField1ReplaceObjectModelKnownFields = TypedDict(
+    "__UserElicitationResultCapabilitiesField4ModifyField8WorkspaceField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_UserElicitationResultCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __UserElicitationResultCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_UserElicitationResultCapabilitiesField4ModifyField8WorkspaceField1ReplaceObjectModel: TypeAlias = (
+    __UserElicitationResultCapabilitiesField4ModifyField8WorkspaceField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserElicitationResultCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__UserElicitationResultCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__UserElicitationResultCapabilitiesField4ModifyField8WorkspaceField1MergeObjectModelKnownFields = TypedDict(
+    "__UserElicitationResultCapabilitiesField4ModifyField8WorkspaceField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_UserElicitationResultCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __UserElicitationResultCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_UserElicitationResultCapabilitiesField4ModifyField8WorkspaceField1MergeObjectModel: TypeAlias = (
+    __UserElicitationResultCapabilitiesField4ModifyField8WorkspaceField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
 __UserElicitationResultCapabilitiesField4ModifyModelKnownFields = TypedDict(
@@ -9749,13 +9746,13 @@ __UserElicitationResultEventField10TurnModelKnownFields = TypedDict(
 _UserElicitationResultEventField10TurnModel: TypeAlias = (
     __UserElicitationResultEventField10TurnModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__UserElicitationResultEventField12ElicitationField2ResultMediaTypeObjectModelKnownFields = TypedDict(
-    "__UserElicitationResultEventField12ElicitationField2ResultMediaTypeObjectModelKnownFields",
+__UserElicitationResultEventField12ElicitationField2ResultField1ModelKnownFields = TypedDict(
+    "__UserElicitationResultEventField12ElicitationField2ResultField1ModelKnownFields",
     {"mediaType": NotRequired[Literal["application/json"]]},
     total=False,
 )
-_UserElicitationResultEventField12ElicitationField2ResultMediaTypeObjectModel: TypeAlias = (
-    __UserElicitationResultEventField12ElicitationField2ResultMediaTypeObjectModelKnownFields
+_UserElicitationResultEventField12ElicitationField2ResultField1Model: TypeAlias = (
+    __UserElicitationResultEventField12ElicitationField2ResultField1ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
 _UserElicitationResultEventField12ElicitationModel = TypedDict(
@@ -9859,247 +9856,249 @@ __UserMessageInboundCapabilitiesField3InjectModelKnownFields = TypedDict(
 _UserMessageInboundCapabilitiesField3InjectModel: TypeAlias = (
     __UserMessageInboundCapabilitiesField3InjectModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__UserMessageInboundCapabilitiesField4ModifyField0ContentMergeReplaceObjectModelKnownFields = TypedDict(
-    "__UserMessageInboundCapabilitiesField4ModifyField0ContentMergeReplaceObjectModelKnownFields",
+__UserMessageInboundCapabilitiesField4ModifyField0ContentField0ModelKnownFields = TypedDict(
+    "__UserMessageInboundCapabilitiesField4ModifyField0ContentField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_UserMessageInboundCapabilitiesField4ModifyField0ContentMergeReplaceObjectModel: TypeAlias = (
-    __UserMessageInboundCapabilitiesField4ModifyField0ContentMergeReplaceObjectModelKnownFields
+_UserMessageInboundCapabilitiesField4ModifyField0ContentField0Model: TypeAlias = (
+    __UserMessageInboundCapabilitiesField4ModifyField0ContentField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserMessageInboundCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__UserMessageInboundCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__UserMessageInboundCapabilitiesField4ModifyField0ContentField1ReplaceObjectModelKnownFields = TypedDict(
+    "__UserMessageInboundCapabilitiesField4ModifyField0ContentField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_UserMessageInboundCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __UserMessageInboundCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_UserMessageInboundCapabilitiesField4ModifyField0ContentField1ReplaceObjectModel: TypeAlias = (
+    __UserMessageInboundCapabilitiesField4ModifyField0ContentField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserMessageInboundCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__UserMessageInboundCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__UserMessageInboundCapabilitiesField4ModifyField0ContentField1MergeObjectModelKnownFields = TypedDict(
+    "__UserMessageInboundCapabilitiesField4ModifyField0ContentField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_UserMessageInboundCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __UserMessageInboundCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_UserMessageInboundCapabilitiesField4ModifyField0ContentField1MergeObjectModel: TypeAlias = (
+    __UserMessageInboundCapabilitiesField4ModifyField0ContentField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserMessageInboundCapabilitiesField4ModifyField1InputMergeReplaceObjectModelKnownFields = TypedDict(
-    "__UserMessageInboundCapabilitiesField4ModifyField1InputMergeReplaceObjectModelKnownFields",
+__UserMessageInboundCapabilitiesField4ModifyField1InputField0ModelKnownFields = (
+    TypedDict(
+        "__UserMessageInboundCapabilitiesField4ModifyField1InputField0ModelKnownFields",
+        {"merge": Required[bool], "replace": Required[bool]},
+        total=False,
+    )
+)
+_UserMessageInboundCapabilitiesField4ModifyField1InputField0Model: TypeAlias = (
+    __UserMessageInboundCapabilitiesField4ModifyField1InputField0ModelKnownFields
+    | JsonObject
+)  # permits additional JSON fields
+__UserMessageInboundCapabilitiesField4ModifyField1InputField1ReplaceObjectModelKnownFields = TypedDict(
+    "__UserMessageInboundCapabilitiesField4ModifyField1InputField1ReplaceObjectModelKnownFields",
+    {"replace": Required[Literal[True]]},
+    total=False,
+)
+_UserMessageInboundCapabilitiesField4ModifyField1InputField1ReplaceObjectModel: TypeAlias = (
+    __UserMessageInboundCapabilitiesField4ModifyField1InputField1ReplaceObjectModelKnownFields
+    | JsonObject
+)  # permits additional JSON fields
+__UserMessageInboundCapabilitiesField4ModifyField1InputField1MergeObjectModelKnownFields = TypedDict(
+    "__UserMessageInboundCapabilitiesField4ModifyField1InputField1MergeObjectModelKnownFields",
+    {"merge": Required[Literal[True]]},
+    total=False,
+)
+_UserMessageInboundCapabilitiesField4ModifyField1InputField1MergeObjectModel: TypeAlias = (
+    __UserMessageInboundCapabilitiesField4ModifyField1InputField1MergeObjectModelKnownFields
+    | JsonObject
+)  # permits additional JSON fields
+__UserMessageInboundCapabilitiesField4ModifyField2InstructionsField0ModelKnownFields = TypedDict(
+    "__UserMessageInboundCapabilitiesField4ModifyField2InstructionsField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_UserMessageInboundCapabilitiesField4ModifyField1InputMergeReplaceObjectModel: TypeAlias = (
-    __UserMessageInboundCapabilitiesField4ModifyField1InputMergeReplaceObjectModelKnownFields
+_UserMessageInboundCapabilitiesField4ModifyField2InstructionsField0Model: TypeAlias = (
+    __UserMessageInboundCapabilitiesField4ModifyField2InstructionsField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserMessageInboundCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__UserMessageInboundCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__UserMessageInboundCapabilitiesField4ModifyField2InstructionsField1ReplaceObjectModelKnownFields = TypedDict(
+    "__UserMessageInboundCapabilitiesField4ModifyField2InstructionsField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_UserMessageInboundCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __UserMessageInboundCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_UserMessageInboundCapabilitiesField4ModifyField2InstructionsField1ReplaceObjectModel: TypeAlias = (
+    __UserMessageInboundCapabilitiesField4ModifyField2InstructionsField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserMessageInboundCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__UserMessageInboundCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__UserMessageInboundCapabilitiesField4ModifyField2InstructionsField1MergeObjectModelKnownFields = TypedDict(
+    "__UserMessageInboundCapabilitiesField4ModifyField2InstructionsField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_UserMessageInboundCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __UserMessageInboundCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_UserMessageInboundCapabilitiesField4ModifyField2InstructionsField1MergeObjectModel: TypeAlias = (
+    __UserMessageInboundCapabilitiesField4ModifyField2InstructionsField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserMessageInboundCapabilitiesField4ModifyField2InstructionsMergeReplaceObjectModelKnownFields = TypedDict(
-    "__UserMessageInboundCapabilitiesField4ModifyField2InstructionsMergeReplaceObjectModelKnownFields",
+__UserMessageInboundCapabilitiesField4ModifyField3OutputField0ModelKnownFields = TypedDict(
+    "__UserMessageInboundCapabilitiesField4ModifyField3OutputField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_UserMessageInboundCapabilitiesField4ModifyField2InstructionsMergeReplaceObjectModel: TypeAlias = (
-    __UserMessageInboundCapabilitiesField4ModifyField2InstructionsMergeReplaceObjectModelKnownFields
+_UserMessageInboundCapabilitiesField4ModifyField3OutputField0Model: TypeAlias = (
+    __UserMessageInboundCapabilitiesField4ModifyField3OutputField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserMessageInboundCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__UserMessageInboundCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__UserMessageInboundCapabilitiesField4ModifyField3OutputField1ReplaceObjectModelKnownFields = TypedDict(
+    "__UserMessageInboundCapabilitiesField4ModifyField3OutputField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_UserMessageInboundCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __UserMessageInboundCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_UserMessageInboundCapabilitiesField4ModifyField3OutputField1ReplaceObjectModel: TypeAlias = (
+    __UserMessageInboundCapabilitiesField4ModifyField3OutputField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserMessageInboundCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__UserMessageInboundCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__UserMessageInboundCapabilitiesField4ModifyField3OutputField1MergeObjectModelKnownFields = TypedDict(
+    "__UserMessageInboundCapabilitiesField4ModifyField3OutputField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_UserMessageInboundCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __UserMessageInboundCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_UserMessageInboundCapabilitiesField4ModifyField3OutputField1MergeObjectModel: TypeAlias = (
+    __UserMessageInboundCapabilitiesField4ModifyField3OutputField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserMessageInboundCapabilitiesField4ModifyField3OutputMergeReplaceObjectModelKnownFields = TypedDict(
-    "__UserMessageInboundCapabilitiesField4ModifyField3OutputMergeReplaceObjectModelKnownFields",
+__UserMessageInboundCapabilitiesField4ModifyField4PromptField0ModelKnownFields = TypedDict(
+    "__UserMessageInboundCapabilitiesField4ModifyField4PromptField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_UserMessageInboundCapabilitiesField4ModifyField3OutputMergeReplaceObjectModel: TypeAlias = (
-    __UserMessageInboundCapabilitiesField4ModifyField3OutputMergeReplaceObjectModelKnownFields
+_UserMessageInboundCapabilitiesField4ModifyField4PromptField0Model: TypeAlias = (
+    __UserMessageInboundCapabilitiesField4ModifyField4PromptField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserMessageInboundCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__UserMessageInboundCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__UserMessageInboundCapabilitiesField4ModifyField4PromptField1ReplaceObjectModelKnownFields = TypedDict(
+    "__UserMessageInboundCapabilitiesField4ModifyField4PromptField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_UserMessageInboundCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __UserMessageInboundCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_UserMessageInboundCapabilitiesField4ModifyField4PromptField1ReplaceObjectModel: TypeAlias = (
+    __UserMessageInboundCapabilitiesField4ModifyField4PromptField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserMessageInboundCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__UserMessageInboundCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__UserMessageInboundCapabilitiesField4ModifyField4PromptField1MergeObjectModelKnownFields = TypedDict(
+    "__UserMessageInboundCapabilitiesField4ModifyField4PromptField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_UserMessageInboundCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __UserMessageInboundCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_UserMessageInboundCapabilitiesField4ModifyField4PromptField1MergeObjectModel: TypeAlias = (
+    __UserMessageInboundCapabilitiesField4ModifyField4PromptField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserMessageInboundCapabilitiesField4ModifyField4PromptMergeReplaceObjectModelKnownFields = TypedDict(
-    "__UserMessageInboundCapabilitiesField4ModifyField4PromptMergeReplaceObjectModelKnownFields",
+__UserMessageInboundCapabilitiesField4ModifyField5RequestField0ModelKnownFields = TypedDict(
+    "__UserMessageInboundCapabilitiesField4ModifyField5RequestField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_UserMessageInboundCapabilitiesField4ModifyField4PromptMergeReplaceObjectModel: TypeAlias = (
-    __UserMessageInboundCapabilitiesField4ModifyField4PromptMergeReplaceObjectModelKnownFields
+_UserMessageInboundCapabilitiesField4ModifyField5RequestField0Model: TypeAlias = (
+    __UserMessageInboundCapabilitiesField4ModifyField5RequestField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserMessageInboundCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__UserMessageInboundCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__UserMessageInboundCapabilitiesField4ModifyField5RequestField1ReplaceObjectModelKnownFields = TypedDict(
+    "__UserMessageInboundCapabilitiesField4ModifyField5RequestField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_UserMessageInboundCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __UserMessageInboundCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_UserMessageInboundCapabilitiesField4ModifyField5RequestField1ReplaceObjectModel: TypeAlias = (
+    __UserMessageInboundCapabilitiesField4ModifyField5RequestField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserMessageInboundCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__UserMessageInboundCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__UserMessageInboundCapabilitiesField4ModifyField5RequestField1MergeObjectModelKnownFields = TypedDict(
+    "__UserMessageInboundCapabilitiesField4ModifyField5RequestField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_UserMessageInboundCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __UserMessageInboundCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_UserMessageInboundCapabilitiesField4ModifyField5RequestField1MergeObjectModel: TypeAlias = (
+    __UserMessageInboundCapabilitiesField4ModifyField5RequestField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserMessageInboundCapabilitiesField4ModifyField5RequestMergeReplaceObjectModelKnownFields = TypedDict(
-    "__UserMessageInboundCapabilitiesField4ModifyField5RequestMergeReplaceObjectModelKnownFields",
+__UserMessageInboundCapabilitiesField4ModifyField6ResponseField0ModelKnownFields = TypedDict(
+    "__UserMessageInboundCapabilitiesField4ModifyField6ResponseField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_UserMessageInboundCapabilitiesField4ModifyField5RequestMergeReplaceObjectModel: TypeAlias = (
-    __UserMessageInboundCapabilitiesField4ModifyField5RequestMergeReplaceObjectModelKnownFields
+_UserMessageInboundCapabilitiesField4ModifyField6ResponseField0Model: TypeAlias = (
+    __UserMessageInboundCapabilitiesField4ModifyField6ResponseField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserMessageInboundCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__UserMessageInboundCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__UserMessageInboundCapabilitiesField4ModifyField6ResponseField1ReplaceObjectModelKnownFields = TypedDict(
+    "__UserMessageInboundCapabilitiesField4ModifyField6ResponseField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_UserMessageInboundCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __UserMessageInboundCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_UserMessageInboundCapabilitiesField4ModifyField6ResponseField1ReplaceObjectModel: TypeAlias = (
+    __UserMessageInboundCapabilitiesField4ModifyField6ResponseField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserMessageInboundCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__UserMessageInboundCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__UserMessageInboundCapabilitiesField4ModifyField6ResponseField1MergeObjectModelKnownFields = TypedDict(
+    "__UserMessageInboundCapabilitiesField4ModifyField6ResponseField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_UserMessageInboundCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __UserMessageInboundCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_UserMessageInboundCapabilitiesField4ModifyField6ResponseField1MergeObjectModel: TypeAlias = (
+    __UserMessageInboundCapabilitiesField4ModifyField6ResponseField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserMessageInboundCapabilitiesField4ModifyField6ResponseMergeReplaceObjectModelKnownFields = TypedDict(
-    "__UserMessageInboundCapabilitiesField4ModifyField6ResponseMergeReplaceObjectModelKnownFields",
+__UserMessageInboundCapabilitiesField4ModifyField7SummaryField0ModelKnownFields = TypedDict(
+    "__UserMessageInboundCapabilitiesField4ModifyField7SummaryField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_UserMessageInboundCapabilitiesField4ModifyField6ResponseMergeReplaceObjectModel: TypeAlias = (
-    __UserMessageInboundCapabilitiesField4ModifyField6ResponseMergeReplaceObjectModelKnownFields
+_UserMessageInboundCapabilitiesField4ModifyField7SummaryField0Model: TypeAlias = (
+    __UserMessageInboundCapabilitiesField4ModifyField7SummaryField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserMessageInboundCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__UserMessageInboundCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__UserMessageInboundCapabilitiesField4ModifyField7SummaryField1ReplaceObjectModelKnownFields = TypedDict(
+    "__UserMessageInboundCapabilitiesField4ModifyField7SummaryField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_UserMessageInboundCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __UserMessageInboundCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_UserMessageInboundCapabilitiesField4ModifyField7SummaryField1ReplaceObjectModel: TypeAlias = (
+    __UserMessageInboundCapabilitiesField4ModifyField7SummaryField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserMessageInboundCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__UserMessageInboundCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__UserMessageInboundCapabilitiesField4ModifyField7SummaryField1MergeObjectModelKnownFields = TypedDict(
+    "__UserMessageInboundCapabilitiesField4ModifyField7SummaryField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_UserMessageInboundCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __UserMessageInboundCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_UserMessageInboundCapabilitiesField4ModifyField7SummaryField1MergeObjectModel: TypeAlias = (
+    __UserMessageInboundCapabilitiesField4ModifyField7SummaryField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserMessageInboundCapabilitiesField4ModifyField7SummaryMergeReplaceObjectModelKnownFields = TypedDict(
-    "__UserMessageInboundCapabilitiesField4ModifyField7SummaryMergeReplaceObjectModelKnownFields",
+__UserMessageInboundCapabilitiesField4ModifyField8WorkspaceField0ModelKnownFields = TypedDict(
+    "__UserMessageInboundCapabilitiesField4ModifyField8WorkspaceField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_UserMessageInboundCapabilitiesField4ModifyField7SummaryMergeReplaceObjectModel: TypeAlias = (
-    __UserMessageInboundCapabilitiesField4ModifyField7SummaryMergeReplaceObjectModelKnownFields
+_UserMessageInboundCapabilitiesField4ModifyField8WorkspaceField0Model: TypeAlias = (
+    __UserMessageInboundCapabilitiesField4ModifyField8WorkspaceField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserMessageInboundCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__UserMessageInboundCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__UserMessageInboundCapabilitiesField4ModifyField8WorkspaceField1ReplaceObjectModelKnownFields = TypedDict(
+    "__UserMessageInboundCapabilitiesField4ModifyField8WorkspaceField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_UserMessageInboundCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __UserMessageInboundCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_UserMessageInboundCapabilitiesField4ModifyField8WorkspaceField1ReplaceObjectModel: TypeAlias = (
+    __UserMessageInboundCapabilitiesField4ModifyField8WorkspaceField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserMessageInboundCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__UserMessageInboundCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__UserMessageInboundCapabilitiesField4ModifyField8WorkspaceField1MergeObjectModelKnownFields = TypedDict(
+    "__UserMessageInboundCapabilitiesField4ModifyField8WorkspaceField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_UserMessageInboundCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __UserMessageInboundCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectMergeObjectModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__UserMessageInboundCapabilitiesField4ModifyField8WorkspaceMergeReplaceObjectModelKnownFields = TypedDict(
-    "__UserMessageInboundCapabilitiesField4ModifyField8WorkspaceMergeReplaceObjectModelKnownFields",
-    {"merge": Required[bool], "replace": Required[bool]},
-    total=False,
-)
-_UserMessageInboundCapabilitiesField4ModifyField8WorkspaceMergeReplaceObjectModel: TypeAlias = (
-    __UserMessageInboundCapabilitiesField4ModifyField8WorkspaceMergeReplaceObjectModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__UserMessageInboundCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__UserMessageInboundCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_UserMessageInboundCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __UserMessageInboundCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__UserMessageInboundCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__UserMessageInboundCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_UserMessageInboundCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __UserMessageInboundCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_UserMessageInboundCapabilitiesField4ModifyField8WorkspaceField1MergeObjectModel: TypeAlias = (
+    __UserMessageInboundCapabilitiesField4ModifyField8WorkspaceField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
 __UserMessageInboundCapabilitiesField4ModifyModelKnownFields = TypedDict(
@@ -10256,247 +10255,247 @@ __UserMessageOutboundCapabilitiesField3InjectModelKnownFields = TypedDict(
 _UserMessageOutboundCapabilitiesField3InjectModel: TypeAlias = (
     __UserMessageOutboundCapabilitiesField3InjectModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__UserMessageOutboundCapabilitiesField4ModifyField0ContentMergeReplaceObjectModelKnownFields = TypedDict(
-    "__UserMessageOutboundCapabilitiesField4ModifyField0ContentMergeReplaceObjectModelKnownFields",
+__UserMessageOutboundCapabilitiesField4ModifyField0ContentField0ModelKnownFields = TypedDict(
+    "__UserMessageOutboundCapabilitiesField4ModifyField0ContentField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_UserMessageOutboundCapabilitiesField4ModifyField0ContentMergeReplaceObjectModel: TypeAlias = (
-    __UserMessageOutboundCapabilitiesField4ModifyField0ContentMergeReplaceObjectModelKnownFields
+_UserMessageOutboundCapabilitiesField4ModifyField0ContentField0Model: TypeAlias = (
+    __UserMessageOutboundCapabilitiesField4ModifyField0ContentField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserMessageOutboundCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__UserMessageOutboundCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__UserMessageOutboundCapabilitiesField4ModifyField0ContentField1ReplaceObjectModelKnownFields = TypedDict(
+    "__UserMessageOutboundCapabilitiesField4ModifyField0ContentField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_UserMessageOutboundCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __UserMessageOutboundCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_UserMessageOutboundCapabilitiesField4ModifyField0ContentField1ReplaceObjectModel: TypeAlias = (
+    __UserMessageOutboundCapabilitiesField4ModifyField0ContentField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserMessageOutboundCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__UserMessageOutboundCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__UserMessageOutboundCapabilitiesField4ModifyField0ContentField1MergeObjectModelKnownFields = TypedDict(
+    "__UserMessageOutboundCapabilitiesField4ModifyField0ContentField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_UserMessageOutboundCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __UserMessageOutboundCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_UserMessageOutboundCapabilitiesField4ModifyField0ContentField1MergeObjectModel: TypeAlias = (
+    __UserMessageOutboundCapabilitiesField4ModifyField0ContentField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserMessageOutboundCapabilitiesField4ModifyField1InputMergeReplaceObjectModelKnownFields = TypedDict(
-    "__UserMessageOutboundCapabilitiesField4ModifyField1InputMergeReplaceObjectModelKnownFields",
+__UserMessageOutboundCapabilitiesField4ModifyField1InputField0ModelKnownFields = TypedDict(
+    "__UserMessageOutboundCapabilitiesField4ModifyField1InputField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_UserMessageOutboundCapabilitiesField4ModifyField1InputMergeReplaceObjectModel: TypeAlias = (
-    __UserMessageOutboundCapabilitiesField4ModifyField1InputMergeReplaceObjectModelKnownFields
+_UserMessageOutboundCapabilitiesField4ModifyField1InputField0Model: TypeAlias = (
+    __UserMessageOutboundCapabilitiesField4ModifyField1InputField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserMessageOutboundCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__UserMessageOutboundCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__UserMessageOutboundCapabilitiesField4ModifyField1InputField1ReplaceObjectModelKnownFields = TypedDict(
+    "__UserMessageOutboundCapabilitiesField4ModifyField1InputField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_UserMessageOutboundCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __UserMessageOutboundCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_UserMessageOutboundCapabilitiesField4ModifyField1InputField1ReplaceObjectModel: TypeAlias = (
+    __UserMessageOutboundCapabilitiesField4ModifyField1InputField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserMessageOutboundCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__UserMessageOutboundCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__UserMessageOutboundCapabilitiesField4ModifyField1InputField1MergeObjectModelKnownFields = TypedDict(
+    "__UserMessageOutboundCapabilitiesField4ModifyField1InputField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_UserMessageOutboundCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __UserMessageOutboundCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_UserMessageOutboundCapabilitiesField4ModifyField1InputField1MergeObjectModel: TypeAlias = (
+    __UserMessageOutboundCapabilitiesField4ModifyField1InputField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserMessageOutboundCapabilitiesField4ModifyField2InstructionsMergeReplaceObjectModelKnownFields = TypedDict(
-    "__UserMessageOutboundCapabilitiesField4ModifyField2InstructionsMergeReplaceObjectModelKnownFields",
+__UserMessageOutboundCapabilitiesField4ModifyField2InstructionsField0ModelKnownFields = TypedDict(
+    "__UserMessageOutboundCapabilitiesField4ModifyField2InstructionsField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_UserMessageOutboundCapabilitiesField4ModifyField2InstructionsMergeReplaceObjectModel: TypeAlias = (
-    __UserMessageOutboundCapabilitiesField4ModifyField2InstructionsMergeReplaceObjectModelKnownFields
+_UserMessageOutboundCapabilitiesField4ModifyField2InstructionsField0Model: TypeAlias = (
+    __UserMessageOutboundCapabilitiesField4ModifyField2InstructionsField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserMessageOutboundCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__UserMessageOutboundCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__UserMessageOutboundCapabilitiesField4ModifyField2InstructionsField1ReplaceObjectModelKnownFields = TypedDict(
+    "__UserMessageOutboundCapabilitiesField4ModifyField2InstructionsField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_UserMessageOutboundCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __UserMessageOutboundCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_UserMessageOutboundCapabilitiesField4ModifyField2InstructionsField1ReplaceObjectModel: TypeAlias = (
+    __UserMessageOutboundCapabilitiesField4ModifyField2InstructionsField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserMessageOutboundCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__UserMessageOutboundCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__UserMessageOutboundCapabilitiesField4ModifyField2InstructionsField1MergeObjectModelKnownFields = TypedDict(
+    "__UserMessageOutboundCapabilitiesField4ModifyField2InstructionsField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_UserMessageOutboundCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __UserMessageOutboundCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_UserMessageOutboundCapabilitiesField4ModifyField2InstructionsField1MergeObjectModel: TypeAlias = (
+    __UserMessageOutboundCapabilitiesField4ModifyField2InstructionsField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserMessageOutboundCapabilitiesField4ModifyField3OutputMergeReplaceObjectModelKnownFields = TypedDict(
-    "__UserMessageOutboundCapabilitiesField4ModifyField3OutputMergeReplaceObjectModelKnownFields",
+__UserMessageOutboundCapabilitiesField4ModifyField3OutputField0ModelKnownFields = TypedDict(
+    "__UserMessageOutboundCapabilitiesField4ModifyField3OutputField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_UserMessageOutboundCapabilitiesField4ModifyField3OutputMergeReplaceObjectModel: TypeAlias = (
-    __UserMessageOutboundCapabilitiesField4ModifyField3OutputMergeReplaceObjectModelKnownFields
+_UserMessageOutboundCapabilitiesField4ModifyField3OutputField0Model: TypeAlias = (
+    __UserMessageOutboundCapabilitiesField4ModifyField3OutputField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserMessageOutboundCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__UserMessageOutboundCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__UserMessageOutboundCapabilitiesField4ModifyField3OutputField1ReplaceObjectModelKnownFields = TypedDict(
+    "__UserMessageOutboundCapabilitiesField4ModifyField3OutputField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_UserMessageOutboundCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __UserMessageOutboundCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_UserMessageOutboundCapabilitiesField4ModifyField3OutputField1ReplaceObjectModel: TypeAlias = (
+    __UserMessageOutboundCapabilitiesField4ModifyField3OutputField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserMessageOutboundCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__UserMessageOutboundCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__UserMessageOutboundCapabilitiesField4ModifyField3OutputField1MergeObjectModelKnownFields = TypedDict(
+    "__UserMessageOutboundCapabilitiesField4ModifyField3OutputField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_UserMessageOutboundCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __UserMessageOutboundCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_UserMessageOutboundCapabilitiesField4ModifyField3OutputField1MergeObjectModel: TypeAlias = (
+    __UserMessageOutboundCapabilitiesField4ModifyField3OutputField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserMessageOutboundCapabilitiesField4ModifyField4PromptMergeReplaceObjectModelKnownFields = TypedDict(
-    "__UserMessageOutboundCapabilitiesField4ModifyField4PromptMergeReplaceObjectModelKnownFields",
+__UserMessageOutboundCapabilitiesField4ModifyField4PromptField0ModelKnownFields = TypedDict(
+    "__UserMessageOutboundCapabilitiesField4ModifyField4PromptField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_UserMessageOutboundCapabilitiesField4ModifyField4PromptMergeReplaceObjectModel: TypeAlias = (
-    __UserMessageOutboundCapabilitiesField4ModifyField4PromptMergeReplaceObjectModelKnownFields
+_UserMessageOutboundCapabilitiesField4ModifyField4PromptField0Model: TypeAlias = (
+    __UserMessageOutboundCapabilitiesField4ModifyField4PromptField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserMessageOutboundCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__UserMessageOutboundCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__UserMessageOutboundCapabilitiesField4ModifyField4PromptField1ReplaceObjectModelKnownFields = TypedDict(
+    "__UserMessageOutboundCapabilitiesField4ModifyField4PromptField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_UserMessageOutboundCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __UserMessageOutboundCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_UserMessageOutboundCapabilitiesField4ModifyField4PromptField1ReplaceObjectModel: TypeAlias = (
+    __UserMessageOutboundCapabilitiesField4ModifyField4PromptField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserMessageOutboundCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__UserMessageOutboundCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__UserMessageOutboundCapabilitiesField4ModifyField4PromptField1MergeObjectModelKnownFields = TypedDict(
+    "__UserMessageOutboundCapabilitiesField4ModifyField4PromptField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_UserMessageOutboundCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __UserMessageOutboundCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_UserMessageOutboundCapabilitiesField4ModifyField4PromptField1MergeObjectModel: TypeAlias = (
+    __UserMessageOutboundCapabilitiesField4ModifyField4PromptField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserMessageOutboundCapabilitiesField4ModifyField5RequestMergeReplaceObjectModelKnownFields = TypedDict(
-    "__UserMessageOutboundCapabilitiesField4ModifyField5RequestMergeReplaceObjectModelKnownFields",
+__UserMessageOutboundCapabilitiesField4ModifyField5RequestField0ModelKnownFields = TypedDict(
+    "__UserMessageOutboundCapabilitiesField4ModifyField5RequestField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_UserMessageOutboundCapabilitiesField4ModifyField5RequestMergeReplaceObjectModel: TypeAlias = (
-    __UserMessageOutboundCapabilitiesField4ModifyField5RequestMergeReplaceObjectModelKnownFields
+_UserMessageOutboundCapabilitiesField4ModifyField5RequestField0Model: TypeAlias = (
+    __UserMessageOutboundCapabilitiesField4ModifyField5RequestField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserMessageOutboundCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__UserMessageOutboundCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__UserMessageOutboundCapabilitiesField4ModifyField5RequestField1ReplaceObjectModelKnownFields = TypedDict(
+    "__UserMessageOutboundCapabilitiesField4ModifyField5RequestField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_UserMessageOutboundCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __UserMessageOutboundCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_UserMessageOutboundCapabilitiesField4ModifyField5RequestField1ReplaceObjectModel: TypeAlias = (
+    __UserMessageOutboundCapabilitiesField4ModifyField5RequestField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserMessageOutboundCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__UserMessageOutboundCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__UserMessageOutboundCapabilitiesField4ModifyField5RequestField1MergeObjectModelKnownFields = TypedDict(
+    "__UserMessageOutboundCapabilitiesField4ModifyField5RequestField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_UserMessageOutboundCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __UserMessageOutboundCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_UserMessageOutboundCapabilitiesField4ModifyField5RequestField1MergeObjectModel: TypeAlias = (
+    __UserMessageOutboundCapabilitiesField4ModifyField5RequestField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserMessageOutboundCapabilitiesField4ModifyField6ResponseMergeReplaceObjectModelKnownFields = TypedDict(
-    "__UserMessageOutboundCapabilitiesField4ModifyField6ResponseMergeReplaceObjectModelKnownFields",
+__UserMessageOutboundCapabilitiesField4ModifyField6ResponseField0ModelKnownFields = TypedDict(
+    "__UserMessageOutboundCapabilitiesField4ModifyField6ResponseField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_UserMessageOutboundCapabilitiesField4ModifyField6ResponseMergeReplaceObjectModel: TypeAlias = (
-    __UserMessageOutboundCapabilitiesField4ModifyField6ResponseMergeReplaceObjectModelKnownFields
+_UserMessageOutboundCapabilitiesField4ModifyField6ResponseField0Model: TypeAlias = (
+    __UserMessageOutboundCapabilitiesField4ModifyField6ResponseField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserMessageOutboundCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__UserMessageOutboundCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__UserMessageOutboundCapabilitiesField4ModifyField6ResponseField1ReplaceObjectModelKnownFields = TypedDict(
+    "__UserMessageOutboundCapabilitiesField4ModifyField6ResponseField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_UserMessageOutboundCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __UserMessageOutboundCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_UserMessageOutboundCapabilitiesField4ModifyField6ResponseField1ReplaceObjectModel: TypeAlias = (
+    __UserMessageOutboundCapabilitiesField4ModifyField6ResponseField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserMessageOutboundCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__UserMessageOutboundCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__UserMessageOutboundCapabilitiesField4ModifyField6ResponseField1MergeObjectModelKnownFields = TypedDict(
+    "__UserMessageOutboundCapabilitiesField4ModifyField6ResponseField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_UserMessageOutboundCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __UserMessageOutboundCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_UserMessageOutboundCapabilitiesField4ModifyField6ResponseField1MergeObjectModel: TypeAlias = (
+    __UserMessageOutboundCapabilitiesField4ModifyField6ResponseField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserMessageOutboundCapabilitiesField4ModifyField7SummaryMergeReplaceObjectModelKnownFields = TypedDict(
-    "__UserMessageOutboundCapabilitiesField4ModifyField7SummaryMergeReplaceObjectModelKnownFields",
+__UserMessageOutboundCapabilitiesField4ModifyField7SummaryField0ModelKnownFields = TypedDict(
+    "__UserMessageOutboundCapabilitiesField4ModifyField7SummaryField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_UserMessageOutboundCapabilitiesField4ModifyField7SummaryMergeReplaceObjectModel: TypeAlias = (
-    __UserMessageOutboundCapabilitiesField4ModifyField7SummaryMergeReplaceObjectModelKnownFields
+_UserMessageOutboundCapabilitiesField4ModifyField7SummaryField0Model: TypeAlias = (
+    __UserMessageOutboundCapabilitiesField4ModifyField7SummaryField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserMessageOutboundCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__UserMessageOutboundCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__UserMessageOutboundCapabilitiesField4ModifyField7SummaryField1ReplaceObjectModelKnownFields = TypedDict(
+    "__UserMessageOutboundCapabilitiesField4ModifyField7SummaryField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_UserMessageOutboundCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __UserMessageOutboundCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_UserMessageOutboundCapabilitiesField4ModifyField7SummaryField1ReplaceObjectModel: TypeAlias = (
+    __UserMessageOutboundCapabilitiesField4ModifyField7SummaryField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserMessageOutboundCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__UserMessageOutboundCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__UserMessageOutboundCapabilitiesField4ModifyField7SummaryField1MergeObjectModelKnownFields = TypedDict(
+    "__UserMessageOutboundCapabilitiesField4ModifyField7SummaryField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_UserMessageOutboundCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __UserMessageOutboundCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_UserMessageOutboundCapabilitiesField4ModifyField7SummaryField1MergeObjectModel: TypeAlias = (
+    __UserMessageOutboundCapabilitiesField4ModifyField7SummaryField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserMessageOutboundCapabilitiesField4ModifyField8WorkspaceMergeReplaceObjectModelKnownFields = TypedDict(
-    "__UserMessageOutboundCapabilitiesField4ModifyField8WorkspaceMergeReplaceObjectModelKnownFields",
+__UserMessageOutboundCapabilitiesField4ModifyField8WorkspaceField0ModelKnownFields = TypedDict(
+    "__UserMessageOutboundCapabilitiesField4ModifyField8WorkspaceField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_UserMessageOutboundCapabilitiesField4ModifyField8WorkspaceMergeReplaceObjectModel: TypeAlias = (
-    __UserMessageOutboundCapabilitiesField4ModifyField8WorkspaceMergeReplaceObjectModelKnownFields
+_UserMessageOutboundCapabilitiesField4ModifyField8WorkspaceField0Model: TypeAlias = (
+    __UserMessageOutboundCapabilitiesField4ModifyField8WorkspaceField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserMessageOutboundCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__UserMessageOutboundCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__UserMessageOutboundCapabilitiesField4ModifyField8WorkspaceField1ReplaceObjectModelKnownFields = TypedDict(
+    "__UserMessageOutboundCapabilitiesField4ModifyField8WorkspaceField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_UserMessageOutboundCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __UserMessageOutboundCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_UserMessageOutboundCapabilitiesField4ModifyField8WorkspaceField1ReplaceObjectModel: TypeAlias = (
+    __UserMessageOutboundCapabilitiesField4ModifyField8WorkspaceField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserMessageOutboundCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__UserMessageOutboundCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__UserMessageOutboundCapabilitiesField4ModifyField8WorkspaceField1MergeObjectModelKnownFields = TypedDict(
+    "__UserMessageOutboundCapabilitiesField4ModifyField8WorkspaceField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_UserMessageOutboundCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __UserMessageOutboundCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_UserMessageOutboundCapabilitiesField4ModifyField8WorkspaceField1MergeObjectModel: TypeAlias = (
+    __UserMessageOutboundCapabilitiesField4ModifyField8WorkspaceField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
 __UserMessageOutboundCapabilitiesField4ModifyModelKnownFields = TypedDict(
@@ -10664,247 +10663,247 @@ __WorkspaceChangeBeforeCapabilitiesField3InjectModelKnownFields = TypedDict(
 _WorkspaceChangeBeforeCapabilitiesField3InjectModel: TypeAlias = (
     __WorkspaceChangeBeforeCapabilitiesField3InjectModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__WorkspaceChangeBeforeCapabilitiesField4ModifyField0ContentMergeReplaceObjectModelKnownFields = TypedDict(
-    "__WorkspaceChangeBeforeCapabilitiesField4ModifyField0ContentMergeReplaceObjectModelKnownFields",
+__WorkspaceChangeBeforeCapabilitiesField4ModifyField0ContentField0ModelKnownFields = TypedDict(
+    "__WorkspaceChangeBeforeCapabilitiesField4ModifyField0ContentField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_WorkspaceChangeBeforeCapabilitiesField4ModifyField0ContentMergeReplaceObjectModel: TypeAlias = (
-    __WorkspaceChangeBeforeCapabilitiesField4ModifyField0ContentMergeReplaceObjectModelKnownFields
+_WorkspaceChangeBeforeCapabilitiesField4ModifyField0ContentField0Model: TypeAlias = (
+    __WorkspaceChangeBeforeCapabilitiesField4ModifyField0ContentField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__WorkspaceChangeBeforeCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__WorkspaceChangeBeforeCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__WorkspaceChangeBeforeCapabilitiesField4ModifyField0ContentField1ReplaceObjectModelKnownFields = TypedDict(
+    "__WorkspaceChangeBeforeCapabilitiesField4ModifyField0ContentField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_WorkspaceChangeBeforeCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __WorkspaceChangeBeforeCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_WorkspaceChangeBeforeCapabilitiesField4ModifyField0ContentField1ReplaceObjectModel: TypeAlias = (
+    __WorkspaceChangeBeforeCapabilitiesField4ModifyField0ContentField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__WorkspaceChangeBeforeCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__WorkspaceChangeBeforeCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__WorkspaceChangeBeforeCapabilitiesField4ModifyField0ContentField1MergeObjectModelKnownFields = TypedDict(
+    "__WorkspaceChangeBeforeCapabilitiesField4ModifyField0ContentField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_WorkspaceChangeBeforeCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __WorkspaceChangeBeforeCapabilitiesField4ModifyField0ContentMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_WorkspaceChangeBeforeCapabilitiesField4ModifyField0ContentField1MergeObjectModel: TypeAlias = (
+    __WorkspaceChangeBeforeCapabilitiesField4ModifyField0ContentField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__WorkspaceChangeBeforeCapabilitiesField4ModifyField1InputMergeReplaceObjectModelKnownFields = TypedDict(
-    "__WorkspaceChangeBeforeCapabilitiesField4ModifyField1InputMergeReplaceObjectModelKnownFields",
+__WorkspaceChangeBeforeCapabilitiesField4ModifyField1InputField0ModelKnownFields = TypedDict(
+    "__WorkspaceChangeBeforeCapabilitiesField4ModifyField1InputField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_WorkspaceChangeBeforeCapabilitiesField4ModifyField1InputMergeReplaceObjectModel: TypeAlias = (
-    __WorkspaceChangeBeforeCapabilitiesField4ModifyField1InputMergeReplaceObjectModelKnownFields
+_WorkspaceChangeBeforeCapabilitiesField4ModifyField1InputField0Model: TypeAlias = (
+    __WorkspaceChangeBeforeCapabilitiesField4ModifyField1InputField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__WorkspaceChangeBeforeCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__WorkspaceChangeBeforeCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__WorkspaceChangeBeforeCapabilitiesField4ModifyField1InputField1ReplaceObjectModelKnownFields = TypedDict(
+    "__WorkspaceChangeBeforeCapabilitiesField4ModifyField1InputField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_WorkspaceChangeBeforeCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __WorkspaceChangeBeforeCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_WorkspaceChangeBeforeCapabilitiesField4ModifyField1InputField1ReplaceObjectModel: TypeAlias = (
+    __WorkspaceChangeBeforeCapabilitiesField4ModifyField1InputField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__WorkspaceChangeBeforeCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__WorkspaceChangeBeforeCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__WorkspaceChangeBeforeCapabilitiesField4ModifyField1InputField1MergeObjectModelKnownFields = TypedDict(
+    "__WorkspaceChangeBeforeCapabilitiesField4ModifyField1InputField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_WorkspaceChangeBeforeCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __WorkspaceChangeBeforeCapabilitiesField4ModifyField1InputMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_WorkspaceChangeBeforeCapabilitiesField4ModifyField1InputField1MergeObjectModel: TypeAlias = (
+    __WorkspaceChangeBeforeCapabilitiesField4ModifyField1InputField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__WorkspaceChangeBeforeCapabilitiesField4ModifyField2InstructionsMergeReplaceObjectModelKnownFields = TypedDict(
-    "__WorkspaceChangeBeforeCapabilitiesField4ModifyField2InstructionsMergeReplaceObjectModelKnownFields",
+__WorkspaceChangeBeforeCapabilitiesField4ModifyField2InstructionsField0ModelKnownFields = TypedDict(
+    "__WorkspaceChangeBeforeCapabilitiesField4ModifyField2InstructionsField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_WorkspaceChangeBeforeCapabilitiesField4ModifyField2InstructionsMergeReplaceObjectModel: TypeAlias = (
-    __WorkspaceChangeBeforeCapabilitiesField4ModifyField2InstructionsMergeReplaceObjectModelKnownFields
+_WorkspaceChangeBeforeCapabilitiesField4ModifyField2InstructionsField0Model: TypeAlias = (
+    __WorkspaceChangeBeforeCapabilitiesField4ModifyField2InstructionsField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__WorkspaceChangeBeforeCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__WorkspaceChangeBeforeCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__WorkspaceChangeBeforeCapabilitiesField4ModifyField2InstructionsField1ReplaceObjectModelKnownFields = TypedDict(
+    "__WorkspaceChangeBeforeCapabilitiesField4ModifyField2InstructionsField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_WorkspaceChangeBeforeCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __WorkspaceChangeBeforeCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_WorkspaceChangeBeforeCapabilitiesField4ModifyField2InstructionsField1ReplaceObjectModel: TypeAlias = (
+    __WorkspaceChangeBeforeCapabilitiesField4ModifyField2InstructionsField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__WorkspaceChangeBeforeCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__WorkspaceChangeBeforeCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__WorkspaceChangeBeforeCapabilitiesField4ModifyField2InstructionsField1MergeObjectModelKnownFields = TypedDict(
+    "__WorkspaceChangeBeforeCapabilitiesField4ModifyField2InstructionsField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_WorkspaceChangeBeforeCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __WorkspaceChangeBeforeCapabilitiesField4ModifyField2InstructionsMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_WorkspaceChangeBeforeCapabilitiesField4ModifyField2InstructionsField1MergeObjectModel: TypeAlias = (
+    __WorkspaceChangeBeforeCapabilitiesField4ModifyField2InstructionsField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__WorkspaceChangeBeforeCapabilitiesField4ModifyField3OutputMergeReplaceObjectModelKnownFields = TypedDict(
-    "__WorkspaceChangeBeforeCapabilitiesField4ModifyField3OutputMergeReplaceObjectModelKnownFields",
+__WorkspaceChangeBeforeCapabilitiesField4ModifyField3OutputField0ModelKnownFields = TypedDict(
+    "__WorkspaceChangeBeforeCapabilitiesField4ModifyField3OutputField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_WorkspaceChangeBeforeCapabilitiesField4ModifyField3OutputMergeReplaceObjectModel: TypeAlias = (
-    __WorkspaceChangeBeforeCapabilitiesField4ModifyField3OutputMergeReplaceObjectModelKnownFields
+_WorkspaceChangeBeforeCapabilitiesField4ModifyField3OutputField0Model: TypeAlias = (
+    __WorkspaceChangeBeforeCapabilitiesField4ModifyField3OutputField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__WorkspaceChangeBeforeCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__WorkspaceChangeBeforeCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__WorkspaceChangeBeforeCapabilitiesField4ModifyField3OutputField1ReplaceObjectModelKnownFields = TypedDict(
+    "__WorkspaceChangeBeforeCapabilitiesField4ModifyField3OutputField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_WorkspaceChangeBeforeCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __WorkspaceChangeBeforeCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_WorkspaceChangeBeforeCapabilitiesField4ModifyField3OutputField1ReplaceObjectModel: TypeAlias = (
+    __WorkspaceChangeBeforeCapabilitiesField4ModifyField3OutputField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__WorkspaceChangeBeforeCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__WorkspaceChangeBeforeCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__WorkspaceChangeBeforeCapabilitiesField4ModifyField3OutputField1MergeObjectModelKnownFields = TypedDict(
+    "__WorkspaceChangeBeforeCapabilitiesField4ModifyField3OutputField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_WorkspaceChangeBeforeCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __WorkspaceChangeBeforeCapabilitiesField4ModifyField3OutputMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_WorkspaceChangeBeforeCapabilitiesField4ModifyField3OutputField1MergeObjectModel: TypeAlias = (
+    __WorkspaceChangeBeforeCapabilitiesField4ModifyField3OutputField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__WorkspaceChangeBeforeCapabilitiesField4ModifyField4PromptMergeReplaceObjectModelKnownFields = TypedDict(
-    "__WorkspaceChangeBeforeCapabilitiesField4ModifyField4PromptMergeReplaceObjectModelKnownFields",
+__WorkspaceChangeBeforeCapabilitiesField4ModifyField4PromptField0ModelKnownFields = TypedDict(
+    "__WorkspaceChangeBeforeCapabilitiesField4ModifyField4PromptField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_WorkspaceChangeBeforeCapabilitiesField4ModifyField4PromptMergeReplaceObjectModel: TypeAlias = (
-    __WorkspaceChangeBeforeCapabilitiesField4ModifyField4PromptMergeReplaceObjectModelKnownFields
+_WorkspaceChangeBeforeCapabilitiesField4ModifyField4PromptField0Model: TypeAlias = (
+    __WorkspaceChangeBeforeCapabilitiesField4ModifyField4PromptField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__WorkspaceChangeBeforeCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__WorkspaceChangeBeforeCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__WorkspaceChangeBeforeCapabilitiesField4ModifyField4PromptField1ReplaceObjectModelKnownFields = TypedDict(
+    "__WorkspaceChangeBeforeCapabilitiesField4ModifyField4PromptField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_WorkspaceChangeBeforeCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __WorkspaceChangeBeforeCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_WorkspaceChangeBeforeCapabilitiesField4ModifyField4PromptField1ReplaceObjectModel: TypeAlias = (
+    __WorkspaceChangeBeforeCapabilitiesField4ModifyField4PromptField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__WorkspaceChangeBeforeCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__WorkspaceChangeBeforeCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__WorkspaceChangeBeforeCapabilitiesField4ModifyField4PromptField1MergeObjectModelKnownFields = TypedDict(
+    "__WorkspaceChangeBeforeCapabilitiesField4ModifyField4PromptField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_WorkspaceChangeBeforeCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __WorkspaceChangeBeforeCapabilitiesField4ModifyField4PromptMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_WorkspaceChangeBeforeCapabilitiesField4ModifyField4PromptField1MergeObjectModel: TypeAlias = (
+    __WorkspaceChangeBeforeCapabilitiesField4ModifyField4PromptField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__WorkspaceChangeBeforeCapabilitiesField4ModifyField5RequestMergeReplaceObjectModelKnownFields = TypedDict(
-    "__WorkspaceChangeBeforeCapabilitiesField4ModifyField5RequestMergeReplaceObjectModelKnownFields",
+__WorkspaceChangeBeforeCapabilitiesField4ModifyField5RequestField0ModelKnownFields = TypedDict(
+    "__WorkspaceChangeBeforeCapabilitiesField4ModifyField5RequestField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_WorkspaceChangeBeforeCapabilitiesField4ModifyField5RequestMergeReplaceObjectModel: TypeAlias = (
-    __WorkspaceChangeBeforeCapabilitiesField4ModifyField5RequestMergeReplaceObjectModelKnownFields
+_WorkspaceChangeBeforeCapabilitiesField4ModifyField5RequestField0Model: TypeAlias = (
+    __WorkspaceChangeBeforeCapabilitiesField4ModifyField5RequestField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__WorkspaceChangeBeforeCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__WorkspaceChangeBeforeCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__WorkspaceChangeBeforeCapabilitiesField4ModifyField5RequestField1ReplaceObjectModelKnownFields = TypedDict(
+    "__WorkspaceChangeBeforeCapabilitiesField4ModifyField5RequestField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_WorkspaceChangeBeforeCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __WorkspaceChangeBeforeCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_WorkspaceChangeBeforeCapabilitiesField4ModifyField5RequestField1ReplaceObjectModel: TypeAlias = (
+    __WorkspaceChangeBeforeCapabilitiesField4ModifyField5RequestField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__WorkspaceChangeBeforeCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__WorkspaceChangeBeforeCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__WorkspaceChangeBeforeCapabilitiesField4ModifyField5RequestField1MergeObjectModelKnownFields = TypedDict(
+    "__WorkspaceChangeBeforeCapabilitiesField4ModifyField5RequestField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_WorkspaceChangeBeforeCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __WorkspaceChangeBeforeCapabilitiesField4ModifyField5RequestMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_WorkspaceChangeBeforeCapabilitiesField4ModifyField5RequestField1MergeObjectModel: TypeAlias = (
+    __WorkspaceChangeBeforeCapabilitiesField4ModifyField5RequestField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__WorkspaceChangeBeforeCapabilitiesField4ModifyField6ResponseMergeReplaceObjectModelKnownFields = TypedDict(
-    "__WorkspaceChangeBeforeCapabilitiesField4ModifyField6ResponseMergeReplaceObjectModelKnownFields",
+__WorkspaceChangeBeforeCapabilitiesField4ModifyField6ResponseField0ModelKnownFields = TypedDict(
+    "__WorkspaceChangeBeforeCapabilitiesField4ModifyField6ResponseField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_WorkspaceChangeBeforeCapabilitiesField4ModifyField6ResponseMergeReplaceObjectModel: TypeAlias = (
-    __WorkspaceChangeBeforeCapabilitiesField4ModifyField6ResponseMergeReplaceObjectModelKnownFields
+_WorkspaceChangeBeforeCapabilitiesField4ModifyField6ResponseField0Model: TypeAlias = (
+    __WorkspaceChangeBeforeCapabilitiesField4ModifyField6ResponseField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__WorkspaceChangeBeforeCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__WorkspaceChangeBeforeCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__WorkspaceChangeBeforeCapabilitiesField4ModifyField6ResponseField1ReplaceObjectModelKnownFields = TypedDict(
+    "__WorkspaceChangeBeforeCapabilitiesField4ModifyField6ResponseField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_WorkspaceChangeBeforeCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __WorkspaceChangeBeforeCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_WorkspaceChangeBeforeCapabilitiesField4ModifyField6ResponseField1ReplaceObjectModel: TypeAlias = (
+    __WorkspaceChangeBeforeCapabilitiesField4ModifyField6ResponseField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__WorkspaceChangeBeforeCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__WorkspaceChangeBeforeCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__WorkspaceChangeBeforeCapabilitiesField4ModifyField6ResponseField1MergeObjectModelKnownFields = TypedDict(
+    "__WorkspaceChangeBeforeCapabilitiesField4ModifyField6ResponseField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_WorkspaceChangeBeforeCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __WorkspaceChangeBeforeCapabilitiesField4ModifyField6ResponseMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_WorkspaceChangeBeforeCapabilitiesField4ModifyField6ResponseField1MergeObjectModel: TypeAlias = (
+    __WorkspaceChangeBeforeCapabilitiesField4ModifyField6ResponseField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__WorkspaceChangeBeforeCapabilitiesField4ModifyField7SummaryMergeReplaceObjectModelKnownFields = TypedDict(
-    "__WorkspaceChangeBeforeCapabilitiesField4ModifyField7SummaryMergeReplaceObjectModelKnownFields",
+__WorkspaceChangeBeforeCapabilitiesField4ModifyField7SummaryField0ModelKnownFields = TypedDict(
+    "__WorkspaceChangeBeforeCapabilitiesField4ModifyField7SummaryField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_WorkspaceChangeBeforeCapabilitiesField4ModifyField7SummaryMergeReplaceObjectModel: TypeAlias = (
-    __WorkspaceChangeBeforeCapabilitiesField4ModifyField7SummaryMergeReplaceObjectModelKnownFields
+_WorkspaceChangeBeforeCapabilitiesField4ModifyField7SummaryField0Model: TypeAlias = (
+    __WorkspaceChangeBeforeCapabilitiesField4ModifyField7SummaryField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__WorkspaceChangeBeforeCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__WorkspaceChangeBeforeCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__WorkspaceChangeBeforeCapabilitiesField4ModifyField7SummaryField1ReplaceObjectModelKnownFields = TypedDict(
+    "__WorkspaceChangeBeforeCapabilitiesField4ModifyField7SummaryField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_WorkspaceChangeBeforeCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __WorkspaceChangeBeforeCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_WorkspaceChangeBeforeCapabilitiesField4ModifyField7SummaryField1ReplaceObjectModel: TypeAlias = (
+    __WorkspaceChangeBeforeCapabilitiesField4ModifyField7SummaryField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__WorkspaceChangeBeforeCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__WorkspaceChangeBeforeCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__WorkspaceChangeBeforeCapabilitiesField4ModifyField7SummaryField1MergeObjectModelKnownFields = TypedDict(
+    "__WorkspaceChangeBeforeCapabilitiesField4ModifyField7SummaryField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_WorkspaceChangeBeforeCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __WorkspaceChangeBeforeCapabilitiesField4ModifyField7SummaryMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_WorkspaceChangeBeforeCapabilitiesField4ModifyField7SummaryField1MergeObjectModel: TypeAlias = (
+    __WorkspaceChangeBeforeCapabilitiesField4ModifyField7SummaryField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__WorkspaceChangeBeforeCapabilitiesField4ModifyField8WorkspaceMergeReplaceObjectModelKnownFields = TypedDict(
-    "__WorkspaceChangeBeforeCapabilitiesField4ModifyField8WorkspaceMergeReplaceObjectModelKnownFields",
+__WorkspaceChangeBeforeCapabilitiesField4ModifyField8WorkspaceField0ModelKnownFields = TypedDict(
+    "__WorkspaceChangeBeforeCapabilitiesField4ModifyField8WorkspaceField0ModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_WorkspaceChangeBeforeCapabilitiesField4ModifyField8WorkspaceMergeReplaceObjectModel: TypeAlias = (
-    __WorkspaceChangeBeforeCapabilitiesField4ModifyField8WorkspaceMergeReplaceObjectModelKnownFields
+_WorkspaceChangeBeforeCapabilitiesField4ModifyField8WorkspaceField0Model: TypeAlias = (
+    __WorkspaceChangeBeforeCapabilitiesField4ModifyField8WorkspaceField0ModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__WorkspaceChangeBeforeCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectReplaceObjectModelKnownFields = TypedDict(
-    "__WorkspaceChangeBeforeCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectReplaceObjectModelKnownFields",
+__WorkspaceChangeBeforeCapabilitiesField4ModifyField8WorkspaceField1ReplaceObjectModelKnownFields = TypedDict(
+    "__WorkspaceChangeBeforeCapabilitiesField4ModifyField8WorkspaceField1ReplaceObjectModelKnownFields",
     {"replace": Required[Literal[True]]},
     total=False,
 )
-_WorkspaceChangeBeforeCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectReplaceObjectModel: TypeAlias = (
-    __WorkspaceChangeBeforeCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectReplaceObjectModelKnownFields
+_WorkspaceChangeBeforeCapabilitiesField4ModifyField8WorkspaceField1ReplaceObjectModel: TypeAlias = (
+    __WorkspaceChangeBeforeCapabilitiesField4ModifyField8WorkspaceField1ReplaceObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__WorkspaceChangeBeforeCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectMergeObjectModelKnownFields = TypedDict(
-    "__WorkspaceChangeBeforeCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectMergeObjectModelKnownFields",
+__WorkspaceChangeBeforeCapabilitiesField4ModifyField8WorkspaceField1MergeObjectModelKnownFields = TypedDict(
+    "__WorkspaceChangeBeforeCapabilitiesField4ModifyField8WorkspaceField1MergeObjectModelKnownFields",
     {"merge": Required[Literal[True]]},
     total=False,
 )
-_WorkspaceChangeBeforeCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectMergeObjectModel: TypeAlias = (
-    __WorkspaceChangeBeforeCapabilitiesField4ModifyField8WorkspaceMergeObjectOrReplaceObjectMergeObjectModelKnownFields
+_WorkspaceChangeBeforeCapabilitiesField4ModifyField8WorkspaceField1MergeObjectModel: TypeAlias = (
+    __WorkspaceChangeBeforeCapabilitiesField4ModifyField8WorkspaceField1MergeObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
 __WorkspaceChangeBeforeCapabilitiesField4ModifyModelKnownFields = TypedDict(

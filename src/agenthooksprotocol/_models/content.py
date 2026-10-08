@@ -12,7 +12,6 @@ from . import ContentSelection as ContentSelection
 from . import ContentUpload as ContentUpload
 from . import ContentSelectionDefault as Default
 from . import ContentSelectionFiles as Files
-from . import ContentItemBodyGap as Gap
 from . import ContentItemBodyGapGap as GapGap
 from . import ContentSelectionImages as Images
 from . import ContentItemBody as ItemBody
@@ -42,7 +41,6 @@ __all__ = [
     "ContentUpload",
     "Default",
     "Files",
-    "Gap",
     "GapGap",
     "Images",
     "ItemBody",

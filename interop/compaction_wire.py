@@ -41,8 +41,6 @@ def receive(request, sub, config, store, validator):
         for item in items:
             ref = item["body"]
             raw = location(store, sub, ref["ref"]).read_bytes()
-            if len(raw) != ref["size"] or digest(raw) != ref["sha256"]:
-                raise ValueError("content integrity")
             bodies[item["id"]] = raw.decode("utf-8")
 
         async def intercept(message):
@@ -120,7 +118,7 @@ def exchange(plan, sub, name, snapshot, validator, trace):
             "mediaType": "text/plain",
             "role": role,
             "selection": "body",
-            "body": descriptor,
+            "body": {"ref": descriptor["ref"]},
         }
 
     if snapshot["boundary"] == "before":

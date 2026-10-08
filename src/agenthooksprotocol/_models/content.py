@@ -10,6 +10,7 @@ from . import ContentItemOmit as ContentItemOmit
 from . import ContentReference as ContentReference
 from . import ContentSelection as ContentSelection
 from . import ContentUpload as ContentUpload
+from . import ContentUploadReceipt as ContentUploadReceipt
 from . import ContentSelectionDefault as Default
 from . import ContentSelectionFiles as Files
 from . import ContentItemBodyGapGap as GapGap
@@ -21,10 +22,12 @@ from . import ContentItemBodyGapGap as ItemBodyGapGap
 from . import ContentItemMetadata as ItemMetadata
 from . import ContentItemOmit as ItemOmit
 from . import ContentSelectionReasoning as Reasoning
+from . import ContentUploadReceipt as Receipt
 from . import ContentReference as Reference
 from . import ContentSelection as Selection
 from . import ContentSelectionText as Text
 from . import ContentUpload as Upload
+from . import ContentUploadReceipt as UploadReceipt
 from . import ContentSelectionVideo as Video
 
 __all__ = [
@@ -39,6 +42,7 @@ __all__ = [
     "ContentReference",
     "ContentSelection",
     "ContentUpload",
+    "ContentUploadReceipt",
     "Default",
     "Files",
     "GapGap",
@@ -50,9 +54,11 @@ __all__ = [
     "ItemMetadata",
     "ItemOmit",
     "Reasoning",
+    "Receipt",
     "Reference",
     "Selection",
     "Text",
     "Upload",
+    "UploadReceipt",
     "Video",
 ]

@@ -15,13 +15,16 @@ import re
 import sys
 
 import anyio
-from typing import Any
+from typing import Any, TYPE_CHECKING
 
 from .runtime import OperationCancelledError, ProtocolError, json_equal
 
+if TYPE_CHECKING:
+    from .generated import ContentUploadReceipt
+
 Reference = dict[str, Any]
 Resolver = Callable[[Reference], Awaitable[bytes]]
-Uploader = Callable[[bytes], Awaitable[Reference]]
+Uploader = Callable[[bytes], Awaitable["ContentUploadReceipt"]]
 
 
 def at(value: Any, path: tuple[str | int, ...]) -> Any:
@@ -116,6 +119,8 @@ class ContentContext:
     request binds ``request``; result binds ``content`` and supplies an immutable
     ``original_request`` wire snapshot. Compaction binds ``instructions`` or
     ``summary``. ``principal`` is trusted transport identity, never event data.
+    Resolvers accept ref-only references and enforce authorized immutable storage.
+    Uploaders return ContentUploadReceipt confirmations, checked against sent bytes.
     A fresh prepared context is made per invocation, safe for concurrent calls.
     """
 
@@ -170,18 +175,10 @@ class PreparedContent:
         if "body" not in item:
             raise ProtocolError("Selected content body is unavailable")
         reference = item["body"]
-        if any(
-            key in item and item[key] != reference[key] for key in ("size", "sha256")
-        ):
-            raise ProtocolError("Content metadata disagrees with body descriptor")
         data = await self.context.resolve(deepcopy(reference))
-        if (
-            not isinstance(data, bytes)
-            or len(data) != reference["size"]
-            or hashlib.sha256(data).hexdigest() != reference["sha256"]
-        ):
-            raise ProtocolError("Resolved content does not match immutable descriptor")
-        identity = (reference["size"], reference["sha256"])
+        if not isinstance(data, bytes):
+            raise ProtocolError("Content resolver must return bytes")
+        identity = (len(data), hashlib.sha256(data).hexdigest())
         known = self.context._identities.get(reference["ref"])
         if known is not None and known != identity:
             raise ProtocolError("Immutable content reference changed")
@@ -335,7 +332,7 @@ class PreparedContent:
         for update in updates:
             data = update["data"]
             reference = await self.context.upload(data)
-            self.validator.validate("content-reference", reference)
+            self.validator.validate("content-upload-receipt", reference)
             if (
                 reference["size"] != len(data)
                 or reference["sha256"] != hashlib.sha256(data).hexdigest()
@@ -353,27 +350,26 @@ class PreparedContent:
                 reference["sha256"],
             )
             target = update["target"]
-            references[target] = deepcopy(reference)
+            references[target] = {"ref": reference["ref"]}
             if target == "candidate" and state.get("candidate") is not None:
                 state["candidate"].setdefault("provenance", {}).update(
                     authenticatedSource=self.context.principal,
-                    contentReference=deepcopy(reference),
+                    contentReference={"ref": reference["ref"]},
                 )
             if target != "candidate":
                 item = deepcopy(self.items[target])
                 item.pop("gap", None)
-                item.update(selection="body", body=deepcopy(reference))
-                if "size" in item:
-                    item["size"] = len(data)
-                if "sha256" in item:
-                    item["sha256"] = reference["sha256"]
+                item.update(selection="body", body={"ref": reference["ref"]})
+                item.pop("size", None)
+                item.pop("sha256", None)
                 put(state["event"], self.context.bindings[target], item)
         candidate_ref = (
             (state.get("candidate") or {}).get("provenance", {}).get("contentReference")
         )
-        if isinstance(candidate_ref, dict) and self.context._identities.get(
-            candidate_ref.get("ref")
-        ) == (candidate_ref.get("size"), candidate_ref.get("sha256")):
+        if (
+            isinstance(candidate_ref, dict)
+            and candidate_ref.get("ref") in self.context._identities
+        ):
             references.setdefault("candidate", deepcopy(candidate_ref))
         if references:
             state["content_references"] = references
@@ -635,7 +631,7 @@ class ContentSources:
                     "Content source metadata disagrees with actual bytes"
                 )
             reference = await uploader(data)
-            validator.validate("content-reference", reference)
+            validator.validate("content-upload-receipt", reference)
             identity = (len(data), digest)
             if (reference["size"], reference["sha256"]) != identity:
                 raise ProtocolError("Uploaded descriptor does not match source bytes")
@@ -644,7 +640,9 @@ class ContentSources:
                 raise ProtocolError("Immutable content reference changed")
             self._references[reference["ref"]] = identity
             item.pop("gap", None)
-            item.update(selection="body", body=deepcopy(reference))
+            item.update(selection="body", body={"ref": reference["ref"]})
+            item.pop("size", None)
+            item.pop("sha256", None)
             validator.validate("content-item", item)
         return view
 

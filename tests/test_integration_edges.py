@@ -42,7 +42,7 @@ class IntegrationEdgeTests(unittest.TestCase):
                     "kind": "elicitation." + stage,
                     "mediaType": "application/json",
                     "selection": "body",
-                    "body": reference,
+                    "body": {"ref": reference["ref"]},
                 },
             }
             event = {

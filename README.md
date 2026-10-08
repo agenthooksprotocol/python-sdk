@@ -45,7 +45,7 @@ Runnable, statically checked consumer programs live in [`examples/`](examples):
 - `typed_tool.py`: JSON registration, generated tool input, typed grants, initial state, real in-process ASGI handler, borrowed HTTP client, and explicit application decoding.
 - `common_cases.py`: rewrite/allow, deny, invalid application shape, host policy, occurrence narrowing, native initial state, and fail-open/fail-closed reports. The host operation is an in-memory execution recorder, not a shell.
 - `stdio_tool.py` / `stdio_backend.py`: a real owned backend process using the same public Handler, denial, and child cleanup.
-- `upload.py`: streamed binary upload, metadata no-read behavior, independent upload credentials, verified descriptor, and caller-owned immutable storage.
+- `upload.py`: streamed binary upload, metadata no-read behavior, independent upload credentials, verified upload receipt, and caller-owned immutable storage.
 
 - `lifecycle.py`: caller-owned task groups, operation-owned observations, interrupted requests, idempotent close, and proof that an owned subprocess was reaped.
 - `http_auth.py`: real loopback HTTP, canonical backend callbacks, registration `tokenEnv` resolution, and separate content-upload authorization. Its standard-library HTTP routing is example host code, not a production server.
@@ -105,7 +105,7 @@ The attachment receiver verifies byte length and digest through EOF before commi
 
 ## Body-bound boundaries
 
-Use `ContentContext` for MCP elicitation and compaction bodies. Its asynchronous `resolve(reference)` and `upload(bytes)` functions are trusted storage/transport adapters, not application-schema callbacks. `upload` must return a verified receiver-allocated immutable descriptor after storage commit. The SDK verifies referenced bytes and replacement descriptors before publishing an accepted state.
+Use `ContentContext` for MCP elicitation and compaction bodies. Its asynchronous `resolve(reference)` and `upload(bytes)` functions are trusted storage/transport adapters, not application-schema callbacks. `upload` must return a verified `ContentUploadReceipt` (`ref`, `size`, `sha256`) after storage commit. The SDK checks receipt length and digest against the actual uploaded bytes. `resolve` receives only `{ "ref": ... }` and must resolve immutable bytes within its authorized storage scope; event metadata is not an integrity authority. The SDK detects changes to previously resolved bytes.
 
 Bindings are explicit paths within the canonical event:
 
@@ -122,7 +122,7 @@ Pass `content=context` to the named boundary. An elicitation result needs the or
 
 `OwnedContentSource(stream, max_bytes=..., timeout=...)` wraps an async native `read(size)`/`receive(size)` stream with `aclose()`. Construction does not read. Size/hash expectations are optional and verified, not trusted. Generated inputs expose named `bind_<slot>_source(source)` methods; repeated content slots additionally require `index=`. For example, `input.bind_items_source(source, index=0)` binds an existing metadata item without putting the stream into wire JSON.
 
-Pass the bound input to a named hook method with `uploads={backend_id: authorized_upload_callback}`. Each callback receives immutable bytes and returns a receiver-allocated canonical content reference; it can use `auth.AuthenticatedHTTPTransport.upload(..., authentication=upload_binding)`. Metadata, omit, and unmatched receivers consume no bytes and require no uploader. Selected body delivery snapshots once within limits, hashes actual raw bytes, uploads independently for each authorized destination, and verifies references before event delivery. Missing receiver authorization fails before reading. Source bindings derive from shared generated metadata; advanced `ContentSources` and existing canonical references/resolvers remain available.
+Pass the bound input to a named hook method with `uploads={backend_id: authorized_upload_callback}`. Each callback receives immutable bytes and returns a receiver-allocated canonical upload receipt; it can use `auth.AuthenticatedHTTPTransport.upload(..., authentication=upload_binding)`. Metadata, omit, and unmatched receivers consume no bytes and require no uploader. Selected body delivery snapshots once within limits, hashes actual raw bytes, uploads independently for each authorized destination, and verifies receipts before event delivery. Missing receiver authorization fails before reading. Source bindings derive from shared generated metadata; advanced `ContentSources` and existing canonical references/resolvers remain available.
 
 Ownership transfers to the source wrapper, then to the hook operation when passed. Streams close on success, failure, cancellation, and unused selection; snapshots release when the call finishes. Sources are single-operation values, not concurrently reusable. Call `aclose()` or use an async context manager for a source that never reaches a hook call. Cleanup is shielded and bounded separately from the operation budget.
 
@@ -162,3 +162,8 @@ Migration: use generated nested models instead of arbitrary mappings for typed
 constructor arguments. Runtime parsing still checks location/evidence
 alternatives and other schema constraints at its existing boundary. Application
 JSON, native payloads, and extension values remain intentionally dynamic.
+
+Upload receipts and event references are distinct. To attach a successful upload,
+use `content.reference(receipt)` (or `{"ref": receipt["ref"]}`). Never attach the
+receipt itself: body-selected content carries only the ref, with no outer `size`
+or `sha256`. Metadata-only content and body gaps may still disclose size/digest.

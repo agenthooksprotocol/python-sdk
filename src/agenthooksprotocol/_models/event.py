@@ -22,6 +22,7 @@ from . import ContextCompactBeforeEvent as ContextCompactBeforeEvent
 from . import ContextCompactBeforeInput as ContextCompactBeforeInput
 from . import ToolPermissionResolvedInputDecidedBy as DecidedBy
 from . import ToolPermissionResolvedInputDecision as Decision
+from . import Event as Event
 from . import ModelErrorInputExecutionExecuted as ExecutionExecuted
 from . import ModelErrorInputExecutionSkippedCancelled as ExecutionSkippedCancelled
 from . import ModelErrorInputExecutionSkippedOther as ExecutionSkippedOther
@@ -148,6 +149,7 @@ __all__ = [
     "ContextCompactBeforeInput",
     "DecidedBy",
     "Decision",
+    "Event",
     "ExecutionExecuted",
     "ExecutionSkippedCancelled",
     "ExecutionSkippedOther",

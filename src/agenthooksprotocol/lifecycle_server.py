@@ -387,6 +387,27 @@ class Server:
                     if control:
                         status, result = owner.control(self.path, value)
                     elif self.path in ("/intercept", "/observe", "/capabilities"):
+                        # The notification dispatcher intentionally suppresses
+                        # JSON-RPC errors. HTTP must reject invalid raw envelopes
+                        # before dispatch, not mistake suppression for admission.
+                        kind = (
+                            {
+                                "hooks/intercept": "intercept-request",
+                                "hooks/observe": "observe-notification",
+                            }.get(value.get("method"))
+                            if isinstance(value, dict)
+                            else None
+                        )
+                        if (
+                            kind is not None
+                            and owner.config.get("suite") != "catalogue"
+                        ):
+                            # Catalogue admission already validates raw input and
+                            # records its schema/lineage rejection receipts.
+                            try:
+                                owner.validator.validate(kind, value)
+                            except ProtocolError as error:
+                                raise CatalogueRejection(400) from error
                         result = owner.protocol(value)
                         status = 204 if result is None else 200
                     else:

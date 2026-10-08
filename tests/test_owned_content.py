@@ -122,6 +122,11 @@ class OwnedContentTests(unittest.TestCase):
                     views[0]["instructions"]["body"]["ref"],
                     views[1]["instructions"]["body"]["ref"],
                 )
+                for view in views:
+                    item = view["instructions"]
+                    self.assertEqual(set(item["body"]), {"ref"})
+                    self.assertNotIn("size", item)
+                    self.assertNotIn("sha256", item)
                 self.assertEqual(writes, [b"hello", b"hello"])
                 self.assertEqual(stream.reads, 2)
             self.assertEqual(stream.closes, 1)
@@ -327,12 +332,10 @@ class OwnedContentTests(unittest.TestCase):
             value = event()
             value["instructions"].update(
                 selection="body",
-                body={
-                    "ref": "urn:settled",
-                    "size": 5,
-                    "sha256": hashlib.sha256(b"other").hexdigest(),
-                },
+                body={"ref": "urn:settled"},
             )
+            value["instructions"].pop("size", None)
+            value["instructions"].pop("sha256", None)
             async with ContentSources(
                 {INSTRUCTIONS: OwnedContentSource(stream)}
             ) as sources:

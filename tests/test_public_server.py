@@ -337,7 +337,7 @@ class PublicServerTests(unittest.TestCase):
             events.append("response")
             self.assertEqual(events, ["authorize", "read", "eof", "commit", "response"])
             self.assertEqual(stored["scope", descriptor["ref"]], data)
-            Validator().validate("content-reference", descriptor)
+            Validator().validate("content-upload-receipt", descriptor)
             other = await attachments.receive(
                 upload_headers(data), body(), authorize=authorize, storage=Store()
             )

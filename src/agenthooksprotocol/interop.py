@@ -458,7 +458,7 @@ def validate_descriptor(response, data, validator):
     if len(raw) > LIMIT:
         raise ProtocolError("Upload response too large")
     descriptor = loads(raw)
-    validator.validate("content-reference", descriptor)
+    validator.validate("content-upload-receipt", descriptor)
     if (
         descriptor["size"] != len(data)
         or descriptor["sha256"] != hashlib.sha256(data).hexdigest()
@@ -503,8 +503,8 @@ def upload_blob(config, data, validator):
 def replace_references(value, references):
     """Rewrite fixture-local placeholders only after every upload is confirmed."""
     if isinstance(value, dict):
-        if set(value) == {"ref", "size", "sha256"} and value["ref"] in references:
-            return deepcopy(references[value["ref"]])
+        if set(value) == {"ref"} and value["ref"] in references:
+            return {"ref": references[value["ref"]]["ref"]}
         return {
             key: replace_references(child, references) for key, child in value.items()
         }
@@ -606,15 +606,8 @@ class AdapterServer:
             for item in content_items(request["params"]["event"]):
                 body = item["body"]
                 data = self.blobs.get((scope, body["ref"]))
-                if (
-                    data is None
-                    or len(data) != body["size"]
-                    or hashlib.sha256(data).hexdigest() != body["sha256"]
-                ):
+                if data is None:
                     raise ProtocolError("Unauthorized or unavailable content")
-                for key in ("size", "sha256"):
-                    if key in item and item[key] != body[key]:
-                        raise ProtocolError("Content metadata mismatch")
 
     def capabilities(self):
         result = {
@@ -790,6 +783,9 @@ class AdapterServer:
                                         "size": len(data),
                                         "sha256": hashlib.sha256(data).hexdigest(),
                                     }
+                                    adapter.validator.validate(
+                                        "content-upload-receipt", descriptor
+                                    )
                                     with adapter.lock:
                                         adapter.blobs[(scope, descriptor["ref"])] = data
                                     return self.send_json(201, descriptor)

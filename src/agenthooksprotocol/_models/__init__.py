@@ -2069,8 +2069,6 @@ class ContentItemBody(dict[str, Any]):
         parent_item_id: str = _UNSET,
         role: str = _UNSET,
         selection: Literal["body"] = _UNSET,
-        sha256: str = _UNSET,
-        size: int = _UNSET,
         synthesized: bool = _UNSET,
         **extra: Any,
     ) -> None:
@@ -2086,10 +2084,6 @@ class ContentItemBody(dict[str, Any]):
         if role is not _UNSET:
             self["role"] = role
         self["selection"] = json.loads('"body"') if selection is _UNSET else selection
-        if sha256 is not _UNSET:
-            self["sha256"] = sha256
-        if size is not _UNSET:
-            self["size"] = size
         if synthesized is not _UNSET:
             self["synthesized"] = synthesized
 
@@ -2124,14 +2118,6 @@ class ContentItemBody(dict[str, Any]):
     @property
     def selection(self) -> Literal["body"]:
         return self["selection"]
-
-    @property
-    def sha256(self) -> str | None:
-        return self.get("sha256")
-
-    @property
-    def size(self) -> int | None:
-        return self.get("size")
 
     @property
     def synthesized(self) -> bool | None:
@@ -2398,23 +2384,13 @@ class ContentItemOmit(dict[str, Any]):
 class ContentReference(dict[str, Any]):
     """Keyword-only wire object; parsing remains strict and separate. Optional attributes return None when absent; mapping-method names use a trailing underscore."""
 
-    def __init__(self, *, ref: str, sha256: str, size: int, **extra: Any) -> None:
+    def __init__(self, *, ref: str, **extra: Any) -> None:
         super().__init__(extra)
         self["ref"] = ref
-        self["sha256"] = sha256
-        self["size"] = size
 
     @property
     def ref(self) -> str:
         return self["ref"]
-
-    @property
-    def sha256(self) -> str:
-        return self["sha256"]
-
-    @property
-    def size(self) -> int:
-        return self["size"]
 
 
 class ContentSelection(dict[str, Any]):
@@ -2552,6 +2528,28 @@ class ContentUpload(dict[str, Any]):
     @property
     def timeout_ms(self) -> int:
         return self["timeoutMs"]
+
+
+class ContentUploadReceipt(dict[str, Any]):
+    """Keyword-only wire object; parsing remains strict and separate. Optional attributes return None when absent; mapping-method names use a trailing underscore."""
+
+    def __init__(self, *, ref: str, sha256: str, size: int, **extra: Any) -> None:
+        super().__init__(extra)
+        self["ref"] = ref
+        self["sha256"] = sha256
+        self["size"] = size
+
+    @property
+    def ref(self) -> str:
+        return self["ref"]
+
+    @property
+    def sha256(self) -> str:
+        return self["sha256"]
+
+    @property
+    def size(self) -> int:
+        return self["size"]
 
 
 class ContextCompactAfterCapabilities(dict[str, Any]):
@@ -8993,8 +8991,6 @@ class InteractionEventUserElicitationRequestElicitationRequestBody(dict[str, Any
         parent_item_id: str = _UNSET,
         role: str = _UNSET,
         selection: Literal["body"] = _UNSET,
-        sha256: str = _UNSET,
-        size: int = _UNSET,
         synthesized: bool = _UNSET,
         **extra: Any,
     ) -> None:
@@ -9012,10 +9008,6 @@ class InteractionEventUserElicitationRequestElicitationRequestBody(dict[str, Any
         if role is not _UNSET:
             self["role"] = role
         self["selection"] = json.loads('"body"') if selection is _UNSET else selection
-        if sha256 is not _UNSET:
-            self["sha256"] = sha256
-        if size is not _UNSET:
-            self["size"] = size
         if synthesized is not _UNSET:
             self["synthesized"] = synthesized
 
@@ -9050,14 +9042,6 @@ class InteractionEventUserElicitationRequestElicitationRequestBody(dict[str, Any
     @property
     def selection(self) -> Literal["body"]:
         return self["selection"]
-
-    @property
-    def sha256(self) -> str | None:
-        return self.get("sha256")
-
-    @property
-    def size(self) -> int | None:
-        return self.get("size")
 
     @property
     def synthesized(self) -> bool | None:
@@ -9426,8 +9410,6 @@ class InteractionEventUserElicitationResultElicitationResultBody(dict[str, Any])
         parent_item_id: str = _UNSET,
         role: str = _UNSET,
         selection: Literal["body"] = _UNSET,
-        sha256: str = _UNSET,
-        size: int = _UNSET,
         synthesized: bool = _UNSET,
         **extra: Any,
     ) -> None:
@@ -9445,10 +9427,6 @@ class InteractionEventUserElicitationResultElicitationResultBody(dict[str, Any])
         if role is not _UNSET:
             self["role"] = role
         self["selection"] = json.loads('"body"') if selection is _UNSET else selection
-        if sha256 is not _UNSET:
-            self["sha256"] = sha256
-        if size is not _UNSET:
-            self["size"] = size
         if synthesized is not _UNSET:
             self["synthesized"] = synthesized
 
@@ -9483,14 +9461,6 @@ class InteractionEventUserElicitationResultElicitationResultBody(dict[str, Any])
     @property
     def selection(self) -> Literal["body"]:
         return self["selection"]
-
-    @property
-    def sha256(self) -> str | None:
-        return self.get("sha256")
-
-    @property
-    def size(self) -> int | None:
-        return self.get("size")
 
     @property
     def synthesized(self) -> bool | None:
@@ -10034,25 +10004,7 @@ class InterceptRequestParams(dict[str, Any]):
         self,
         *,
         capabilities: InterceptRequestParamsCapabilities,
-        event: ConfigChangeBeforeEvent
-        | ContextCompactAfterEvent
-        | ContextCompactBeforeEvent
-        | ModelRequestBeforeEvent
-        | ModelResponseAfterEvent
-        | ModelSwitchBeforeEvent
-        | SessionStartEvent
-        | TaskChangeBeforeEvent
-        | ToolAfterEvent
-        | ToolBatchAfterEvent
-        | ToolBeforeEvent
-        | ToolPermissionRequestEvent
-        | TurnFinishBeforeEvent
-        | TurnStartEvent
-        | UserElicitationRequestEvent
-        | UserElicitationResultEvent
-        | UserMessageInboundEvent
-        | UserMessageOutboundEvent
-        | WorkspaceChangeBeforeEvent,
+        event: Event,
         extensions: dict[str, Any] = _UNSET,
         protocol_version: Literal["draft"] = _UNSET,
         state: InterceptRequestParamsState = _UNSET,
@@ -10074,29 +10026,7 @@ class InterceptRequestParams(dict[str, Any]):
         return self["capabilities"]
 
     @property
-    def event(
-        self,
-    ) -> (
-        ConfigChangeBeforeEvent
-        | ContextCompactAfterEvent
-        | ContextCompactBeforeEvent
-        | ModelRequestBeforeEvent
-        | ModelResponseAfterEvent
-        | ModelSwitchBeforeEvent
-        | SessionStartEvent
-        | TaskChangeBeforeEvent
-        | ToolAfterEvent
-        | ToolBatchAfterEvent
-        | ToolBeforeEvent
-        | ToolPermissionRequestEvent
-        | TurnFinishBeforeEvent
-        | TurnStartEvent
-        | UserElicitationRequestEvent
-        | UserElicitationResultEvent
-        | UserMessageInboundEvent
-        | UserMessageOutboundEvent
-        | WorkspaceChangeBeforeEvent
-    ):
+    def event(self) -> Event:
         return self["event"]
 
     @property
@@ -14012,8 +13942,6 @@ class ModelVisibleItemBody(dict[str, Any]):
         parent_item_id: str = _UNSET,
         role: str,
         selection: Literal["body"] = _UNSET,
-        sha256: str = _UNSET,
-        size: int = _UNSET,
         synthesized: bool = _UNSET,
         **extra: Any,
     ) -> None:
@@ -14028,10 +13956,6 @@ class ModelVisibleItemBody(dict[str, Any]):
             self["parentItemId"] = parent_item_id
         self["role"] = role
         self["selection"] = json.loads('"body"') if selection is _UNSET else selection
-        if sha256 is not _UNSET:
-            self["sha256"] = sha256
-        if size is not _UNSET:
-            self["size"] = size
         if synthesized is not _UNSET:
             self["synthesized"] = synthesized
 
@@ -14066,14 +13990,6 @@ class ModelVisibleItemBody(dict[str, Any]):
     @property
     def selection(self) -> Literal["body"]:
         return self["selection"]
-
-    @property
-    def sha256(self) -> str | None:
-        return self.get("sha256")
-
-    @property
-    def size(self) -> int | None:
-        return self.get("size")
 
     @property
     def synthesized(self) -> bool | None:
@@ -14367,42 +14283,7 @@ class ObserveNotificationParams(dict[str, Any]):
     """Keyword-only wire object; parsing remains strict and separate. Optional attributes return None when absent; mapping-method names use a trailing underscore."""
 
     def __init__(
-        self,
-        *,
-        event: ConfigChangeAfterEvent
-        | ConfigChangeBeforeEvent
-        | ContextCompactAfterEvent
-        | ContextCompactBeforeEvent
-        | FileChangedEvent
-        | HookFailureEvent
-        | ModelErrorEvent
-        | ModelRequestBeforeEvent
-        | ModelResponseAfterEvent
-        | ModelSwitchAfterEvent
-        | ModelSwitchBeforeEvent
-        | SessionEndEvent
-        | SessionStartEvent
-        | TaskChangeAfterEvent
-        | TaskChangeBeforeEvent
-        | ToolAfterEvent
-        | ToolBatchAfterEvent
-        | ToolBeforeEvent
-        | ToolPermissionRequestEvent
-        | ToolPermissionResolvedEvent
-        | ToolProgressEvent
-        | TurnEndEvent
-        | TurnFinishBeforeEvent
-        | TurnProgressEvent
-        | TurnStartEvent
-        | UserAttentionEvent
-        | UserElicitationRequestEvent
-        | UserElicitationResultEvent
-        | UserMessageInboundEvent
-        | UserMessageOutboundEvent
-        | WorkspaceChangeAfterEvent
-        | WorkspaceChangeBeforeEvent,
-        protocol_version: Literal["draft"] = _UNSET,
-        **extra: Any,
+        self, *, event: Event, protocol_version: Literal["draft"] = _UNSET, **extra: Any
     ) -> None:
         super().__init__(extra)
         self["event"] = event
@@ -14411,42 +14292,7 @@ class ObserveNotificationParams(dict[str, Any]):
         )
 
     @property
-    def event(
-        self,
-    ) -> (
-        ConfigChangeAfterEvent
-        | ConfigChangeBeforeEvent
-        | ContextCompactAfterEvent
-        | ContextCompactBeforeEvent
-        | FileChangedEvent
-        | HookFailureEvent
-        | ModelErrorEvent
-        | ModelRequestBeforeEvent
-        | ModelResponseAfterEvent
-        | ModelSwitchAfterEvent
-        | ModelSwitchBeforeEvent
-        | SessionEndEvent
-        | SessionStartEvent
-        | TaskChangeAfterEvent
-        | TaskChangeBeforeEvent
-        | ToolAfterEvent
-        | ToolBatchAfterEvent
-        | ToolBeforeEvent
-        | ToolPermissionRequestEvent
-        | ToolPermissionResolvedEvent
-        | ToolProgressEvent
-        | TurnEndEvent
-        | TurnFinishBeforeEvent
-        | TurnProgressEvent
-        | TurnStartEvent
-        | UserAttentionEvent
-        | UserElicitationRequestEvent
-        | UserElicitationResultEvent
-        | UserMessageInboundEvent
-        | UserMessageOutboundEvent
-        | WorkspaceChangeAfterEvent
-        | WorkspaceChangeBeforeEvent
-    ):
+    def event(self) -> Event:
         return self["event"]
 
     @property
@@ -24434,8 +24280,6 @@ class UserElicitationRequestEventElicitationRequestBody(dict[str, Any]):
         parent_item_id: str = _UNSET,
         role: str = _UNSET,
         selection: Literal["body"] = _UNSET,
-        sha256: str = _UNSET,
-        size: int = _UNSET,
         synthesized: bool = _UNSET,
         **extra: Any,
     ) -> None:
@@ -24453,10 +24297,6 @@ class UserElicitationRequestEventElicitationRequestBody(dict[str, Any]):
         if role is not _UNSET:
             self["role"] = role
         self["selection"] = json.loads('"body"') if selection is _UNSET else selection
-        if sha256 is not _UNSET:
-            self["sha256"] = sha256
-        if size is not _UNSET:
-            self["size"] = size
         if synthesized is not _UNSET:
             self["synthesized"] = synthesized
 
@@ -24491,14 +24331,6 @@ class UserElicitationRequestEventElicitationRequestBody(dict[str, Any]):
     @property
     def selection(self) -> Literal["body"]:
         return self["selection"]
-
-    @property
-    def sha256(self) -> str | None:
-        return self.get("sha256")
-
-    @property
-    def size(self) -> int | None:
-        return self.get("size")
 
     @property
     def synthesized(self) -> bool | None:
@@ -24863,8 +24695,6 @@ class UserElicitationRequestInputElicitationRequestBody(dict[str, Any]):
         parent_item_id: str = _UNSET,
         role: str = _UNSET,
         selection: Literal["body"] = _UNSET,
-        sha256: str = _UNSET,
-        size: int = _UNSET,
         synthesized: bool = _UNSET,
         **extra: Any,
     ) -> None:
@@ -24882,10 +24712,6 @@ class UserElicitationRequestInputElicitationRequestBody(dict[str, Any]):
         if role is not _UNSET:
             self["role"] = role
         self["selection"] = json.loads('"body"') if selection is _UNSET else selection
-        if sha256 is not _UNSET:
-            self["sha256"] = sha256
-        if size is not _UNSET:
-            self["size"] = size
         if synthesized is not _UNSET:
             self["synthesized"] = synthesized
 
@@ -24920,14 +24746,6 @@ class UserElicitationRequestInputElicitationRequestBody(dict[str, Any]):
     @property
     def selection(self) -> Literal["body"]:
         return self["selection"]
-
-    @property
-    def sha256(self) -> str | None:
-        return self.get("sha256")
-
-    @property
-    def size(self) -> int | None:
-        return self.get("size")
 
     @property
     def synthesized(self) -> bool | None:
@@ -25943,8 +25761,6 @@ class UserElicitationResultEventElicitationResultBody(dict[str, Any]):
         parent_item_id: str = _UNSET,
         role: str = _UNSET,
         selection: Literal["body"] = _UNSET,
-        sha256: str = _UNSET,
-        size: int = _UNSET,
         synthesized: bool = _UNSET,
         **extra: Any,
     ) -> None:
@@ -25962,10 +25778,6 @@ class UserElicitationResultEventElicitationResultBody(dict[str, Any]):
         if role is not _UNSET:
             self["role"] = role
         self["selection"] = json.loads('"body"') if selection is _UNSET else selection
-        if sha256 is not _UNSET:
-            self["sha256"] = sha256
-        if size is not _UNSET:
-            self["size"] = size
         if synthesized is not _UNSET:
             self["synthesized"] = synthesized
 
@@ -26000,14 +25812,6 @@ class UserElicitationResultEventElicitationResultBody(dict[str, Any]):
     @property
     def selection(self) -> Literal["body"]:
         return self["selection"]
-
-    @property
-    def sha256(self) -> str | None:
-        return self.get("sha256")
-
-    @property
-    def size(self) -> int | None:
-        return self.get("size")
 
     @property
     def synthesized(self) -> bool | None:
@@ -26384,8 +26188,6 @@ class UserElicitationResultInputElicitationResultBody(dict[str, Any]):
         parent_item_id: str = _UNSET,
         role: str = _UNSET,
         selection: Literal["body"] = _UNSET,
-        sha256: str = _UNSET,
-        size: int = _UNSET,
         synthesized: bool = _UNSET,
         **extra: Any,
     ) -> None:
@@ -26403,10 +26205,6 @@ class UserElicitationResultInputElicitationResultBody(dict[str, Any]):
         if role is not _UNSET:
             self["role"] = role
         self["selection"] = json.loads('"body"') if selection is _UNSET else selection
-        if sha256 is not _UNSET:
-            self["sha256"] = sha256
-        if size is not _UNSET:
-            self["size"] = size
         if synthesized is not _UNSET:
             self["synthesized"] = synthesized
 
@@ -26441,14 +26239,6 @@ class UserElicitationResultInputElicitationResultBody(dict[str, Any]):
     @property
     def selection(self) -> Literal["body"]:
         return self["selection"]
-
-    @property
-    def sha256(self) -> str | None:
-        return self.get("sha256")
-
-    @property
-    def size(self) -> int | None:
-        return self.get("size")
 
     @property
     def synthesized(self) -> bool | None:
@@ -29415,6 +29205,41 @@ WorkspaceChangeBeforeEvent = TaskWorkspaceEventWorkspaceChangeBefore
 WorkspaceChangeBeforeInputExtensions = Extensions
 WorkspaceChangeBeforeInputSession = Session
 
+Event = (
+    ConfigChangeAfterEvent
+    | ConfigChangeBeforeEvent
+    | ContextCompactAfterEvent
+    | ContextCompactBeforeEvent
+    | FileChangedEvent
+    | HookFailureEvent
+    | ModelErrorEvent
+    | ModelRequestBeforeEvent
+    | ModelResponseAfterEvent
+    | ModelSwitchAfterEvent
+    | ModelSwitchBeforeEvent
+    | SessionEndEvent
+    | SessionStartEvent
+    | TaskChangeAfterEvent
+    | TaskChangeBeforeEvent
+    | ToolAfterEvent
+    | ToolBatchAfterEvent
+    | ToolBeforeEvent
+    | ToolPermissionRequestEvent
+    | ToolPermissionResolvedEvent
+    | ToolProgressEvent
+    | TurnEndEvent
+    | TurnFinishBeforeEvent
+    | TurnProgressEvent
+    | TurnStartEvent
+    | UserAttentionEvent
+    | UserElicitationRequestEvent
+    | UserElicitationResultEvent
+    | UserMessageInboundEvent
+    | UserMessageOutboundEvent
+    | WorkspaceChangeAfterEvent
+    | WorkspaceChangeBeforeEvent
+)
+
 
 class Path(StrEnum):
     NATIVE = "native"
@@ -29520,6 +29345,7 @@ __all__ = [
     "ContentSelectionText",
     "ContentSelectionVideo",
     "ContentUpload",
+    "ContentUploadReceipt",
     "ContextCompactAfterCapabilities",
     "ContextCompactAfterCapabilitiesEffectsItemKnown",
     "ContextCompactAfterCapabilitiesElicitation",
@@ -30598,6 +30424,7 @@ __all__ = [
     "WorkspaceChangeBeforeInputWorkspaceKind",
     "WorkspaceChangeBeforeInputWorkspacePrior",
     "Path",
+    "Event",
     "ConfigChangeAfterInput",
     "ConfigChangeBeforeInput",
     "ContextCompactAfterInput",

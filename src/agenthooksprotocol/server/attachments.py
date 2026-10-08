@@ -23,7 +23,10 @@ from collections.abc import AsyncIterator, Awaitable, Callable, MutableMapping
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from email.message import Message
-from typing import Any, Protocol
+from typing import Any, Protocol, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ..generated import ContentUploadReceipt
 from uuid import uuid4
 
 from ..runtime import ProtocolError, Validator
@@ -115,8 +118,8 @@ async def receive(
     authorize: Callable[[str | None], Awaitable[tuple[int, object | None]]],
     storage: Storage,
     max_bytes: int = 4 * 1024 * 1024,
-) -> dict[str, Any]:
-    """Return a canonical descriptor only after authorization, EOF and commit."""
+) -> ContentUploadReceipt:
+    """Return a canonical upload receipt only after authorization, EOF and commit."""
     headers = _headers(headers)
     if len(headers.get_all("Authorization", [])) > 1:
         raise HTTPError(400, b"Duplicate authorization")
@@ -127,8 +130,12 @@ async def receive(
         )
     async with parse(headers, body, max_bytes=max_bytes) as upload:
         ref = "ahp-attachment:" + uuid4().hex
-        descriptor = {"ref": ref, "size": upload.size, "sha256": upload.sha256}
-        Validator().validate("content-reference", descriptor)
+        descriptor: ContentUploadReceipt = {
+            "ref": ref,
+            "size": upload.size,
+            "sha256": upload.sha256,
+        }
+        Validator().validate("content-upload-receipt", descriptor)
         await storage.commit(scope=scope, ref=ref, data=upload.data)
         return descriptor
 

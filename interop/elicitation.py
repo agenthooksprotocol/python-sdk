@@ -112,8 +112,6 @@ def main():
     def resolve(ref):
         validate("content-reference", ref)
         raw = store[ref["ref"]]
-        if len(raw) != ref["size"] or hashlib.sha256(raw).hexdigest() != ref["sha256"]:
-            raise ValueError("Upload integrity")
         return raw
 
     if sys.argv[1] == "check":
@@ -230,6 +228,7 @@ def main():
                 or self.headers.get("Authorization") != "Bearer " + credential
             ):
                 self.send_response(401)
+                self.send_header("Content-Length", "0")
                 self.end_headers()
                 return
             try:
@@ -317,11 +316,12 @@ def main():
             except Exception:
                 status = 400
                 response = {"error": "rejected"}
+            body = json.dumps(response).encode() if response is not None else b""
             self.send_response(status)
             self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(body)))
             self.end_headers()
-            if response is not None:
-                self.wfile.write(json.dumps(response).encode())
+            self.wfile.write(body)
 
     server = HTTPServer(("127.0.0.1", 0), Handler)
     print(

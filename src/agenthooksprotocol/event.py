@@ -22,6 +22,7 @@ from ._models.event import ContextCompactBeforeEvent as ContextCompactBeforeEven
 from ._models.event import ContextCompactBeforeInput as ContextCompactBeforeInput
 from ._models.event import DecidedBy as DecidedBy
 from ._models.event import Decision as Decision
+from ._models.event import Event as Event
 from ._models.event import ExecutionExecuted as ExecutionExecuted
 from ._models.event import ExecutionSkippedCancelled as ExecutionSkippedCancelled
 from ._models.event import ExecutionSkippedOther as ExecutionSkippedOther

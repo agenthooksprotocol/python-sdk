@@ -121,7 +121,7 @@ class CorrectedSchemaTests(unittest.TestCase):
 
     def test_sha256_requires_exact_lowercase_hex(self):
         reference = {"ref": "binary", "size": 0, "sha256": "a" * 64}
-        self.validator.validate("content-reference", reference)
+        self.validator.validate("content-upload-receipt", reference)
         for digest in (
             "a" * 63,
             "a" * 65,
@@ -133,7 +133,7 @@ class CorrectedSchemaTests(unittest.TestCase):
             with self.subTest(digest=repr(digest)):
                 with self.assertRaises(ProtocolError):
                     self.validator.validate(
-                        "content-reference", {**reference, "sha256": digest}
+                        "content-upload-receipt", {**reference, "sha256": digest}
                     )
 
     def test_model_visible_children_require_explicit_role(self):

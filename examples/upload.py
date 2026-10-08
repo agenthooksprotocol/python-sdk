@@ -3,10 +3,10 @@
 from collections.abc import AsyncIterator
 import hashlib
 import json
-from typing import Any
 
 import anyio
 import httpx
+from agenthooksprotocol.content import reference
 from agenthooksprotocol.server import attachments
 from agenthooksprotocol.transports.http import HTTPTransport
 
@@ -56,21 +56,24 @@ async def main() -> None:
             "http://upload.test/content", body(), selection="metadata"
         )
         assert reads == 0
-        descriptor: dict[str, Any] | None = await transport.upload(
+        receipt = await transport.upload(
             "http://upload.test/content",
             body(),
             size=len(data),
             sha256=hashlib.sha256(data).hexdigest(),
             headers={"Authorization": "Bearer upload-only"},
         )
-        assert descriptor is not None
-        assert store.blobs[("upload-principal", descriptor["ref"])] == data
+        assert receipt is not None
+        # Only this reference belongs in an event; the receipt confirms upload.
+        body_reference = reference(receipt)
+        assert set(body_reference) == {"ref"}
+        assert store.blobs[("upload-principal", receipt["ref"])] == data
         assert reads == 1
         print(
             json.dumps(
                 {
-                    "size": descriptor["size"],
-                    "sha256": descriptor["sha256"],
+                    "size": receipt["size"],
+                    "sha256": receipt["sha256"],
                     "verified": True,
                     "committed": True,
                     "bodyReads": reads,

@@ -9,13 +9,26 @@ import json
 _UNSET: Any = object()
 
 
+class EffectName(StrEnum):
+    """Schema effect-family identifiers; queries also accept custom strings."""
+
+    ALLOW = "allow"
+    ASK = "ask"
+    DENY = "deny"
+    FLOW = "flow"
+    INJECT = "inject"
+    MESSAGE = "message"
+    MODIFY = "modify"
+    RETURN = "return"
+
+
 class Mode(StrEnum):
     INTERCEPT = "intercept"
     OBSERVE = "observe"
 
 
 class Allow(dict[str, Any]):
-    """Keyword-only wire object; parsing remains strict and separate. Optional attributes return None when absent; mapping-method names use a trailing underscore."""
+    """Keyword-only wire object; wire constructors validate the original descriptor. Optional attributes return None when absent; mapping-method names use a trailing underscore."""
 
     def __init__(self, **extra: Any) -> None:
         super().__init__(extra)
@@ -26,7 +39,7 @@ class Allow(dict[str, Any]):
 
 
 class Ask(dict[str, Any]):
-    """Keyword-only wire object; parsing remains strict and separate. Optional attributes return None when absent; mapping-method names use a trailing underscore."""
+    """Keyword-only wire object; wire constructors validate the original descriptor. Optional attributes return None when absent; mapping-method names use a trailing underscore."""
 
     def __init__(self, **extra: Any) -> None:
         super().__init__(extra)
@@ -37,7 +50,7 @@ class Ask(dict[str, Any]):
 
 
 class Deny(dict[str, Any]):
-    """Keyword-only wire object; parsing remains strict and separate. Optional attributes return None when absent; mapping-method names use a trailing underscore."""
+    """Keyword-only wire object; wire constructors validate the original descriptor. Optional attributes return None when absent; mapping-method names use a trailing underscore."""
 
     def __init__(self, **extra: Any) -> None:
         super().__init__(extra)
@@ -48,7 +61,7 @@ class Deny(dict[str, Any]):
 
 
 class Flow(dict[str, Any]):
-    """Keyword-only wire object; parsing remains strict and separate. Optional attributes return None when absent; mapping-method names use a trailing underscore."""
+    """Keyword-only wire object; wire constructors validate the original descriptor. Optional attributes return None when absent; mapping-method names use a trailing underscore."""
 
     def __init__(
         self,
@@ -74,7 +87,7 @@ class Flow(dict[str, Any]):
 
 
 class Message(dict[str, Any]):
-    """Keyword-only wire object; parsing remains strict and separate. Optional attributes return None when absent; mapping-method names use a trailing underscore."""
+    """Keyword-only wire object; wire constructors validate the original descriptor. Optional attributes return None when absent; mapping-method names use a trailing underscore."""
 
     def __init__(self, **extra: Any) -> None:
         super().__init__(extra)
@@ -85,7 +98,7 @@ class Message(dict[str, Any]):
 
 
 class Return(dict[str, Any]):
-    """Keyword-only wire object; parsing remains strict and separate. Optional attributes return None when absent; mapping-method names use a trailing underscore."""
+    """Keyword-only wire object; wire constructors validate the original descriptor. Optional attributes return None when absent; mapping-method names use a trailing underscore."""
 
     def __init__(self, **extra: Any) -> None:
         super().__init__(extra)
@@ -96,7 +109,7 @@ class Return(dict[str, Any]):
 
 
 class ElicitationForm(dict[str, Any]):
-    """Keyword-only wire object; parsing remains strict and separate. Optional attributes return None when absent; mapping-method names use a trailing underscore."""
+    """Keyword-only wire object; wire constructors validate the original descriptor. Optional attributes return None when absent; mapping-method names use a trailing underscore."""
 
     def __init__(self, **extra: Any) -> None:
         super().__init__(extra)
@@ -107,7 +120,7 @@ class ElicitationForm(dict[str, Any]):
 
 
 class ElicitationUrl(dict[str, Any]):
-    """Keyword-only wire object; parsing remains strict and separate. Optional attributes return None when absent; mapping-method names use a trailing underscore."""
+    """Keyword-only wire object; wire constructors validate the original descriptor. Optional attributes return None when absent; mapping-method names use a trailing underscore."""
 
     def __init__(self, **extra: Any) -> None:
         super().__init__(extra)
@@ -118,7 +131,7 @@ class ElicitationUrl(dict[str, Any]):
 
 
 class InjectContext(dict[str, Any]):
-    """Keyword-only wire object; parsing remains strict and separate. Optional attributes return None when absent; mapping-method names use a trailing underscore."""
+    """Keyword-only wire object; wire constructors validate the original descriptor. Optional attributes return None when absent; mapping-method names use a trailing underscore."""
 
     def __init__(
         self, *, append: Literal[True] = _UNSET, deliver_at: list[str], **extra: Any
@@ -133,7 +146,7 @@ class InjectContext(dict[str, Any]):
 
 
 class ModifyContent(dict[str, Any]):
-    """Keyword-only wire object; parsing remains strict and separate. Optional attributes return None when absent; mapping-method names use a trailing underscore."""
+    """Keyword-only wire object; wire constructors validate the original descriptor. Optional attributes return None when absent; mapping-method names use a trailing underscore."""
 
     def __init__(
         self, *, merge: bool = _UNSET, replace: bool = _UNSET, **extra: Any
@@ -148,7 +161,7 @@ class ModifyContent(dict[str, Any]):
 
 
 class ModifyInput(dict[str, Any]):
-    """Keyword-only wire object; parsing remains strict and separate. Optional attributes return None when absent; mapping-method names use a trailing underscore."""
+    """Keyword-only wire object; wire constructors validate the original descriptor. Optional attributes return None when absent; mapping-method names use a trailing underscore."""
 
     def __init__(
         self, *, merge: bool = _UNSET, replace: bool = _UNSET, **extra: Any
@@ -163,7 +176,7 @@ class ModifyInput(dict[str, Any]):
 
 
 class ModifyInstructions(dict[str, Any]):
-    """Keyword-only wire object; parsing remains strict and separate. Optional attributes return None when absent; mapping-method names use a trailing underscore."""
+    """Keyword-only wire object; wire constructors validate the original descriptor. Optional attributes return None when absent; mapping-method names use a trailing underscore."""
 
     def __init__(
         self, *, merge: bool = _UNSET, replace: bool = _UNSET, **extra: Any
@@ -178,7 +191,7 @@ class ModifyInstructions(dict[str, Any]):
 
 
 class ModifyOutput(dict[str, Any]):
-    """Keyword-only wire object; parsing remains strict and separate. Optional attributes return None when absent; mapping-method names use a trailing underscore."""
+    """Keyword-only wire object; wire constructors validate the original descriptor. Optional attributes return None when absent; mapping-method names use a trailing underscore."""
 
     def __init__(
         self, *, merge: bool = _UNSET, replace: bool = _UNSET, **extra: Any
@@ -193,7 +206,7 @@ class ModifyOutput(dict[str, Any]):
 
 
 class ModifyPrompt(dict[str, Any]):
-    """Keyword-only wire object; parsing remains strict and separate. Optional attributes return None when absent; mapping-method names use a trailing underscore."""
+    """Keyword-only wire object; wire constructors validate the original descriptor. Optional attributes return None when absent; mapping-method names use a trailing underscore."""
 
     def __init__(
         self, *, merge: bool = _UNSET, replace: bool = _UNSET, **extra: Any
@@ -208,7 +221,7 @@ class ModifyPrompt(dict[str, Any]):
 
 
 class ModifyRequest(dict[str, Any]):
-    """Keyword-only wire object; parsing remains strict and separate. Optional attributes return None when absent; mapping-method names use a trailing underscore."""
+    """Keyword-only wire object; wire constructors validate the original descriptor. Optional attributes return None when absent; mapping-method names use a trailing underscore."""
 
     def __init__(
         self, *, merge: bool = _UNSET, replace: bool = _UNSET, **extra: Any
@@ -223,7 +236,7 @@ class ModifyRequest(dict[str, Any]):
 
 
 class ModifyResponse(dict[str, Any]):
-    """Keyword-only wire object; parsing remains strict and separate. Optional attributes return None when absent; mapping-method names use a trailing underscore."""
+    """Keyword-only wire object; wire constructors validate the original descriptor. Optional attributes return None when absent; mapping-method names use a trailing underscore."""
 
     def __init__(
         self, *, merge: bool = _UNSET, replace: bool = _UNSET, **extra: Any
@@ -238,7 +251,7 @@ class ModifyResponse(dict[str, Any]):
 
 
 class ModifySummary(dict[str, Any]):
-    """Keyword-only wire object; parsing remains strict and separate. Optional attributes return None when absent; mapping-method names use a trailing underscore."""
+    """Keyword-only wire object; wire constructors validate the original descriptor. Optional attributes return None when absent; mapping-method names use a trailing underscore."""
 
     def __init__(
         self, *, merge: bool = _UNSET, replace: bool = _UNSET, **extra: Any
@@ -253,7 +266,7 @@ class ModifySummary(dict[str, Any]):
 
 
 class ModifyWorkspace(dict[str, Any]):
-    """Keyword-only wire object; parsing remains strict and separate. Optional attributes return None when absent; mapping-method names use a trailing underscore."""
+    """Keyword-only wire object; wire constructors validate the original descriptor. Optional attributes return None when absent; mapping-method names use a trailing underscore."""
 
     def __init__(
         self, *, merge: bool = _UNSET, replace: bool = _UNSET, **extra: Any
@@ -574,6 +587,7 @@ def observe() -> Builder:
 __all__ = [
     "Declaration",
     "Mode",
+    "EffectName",
     "Allow",
     "Ask",
     "Deny",

@@ -159,11 +159,60 @@ presence. Attributes conflicting with mapping methods use a trailing underscore
 return lossless mappings, not hydrated facade instances.
 
 Migration: use generated nested models instead of arbitrary mappings for typed
-constructor arguments. Runtime parsing still checks location/evidence
-alternatives and other schema constraints at its existing boundary. Application
+constructor arguments. Wire constructors, dictionary decoding, and runtime parsing
+check location/evidence alternatives and other structural schema constraints. Application
 JSON, native payloads, and extension values remain intentionally dynamic.
 
 Upload receipts and event references are distinct. To attach a successful upload,
 use `content.reference(receipt)` (or `{"ref": receipt["ref"]}`). Never attach the
 receipt itself: body-selected content carries only the ref, with no outer `size`
 or `sha256`. Metadata-only content and body gaps may still disclose size/digest.
+
+### Structural model decoding and effect-family support
+
+```python
+from agenthooksprotocol import ContentReference, capability, effect
+
+caps = capability.Capabilities.from_dict({"effects": ["deny", "vendor.custom"]})
+assert caps.supports(capability.EffectName.DENY)
+assert caps.supports("vendor.custom")
+assert effect.EffectName is capability.EffectName
+reference = ContentReference.from_dict({"ref": "opaque", "vendor": {"version": 2}})
+```
+
+`supports(effect)` is available on generic and incoming capability models. It
+checks the advertised `effects` list only. Nested grants do not imply family
+support. The result is **not authorization**: it does not check target, operation,
+mode, contextual restrictions, or permission. `EffectName` contains schema-derived
+known identifiers; custom family identifiers remain ordinary strings.
+
+Wire-model keyword constructors and `Model.from_dict(mapping)` now validate with
+the same structural descriptor engine as generated `parse_*` functions. The
+original composition is retained, including required members, explicit nulls,
+literals, closed enums, forbidden combinations, and union ambiguity. This is the
+SDK's structural contract, not complete contextual protocol validation.
+`from_dict` does not supply omitted wire literals or defaults. It validates once
+and privately hydrates nested typed models without recursively calling public
+constructors. For example, a decoded HTTP connection supports
+`connection.gaps[0].reason`, just like a constructed connection. Union selection
+reuses memoized descriptor checks from that decode; subtrees are not repeatedly
+validated during hydration. Extension/application values remain ordinary JSON
+values. Descriptors and hydration metadata are cached.
+
+Invalid wire models raise `ValueError`; validation failures carry `result`,
+`diagnostics`, and `raw` attributes. Use `parse_*` when you need the full result on
+both success and failure, including unknown-variant warnings and lossless raw
+values. Open extension values remain intact. Finite `Decimal` values are retained;
+non-finite numbers and non-JSON values are rejected. Parsing raw JSON through
+`parse_*` retains decimal precision; decoding it first with standard-library
+`json.loads` cannot recover precision already lost to a float.
+
+**Migration:** constructors previously allowed structurally invalid mappings;
+those calls now fail immediately. Provide valid enum/literal values and all
+required wire members to `from_dict`. A null candidate, a candidate with
+`{"value": null}`, and a candidate with `{"value": 0}` remain distinct; omitting a
+required candidate is an error. Generated input projections and capability grant
+builders are construction helpers, not wire decode entrypoints; their final wire
+objects are validated at the existing dispatch/parse boundary. Direct dictionary
+mutation, standard-library `json.loads`, TypedDict annotations, and type assertions
+are not SDK validation entrypoints. Re-parse after manually mutating a mapping.

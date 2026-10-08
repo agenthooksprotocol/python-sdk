@@ -239,12 +239,14 @@ class UnificationTests(unittest.TestCase):
                 transport=transport,
                 capabilities={"tool.before": capability.intercept().deny()},
             ) as hooks:
-                value = state.Candidate(value=object())
+                with self.assertRaises(ValueError):
+                    state.Candidate(value=object())
+                # Post-construction dictionary mutation is deliberately not an
+                # SDK decode entrypoint; dispatch must still guard delivery.
+                initial = state.initial(Permission.ALLOW, candidate=state.Candidate(value=None))
+                initial["candidate"]["value"] = object()
                 with self.assertRaises(ProtocolError):
-                    await hooks.tool_before(
-                        facts(),
-                        initial_state=state.initial(Permission.ALLOW, candidate=value),
-                    )
+                    await hooks.tool_before(facts(), initial_state=initial)
                 self.assertEqual(transport.requests, [])
 
         self.run_async(run)

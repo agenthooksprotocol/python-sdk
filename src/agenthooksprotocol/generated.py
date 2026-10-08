@@ -8147,6 +8147,14 @@ _SCHEMAS: dict[str, _SchemaNode] = json.loads(
 
 
 def _parse_root(name: str, input: str | JsonValue) -> ParseResult[JsonValue]:
+    return _parse_descriptor(_SCHEMAS[name], input)
+
+
+def _parse_descriptor(
+    schema: _SchemaNode,
+    input: str | JsonValue,
+    cache: dict[tuple[str, str], tuple[ParseDiagnostic, ...]] | None = None,
+) -> ParseResult[JsonValue]:
     try:
         raw = _to_safe_json(
             json.loads(
@@ -8170,15 +8178,47 @@ def _parse_root(name: str, input: str | JsonValue) -> ParseResult[JsonValue]:
             ),
         }
     diagnostics: list[ParseDiagnostic] = []
-    _check_node(_SCHEMAS[name], raw, "", diagnostics)
+    _check_node(schema, raw, "", diagnostics, cache)
     frozen = tuple(diagnostics)
     if any(item["severity"] == "error" for item in diagnostics):
         return {"ok": False, "raw": raw, "diagnostics": frozen}
     return {"ok": True, "value": raw, "raw": raw, "diagnostics": frozen}
 
 
+_SCHEMA_KEYS: dict[int, tuple[_SchemaNode, str]] = {}
+
+
+def _schema_key(schema: _SchemaNode) -> str:
+    identity = id(schema)
+    if identity not in _SCHEMA_KEYS:
+        _SCHEMA_KEYS[identity] = (schema, _encode_json_value(cast(JsonValue, schema)))
+    return _SCHEMA_KEYS[identity][1]
+
+
 def _check_node(
-    schema: _SchemaNode, value: JsonValue, path: str, diagnostics: list[ParseDiagnostic]
+    schema: _SchemaNode,
+    value: JsonValue,
+    path: str,
+    diagnostics: list[ParseDiagnostic],
+    cache: dict[tuple[str, str], tuple[ParseDiagnostic, ...]] | None = None,
+) -> None:
+    if cache is None:
+        _check_node_impl(schema, value, path, diagnostics, cache)
+        return
+    key = (_schema_key(schema), path)
+    if key not in cache:
+        checked: list[ParseDiagnostic] = []
+        _check_node_impl(schema, value, path, checked, cache)
+        cache[key] = tuple(checked)
+    diagnostics.extend(cache[key])
+
+
+def _check_node_impl(
+    schema: _SchemaNode,
+    value: JsonValue,
+    path: str,
+    diagnostics: list[ParseDiagnostic],
+    cache: dict[tuple[str, str], tuple[ParseDiagnostic, ...]] | None,
 ) -> None:
     kind = schema["kind"]
     if kind == "any":
@@ -8237,7 +8277,7 @@ def _check_node(
             _error(diagnostics, path, "invalid_type", "Expected array")
             return
         for index, item in enumerate(value):
-            _check_node(schema["items"], item, f"{path}/{index}", diagnostics)
+            _check_node(schema["items"], item, f"{path}/{index}", diagnostics, cache)
     elif kind == "object":
         if not isinstance(value, dict):
             _error(diagnostics, path, "invalid_type", "Expected object")
@@ -8266,18 +8306,23 @@ def _check_node(
                     value[wire_name],
                     _join_path(path, wire_name),
                     diagnostics,
+                    cache,
                 )
     elif kind == "intersection":
         for variant in schema["variants"]:
-            _check_node(variant, value, path, diagnostics)
+            _check_node(variant, value, path, diagnostics, cache)
     elif kind == "ref":
-        _check_node(_SCHEMAS[schema["name"]], value, path, diagnostics)
+        _check_node(_SCHEMAS[schema["name"]], value, path, diagnostics, cache)
     elif kind == "union":
-        _check_union(schema, value, path, diagnostics)
+        _check_union(schema, value, path, diagnostics, cache)
 
 
 def _check_union(
-    schema: _SchemaNode, value: JsonValue, path: str, diagnostics: list[ParseDiagnostic]
+    schema: _SchemaNode,
+    value: JsonValue,
+    path: str,
+    diagnostics: list[ParseDiagnostic],
+    cache: dict[tuple[str, str], tuple[ParseDiagnostic, ...]] | None,
 ) -> None:
     discriminator = schema.get("discriminator")
     if discriminator is not None:
@@ -8309,7 +8354,7 @@ def _check_union(
             )
             return
         branch_diagnostics: list[ParseDiagnostic] = []
-        _check_node(branch, value, path, branch_diagnostics)
+        _check_node(branch, value, path, branch_diagnostics, cache)
         diagnostics.extend(branch_diagnostics)
         if any(item["severity"] == "error" for item in branch_diagnostics):
             diagnostics.append(
@@ -8325,7 +8370,7 @@ def _check_union(
     attempts: list[list[ParseDiagnostic]] = []
     for variant in schema["variants"]:
         attempt: list[ParseDiagnostic] = []
-        _check_node(variant, value, path, attempt)
+        _check_node(variant, value, path, attempt, cache)
         attempts.append(attempt)
     matches = [
         attempt

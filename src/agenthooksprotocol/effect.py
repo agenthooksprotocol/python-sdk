@@ -146,3 +146,5 @@ def return_(
 
 
 deny = Deny
+
+from ._grants import EffectName as EffectName

@@ -140,14 +140,16 @@ class ContentReceiptTests(unittest.TestCase):
         self.validator.validate("observe-notification", note)
         self.assertTrue(generated.parse_observe_notification(note)["ok"])
         self.assertEqual(event_identity(note.params.event), ("ended", "session.end"))
-        req = models.InterceptRequest(
-            id="ended",
-            params=models.InterceptRequestParams(
-                protocol_version="draft",
-                capabilities={"effects": []},
-                event=event,
-            ),
-        )
+        with self.assertRaises(ValueError):
+            models.InterceptRequestParams(
+                protocol_version="draft", capabilities={"effects": []}, event=event,
+            )
+        # Native dictionary construction is outside the SDK decode contract;
+        # parsing must still reject this malformed known event subset.
+        req = {
+            "jsonrpc": "2.0", "id": "ended", "method": "hooks/intercept",
+            "params": {"protocolVersion": "draft", "capabilities": {"effects": []}, "event": event},
+        }
         with self.assertRaises(ProtocolError):
             self.validator.validate("intercept-request", req)
         self.assertFalse(generated.parse_intercept_request(req)["ok"])

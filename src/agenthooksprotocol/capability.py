@@ -131,6 +131,7 @@ from ._models.capability import (
 )
 from ._grants import Declaration as Declaration
 from ._grants import Mode as Mode
+from ._grants import EffectName as EffectName
 from ._grants import Allow as Allow
 from ._grants import Ask as Ask
 from ._grants import Deny as Deny

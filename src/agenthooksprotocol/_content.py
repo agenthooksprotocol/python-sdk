@@ -152,7 +152,11 @@ class ContentContext:
 
     async def prepare(self, request: dict[str, Any], validator: Any) -> PreparedContent:
         prepared = PreparedContent(self, request, validator)
-        await prepared.load()
+        try:
+            await prepared.load()
+        except BaseException:
+            prepared.retire()
+            raise
         return prepared
 
 
@@ -167,6 +171,11 @@ class PreparedContent:
         self.items: dict[str, dict[str, Any]] = {}
         self.selected: dict[str, bytes] = {}
         self.targets = set(context.bindings) - {"request"}
+
+    def retire(self) -> None:
+        """Release invocation bytes without touching caller-owned storage."""
+        self.raw.clear()
+        self.selected.clear()
 
     async def _read(self, item: dict[str, Any]) -> bytes | None:
         self.validator.validate("content-item", item)
@@ -449,6 +458,8 @@ class OwnedContentSource:
             with anyio.move_on_after(1, shield=True):
                 await self.stream.aclose()
         finally:
+            # A closed reader can still retain its complete input buffer.
+            self.stream = None
             self._close_done.set()
 
     async def snapshot(self) -> bytes:
@@ -659,6 +670,8 @@ class ContentSources:
                         group.start_soon(source.aclose)
         finally:
             self._references.clear()
+            self.bindings.clear()
+            self.uploads.clear()
             self._close_done.set()
 
     async def __aenter__(self) -> ContentSources:

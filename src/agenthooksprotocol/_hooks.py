@@ -27,6 +27,7 @@ from functools import wraps
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from uuid import uuid4
+from weakref import WeakSet
 
 import anyio
 from jsonschema import FormatChecker
@@ -168,6 +169,11 @@ class PendingInvocation:
             async with self._owner._operation():
                 yield
 
+    def _retire_content(self):
+        if self.prepared_content is not None:
+            self.prepared_content.retire()
+            self.prepared_content = None
+
     def _check_open(self):
         if self._owner is not None and self._owner._closed:
             raise HooksClosedError("Hooks is closed")
@@ -194,6 +200,7 @@ class PendingInvocation:
             except BaseException as exc:
                 if isinstance(exc, anyio.get_cancelled_exc_class()):
                     self.lifecycle.cancel(self.request["id"])
+                self._retire_content()
                 raise
             finally:
                 self._scope = None
@@ -219,12 +226,16 @@ class PendingInvocation:
     async def accept_content(self, *, fallback: bool = False) -> HookResult | None:
         if self.content is None:
             return self.accept(fallback=fallback)
+        if self._scope is not None:
+            raise RuntimeError("Invocation already has an active operation")
+        if self.request["id"] in self.lifecycle.terminal:
+            self._retire_content()
+            return None
         if fallback:
+            self._retire_content()
             return self._publish(
                 self.lifecycle.accept(self.request["id"], fallback=True), True
             )
-        if self._scope is not None:
-            raise RuntimeError("Invocation already has an active operation")
         token = None
         with anyio.CancelScope() as scope:
             self._scope = scope
@@ -261,6 +272,7 @@ class PendingInvocation:
                 raise
             finally:
                 self._scope = None
+                self._retire_content()
         return None
 
     async def _prepare_content(self):
@@ -293,6 +305,8 @@ class PendingInvocation:
         cancelled = self.lifecycle.cancel(self.request["id"])
         if self._scope is not None:
             self._scope.cancel()
+        else:
+            self._retire_content()
         return cancelled
 
     def observe(
@@ -374,6 +388,7 @@ class Hooks(BoundaryMixin):
                 }
         if not isinstance(capabilities, dict):
             raise ProtocolError("capabilities must map events to explicit modes")
+        self._pending: WeakSet[PendingInvocation] = WeakSet()
         self.config = deepcopy(config)
         self.source = source
         self.capabilities = {
@@ -573,6 +588,8 @@ class Hooks(BoundaryMixin):
                     operation["scope"].cancel()
                 for operation in operations:
                     await operation["done"].wait()
+                for pending in self._pending:
+                    pending._retire_content()
                 async with self._ready_lock:
                     for transport in self._owned:
                         await transport.aclose()
@@ -594,9 +611,11 @@ class Hooks(BoundaryMixin):
         event = request["params"]["event"]
         self._check_occurrence(event, "intercept", request["params"]["capabilities"])
         self._lineage.accept(event)
-        return PendingInvocation(
+        pending = PendingInvocation(
             request, self.validator, transport, content, owner=self
         )
+        self._pending.add(pending)
+        return pending
 
     def _check_occurrence(
         self, event: dict[str, Any], mode: str, caps: dict[str, Any] | None = None

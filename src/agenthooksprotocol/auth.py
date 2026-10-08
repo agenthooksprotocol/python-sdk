@@ -6,7 +6,10 @@ import inspect
 import json
 import os
 import re
-from typing import Any, Literal, Protocol
+from typing import Any, Literal, Protocol, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .generated import ContentUploadReceipt
 from uuid import uuid4
 
 import anyio
@@ -309,8 +312,8 @@ class AuthenticatedHTTPTransport(HTTPTransport):
         size=None,
         sha256=None,
         authentication=None,
-    ):
-        # Reuse EOF/hash/descriptor validation, routing its single send through
+    ) -> "ContentUploadReceipt | None":
+        # Reuse EOF/hash/receipt validation, routing its single send through
         # the upload binding. No stream is read twice or buffered.
         owner = self
 

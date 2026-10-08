@@ -4,9 +4,9 @@ from typing import Any
 from ._models import InterceptRequestParamsState as State
 from ._models import InterceptRequestParamsStatePermission as Permission
 from ._models import InterceptRequestParamsStateFlow as Flow
-from ._models import InterceptRequestParamsStateCandidateVariant2 as Candidate
+from ._models import InterceptRequestParamsStateCandidateValueObject as Candidate
 from ._models import (
-    InterceptRequestParamsStateCandidateVariant2Provenance as Provenance,
+    InterceptRequestParamsStateCandidateValueObjectProvenance as Provenance,
 )
 
 _UNSET: Any = object()
@@ -18,7 +18,7 @@ def initial(
     candidate: Candidate | None = None,
     flow: Flow = _UNSET,
     injections: list[Any] = _UNSET,
-    instructions: list[Any] = _UNSET,
+    instructions: list[str] = _UNSET,
 ) -> State:
     """Explicit native-hook starting permission, not execution authorization."""
     result = State(permission=Permission(permission), candidate=candidate)

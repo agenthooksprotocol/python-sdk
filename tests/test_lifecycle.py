@@ -79,7 +79,7 @@ class LifecycleTests(unittest.TestCase):
             "kind": "text",
             "mediaType": "text/plain",
             "selection": "body",
-            "body": descriptor,
+            "body": {"ref": descriptor["ref"]},
         }
         note = lifecycle.observe(req, "body", [item])
         store.verify(note, "body")
@@ -235,7 +235,7 @@ class LifecycleTests(unittest.TestCase):
                     "kind": "text",
                     "mediaType": "text/plain",
                     "selection": "body",
-                    "body": {k: blob[k] for k in ("ref", "size", "sha256")},
+                    "body": {"ref": blob["ref"]},
                 }
                 steps = [
                     {"op": "send", "key": "a", "slot": "a1"},

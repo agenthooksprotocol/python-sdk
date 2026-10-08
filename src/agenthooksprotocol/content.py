@@ -4,6 +4,13 @@ Use ContentContext with the public asynchronous Hooks harness. The legacy upload
 function below is synchronous and is not used by the public async runtime.
 """
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .generated import ContentReference, ContentUploadReceipt
+
 from ._content import ContentContext as ContentContext
 from ._content import ContentSources as ContentSources
 from ._content import OwnedContentSource as OwnedContentSource
@@ -23,7 +30,7 @@ class NoRedirect(HTTPRedirectHandler):
         return None
 
 
-def upload(config, data, *, loopback=False, _declared=None):
+def upload(config, data, *, loopback=False, _declared=None) -> ContentUploadReceipt:
     if not isinstance(data, bytes):
         raise ProtocolError("Upload requires bytes")
     from .interop import validate_descriptor
@@ -129,3 +136,14 @@ def receive(store, headers, data, authorize, *, limit=4 * 1024 * 1024):
         )
     except (ProtocolError, ValueError, UnicodeError):
         return 400, None
+
+
+def reference(receipt: ContentUploadReceipt) -> ContentReference:
+    """Convert a validated upload receipt to its ref-only wire reference.
+
+    Upload confirmation metadata belongs to the receipt, never event content.
+    """
+    from .runtime import Validator
+
+    Validator().validate("content-upload-receipt", receipt)
+    return {"ref": receipt["ref"]}

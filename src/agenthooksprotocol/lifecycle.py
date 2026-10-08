@@ -201,7 +201,7 @@ class ContentStore:
 
     def confirm(self, scope, descriptor, data):
         """Cache a validated receiver confirmation on the sending side."""
-        self.validator.validate("content-reference", descriptor)
+        self.validator.validate("content-upload-receipt", descriptor)
         if (
             not self.authorize(scope)
             or not isinstance(data, bytes)
@@ -229,17 +229,8 @@ class ContentStore:
                 if "body" not in item:
                     continue
                 body = item["body"]
-                for key in ("size", "sha256"):
-                    if key in item and item[key] != body[key]:
-                        raise ProtocolError("Content metadata mismatch")
                 data = self.blobs.get((scope, body["ref"]))
-                if (
-                    scope is None
-                    or not self.authorize(scope)
-                    or data is None
-                    or len(data) != body["size"]
-                    or sha256(data).hexdigest() != body["sha256"]
-                ):
+                if scope is None or not self.authorize(scope) or data is None:
                     raise ProtocolError("Unauthorized or uncommitted content reference")
 
 

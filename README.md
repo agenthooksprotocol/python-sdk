@@ -45,7 +45,7 @@ Runnable, statically checked consumer programs live in [`examples/`](examples):
 - `typed_tool.py`: JSON registration, generated tool input, typed grants, initial state, real in-process ASGI handler, borrowed HTTP client, and explicit application decoding.
 - `common_cases.py`: rewrite/allow, deny, invalid application shape, host policy, occurrence narrowing, native initial state, and fail-open/fail-closed reports. The host operation is an in-memory execution recorder, not a shell.
 - `stdio_tool.py` / `stdio_backend.py`: a real owned backend process using the same public Handler, denial, and child cleanup.
-- `upload.py`: streamed binary upload, metadata no-read behavior, independent upload credentials, verified descriptor, and caller-owned immutable storage.
+- `upload.py`: streamed binary upload, metadata no-read behavior, independent upload credentials, verified upload receipt, and caller-owned immutable storage.
 
 - `lifecycle.py`: caller-owned task groups, operation-owned observations, interrupted requests, idempotent close, and proof that an owned subprocess was reaped.
 - `http_auth.py`: real loopback HTTP, canonical backend callbacks, registration `tokenEnv` resolution, and separate content-upload authorization. Its standard-library HTTP routing is example host code, not a production server.
@@ -105,7 +105,7 @@ The attachment receiver verifies byte length and digest through EOF before commi
 
 ## Body-bound boundaries
 
-Use `ContentContext` for MCP elicitation and compaction bodies. Its asynchronous `resolve(reference)` and `upload(bytes)` functions are trusted storage/transport adapters, not application-schema callbacks. `upload` must return a verified receiver-allocated immutable descriptor after storage commit. The SDK verifies referenced bytes and replacement descriptors before publishing an accepted state.
+Use `ContentContext` for MCP elicitation and compaction bodies. Its asynchronous `resolve(reference)` and `upload(bytes)` functions are trusted storage/transport adapters, not application-schema callbacks. `upload` must return a verified `ContentUploadReceipt` (`ref`, `size`, `sha256`) after storage commit. The SDK checks receipt length and digest against the actual uploaded bytes. `resolve` receives only `{ "ref": ... }` and must resolve immutable bytes within its authorized storage scope; event metadata is not an integrity authority. The SDK detects changes to previously resolved bytes.
 
 Bindings are explicit paths within the canonical event:
 
@@ -122,11 +122,11 @@ Pass `content=context` to the named boundary. An elicitation result needs the or
 
 `OwnedContentSource(stream, max_bytes=..., timeout=...)` wraps an async native `read(size)`/`receive(size)` stream with `aclose()`. Construction does not read. Size/hash expectations are optional and verified, not trusted. Generated inputs expose named `bind_<slot>_source(source)` methods; repeated content slots additionally require `index=`. For example, `input.bind_items_source(source, index=0)` binds an existing metadata item without putting the stream into wire JSON.
 
-Pass the bound input to a named hook method with `uploads={backend_id: authorized_upload_callback}`. Each callback receives immutable bytes and returns a receiver-allocated canonical content reference; it can use `auth.AuthenticatedHTTPTransport.upload(..., authentication=upload_binding)`. Metadata, omit, and unmatched receivers consume no bytes and require no uploader. Selected body delivery snapshots once within limits, hashes actual raw bytes, uploads independently for each authorized destination, and verifies references before event delivery. Missing receiver authorization fails before reading. Source bindings derive from shared generated metadata; advanced `ContentSources` and existing canonical references/resolvers remain available.
+Pass the bound input to a named hook method with `uploads={backend_id: authorized_upload_callback}`. Each callback receives immutable bytes and returns a receiver-allocated canonical upload receipt; it can use `auth.AuthenticatedHTTPTransport.upload(..., authentication=upload_binding)`. Metadata, omit, and unmatched receivers consume no bytes and require no uploader. Selected body delivery snapshots once within limits, hashes actual raw bytes, uploads independently for each authorized destination, and verifies receipts before event delivery. Missing receiver authorization fails before reading. Source bindings derive from shared generated metadata; advanced `ContentSources` and existing canonical references/resolvers remain available.
 
-Ownership transfers to the source wrapper, then to the hook operation when passed. Streams close on success, failure, cancellation, and unused selection; snapshots release when the call finishes. Sources are single-operation values, not concurrently reusable. Call `aclose()` or use an async context manager for a source that never reaches a hook call. Cleanup is shielded and bounded separately from the operation budget.
+Ownership transfers to the source wrapper, then to the hook operation when passed. Streams close on success, failure, cancellation, and unused selection; snapshots release when the call finishes. Closed wrappers also release their reader, so retaining a source or result does not retain the reader’s input buffer. Sources are single-operation values, not concurrently reusable. Call `aclose()` or use an async context manager for a source that never reaches a hook call. Cleanup is shielded and bounded separately from the operation budget.
 
-For custom transport integrations, `begin(canonical_request)` returns a `PendingInvocation` with separate acquisition, cancellation, and acceptance. `exchange(canonical_request)` uses the same settlement engine. Content-aware pending invocations use `await accept_content()`; this keeps upload completion and cancellation inside the publication boundary. The ordinary named-method path does this automatically.
+For custom transport integrations, `begin(canonical_request)` returns a `PendingInvocation` with separate acquisition, cancellation, and acceptance. `exchange(canonical_request)` uses the same settlement engine. Content-aware pending invocations use `await accept_content()`; this keeps upload completion and cancellation inside the publication boundary. The ordinary named-method path does this automatically. Pending invocations retain selected bytes only until acceptance, cancellation, acquisition/finalization failure, or harness close. Failed finalization may be retried and resolves fresh bytes. Harness tracking is weak: dropping a pending invocation does not keep its prepared payload alive. Terminal handles also detach their resolver/uploader context, so retained handles do not retain the caller’s backing store. Returned references continue to resolve in caller-owned storage; cleanup never clears that persistent store.
 
 ## Generated models and provenance
 
@@ -144,3 +144,91 @@ uv run python -m build
 ```
 
 Integration tests also use a matching sibling `../agent-hooks-protocol` checkout for shared fixtures and public synthetic certificates. The installed runtime uses its bundled schemas and does not need that checkout. No SDK API executes host tools on your behalf.
+
+### Typed composed payloads
+
+Generated facade constructors retain nested model types through schema
+compositions. MCP connection `gaps` parameters accept lists of typed gap models,
+and HTTP, SSE, stdio, and custom connection objects expose typed location and gap
+attributes. `ModelVisibleItem` has composed content constructors with typed roles.
+
+Facade objects remain mappings and additionally provide read-only attributes.
+Optional attributes return `None` when absent; mapping membership still records
+presence. Attributes conflicting with mapping methods use a trailing underscore
+(such as `items_`), so `dict.items()` keeps working. Wire parsers continue to
+return lossless mappings, not hydrated facade instances.
+
+Migration: use generated nested models instead of arbitrary mappings for typed
+constructor arguments. Wire constructors, dictionary decoding, and runtime parsing
+check location/evidence alternatives and other structural schema constraints. Application
+JSON, native payloads, and extension values remain intentionally dynamic.
+
+Upload receipts and event references are distinct. To attach a successful upload,
+use `content.reference(receipt)` (or `{"ref": receipt["ref"]}`). Never attach the
+receipt itself: body-selected content carries only the ref, with no outer `size`
+or `sha256`. Metadata-only content and body gaps may still disclose size/digest.
+
+### Structural model decoding and effect-family support
+
+```python
+from agenthooksprotocol import ContentReference, capability, effect
+
+caps = capability.Capabilities.from_dict({"effects": ["deny", "vendor.custom"]})
+assert caps.supports(capability.EffectName.DENY)
+assert caps.supports("vendor.custom")
+assert effect.EffectName is capability.EffectName
+reference = ContentReference.from_dict({"ref": "opaque", "vendor": {"version": 2}})
+```
+
+`supports(effect)` is available on generic and incoming capability models. It
+checks the advertised `effects` list only. Nested grants do not imply family
+support. The result is **not authorization**: it does not check target, operation,
+mode, contextual restrictions, or permission. `EffectName` contains schema-derived
+known identifiers; custom family identifiers remain ordinary strings.
+
+Wire-model keyword constructors and `Model.from_dict(mapping)` now validate with
+the same structural descriptor engine as generated `parse_*` functions. The
+original composition is retained, including required members, explicit nulls,
+literals, closed enums, forbidden combinations, and union ambiguity. This is the
+SDK's structural contract, not complete contextual protocol validation.
+`from_dict` does not supply omitted wire literals or defaults. It validates once
+and privately hydrates nested typed models without recursively calling public
+constructors. For example, a decoded HTTP connection supports
+`connection.gaps[0].reason`, just like a constructed connection. Union selection
+reuses memoized descriptor checks from that decode; subtrees are not repeatedly
+validated during hydration. Extension/application values remain ordinary JSON
+values. Descriptors and hydration metadata are cached.
+
+Invalid wire models raise `ValueError`; validation failures carry `result`,
+`diagnostics`, and `raw` attributes. Use `parse_*` when you need the full result on
+both success and failure, including unknown-variant warnings and lossless raw
+values. Open extension values remain intact. Finite `Decimal` values are retained;
+non-finite numbers and non-JSON values are rejected. Parsing raw JSON through
+`parse_*` retains decimal precision; decoding it first with standard-library
+`json.loads` cannot recover precision already lost to a float.
+
+**Migration:** constructors previously allowed structurally invalid mappings;
+those calls now fail immediately. Provide valid enum/literal values and all
+required wire members to `from_dict`. A null candidate, a candidate with
+`{"value": null}`, and a candidate with `{"value": 0}` remain distinct; omitting a
+required candidate is an error. Generated input projections and capability grant
+builders are construction helpers, not wire decode entrypoints; their final wire
+objects are validated at the existing dispatch/parse boundary. Direct dictionary
+mutation, standard-library `json.loads`, TypedDict annotations, and type assertions
+are not SDK validation entrypoints. Re-parse after manually mutating a mapping.
+
+
+Wire constructors also privately hydrate nested mappings: for example,
+`capability.Capabilities(effects=["modify"], modify={}).modify.input` returns
+`None`, not an attribute error. Already typed child models retain their identity;
+plain nested mappings become typed models after the constructor's single cached
+validation pass. Family queries include all generated per-occurrence capability
+models, such as `capability.ToolBeforeCapabilities`.
+
+Constructor aliases cannot silently overwrite wire keys. Supplying both
+`tool_name=` and `toolName=` raises `TypeError`, even if the values agree. For
+optional/defaulted fields, a lone wire spelling (for example `addressForm=` or
+`protocolVersion=`) is used and validated rather than replaced by a default.
+Required constructor parameters still use their documented Python spelling;
+use `from_dict` to decode complete wire-keyed objects. In `from_dict`, distinct
+keys such as `toolName` and `tool_name` remain distinct wire/extension keys.

@@ -1,6 +1,11 @@
 """Optional HTTPX transport (install agenthooksprotocol[http])."""
 
-from typing import Any, AsyncIterable
+from __future__ import annotations
+
+from typing import Any, AsyncIterable, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ..generated import ContentUploadReceipt
 from ..runtime import ProtocolError, Validator, validate_intercept_response
 
 
@@ -75,7 +80,7 @@ class HTTPTransport:
         selection: str = "body",
         size: int | None = None,
         sha256: str | None = None,
-    ) -> dict[str, Any] | None:
+    ) -> ContentUploadReceipt | None:
         """Upload bytes or an async byte stream; streams require size and sha256.
 
         Metadata/omit never read the body. Receiver credentials are explicit and
@@ -136,9 +141,9 @@ class HTTPTransport:
         if not complete:
             raise ProtocolError("Receiver replied before valid content EOF")
         if response.status_code != 201:
-            raise ProtocolError("Content upload requires a 201 descriptor response")
+            raise ProtocolError("Content upload requires a 201 receipt response")
         descriptor = json.loads(response.content)
-        validator.validate("content-reference", descriptor)
+        validator.validate("content-upload-receipt", descriptor)
         if descriptor["size"] != count or descriptor["sha256"] != actual.hexdigest():
-            raise ProtocolError("Content descriptor does not match uploaded bytes")
+            raise ProtocolError("Content receipt does not match uploaded bytes")
         return descriptor

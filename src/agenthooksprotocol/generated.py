@@ -71,8 +71,8 @@ SCHEMA_REVISION: Final[str] = "draft"
 PROTOCOL_VERSION: Final[str] = "draft"
 
 # Source: schema/draft/registration.schema.json#/$defs/authentication
-__AuthenticationVariant0Variant0ModelKnownFields = TypedDict(
-    "__AuthenticationVariant0Variant0ModelKnownFields",
+__AuthenticationBearerModelKnownFields = TypedDict(
+    "__AuthenticationBearerModelKnownFields",
     {
         "tokenEnv": NotRequired[str],
         "tokenRef": NotRequired[str],
@@ -80,27 +80,11 @@ __AuthenticationVariant0Variant0ModelKnownFields = TypedDict(
     },
     total=False,
 )
-_AuthenticationVariant0Variant0Model: TypeAlias = (
-    __AuthenticationVariant0Variant0ModelKnownFields | JsonObject
+_AuthenticationBearerModel: TypeAlias = (
+    __AuthenticationBearerModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__AuthenticationVariant0Variant1Variant0ModelKnownFields = TypedDict(
-    "__AuthenticationVariant0Variant1Variant0ModelKnownFields",
-    {"tokenEnv": Required[JsonValue]},
-    total=False,
-)
-_AuthenticationVariant0Variant1Variant0Model: TypeAlias = (
-    __AuthenticationVariant0Variant1Variant0ModelKnownFields | JsonObject
-)  # permits additional JSON fields
-__AuthenticationVariant0Variant1Variant1ModelKnownFields = TypedDict(
-    "__AuthenticationVariant0Variant1Variant1ModelKnownFields",
-    {"tokenRef": Required[JsonValue]},
-    total=False,
-)
-_AuthenticationVariant0Variant1Variant1Model: TypeAlias = (
-    __AuthenticationVariant0Variant1Variant1ModelKnownFields | JsonObject
-)  # permits additional JSON fields
-__AuthenticationVariant1ModelKnownFields = TypedDict(
-    "__AuthenticationVariant1ModelKnownFields",
+__AuthenticationOauthModelKnownFields = TypedDict(
+    "__AuthenticationOauthModelKnownFields",
     {
         "clientId": Required[str],
         "clientSecretRef": NotRequired[str],
@@ -112,10 +96,10 @@ __AuthenticationVariant1ModelKnownFields = TypedDict(
     },
     total=False,
 )
-_AuthenticationVariant1Model: TypeAlias = (
-    __AuthenticationVariant1ModelKnownFields | JsonObject
+_AuthenticationOauthModel: TypeAlias = (
+    __AuthenticationOauthModelKnownFields | JsonObject
 )  # permits additional JSON fields
-Authentication: TypeAlias = Union[JsonValue, _AuthenticationVariant1Model]
+Authentication: TypeAlias = Union[_AuthenticationBearerModel, _AuthenticationOauthModel]
 
 # Source: schema/draft/registration.schema.json#/$defs/backend
 _BackendKnownFields = TypedDict(
@@ -185,244 +169,90 @@ __CapabilitiesField3InjectModelKnownFields = TypedDict(
 _CapabilitiesField3InjectModel: TypeAlias = (
     __CapabilitiesField3InjectModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__CapabilitiesField4ModifyField0ContentVariant0ModelKnownFields = TypedDict(
-    "__CapabilitiesField4ModifyField0ContentVariant0ModelKnownFields",
+__CapabilitiesField4ModifyField0ContentModelKnownFields = TypedDict(
+    "__CapabilitiesField4ModifyField0ContentModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_CapabilitiesField4ModifyField0ContentVariant0Model: TypeAlias = (
-    __CapabilitiesField4ModifyField0ContentVariant0ModelKnownFields | JsonObject
+_CapabilitiesField4ModifyField0ContentModel: TypeAlias = (
+    __CapabilitiesField4ModifyField0ContentModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__CapabilitiesField4ModifyField0ContentVariant1Variant0ModelKnownFields = TypedDict(
-    "__CapabilitiesField4ModifyField0ContentVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_CapabilitiesField4ModifyField0ContentVariant1Variant0Model: TypeAlias = (
-    __CapabilitiesField4ModifyField0ContentVariant1Variant0ModelKnownFields | JsonObject
-)  # permits additional JSON fields
-__CapabilitiesField4ModifyField0ContentVariant1Variant1ModelKnownFields = TypedDict(
-    "__CapabilitiesField4ModifyField0ContentVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_CapabilitiesField4ModifyField0ContentVariant1Variant1Model: TypeAlias = (
-    __CapabilitiesField4ModifyField0ContentVariant1Variant1ModelKnownFields | JsonObject
-)  # permits additional JSON fields
-__CapabilitiesField4ModifyField1InputVariant0ModelKnownFields = TypedDict(
-    "__CapabilitiesField4ModifyField1InputVariant0ModelKnownFields",
+__CapabilitiesField4ModifyField1InputModelKnownFields = TypedDict(
+    "__CapabilitiesField4ModifyField1InputModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_CapabilitiesField4ModifyField1InputVariant0Model: TypeAlias = (
-    __CapabilitiesField4ModifyField1InputVariant0ModelKnownFields | JsonObject
+_CapabilitiesField4ModifyField1InputModel: TypeAlias = (
+    __CapabilitiesField4ModifyField1InputModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__CapabilitiesField4ModifyField1InputVariant1Variant0ModelKnownFields = TypedDict(
-    "__CapabilitiesField4ModifyField1InputVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_CapabilitiesField4ModifyField1InputVariant1Variant0Model: TypeAlias = (
-    __CapabilitiesField4ModifyField1InputVariant1Variant0ModelKnownFields | JsonObject
-)  # permits additional JSON fields
-__CapabilitiesField4ModifyField1InputVariant1Variant1ModelKnownFields = TypedDict(
-    "__CapabilitiesField4ModifyField1InputVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_CapabilitiesField4ModifyField1InputVariant1Variant1Model: TypeAlias = (
-    __CapabilitiesField4ModifyField1InputVariant1Variant1ModelKnownFields | JsonObject
-)  # permits additional JSON fields
-__CapabilitiesField4ModifyField2InstructionsVariant0ModelKnownFields = TypedDict(
-    "__CapabilitiesField4ModifyField2InstructionsVariant0ModelKnownFields",
+__CapabilitiesField4ModifyField2InstructionsModelKnownFields = TypedDict(
+    "__CapabilitiesField4ModifyField2InstructionsModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_CapabilitiesField4ModifyField2InstructionsVariant0Model: TypeAlias = (
-    __CapabilitiesField4ModifyField2InstructionsVariant0ModelKnownFields | JsonObject
+_CapabilitiesField4ModifyField2InstructionsModel: TypeAlias = (
+    __CapabilitiesField4ModifyField2InstructionsModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__CapabilitiesField4ModifyField2InstructionsVariant1Variant0ModelKnownFields = (
-    TypedDict(
-        "__CapabilitiesField4ModifyField2InstructionsVariant1Variant0ModelKnownFields",
-        {"replace": Required[Literal[True]]},
-        total=False,
-    )
-)
-_CapabilitiesField4ModifyField2InstructionsVariant1Variant0Model: TypeAlias = (
-    __CapabilitiesField4ModifyField2InstructionsVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__CapabilitiesField4ModifyField2InstructionsVariant1Variant1ModelKnownFields = (
-    TypedDict(
-        "__CapabilitiesField4ModifyField2InstructionsVariant1Variant1ModelKnownFields",
-        {"merge": Required[Literal[True]]},
-        total=False,
-    )
-)
-_CapabilitiesField4ModifyField2InstructionsVariant1Variant1Model: TypeAlias = (
-    __CapabilitiesField4ModifyField2InstructionsVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__CapabilitiesField4ModifyField3OutputVariant0ModelKnownFields = TypedDict(
-    "__CapabilitiesField4ModifyField3OutputVariant0ModelKnownFields",
+__CapabilitiesField4ModifyField3OutputModelKnownFields = TypedDict(
+    "__CapabilitiesField4ModifyField3OutputModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_CapabilitiesField4ModifyField3OutputVariant0Model: TypeAlias = (
-    __CapabilitiesField4ModifyField3OutputVariant0ModelKnownFields | JsonObject
+_CapabilitiesField4ModifyField3OutputModel: TypeAlias = (
+    __CapabilitiesField4ModifyField3OutputModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__CapabilitiesField4ModifyField3OutputVariant1Variant0ModelKnownFields = TypedDict(
-    "__CapabilitiesField4ModifyField3OutputVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_CapabilitiesField4ModifyField3OutputVariant1Variant0Model: TypeAlias = (
-    __CapabilitiesField4ModifyField3OutputVariant1Variant0ModelKnownFields | JsonObject
-)  # permits additional JSON fields
-__CapabilitiesField4ModifyField3OutputVariant1Variant1ModelKnownFields = TypedDict(
-    "__CapabilitiesField4ModifyField3OutputVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_CapabilitiesField4ModifyField3OutputVariant1Variant1Model: TypeAlias = (
-    __CapabilitiesField4ModifyField3OutputVariant1Variant1ModelKnownFields | JsonObject
-)  # permits additional JSON fields
-__CapabilitiesField4ModifyField4PromptVariant0ModelKnownFields = TypedDict(
-    "__CapabilitiesField4ModifyField4PromptVariant0ModelKnownFields",
+__CapabilitiesField4ModifyField4PromptModelKnownFields = TypedDict(
+    "__CapabilitiesField4ModifyField4PromptModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_CapabilitiesField4ModifyField4PromptVariant0Model: TypeAlias = (
-    __CapabilitiesField4ModifyField4PromptVariant0ModelKnownFields | JsonObject
+_CapabilitiesField4ModifyField4PromptModel: TypeAlias = (
+    __CapabilitiesField4ModifyField4PromptModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__CapabilitiesField4ModifyField4PromptVariant1Variant0ModelKnownFields = TypedDict(
-    "__CapabilitiesField4ModifyField4PromptVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_CapabilitiesField4ModifyField4PromptVariant1Variant0Model: TypeAlias = (
-    __CapabilitiesField4ModifyField4PromptVariant1Variant0ModelKnownFields | JsonObject
-)  # permits additional JSON fields
-__CapabilitiesField4ModifyField4PromptVariant1Variant1ModelKnownFields = TypedDict(
-    "__CapabilitiesField4ModifyField4PromptVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_CapabilitiesField4ModifyField4PromptVariant1Variant1Model: TypeAlias = (
-    __CapabilitiesField4ModifyField4PromptVariant1Variant1ModelKnownFields | JsonObject
-)  # permits additional JSON fields
-__CapabilitiesField4ModifyField5RequestVariant0ModelKnownFields = TypedDict(
-    "__CapabilitiesField4ModifyField5RequestVariant0ModelKnownFields",
+__CapabilitiesField4ModifyField5RequestModelKnownFields = TypedDict(
+    "__CapabilitiesField4ModifyField5RequestModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_CapabilitiesField4ModifyField5RequestVariant0Model: TypeAlias = (
-    __CapabilitiesField4ModifyField5RequestVariant0ModelKnownFields | JsonObject
+_CapabilitiesField4ModifyField5RequestModel: TypeAlias = (
+    __CapabilitiesField4ModifyField5RequestModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__CapabilitiesField4ModifyField5RequestVariant1Variant0ModelKnownFields = TypedDict(
-    "__CapabilitiesField4ModifyField5RequestVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_CapabilitiesField4ModifyField5RequestVariant1Variant0Model: TypeAlias = (
-    __CapabilitiesField4ModifyField5RequestVariant1Variant0ModelKnownFields | JsonObject
-)  # permits additional JSON fields
-__CapabilitiesField4ModifyField5RequestVariant1Variant1ModelKnownFields = TypedDict(
-    "__CapabilitiesField4ModifyField5RequestVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_CapabilitiesField4ModifyField5RequestVariant1Variant1Model: TypeAlias = (
-    __CapabilitiesField4ModifyField5RequestVariant1Variant1ModelKnownFields | JsonObject
-)  # permits additional JSON fields
-__CapabilitiesField4ModifyField6ResponseVariant0ModelKnownFields = TypedDict(
-    "__CapabilitiesField4ModifyField6ResponseVariant0ModelKnownFields",
+__CapabilitiesField4ModifyField6ResponseModelKnownFields = TypedDict(
+    "__CapabilitiesField4ModifyField6ResponseModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_CapabilitiesField4ModifyField6ResponseVariant0Model: TypeAlias = (
-    __CapabilitiesField4ModifyField6ResponseVariant0ModelKnownFields | JsonObject
+_CapabilitiesField4ModifyField6ResponseModel: TypeAlias = (
+    __CapabilitiesField4ModifyField6ResponseModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__CapabilitiesField4ModifyField6ResponseVariant1Variant0ModelKnownFields = TypedDict(
-    "__CapabilitiesField4ModifyField6ResponseVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_CapabilitiesField4ModifyField6ResponseVariant1Variant0Model: TypeAlias = (
-    __CapabilitiesField4ModifyField6ResponseVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__CapabilitiesField4ModifyField6ResponseVariant1Variant1ModelKnownFields = TypedDict(
-    "__CapabilitiesField4ModifyField6ResponseVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_CapabilitiesField4ModifyField6ResponseVariant1Variant1Model: TypeAlias = (
-    __CapabilitiesField4ModifyField6ResponseVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__CapabilitiesField4ModifyField7SummaryVariant0ModelKnownFields = TypedDict(
-    "__CapabilitiesField4ModifyField7SummaryVariant0ModelKnownFields",
+__CapabilitiesField4ModifyField7SummaryModelKnownFields = TypedDict(
+    "__CapabilitiesField4ModifyField7SummaryModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_CapabilitiesField4ModifyField7SummaryVariant0Model: TypeAlias = (
-    __CapabilitiesField4ModifyField7SummaryVariant0ModelKnownFields | JsonObject
+_CapabilitiesField4ModifyField7SummaryModel: TypeAlias = (
+    __CapabilitiesField4ModifyField7SummaryModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__CapabilitiesField4ModifyField7SummaryVariant1Variant0ModelKnownFields = TypedDict(
-    "__CapabilitiesField4ModifyField7SummaryVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_CapabilitiesField4ModifyField7SummaryVariant1Variant0Model: TypeAlias = (
-    __CapabilitiesField4ModifyField7SummaryVariant1Variant0ModelKnownFields | JsonObject
-)  # permits additional JSON fields
-__CapabilitiesField4ModifyField7SummaryVariant1Variant1ModelKnownFields = TypedDict(
-    "__CapabilitiesField4ModifyField7SummaryVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_CapabilitiesField4ModifyField7SummaryVariant1Variant1Model: TypeAlias = (
-    __CapabilitiesField4ModifyField7SummaryVariant1Variant1ModelKnownFields | JsonObject
-)  # permits additional JSON fields
-__CapabilitiesField4ModifyField8WorkspaceVariant0ModelKnownFields = TypedDict(
-    "__CapabilitiesField4ModifyField8WorkspaceVariant0ModelKnownFields",
+__CapabilitiesField4ModifyField8WorkspaceModelKnownFields = TypedDict(
+    "__CapabilitiesField4ModifyField8WorkspaceModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_CapabilitiesField4ModifyField8WorkspaceVariant0Model: TypeAlias = (
-    __CapabilitiesField4ModifyField8WorkspaceVariant0ModelKnownFields | JsonObject
-)  # permits additional JSON fields
-__CapabilitiesField4ModifyField8WorkspaceVariant1Variant0ModelKnownFields = TypedDict(
-    "__CapabilitiesField4ModifyField8WorkspaceVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_CapabilitiesField4ModifyField8WorkspaceVariant1Variant0Model: TypeAlias = (
-    __CapabilitiesField4ModifyField8WorkspaceVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__CapabilitiesField4ModifyField8WorkspaceVariant1Variant1ModelKnownFields = TypedDict(
-    "__CapabilitiesField4ModifyField8WorkspaceVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_CapabilitiesField4ModifyField8WorkspaceVariant1Variant1Model: TypeAlias = (
-    __CapabilitiesField4ModifyField8WorkspaceVariant1Variant1ModelKnownFields
-    | JsonObject
+_CapabilitiesField4ModifyField8WorkspaceModel: TypeAlias = (
+    __CapabilitiesField4ModifyField8WorkspaceModelKnownFields | JsonObject
 )  # permits additional JSON fields
 __CapabilitiesField4ModifyModelKnownFields = TypedDict(
     "__CapabilitiesField4ModifyModelKnownFields",
     {
-        "content": NotRequired[JsonValue],
-        "input": NotRequired[JsonValue],
-        "instructions": NotRequired[JsonValue],
-        "output": NotRequired[JsonValue],
-        "prompt": NotRequired[JsonValue],
-        "request": NotRequired[JsonValue],
-        "response": NotRequired[JsonValue],
-        "summary": NotRequired[JsonValue],
-        "workspace": NotRequired[JsonValue],
+        "content": NotRequired[_CapabilitiesField4ModifyField0ContentModel],
+        "input": NotRequired[_CapabilitiesField4ModifyField1InputModel],
+        "instructions": NotRequired[_CapabilitiesField4ModifyField2InstructionsModel],
+        "output": NotRequired[_CapabilitiesField4ModifyField3OutputModel],
+        "prompt": NotRequired[_CapabilitiesField4ModifyField4PromptModel],
+        "request": NotRequired[_CapabilitiesField4ModifyField5RequestModel],
+        "response": NotRequired[_CapabilitiesField4ModifyField6ResponseModel],
+        "summary": NotRequired[_CapabilitiesField4ModifyField7SummaryModel],
+        "workspace": NotRequired[_CapabilitiesField4ModifyField8WorkspaceModel],
     },
     total=False,
 )
@@ -595,6 +425,7 @@ CatalogueEvent: TypeAlias = Union[
     "WorkspaceChangeAfterEvent",
     "FileChangedEvent",
     "HookFailureEvent",
+    UnknownVariant,
 ]
 
 # Source: schema/draft/catalogue-event.schema.json#/$defs/config.change.after
@@ -728,261 +559,116 @@ __ConfigChangeBeforeCapabilitiesField3InjectModelKnownFields = TypedDict(
 _ConfigChangeBeforeCapabilitiesField3InjectModel: TypeAlias = (
     __ConfigChangeBeforeCapabilitiesField3InjectModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__ConfigChangeBeforeCapabilitiesField4ModifyField0ContentVariant0ModelKnownFields = TypedDict(
-    "__ConfigChangeBeforeCapabilitiesField4ModifyField0ContentVariant0ModelKnownFields",
+__ConfigChangeBeforeCapabilitiesField4ModifyField0ContentModelKnownFields = TypedDict(
+    "__ConfigChangeBeforeCapabilitiesField4ModifyField0ContentModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ConfigChangeBeforeCapabilitiesField4ModifyField0ContentVariant0Model: TypeAlias = (
-    __ConfigChangeBeforeCapabilitiesField4ModifyField0ContentVariant0ModelKnownFields
+_ConfigChangeBeforeCapabilitiesField4ModifyField0ContentModel: TypeAlias = (
+    __ConfigChangeBeforeCapabilitiesField4ModifyField0ContentModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ConfigChangeBeforeCapabilitiesField4ModifyField0ContentVariant1Variant0ModelKnownFields = TypedDict(
-    "__ConfigChangeBeforeCapabilitiesField4ModifyField0ContentVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_ConfigChangeBeforeCapabilitiesField4ModifyField0ContentVariant1Variant0Model: TypeAlias = (
-    __ConfigChangeBeforeCapabilitiesField4ModifyField0ContentVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ConfigChangeBeforeCapabilitiesField4ModifyField0ContentVariant1Variant1ModelKnownFields = TypedDict(
-    "__ConfigChangeBeforeCapabilitiesField4ModifyField0ContentVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_ConfigChangeBeforeCapabilitiesField4ModifyField0ContentVariant1Variant1Model: TypeAlias = (
-    __ConfigChangeBeforeCapabilitiesField4ModifyField0ContentVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ConfigChangeBeforeCapabilitiesField4ModifyField1InputVariant0ModelKnownFields = TypedDict(
-    "__ConfigChangeBeforeCapabilitiesField4ModifyField1InputVariant0ModelKnownFields",
+__ConfigChangeBeforeCapabilitiesField4ModifyField1InputModelKnownFields = TypedDict(
+    "__ConfigChangeBeforeCapabilitiesField4ModifyField1InputModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ConfigChangeBeforeCapabilitiesField4ModifyField1InputVariant0Model: TypeAlias = (
-    __ConfigChangeBeforeCapabilitiesField4ModifyField1InputVariant0ModelKnownFields
-    | JsonObject
+_ConfigChangeBeforeCapabilitiesField4ModifyField1InputModel: TypeAlias = (
+    __ConfigChangeBeforeCapabilitiesField4ModifyField1InputModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__ConfigChangeBeforeCapabilitiesField4ModifyField1InputVariant1Variant0ModelKnownFields = TypedDict(
-    "__ConfigChangeBeforeCapabilitiesField4ModifyField1InputVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_ConfigChangeBeforeCapabilitiesField4ModifyField1InputVariant1Variant0Model: TypeAlias = (
-    __ConfigChangeBeforeCapabilitiesField4ModifyField1InputVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ConfigChangeBeforeCapabilitiesField4ModifyField1InputVariant1Variant1ModelKnownFields = TypedDict(
-    "__ConfigChangeBeforeCapabilitiesField4ModifyField1InputVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_ConfigChangeBeforeCapabilitiesField4ModifyField1InputVariant1Variant1Model: TypeAlias = (
-    __ConfigChangeBeforeCapabilitiesField4ModifyField1InputVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ConfigChangeBeforeCapabilitiesField4ModifyField2InstructionsVariant0ModelKnownFields = TypedDict(
-    "__ConfigChangeBeforeCapabilitiesField4ModifyField2InstructionsVariant0ModelKnownFields",
+__ConfigChangeBeforeCapabilitiesField4ModifyField2InstructionsModelKnownFields = TypedDict(
+    "__ConfigChangeBeforeCapabilitiesField4ModifyField2InstructionsModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ConfigChangeBeforeCapabilitiesField4ModifyField2InstructionsVariant0Model: TypeAlias = (
-    __ConfigChangeBeforeCapabilitiesField4ModifyField2InstructionsVariant0ModelKnownFields
+_ConfigChangeBeforeCapabilitiesField4ModifyField2InstructionsModel: TypeAlias = (
+    __ConfigChangeBeforeCapabilitiesField4ModifyField2InstructionsModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ConfigChangeBeforeCapabilitiesField4ModifyField2InstructionsVariant1Variant0ModelKnownFields = TypedDict(
-    "__ConfigChangeBeforeCapabilitiesField4ModifyField2InstructionsVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_ConfigChangeBeforeCapabilitiesField4ModifyField2InstructionsVariant1Variant0Model: TypeAlias = (
-    __ConfigChangeBeforeCapabilitiesField4ModifyField2InstructionsVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ConfigChangeBeforeCapabilitiesField4ModifyField2InstructionsVariant1Variant1ModelKnownFields = TypedDict(
-    "__ConfigChangeBeforeCapabilitiesField4ModifyField2InstructionsVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_ConfigChangeBeforeCapabilitiesField4ModifyField2InstructionsVariant1Variant1Model: TypeAlias = (
-    __ConfigChangeBeforeCapabilitiesField4ModifyField2InstructionsVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ConfigChangeBeforeCapabilitiesField4ModifyField3OutputVariant0ModelKnownFields = TypedDict(
-    "__ConfigChangeBeforeCapabilitiesField4ModifyField3OutputVariant0ModelKnownFields",
+__ConfigChangeBeforeCapabilitiesField4ModifyField3OutputModelKnownFields = TypedDict(
+    "__ConfigChangeBeforeCapabilitiesField4ModifyField3OutputModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ConfigChangeBeforeCapabilitiesField4ModifyField3OutputVariant0Model: TypeAlias = (
-    __ConfigChangeBeforeCapabilitiesField4ModifyField3OutputVariant0ModelKnownFields
+_ConfigChangeBeforeCapabilitiesField4ModifyField3OutputModel: TypeAlias = (
+    __ConfigChangeBeforeCapabilitiesField4ModifyField3OutputModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ConfigChangeBeforeCapabilitiesField4ModifyField3OutputVariant1Variant0ModelKnownFields = TypedDict(
-    "__ConfigChangeBeforeCapabilitiesField4ModifyField3OutputVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_ConfigChangeBeforeCapabilitiesField4ModifyField3OutputVariant1Variant0Model: TypeAlias = (
-    __ConfigChangeBeforeCapabilitiesField4ModifyField3OutputVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ConfigChangeBeforeCapabilitiesField4ModifyField3OutputVariant1Variant1ModelKnownFields = TypedDict(
-    "__ConfigChangeBeforeCapabilitiesField4ModifyField3OutputVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_ConfigChangeBeforeCapabilitiesField4ModifyField3OutputVariant1Variant1Model: TypeAlias = (
-    __ConfigChangeBeforeCapabilitiesField4ModifyField3OutputVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ConfigChangeBeforeCapabilitiesField4ModifyField4PromptVariant0ModelKnownFields = TypedDict(
-    "__ConfigChangeBeforeCapabilitiesField4ModifyField4PromptVariant0ModelKnownFields",
+__ConfigChangeBeforeCapabilitiesField4ModifyField4PromptModelKnownFields = TypedDict(
+    "__ConfigChangeBeforeCapabilitiesField4ModifyField4PromptModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ConfigChangeBeforeCapabilitiesField4ModifyField4PromptVariant0Model: TypeAlias = (
-    __ConfigChangeBeforeCapabilitiesField4ModifyField4PromptVariant0ModelKnownFields
+_ConfigChangeBeforeCapabilitiesField4ModifyField4PromptModel: TypeAlias = (
+    __ConfigChangeBeforeCapabilitiesField4ModifyField4PromptModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ConfigChangeBeforeCapabilitiesField4ModifyField4PromptVariant1Variant0ModelKnownFields = TypedDict(
-    "__ConfigChangeBeforeCapabilitiesField4ModifyField4PromptVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_ConfigChangeBeforeCapabilitiesField4ModifyField4PromptVariant1Variant0Model: TypeAlias = (
-    __ConfigChangeBeforeCapabilitiesField4ModifyField4PromptVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ConfigChangeBeforeCapabilitiesField4ModifyField4PromptVariant1Variant1ModelKnownFields = TypedDict(
-    "__ConfigChangeBeforeCapabilitiesField4ModifyField4PromptVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_ConfigChangeBeforeCapabilitiesField4ModifyField4PromptVariant1Variant1Model: TypeAlias = (
-    __ConfigChangeBeforeCapabilitiesField4ModifyField4PromptVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ConfigChangeBeforeCapabilitiesField4ModifyField5RequestVariant0ModelKnownFields = TypedDict(
-    "__ConfigChangeBeforeCapabilitiesField4ModifyField5RequestVariant0ModelKnownFields",
+__ConfigChangeBeforeCapabilitiesField4ModifyField5RequestModelKnownFields = TypedDict(
+    "__ConfigChangeBeforeCapabilitiesField4ModifyField5RequestModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ConfigChangeBeforeCapabilitiesField4ModifyField5RequestVariant0Model: TypeAlias = (
-    __ConfigChangeBeforeCapabilitiesField4ModifyField5RequestVariant0ModelKnownFields
+_ConfigChangeBeforeCapabilitiesField4ModifyField5RequestModel: TypeAlias = (
+    __ConfigChangeBeforeCapabilitiesField4ModifyField5RequestModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ConfigChangeBeforeCapabilitiesField4ModifyField5RequestVariant1Variant0ModelKnownFields = TypedDict(
-    "__ConfigChangeBeforeCapabilitiesField4ModifyField5RequestVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_ConfigChangeBeforeCapabilitiesField4ModifyField5RequestVariant1Variant0Model: TypeAlias = (
-    __ConfigChangeBeforeCapabilitiesField4ModifyField5RequestVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ConfigChangeBeforeCapabilitiesField4ModifyField5RequestVariant1Variant1ModelKnownFields = TypedDict(
-    "__ConfigChangeBeforeCapabilitiesField4ModifyField5RequestVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_ConfigChangeBeforeCapabilitiesField4ModifyField5RequestVariant1Variant1Model: TypeAlias = (
-    __ConfigChangeBeforeCapabilitiesField4ModifyField5RequestVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ConfigChangeBeforeCapabilitiesField4ModifyField6ResponseVariant0ModelKnownFields = TypedDict(
-    "__ConfigChangeBeforeCapabilitiesField4ModifyField6ResponseVariant0ModelKnownFields",
+__ConfigChangeBeforeCapabilitiesField4ModifyField6ResponseModelKnownFields = TypedDict(
+    "__ConfigChangeBeforeCapabilitiesField4ModifyField6ResponseModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ConfigChangeBeforeCapabilitiesField4ModifyField6ResponseVariant0Model: TypeAlias = (
-    __ConfigChangeBeforeCapabilitiesField4ModifyField6ResponseVariant0ModelKnownFields
+_ConfigChangeBeforeCapabilitiesField4ModifyField6ResponseModel: TypeAlias = (
+    __ConfigChangeBeforeCapabilitiesField4ModifyField6ResponseModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ConfigChangeBeforeCapabilitiesField4ModifyField6ResponseVariant1Variant0ModelKnownFields = TypedDict(
-    "__ConfigChangeBeforeCapabilitiesField4ModifyField6ResponseVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_ConfigChangeBeforeCapabilitiesField4ModifyField6ResponseVariant1Variant0Model: TypeAlias = (
-    __ConfigChangeBeforeCapabilitiesField4ModifyField6ResponseVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ConfigChangeBeforeCapabilitiesField4ModifyField6ResponseVariant1Variant1ModelKnownFields = TypedDict(
-    "__ConfigChangeBeforeCapabilitiesField4ModifyField6ResponseVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_ConfigChangeBeforeCapabilitiesField4ModifyField6ResponseVariant1Variant1Model: TypeAlias = (
-    __ConfigChangeBeforeCapabilitiesField4ModifyField6ResponseVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ConfigChangeBeforeCapabilitiesField4ModifyField7SummaryVariant0ModelKnownFields = TypedDict(
-    "__ConfigChangeBeforeCapabilitiesField4ModifyField7SummaryVariant0ModelKnownFields",
+__ConfigChangeBeforeCapabilitiesField4ModifyField7SummaryModelKnownFields = TypedDict(
+    "__ConfigChangeBeforeCapabilitiesField4ModifyField7SummaryModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ConfigChangeBeforeCapabilitiesField4ModifyField7SummaryVariant0Model: TypeAlias = (
-    __ConfigChangeBeforeCapabilitiesField4ModifyField7SummaryVariant0ModelKnownFields
+_ConfigChangeBeforeCapabilitiesField4ModifyField7SummaryModel: TypeAlias = (
+    __ConfigChangeBeforeCapabilitiesField4ModifyField7SummaryModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ConfigChangeBeforeCapabilitiesField4ModifyField7SummaryVariant1Variant0ModelKnownFields = TypedDict(
-    "__ConfigChangeBeforeCapabilitiesField4ModifyField7SummaryVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_ConfigChangeBeforeCapabilitiesField4ModifyField7SummaryVariant1Variant0Model: TypeAlias = (
-    __ConfigChangeBeforeCapabilitiesField4ModifyField7SummaryVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ConfigChangeBeforeCapabilitiesField4ModifyField7SummaryVariant1Variant1ModelKnownFields = TypedDict(
-    "__ConfigChangeBeforeCapabilitiesField4ModifyField7SummaryVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_ConfigChangeBeforeCapabilitiesField4ModifyField7SummaryVariant1Variant1Model: TypeAlias = (
-    __ConfigChangeBeforeCapabilitiesField4ModifyField7SummaryVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ConfigChangeBeforeCapabilitiesField4ModifyField8WorkspaceVariant0ModelKnownFields = TypedDict(
-    "__ConfigChangeBeforeCapabilitiesField4ModifyField8WorkspaceVariant0ModelKnownFields",
+__ConfigChangeBeforeCapabilitiesField4ModifyField8WorkspaceModelKnownFields = TypedDict(
+    "__ConfigChangeBeforeCapabilitiesField4ModifyField8WorkspaceModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ConfigChangeBeforeCapabilitiesField4ModifyField8WorkspaceVariant0Model: TypeAlias = (
-    __ConfigChangeBeforeCapabilitiesField4ModifyField8WorkspaceVariant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ConfigChangeBeforeCapabilitiesField4ModifyField8WorkspaceVariant1Variant0ModelKnownFields = TypedDict(
-    "__ConfigChangeBeforeCapabilitiesField4ModifyField8WorkspaceVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_ConfigChangeBeforeCapabilitiesField4ModifyField8WorkspaceVariant1Variant0Model: TypeAlias = (
-    __ConfigChangeBeforeCapabilitiesField4ModifyField8WorkspaceVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ConfigChangeBeforeCapabilitiesField4ModifyField8WorkspaceVariant1Variant1ModelKnownFields = TypedDict(
-    "__ConfigChangeBeforeCapabilitiesField4ModifyField8WorkspaceVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_ConfigChangeBeforeCapabilitiesField4ModifyField8WorkspaceVariant1Variant1Model: TypeAlias = (
-    __ConfigChangeBeforeCapabilitiesField4ModifyField8WorkspaceVariant1Variant1ModelKnownFields
+_ConfigChangeBeforeCapabilitiesField4ModifyField8WorkspaceModel: TypeAlias = (
+    __ConfigChangeBeforeCapabilitiesField4ModifyField8WorkspaceModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
 __ConfigChangeBeforeCapabilitiesField4ModifyModelKnownFields = TypedDict(
     "__ConfigChangeBeforeCapabilitiesField4ModifyModelKnownFields",
     {
-        "content": NotRequired[JsonValue],
-        "input": NotRequired[JsonValue],
-        "instructions": NotRequired[JsonValue],
-        "output": NotRequired[JsonValue],
-        "prompt": NotRequired[JsonValue],
-        "request": NotRequired[JsonValue],
-        "response": NotRequired[JsonValue],
-        "summary": NotRequired[JsonValue],
-        "workspace": NotRequired[JsonValue],
+        "content": NotRequired[
+            _ConfigChangeBeforeCapabilitiesField4ModifyField0ContentModel
+        ],
+        "input": NotRequired[
+            _ConfigChangeBeforeCapabilitiesField4ModifyField1InputModel
+        ],
+        "instructions": NotRequired[
+            _ConfigChangeBeforeCapabilitiesField4ModifyField2InstructionsModel
+        ],
+        "output": NotRequired[
+            _ConfigChangeBeforeCapabilitiesField4ModifyField3OutputModel
+        ],
+        "prompt": NotRequired[
+            _ConfigChangeBeforeCapabilitiesField4ModifyField4PromptModel
+        ],
+        "request": NotRequired[
+            _ConfigChangeBeforeCapabilitiesField4ModifyField5RequestModel
+        ],
+        "response": NotRequired[
+            _ConfigChangeBeforeCapabilitiesField4ModifyField6ResponseModel
+        ],
+        "summary": NotRequired[
+            _ConfigChangeBeforeCapabilitiesField4ModifyField7SummaryModel
+        ],
+        "workspace": NotRequired[
+            _ConfigChangeBeforeCapabilitiesField4ModifyField8WorkspaceModel
+        ],
     },
     total=False,
 )
@@ -992,7 +678,7 @@ _ConfigChangeBeforeCapabilitiesField4ModifyModel: TypeAlias = (
 _ConfigChangeBeforeCapabilitiesKnownFields = TypedDict(
     "_ConfigChangeBeforeCapabilitiesKnownFields",
     {
-        "effects": Required[JsonValue],
+        "effects": Required[list[Union[OpenString, str]]],
         "elicitation": NotRequired[
             _ConfigChangeBeforeCapabilitiesField1ElicitationModel
         ],
@@ -1058,8 +744,8 @@ ConfigChangeBeforeEvent: TypeAlias = (
 )  # permits additional JSON fields
 
 # Source: schema/draft/content-item.schema.json#
-_ContentItemVariant0Model = TypedDict(
-    "_ContentItemVariant0Model",
+_ContentItemBodyModel = TypedDict(
+    "_ContentItemBodyModel",
     {
         "body": Required["ContentReference"],
         "category": NotRequired[str],
@@ -1069,22 +755,20 @@ _ContentItemVariant0Model = TypedDict(
         "parentItemId": NotRequired[str],
         "role": NotRequired[str],
         "selection": Required[Literal["body"]],
-        "sha256": NotRequired[str],
-        "size": NotRequired[int | Decimal],
         "synthesized": NotRequired[bool],
     },
     total=False,
 )
-_ContentItemVariant1Field1GapModel = TypedDict(
-    "_ContentItemVariant1Field1GapModel",
+_ContentItemBodyGapField1GapModel = TypedDict(
+    "_ContentItemBodyGapField1GapModel",
     {"path": NotRequired[str], "reason": Required[str]},
     total=False,
 )
-_ContentItemVariant1Model = TypedDict(
-    "_ContentItemVariant1Model",
+_ContentItemBodyGapModel = TypedDict(
+    "_ContentItemBodyGapModel",
     {
         "category": NotRequired[str],
-        "gap": Required[_ContentItemVariant1Field1GapModel],
+        "gap": Required[_ContentItemBodyGapField1GapModel],
         "id": Required[str],
         "kind": Required[str],
         "mediaType": Required[str],
@@ -1097,8 +781,8 @@ _ContentItemVariant1Model = TypedDict(
     },
     total=False,
 )
-_ContentItemVariant2Model = TypedDict(
-    "_ContentItemVariant2Model",
+_ContentItemMetadataModel = TypedDict(
+    "_ContentItemMetadataModel",
     {
         "category": NotRequired[str],
         "id": Required[str],
@@ -1113,8 +797,8 @@ _ContentItemVariant2Model = TypedDict(
     },
     total=False,
 )
-_ContentItemVariant3Model = TypedDict(
-    "_ContentItemVariant3Model",
+_ContentItemOmitModel = TypedDict(
+    "_ContentItemOmitModel",
     {
         "category": NotRequired[str],
         "id": Required[str],
@@ -1130,18 +814,14 @@ _ContentItemVariant3Model = TypedDict(
     total=False,
 )
 ContentItem: TypeAlias = Union[
-    _ContentItemVariant0Model,
-    _ContentItemVariant1Model,
-    _ContentItemVariant2Model,
-    _ContentItemVariant3Model,
+    _ContentItemBodyModel,
+    _ContentItemBodyGapModel,
+    _ContentItemMetadataModel,
+    _ContentItemOmitModel,
 ]
 
 # Source: schema/draft/content-reference.schema.json#
-ContentReference = TypedDict(
-    "ContentReference",
-    {"ref": Required[str], "sha256": Required[str], "size": Required[int | Decimal]},
-    total=False,
-)
+ContentReference = TypedDict("ContentReference", {"ref": Required[str]}, total=False)
 
 # Source: schema/draft/content-selection.schema.json#
 _ContentSelectionKnownFields = TypedDict(
@@ -1175,6 +855,13 @@ _ContentUploadKnownFields = TypedDict(
 ContentUpload: TypeAlias = (
     _ContentUploadKnownFields | JsonObject
 )  # permits additional JSON fields
+
+# Source: schema/draft/content-upload-receipt.schema.json#
+ContentUploadReceipt = TypedDict(
+    "ContentUploadReceipt",
+    {"ref": Required[str], "sha256": Required[str], "size": Required[int | Decimal]},
+    total=False,
+)
 
 # Source: schema/draft/capabilities.schema.json#/$defs/context.compact.after
 __ContextCompactAfterCapabilitiesField1ElicitationField0FormModelKnownFields = (
@@ -1246,261 +933,119 @@ __ContextCompactAfterCapabilitiesField3InjectModelKnownFields = TypedDict(
 _ContextCompactAfterCapabilitiesField3InjectModel: TypeAlias = (
     __ContextCompactAfterCapabilitiesField3InjectModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__ContextCompactAfterCapabilitiesField4ModifyField0ContentVariant0ModelKnownFields = TypedDict(
-    "__ContextCompactAfterCapabilitiesField4ModifyField0ContentVariant0ModelKnownFields",
+__ContextCompactAfterCapabilitiesField4ModifyField0ContentModelKnownFields = TypedDict(
+    "__ContextCompactAfterCapabilitiesField4ModifyField0ContentModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ContextCompactAfterCapabilitiesField4ModifyField0ContentVariant0Model: TypeAlias = (
-    __ContextCompactAfterCapabilitiesField4ModifyField0ContentVariant0ModelKnownFields
+_ContextCompactAfterCapabilitiesField4ModifyField0ContentModel: TypeAlias = (
+    __ContextCompactAfterCapabilitiesField4ModifyField0ContentModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ContextCompactAfterCapabilitiesField4ModifyField0ContentVariant1Variant0ModelKnownFields = TypedDict(
-    "__ContextCompactAfterCapabilitiesField4ModifyField0ContentVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_ContextCompactAfterCapabilitiesField4ModifyField0ContentVariant1Variant0Model: TypeAlias = (
-    __ContextCompactAfterCapabilitiesField4ModifyField0ContentVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ContextCompactAfterCapabilitiesField4ModifyField0ContentVariant1Variant1ModelKnownFields = TypedDict(
-    "__ContextCompactAfterCapabilitiesField4ModifyField0ContentVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_ContextCompactAfterCapabilitiesField4ModifyField0ContentVariant1Variant1Model: TypeAlias = (
-    __ContextCompactAfterCapabilitiesField4ModifyField0ContentVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ContextCompactAfterCapabilitiesField4ModifyField1InputVariant0ModelKnownFields = TypedDict(
-    "__ContextCompactAfterCapabilitiesField4ModifyField1InputVariant0ModelKnownFields",
+__ContextCompactAfterCapabilitiesField4ModifyField1InputModelKnownFields = TypedDict(
+    "__ContextCompactAfterCapabilitiesField4ModifyField1InputModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ContextCompactAfterCapabilitiesField4ModifyField1InputVariant0Model: TypeAlias = (
-    __ContextCompactAfterCapabilitiesField4ModifyField1InputVariant0ModelKnownFields
+_ContextCompactAfterCapabilitiesField4ModifyField1InputModel: TypeAlias = (
+    __ContextCompactAfterCapabilitiesField4ModifyField1InputModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ContextCompactAfterCapabilitiesField4ModifyField1InputVariant1Variant0ModelKnownFields = TypedDict(
-    "__ContextCompactAfterCapabilitiesField4ModifyField1InputVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_ContextCompactAfterCapabilitiesField4ModifyField1InputVariant1Variant0Model: TypeAlias = (
-    __ContextCompactAfterCapabilitiesField4ModifyField1InputVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ContextCompactAfterCapabilitiesField4ModifyField1InputVariant1Variant1ModelKnownFields = TypedDict(
-    "__ContextCompactAfterCapabilitiesField4ModifyField1InputVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_ContextCompactAfterCapabilitiesField4ModifyField1InputVariant1Variant1Model: TypeAlias = (
-    __ContextCompactAfterCapabilitiesField4ModifyField1InputVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ContextCompactAfterCapabilitiesField4ModifyField2InstructionsVariant0ModelKnownFields = TypedDict(
-    "__ContextCompactAfterCapabilitiesField4ModifyField2InstructionsVariant0ModelKnownFields",
+__ContextCompactAfterCapabilitiesField4ModifyField2InstructionsModelKnownFields = TypedDict(
+    "__ContextCompactAfterCapabilitiesField4ModifyField2InstructionsModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ContextCompactAfterCapabilitiesField4ModifyField2InstructionsVariant0Model: TypeAlias = (
-    __ContextCompactAfterCapabilitiesField4ModifyField2InstructionsVariant0ModelKnownFields
+_ContextCompactAfterCapabilitiesField4ModifyField2InstructionsModel: TypeAlias = (
+    __ContextCompactAfterCapabilitiesField4ModifyField2InstructionsModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ContextCompactAfterCapabilitiesField4ModifyField2InstructionsVariant1Variant0ModelKnownFields = TypedDict(
-    "__ContextCompactAfterCapabilitiesField4ModifyField2InstructionsVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_ContextCompactAfterCapabilitiesField4ModifyField2InstructionsVariant1Variant0Model: TypeAlias = (
-    __ContextCompactAfterCapabilitiesField4ModifyField2InstructionsVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ContextCompactAfterCapabilitiesField4ModifyField2InstructionsVariant1Variant1ModelKnownFields = TypedDict(
-    "__ContextCompactAfterCapabilitiesField4ModifyField2InstructionsVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_ContextCompactAfterCapabilitiesField4ModifyField2InstructionsVariant1Variant1Model: TypeAlias = (
-    __ContextCompactAfterCapabilitiesField4ModifyField2InstructionsVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ContextCompactAfterCapabilitiesField4ModifyField3OutputVariant0ModelKnownFields = TypedDict(
-    "__ContextCompactAfterCapabilitiesField4ModifyField3OutputVariant0ModelKnownFields",
+__ContextCompactAfterCapabilitiesField4ModifyField3OutputModelKnownFields = TypedDict(
+    "__ContextCompactAfterCapabilitiesField4ModifyField3OutputModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ContextCompactAfterCapabilitiesField4ModifyField3OutputVariant0Model: TypeAlias = (
-    __ContextCompactAfterCapabilitiesField4ModifyField3OutputVariant0ModelKnownFields
+_ContextCompactAfterCapabilitiesField4ModifyField3OutputModel: TypeAlias = (
+    __ContextCompactAfterCapabilitiesField4ModifyField3OutputModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ContextCompactAfterCapabilitiesField4ModifyField3OutputVariant1Variant0ModelKnownFields = TypedDict(
-    "__ContextCompactAfterCapabilitiesField4ModifyField3OutputVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_ContextCompactAfterCapabilitiesField4ModifyField3OutputVariant1Variant0Model: TypeAlias = (
-    __ContextCompactAfterCapabilitiesField4ModifyField3OutputVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ContextCompactAfterCapabilitiesField4ModifyField3OutputVariant1Variant1ModelKnownFields = TypedDict(
-    "__ContextCompactAfterCapabilitiesField4ModifyField3OutputVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_ContextCompactAfterCapabilitiesField4ModifyField3OutputVariant1Variant1Model: TypeAlias = (
-    __ContextCompactAfterCapabilitiesField4ModifyField3OutputVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ContextCompactAfterCapabilitiesField4ModifyField4PromptVariant0ModelKnownFields = TypedDict(
-    "__ContextCompactAfterCapabilitiesField4ModifyField4PromptVariant0ModelKnownFields",
+__ContextCompactAfterCapabilitiesField4ModifyField4PromptModelKnownFields = TypedDict(
+    "__ContextCompactAfterCapabilitiesField4ModifyField4PromptModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ContextCompactAfterCapabilitiesField4ModifyField4PromptVariant0Model: TypeAlias = (
-    __ContextCompactAfterCapabilitiesField4ModifyField4PromptVariant0ModelKnownFields
+_ContextCompactAfterCapabilitiesField4ModifyField4PromptModel: TypeAlias = (
+    __ContextCompactAfterCapabilitiesField4ModifyField4PromptModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ContextCompactAfterCapabilitiesField4ModifyField4PromptVariant1Variant0ModelKnownFields = TypedDict(
-    "__ContextCompactAfterCapabilitiesField4ModifyField4PromptVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_ContextCompactAfterCapabilitiesField4ModifyField4PromptVariant1Variant0Model: TypeAlias = (
-    __ContextCompactAfterCapabilitiesField4ModifyField4PromptVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ContextCompactAfterCapabilitiesField4ModifyField4PromptVariant1Variant1ModelKnownFields = TypedDict(
-    "__ContextCompactAfterCapabilitiesField4ModifyField4PromptVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_ContextCompactAfterCapabilitiesField4ModifyField4PromptVariant1Variant1Model: TypeAlias = (
-    __ContextCompactAfterCapabilitiesField4ModifyField4PromptVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ContextCompactAfterCapabilitiesField4ModifyField5RequestVariant0ModelKnownFields = TypedDict(
-    "__ContextCompactAfterCapabilitiesField4ModifyField5RequestVariant0ModelKnownFields",
+__ContextCompactAfterCapabilitiesField4ModifyField5RequestModelKnownFields = TypedDict(
+    "__ContextCompactAfterCapabilitiesField4ModifyField5RequestModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ContextCompactAfterCapabilitiesField4ModifyField5RequestVariant0Model: TypeAlias = (
-    __ContextCompactAfterCapabilitiesField4ModifyField5RequestVariant0ModelKnownFields
+_ContextCompactAfterCapabilitiesField4ModifyField5RequestModel: TypeAlias = (
+    __ContextCompactAfterCapabilitiesField4ModifyField5RequestModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ContextCompactAfterCapabilitiesField4ModifyField5RequestVariant1Variant0ModelKnownFields = TypedDict(
-    "__ContextCompactAfterCapabilitiesField4ModifyField5RequestVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_ContextCompactAfterCapabilitiesField4ModifyField5RequestVariant1Variant0Model: TypeAlias = (
-    __ContextCompactAfterCapabilitiesField4ModifyField5RequestVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ContextCompactAfterCapabilitiesField4ModifyField5RequestVariant1Variant1ModelKnownFields = TypedDict(
-    "__ContextCompactAfterCapabilitiesField4ModifyField5RequestVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_ContextCompactAfterCapabilitiesField4ModifyField5RequestVariant1Variant1Model: TypeAlias = (
-    __ContextCompactAfterCapabilitiesField4ModifyField5RequestVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ContextCompactAfterCapabilitiesField4ModifyField6ResponseVariant0ModelKnownFields = TypedDict(
-    "__ContextCompactAfterCapabilitiesField4ModifyField6ResponseVariant0ModelKnownFields",
+__ContextCompactAfterCapabilitiesField4ModifyField6ResponseModelKnownFields = TypedDict(
+    "__ContextCompactAfterCapabilitiesField4ModifyField6ResponseModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ContextCompactAfterCapabilitiesField4ModifyField6ResponseVariant0Model: TypeAlias = (
-    __ContextCompactAfterCapabilitiesField4ModifyField6ResponseVariant0ModelKnownFields
+_ContextCompactAfterCapabilitiesField4ModifyField6ResponseModel: TypeAlias = (
+    __ContextCompactAfterCapabilitiesField4ModifyField6ResponseModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ContextCompactAfterCapabilitiesField4ModifyField6ResponseVariant1Variant0ModelKnownFields = TypedDict(
-    "__ContextCompactAfterCapabilitiesField4ModifyField6ResponseVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_ContextCompactAfterCapabilitiesField4ModifyField6ResponseVariant1Variant0Model: TypeAlias = (
-    __ContextCompactAfterCapabilitiesField4ModifyField6ResponseVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ContextCompactAfterCapabilitiesField4ModifyField6ResponseVariant1Variant1ModelKnownFields = TypedDict(
-    "__ContextCompactAfterCapabilitiesField4ModifyField6ResponseVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_ContextCompactAfterCapabilitiesField4ModifyField6ResponseVariant1Variant1Model: TypeAlias = (
-    __ContextCompactAfterCapabilitiesField4ModifyField6ResponseVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ContextCompactAfterCapabilitiesField4ModifyField7SummaryVariant0ModelKnownFields = TypedDict(
-    "__ContextCompactAfterCapabilitiesField4ModifyField7SummaryVariant0ModelKnownFields",
+__ContextCompactAfterCapabilitiesField4ModifyField7SummaryModelKnownFields = TypedDict(
+    "__ContextCompactAfterCapabilitiesField4ModifyField7SummaryModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ContextCompactAfterCapabilitiesField4ModifyField7SummaryVariant0Model: TypeAlias = (
-    __ContextCompactAfterCapabilitiesField4ModifyField7SummaryVariant0ModelKnownFields
+_ContextCompactAfterCapabilitiesField4ModifyField7SummaryModel: TypeAlias = (
+    __ContextCompactAfterCapabilitiesField4ModifyField7SummaryModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ContextCompactAfterCapabilitiesField4ModifyField7SummaryVariant1Variant0ModelKnownFields = TypedDict(
-    "__ContextCompactAfterCapabilitiesField4ModifyField7SummaryVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
+__ContextCompactAfterCapabilitiesField4ModifyField8WorkspaceModelKnownFields = (
+    TypedDict(
+        "__ContextCompactAfterCapabilitiesField4ModifyField8WorkspaceModelKnownFields",
+        {"merge": Required[bool], "replace": Required[bool]},
+        total=False,
+    )
 )
-_ContextCompactAfterCapabilitiesField4ModifyField7SummaryVariant1Variant0Model: TypeAlias = (
-    __ContextCompactAfterCapabilitiesField4ModifyField7SummaryVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ContextCompactAfterCapabilitiesField4ModifyField7SummaryVariant1Variant1ModelKnownFields = TypedDict(
-    "__ContextCompactAfterCapabilitiesField4ModifyField7SummaryVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_ContextCompactAfterCapabilitiesField4ModifyField7SummaryVariant1Variant1Model: TypeAlias = (
-    __ContextCompactAfterCapabilitiesField4ModifyField7SummaryVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ContextCompactAfterCapabilitiesField4ModifyField8WorkspaceVariant0ModelKnownFields = TypedDict(
-    "__ContextCompactAfterCapabilitiesField4ModifyField8WorkspaceVariant0ModelKnownFields",
-    {"merge": Required[bool], "replace": Required[bool]},
-    total=False,
-)
-_ContextCompactAfterCapabilitiesField4ModifyField8WorkspaceVariant0Model: TypeAlias = (
-    __ContextCompactAfterCapabilitiesField4ModifyField8WorkspaceVariant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ContextCompactAfterCapabilitiesField4ModifyField8WorkspaceVariant1Variant0ModelKnownFields = TypedDict(
-    "__ContextCompactAfterCapabilitiesField4ModifyField8WorkspaceVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_ContextCompactAfterCapabilitiesField4ModifyField8WorkspaceVariant1Variant0Model: TypeAlias = (
-    __ContextCompactAfterCapabilitiesField4ModifyField8WorkspaceVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ContextCompactAfterCapabilitiesField4ModifyField8WorkspaceVariant1Variant1ModelKnownFields = TypedDict(
-    "__ContextCompactAfterCapabilitiesField4ModifyField8WorkspaceVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_ContextCompactAfterCapabilitiesField4ModifyField8WorkspaceVariant1Variant1Model: TypeAlias = (
-    __ContextCompactAfterCapabilitiesField4ModifyField8WorkspaceVariant1Variant1ModelKnownFields
+_ContextCompactAfterCapabilitiesField4ModifyField8WorkspaceModel: TypeAlias = (
+    __ContextCompactAfterCapabilitiesField4ModifyField8WorkspaceModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
 __ContextCompactAfterCapabilitiesField4ModifyModelKnownFields = TypedDict(
     "__ContextCompactAfterCapabilitiesField4ModifyModelKnownFields",
     {
-        "content": NotRequired[JsonValue],
-        "input": NotRequired[JsonValue],
-        "instructions": NotRequired[JsonValue],
-        "output": NotRequired[JsonValue],
-        "prompt": NotRequired[JsonValue],
-        "request": NotRequired[JsonValue],
-        "response": NotRequired[JsonValue],
-        "summary": NotRequired[JsonValue],
-        "workspace": NotRequired[JsonValue],
+        "content": NotRequired[
+            _ContextCompactAfterCapabilitiesField4ModifyField0ContentModel
+        ],
+        "input": NotRequired[
+            _ContextCompactAfterCapabilitiesField4ModifyField1InputModel
+        ],
+        "instructions": NotRequired[
+            _ContextCompactAfterCapabilitiesField4ModifyField2InstructionsModel
+        ],
+        "output": NotRequired[
+            _ContextCompactAfterCapabilitiesField4ModifyField3OutputModel
+        ],
+        "prompt": NotRequired[
+            _ContextCompactAfterCapabilitiesField4ModifyField4PromptModel
+        ],
+        "request": NotRequired[
+            _ContextCompactAfterCapabilitiesField4ModifyField5RequestModel
+        ],
+        "response": NotRequired[
+            _ContextCompactAfterCapabilitiesField4ModifyField6ResponseModel
+        ],
+        "summary": NotRequired[
+            _ContextCompactAfterCapabilitiesField4ModifyField7SummaryModel
+        ],
+        "workspace": NotRequired[
+            _ContextCompactAfterCapabilitiesField4ModifyField8WorkspaceModel
+        ],
     },
     total=False,
 )
@@ -1510,7 +1055,7 @@ _ContextCompactAfterCapabilitiesField4ModifyModel: TypeAlias = (
 _ContextCompactAfterCapabilitiesKnownFields = TypedDict(
     "_ContextCompactAfterCapabilitiesKnownFields",
     {
-        "effects": Required[JsonValue],
+        "effects": Required[list[Union[OpenString, str]]],
         "elicitation": NotRequired[
             _ContextCompactAfterCapabilitiesField1ElicitationModel
         ],
@@ -1599,261 +1144,121 @@ __ContextCompactBeforeCapabilitiesField3InjectModelKnownFields = TypedDict(
 _ContextCompactBeforeCapabilitiesField3InjectModel: TypeAlias = (
     __ContextCompactBeforeCapabilitiesField3InjectModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__ContextCompactBeforeCapabilitiesField4ModifyField0ContentVariant0ModelKnownFields = TypedDict(
-    "__ContextCompactBeforeCapabilitiesField4ModifyField0ContentVariant0ModelKnownFields",
+__ContextCompactBeforeCapabilitiesField4ModifyField0ContentModelKnownFields = TypedDict(
+    "__ContextCompactBeforeCapabilitiesField4ModifyField0ContentModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ContextCompactBeforeCapabilitiesField4ModifyField0ContentVariant0Model: TypeAlias = (
-    __ContextCompactBeforeCapabilitiesField4ModifyField0ContentVariant0ModelKnownFields
+_ContextCompactBeforeCapabilitiesField4ModifyField0ContentModel: TypeAlias = (
+    __ContextCompactBeforeCapabilitiesField4ModifyField0ContentModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ContextCompactBeforeCapabilitiesField4ModifyField0ContentVariant1Variant0ModelKnownFields = TypedDict(
-    "__ContextCompactBeforeCapabilitiesField4ModifyField0ContentVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_ContextCompactBeforeCapabilitiesField4ModifyField0ContentVariant1Variant0Model: TypeAlias = (
-    __ContextCompactBeforeCapabilitiesField4ModifyField0ContentVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ContextCompactBeforeCapabilitiesField4ModifyField0ContentVariant1Variant1ModelKnownFields = TypedDict(
-    "__ContextCompactBeforeCapabilitiesField4ModifyField0ContentVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_ContextCompactBeforeCapabilitiesField4ModifyField0ContentVariant1Variant1Model: TypeAlias = (
-    __ContextCompactBeforeCapabilitiesField4ModifyField0ContentVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ContextCompactBeforeCapabilitiesField4ModifyField1InputVariant0ModelKnownFields = TypedDict(
-    "__ContextCompactBeforeCapabilitiesField4ModifyField1InputVariant0ModelKnownFields",
+__ContextCompactBeforeCapabilitiesField4ModifyField1InputModelKnownFields = TypedDict(
+    "__ContextCompactBeforeCapabilitiesField4ModifyField1InputModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ContextCompactBeforeCapabilitiesField4ModifyField1InputVariant0Model: TypeAlias = (
-    __ContextCompactBeforeCapabilitiesField4ModifyField1InputVariant0ModelKnownFields
+_ContextCompactBeforeCapabilitiesField4ModifyField1InputModel: TypeAlias = (
+    __ContextCompactBeforeCapabilitiesField4ModifyField1InputModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ContextCompactBeforeCapabilitiesField4ModifyField1InputVariant1Variant0ModelKnownFields = TypedDict(
-    "__ContextCompactBeforeCapabilitiesField4ModifyField1InputVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_ContextCompactBeforeCapabilitiesField4ModifyField1InputVariant1Variant0Model: TypeAlias = (
-    __ContextCompactBeforeCapabilitiesField4ModifyField1InputVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ContextCompactBeforeCapabilitiesField4ModifyField1InputVariant1Variant1ModelKnownFields = TypedDict(
-    "__ContextCompactBeforeCapabilitiesField4ModifyField1InputVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_ContextCompactBeforeCapabilitiesField4ModifyField1InputVariant1Variant1Model: TypeAlias = (
-    __ContextCompactBeforeCapabilitiesField4ModifyField1InputVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ContextCompactBeforeCapabilitiesField4ModifyField2InstructionsVariant0ModelKnownFields = TypedDict(
-    "__ContextCompactBeforeCapabilitiesField4ModifyField2InstructionsVariant0ModelKnownFields",
+__ContextCompactBeforeCapabilitiesField4ModifyField2InstructionsModelKnownFields = TypedDict(
+    "__ContextCompactBeforeCapabilitiesField4ModifyField2InstructionsModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ContextCompactBeforeCapabilitiesField4ModifyField2InstructionsVariant0Model: TypeAlias = (
-    __ContextCompactBeforeCapabilitiesField4ModifyField2InstructionsVariant0ModelKnownFields
+_ContextCompactBeforeCapabilitiesField4ModifyField2InstructionsModel: TypeAlias = (
+    __ContextCompactBeforeCapabilitiesField4ModifyField2InstructionsModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ContextCompactBeforeCapabilitiesField4ModifyField2InstructionsVariant1Variant0ModelKnownFields = TypedDict(
-    "__ContextCompactBeforeCapabilitiesField4ModifyField2InstructionsVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_ContextCompactBeforeCapabilitiesField4ModifyField2InstructionsVariant1Variant0Model: TypeAlias = (
-    __ContextCompactBeforeCapabilitiesField4ModifyField2InstructionsVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ContextCompactBeforeCapabilitiesField4ModifyField2InstructionsVariant1Variant1ModelKnownFields = TypedDict(
-    "__ContextCompactBeforeCapabilitiesField4ModifyField2InstructionsVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_ContextCompactBeforeCapabilitiesField4ModifyField2InstructionsVariant1Variant1Model: TypeAlias = (
-    __ContextCompactBeforeCapabilitiesField4ModifyField2InstructionsVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ContextCompactBeforeCapabilitiesField4ModifyField3OutputVariant0ModelKnownFields = TypedDict(
-    "__ContextCompactBeforeCapabilitiesField4ModifyField3OutputVariant0ModelKnownFields",
+__ContextCompactBeforeCapabilitiesField4ModifyField3OutputModelKnownFields = TypedDict(
+    "__ContextCompactBeforeCapabilitiesField4ModifyField3OutputModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ContextCompactBeforeCapabilitiesField4ModifyField3OutputVariant0Model: TypeAlias = (
-    __ContextCompactBeforeCapabilitiesField4ModifyField3OutputVariant0ModelKnownFields
+_ContextCompactBeforeCapabilitiesField4ModifyField3OutputModel: TypeAlias = (
+    __ContextCompactBeforeCapabilitiesField4ModifyField3OutputModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ContextCompactBeforeCapabilitiesField4ModifyField3OutputVariant1Variant0ModelKnownFields = TypedDict(
-    "__ContextCompactBeforeCapabilitiesField4ModifyField3OutputVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_ContextCompactBeforeCapabilitiesField4ModifyField3OutputVariant1Variant0Model: TypeAlias = (
-    __ContextCompactBeforeCapabilitiesField4ModifyField3OutputVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ContextCompactBeforeCapabilitiesField4ModifyField3OutputVariant1Variant1ModelKnownFields = TypedDict(
-    "__ContextCompactBeforeCapabilitiesField4ModifyField3OutputVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_ContextCompactBeforeCapabilitiesField4ModifyField3OutputVariant1Variant1Model: TypeAlias = (
-    __ContextCompactBeforeCapabilitiesField4ModifyField3OutputVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ContextCompactBeforeCapabilitiesField4ModifyField4PromptVariant0ModelKnownFields = TypedDict(
-    "__ContextCompactBeforeCapabilitiesField4ModifyField4PromptVariant0ModelKnownFields",
+__ContextCompactBeforeCapabilitiesField4ModifyField4PromptModelKnownFields = TypedDict(
+    "__ContextCompactBeforeCapabilitiesField4ModifyField4PromptModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ContextCompactBeforeCapabilitiesField4ModifyField4PromptVariant0Model: TypeAlias = (
-    __ContextCompactBeforeCapabilitiesField4ModifyField4PromptVariant0ModelKnownFields
+_ContextCompactBeforeCapabilitiesField4ModifyField4PromptModel: TypeAlias = (
+    __ContextCompactBeforeCapabilitiesField4ModifyField4PromptModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ContextCompactBeforeCapabilitiesField4ModifyField4PromptVariant1Variant0ModelKnownFields = TypedDict(
-    "__ContextCompactBeforeCapabilitiesField4ModifyField4PromptVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_ContextCompactBeforeCapabilitiesField4ModifyField4PromptVariant1Variant0Model: TypeAlias = (
-    __ContextCompactBeforeCapabilitiesField4ModifyField4PromptVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ContextCompactBeforeCapabilitiesField4ModifyField4PromptVariant1Variant1ModelKnownFields = TypedDict(
-    "__ContextCompactBeforeCapabilitiesField4ModifyField4PromptVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_ContextCompactBeforeCapabilitiesField4ModifyField4PromptVariant1Variant1Model: TypeAlias = (
-    __ContextCompactBeforeCapabilitiesField4ModifyField4PromptVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ContextCompactBeforeCapabilitiesField4ModifyField5RequestVariant0ModelKnownFields = TypedDict(
-    "__ContextCompactBeforeCapabilitiesField4ModifyField5RequestVariant0ModelKnownFields",
+__ContextCompactBeforeCapabilitiesField4ModifyField5RequestModelKnownFields = TypedDict(
+    "__ContextCompactBeforeCapabilitiesField4ModifyField5RequestModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ContextCompactBeforeCapabilitiesField4ModifyField5RequestVariant0Model: TypeAlias = (
-    __ContextCompactBeforeCapabilitiesField4ModifyField5RequestVariant0ModelKnownFields
+_ContextCompactBeforeCapabilitiesField4ModifyField5RequestModel: TypeAlias = (
+    __ContextCompactBeforeCapabilitiesField4ModifyField5RequestModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ContextCompactBeforeCapabilitiesField4ModifyField5RequestVariant1Variant0ModelKnownFields = TypedDict(
-    "__ContextCompactBeforeCapabilitiesField4ModifyField5RequestVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
+__ContextCompactBeforeCapabilitiesField4ModifyField6ResponseModelKnownFields = (
+    TypedDict(
+        "__ContextCompactBeforeCapabilitiesField4ModifyField6ResponseModelKnownFields",
+        {"merge": Required[bool], "replace": Required[bool]},
+        total=False,
+    )
 )
-_ContextCompactBeforeCapabilitiesField4ModifyField5RequestVariant1Variant0Model: TypeAlias = (
-    __ContextCompactBeforeCapabilitiesField4ModifyField5RequestVariant1Variant0ModelKnownFields
+_ContextCompactBeforeCapabilitiesField4ModifyField6ResponseModel: TypeAlias = (
+    __ContextCompactBeforeCapabilitiesField4ModifyField6ResponseModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ContextCompactBeforeCapabilitiesField4ModifyField5RequestVariant1Variant1ModelKnownFields = TypedDict(
-    "__ContextCompactBeforeCapabilitiesField4ModifyField5RequestVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_ContextCompactBeforeCapabilitiesField4ModifyField5RequestVariant1Variant1Model: TypeAlias = (
-    __ContextCompactBeforeCapabilitiesField4ModifyField5RequestVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ContextCompactBeforeCapabilitiesField4ModifyField6ResponseVariant0ModelKnownFields = TypedDict(
-    "__ContextCompactBeforeCapabilitiesField4ModifyField6ResponseVariant0ModelKnownFields",
+__ContextCompactBeforeCapabilitiesField4ModifyField7SummaryModelKnownFields = TypedDict(
+    "__ContextCompactBeforeCapabilitiesField4ModifyField7SummaryModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ContextCompactBeforeCapabilitiesField4ModifyField6ResponseVariant0Model: TypeAlias = (
-    __ContextCompactBeforeCapabilitiesField4ModifyField6ResponseVariant0ModelKnownFields
+_ContextCompactBeforeCapabilitiesField4ModifyField7SummaryModel: TypeAlias = (
+    __ContextCompactBeforeCapabilitiesField4ModifyField7SummaryModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ContextCompactBeforeCapabilitiesField4ModifyField6ResponseVariant1Variant0ModelKnownFields = TypedDict(
-    "__ContextCompactBeforeCapabilitiesField4ModifyField6ResponseVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
+__ContextCompactBeforeCapabilitiesField4ModifyField8WorkspaceModelKnownFields = (
+    TypedDict(
+        "__ContextCompactBeforeCapabilitiesField4ModifyField8WorkspaceModelKnownFields",
+        {"merge": Required[bool], "replace": Required[bool]},
+        total=False,
+    )
 )
-_ContextCompactBeforeCapabilitiesField4ModifyField6ResponseVariant1Variant0Model: TypeAlias = (
-    __ContextCompactBeforeCapabilitiesField4ModifyField6ResponseVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ContextCompactBeforeCapabilitiesField4ModifyField6ResponseVariant1Variant1ModelKnownFields = TypedDict(
-    "__ContextCompactBeforeCapabilitiesField4ModifyField6ResponseVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_ContextCompactBeforeCapabilitiesField4ModifyField6ResponseVariant1Variant1Model: TypeAlias = (
-    __ContextCompactBeforeCapabilitiesField4ModifyField6ResponseVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ContextCompactBeforeCapabilitiesField4ModifyField7SummaryVariant0ModelKnownFields = TypedDict(
-    "__ContextCompactBeforeCapabilitiesField4ModifyField7SummaryVariant0ModelKnownFields",
-    {"merge": Required[bool], "replace": Required[bool]},
-    total=False,
-)
-_ContextCompactBeforeCapabilitiesField4ModifyField7SummaryVariant0Model: TypeAlias = (
-    __ContextCompactBeforeCapabilitiesField4ModifyField7SummaryVariant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ContextCompactBeforeCapabilitiesField4ModifyField7SummaryVariant1Variant0ModelKnownFields = TypedDict(
-    "__ContextCompactBeforeCapabilitiesField4ModifyField7SummaryVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_ContextCompactBeforeCapabilitiesField4ModifyField7SummaryVariant1Variant0Model: TypeAlias = (
-    __ContextCompactBeforeCapabilitiesField4ModifyField7SummaryVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ContextCompactBeforeCapabilitiesField4ModifyField7SummaryVariant1Variant1ModelKnownFields = TypedDict(
-    "__ContextCompactBeforeCapabilitiesField4ModifyField7SummaryVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_ContextCompactBeforeCapabilitiesField4ModifyField7SummaryVariant1Variant1Model: TypeAlias = (
-    __ContextCompactBeforeCapabilitiesField4ModifyField7SummaryVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ContextCompactBeforeCapabilitiesField4ModifyField8WorkspaceVariant0ModelKnownFields = TypedDict(
-    "__ContextCompactBeforeCapabilitiesField4ModifyField8WorkspaceVariant0ModelKnownFields",
-    {"merge": Required[bool], "replace": Required[bool]},
-    total=False,
-)
-_ContextCompactBeforeCapabilitiesField4ModifyField8WorkspaceVariant0Model: TypeAlias = (
-    __ContextCompactBeforeCapabilitiesField4ModifyField8WorkspaceVariant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ContextCompactBeforeCapabilitiesField4ModifyField8WorkspaceVariant1Variant0ModelKnownFields = TypedDict(
-    "__ContextCompactBeforeCapabilitiesField4ModifyField8WorkspaceVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_ContextCompactBeforeCapabilitiesField4ModifyField8WorkspaceVariant1Variant0Model: TypeAlias = (
-    __ContextCompactBeforeCapabilitiesField4ModifyField8WorkspaceVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ContextCompactBeforeCapabilitiesField4ModifyField8WorkspaceVariant1Variant1ModelKnownFields = TypedDict(
-    "__ContextCompactBeforeCapabilitiesField4ModifyField8WorkspaceVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_ContextCompactBeforeCapabilitiesField4ModifyField8WorkspaceVariant1Variant1Model: TypeAlias = (
-    __ContextCompactBeforeCapabilitiesField4ModifyField8WorkspaceVariant1Variant1ModelKnownFields
+_ContextCompactBeforeCapabilitiesField4ModifyField8WorkspaceModel: TypeAlias = (
+    __ContextCompactBeforeCapabilitiesField4ModifyField8WorkspaceModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
 __ContextCompactBeforeCapabilitiesField4ModifyModelKnownFields = TypedDict(
     "__ContextCompactBeforeCapabilitiesField4ModifyModelKnownFields",
     {
-        "content": NotRequired[JsonValue],
-        "input": NotRequired[JsonValue],
-        "instructions": NotRequired[JsonValue],
-        "output": NotRequired[JsonValue],
-        "prompt": NotRequired[JsonValue],
-        "request": NotRequired[JsonValue],
-        "response": NotRequired[JsonValue],
-        "summary": NotRequired[JsonValue],
-        "workspace": NotRequired[JsonValue],
+        "content": NotRequired[
+            _ContextCompactBeforeCapabilitiesField4ModifyField0ContentModel
+        ],
+        "input": NotRequired[
+            _ContextCompactBeforeCapabilitiesField4ModifyField1InputModel
+        ],
+        "instructions": NotRequired[
+            _ContextCompactBeforeCapabilitiesField4ModifyField2InstructionsModel
+        ],
+        "output": NotRequired[
+            _ContextCompactBeforeCapabilitiesField4ModifyField3OutputModel
+        ],
+        "prompt": NotRequired[
+            _ContextCompactBeforeCapabilitiesField4ModifyField4PromptModel
+        ],
+        "request": NotRequired[
+            _ContextCompactBeforeCapabilitiesField4ModifyField5RequestModel
+        ],
+        "response": NotRequired[
+            _ContextCompactBeforeCapabilitiesField4ModifyField6ResponseModel
+        ],
+        "summary": NotRequired[
+            _ContextCompactBeforeCapabilitiesField4ModifyField7SummaryModel
+        ],
+        "workspace": NotRequired[
+            _ContextCompactBeforeCapabilitiesField4ModifyField8WorkspaceModel
+        ],
     },
     total=False,
 )
@@ -1863,7 +1268,7 @@ _ContextCompactBeforeCapabilitiesField4ModifyModel: TypeAlias = (
 _ContextCompactBeforeCapabilitiesKnownFields = TypedDict(
     "_ContextCompactBeforeCapabilitiesKnownFields",
     {
-        "effects": Required[JsonValue],
+        "effects": Required[list[Union[OpenString, str]]],
         "elicitation": NotRequired[
             _ContextCompactBeforeCapabilitiesField1ElicitationModel
         ],
@@ -1893,14 +1298,14 @@ DenyEffect = TypedDict(
 )
 
 # Source: schema/draft/effect.schema.json#
-_EffectVariant1Model = TypedDict(
-    "_EffectVariant1Model", {"type": Required[Literal["allow"]]}, total=False
+_EffectAllowModel = TypedDict(
+    "_EffectAllowModel", {"type": Required[Literal["allow"]]}, total=False
 )
-_EffectVariant2Model = TypedDict(
-    "_EffectVariant2Model", {"type": Required[Literal["ask"]]}, total=False
+_EffectAskModel = TypedDict(
+    "_EffectAskModel", {"type": Required[Literal["ask"]]}, total=False
 )
-_EffectVariant3Model = TypedDict(
-    "_EffectVariant3Model",
+_EffectModifyModel = TypedDict(
+    "_EffectModifyModel",
     {
         "operation": Required[OpenString],
         "target": Required[OpenString],
@@ -1909,18 +1314,18 @@ _EffectVariant3Model = TypedDict(
     },
     total=False,
 )
-_EffectVariant4Model = TypedDict(
-    "_EffectVariant4Model",
+_EffectMessageModel = TypedDict(
+    "_EffectMessageModel",
     {"text": Required[str], "type": Required[Literal["message"]]},
     total=False,
 )
-_EffectVariant5Model = TypedDict(
-    "_EffectVariant5Model",
+_EffectReturnModel = TypedDict(
+    "_EffectReturnModel",
     {"type": Required[Literal["return"]], "value": Required[JsonValue]},
     total=False,
 )
-_EffectVariant6Model = TypedDict(
-    "_EffectVariant6Model",
+_EffectFlowStopModel = TypedDict(
+    "_EffectFlowStopModel",
     {
         "operation": Required[Literal["stop"]],
         "reason": Required[str],
@@ -1928,8 +1333,8 @@ _EffectVariant6Model = TypedDict(
     },
     total=False,
 )
-_EffectVariant7Model = TypedDict(
-    "_EffectVariant7Model",
+_EffectFlowContinueModel = TypedDict(
+    "_EffectFlowContinueModel",
     {
         "instruction": NotRequired[str],
         "operation": Required[Literal["continue"]],
@@ -1937,8 +1342,8 @@ _EffectVariant7Model = TypedDict(
     },
     total=False,
 )
-_EffectVariant8Model = TypedDict(
-    "_EffectVariant8Model",
+_EffectInjectAppendContextModel = TypedDict(
+    "_EffectInjectAppendContextModel",
     {
         "deliverAt": Required[OpenString],
         "operation": Required[Literal["append"]],
@@ -1950,14 +1355,51 @@ _EffectVariant8Model = TypedDict(
 )
 Effect: TypeAlias = Union[
     "DenyEffect",
-    _EffectVariant1Model,
-    _EffectVariant2Model,
-    _EffectVariant3Model,
-    _EffectVariant4Model,
-    _EffectVariant5Model,
-    _EffectVariant6Model,
-    _EffectVariant7Model,
-    _EffectVariant8Model,
+    _EffectAllowModel,
+    _EffectAskModel,
+    _EffectModifyModel,
+    _EffectMessageModel,
+    _EffectReturnModel,
+    _EffectFlowStopModel,
+    _EffectFlowContinueModel,
+    _EffectInjectAppendContextModel,
+]
+
+# Source: schema/draft/event.schema.json#
+Event: TypeAlias = Union[
+    "ToolBeforeEvent",
+    "ToolAfterEvent",
+    "SessionStartEvent",
+    "SessionEndEvent",
+    "ConfigChangeBeforeEvent",
+    "ConfigChangeAfterEvent",
+    "TurnStartEvent",
+    "TurnFinishBeforeEvent",
+    "TurnEndEvent",
+    "TurnProgressEvent",
+    "ModelRequestBeforeEvent",
+    "ModelResponseAfterEvent",
+    "ModelErrorEvent",
+    "ModelSwitchBeforeEvent",
+    "ModelSwitchAfterEvent",
+    "ToolPermissionRequestEvent",
+    "ToolPermissionResolvedEvent",
+    "ToolProgressEvent",
+    "ToolBatchAfterEvent",
+    "ContextCompactBeforeEvent",
+    "ContextCompactAfterEvent",
+    "TaskChangeBeforeEvent",
+    "TaskChangeAfterEvent",
+    "UserAttentionEvent",
+    "UserElicitationRequestEvent",
+    "UserElicitationResultEvent",
+    "UserMessageInboundEvent",
+    "UserMessageOutboundEvent",
+    "WorkspaceChangeBeforeEvent",
+    "WorkspaceChangeAfterEvent",
+    "FileChangedEvent",
+    "HookFailureEvent",
+    UnknownVariant,
 ]
 
 # Source: schema/draft/execution-event.schema.json#
@@ -2009,10 +1451,10 @@ _ExecutionEventAttemptusageKnownFields = TypedDict(
         "completeness": Required[OpenString],
         "cost": NotRequired[_ExecutionEventAttemptusageField3CostModel],
         "inputTokens": NotRequired[int | Decimal],
-        "kind": Required[JsonValue],
+        "kind": Required[OpenString],
         "outputTokens": NotRequired[int | Decimal],
-        "provenance": Required[JsonValue],
-        "scope": Required[JsonValue],
+        "provenance": Required[OpenString],
+        "scope": Required[OpenString],
     },
     total=False,
 )
@@ -2135,21 +1577,21 @@ ExecutionEventError = TypedDict(
 )
 
 # Source: schema/draft/execution-event.schema.json#/$defs/execution
-_ExecutionEventExecutionVariant0Model = TypedDict(
-    "_ExecutionEventExecutionVariant0Model",
+_ExecutionEventExecutionExecutedModel = TypedDict(
+    "_ExecutionEventExecutionExecutedModel",
     {"status": Required[Literal["executed"]]},
     total=False,
 )
-_ExecutionEventExecutionVariant1Model = TypedDict(
-    "_ExecutionEventExecutionVariant1Model",
+_ExecutionEventExecutionSkippedSuppliedResultModel = TypedDict(
+    "_ExecutionEventExecutionSkippedSuppliedResultModel",
     {
         "reason": Required[Literal["supplied_result"]],
         "status": Required[Literal["skipped"]],
     },
     total=False,
 )
-_ExecutionEventExecutionVariant2Model = TypedDict(
-    "_ExecutionEventExecutionVariant2Model",
+_ExecutionEventExecutionSkippedPolicyModel = TypedDict(
+    "_ExecutionEventExecutionSkippedPolicyModel",
     {
         "detail": NotRequired[str],
         "reason": Required[Literal["policy"]],
@@ -2157,8 +1599,8 @@ _ExecutionEventExecutionVariant2Model = TypedDict(
     },
     total=False,
 )
-_ExecutionEventExecutionVariant3Model = TypedDict(
-    "_ExecutionEventExecutionVariant3Model",
+_ExecutionEventExecutionSkippedCancelledModel = TypedDict(
+    "_ExecutionEventExecutionSkippedCancelledModel",
     {
         "detail": NotRequired[str],
         "reason": Required[Literal["cancelled"]],
@@ -2166,8 +1608,8 @@ _ExecutionEventExecutionVariant3Model = TypedDict(
     },
     total=False,
 )
-_ExecutionEventExecutionVariant4Model = TypedDict(
-    "_ExecutionEventExecutionVariant4Model",
+_ExecutionEventExecutionSkippedTimeoutModel = TypedDict(
+    "_ExecutionEventExecutionSkippedTimeoutModel",
     {
         "detail": NotRequired[str],
         "reason": Required[Literal["timeout"]],
@@ -2175,8 +1617,8 @@ _ExecutionEventExecutionVariant4Model = TypedDict(
     },
     total=False,
 )
-_ExecutionEventExecutionVariant5Model = TypedDict(
-    "_ExecutionEventExecutionVariant5Model",
+_ExecutionEventExecutionSkippedOtherModel = TypedDict(
+    "_ExecutionEventExecutionSkippedOtherModel",
     {
         "detail": NotRequired[str],
         "reason": Required[Literal["other"]],
@@ -2185,12 +1627,12 @@ _ExecutionEventExecutionVariant5Model = TypedDict(
     total=False,
 )
 ExecutionEventExecution: TypeAlias = Union[
-    _ExecutionEventExecutionVariant0Model,
-    _ExecutionEventExecutionVariant1Model,
-    _ExecutionEventExecutionVariant2Model,
-    _ExecutionEventExecutionVariant3Model,
-    _ExecutionEventExecutionVariant4Model,
-    _ExecutionEventExecutionVariant5Model,
+    _ExecutionEventExecutionExecutedModel,
+    _ExecutionEventExecutionSkippedSuppliedResultModel,
+    _ExecutionEventExecutionSkippedPolicyModel,
+    _ExecutionEventExecutionSkippedCancelledModel,
+    _ExecutionEventExecutionSkippedTimeoutModel,
+    _ExecutionEventExecutionSkippedOtherModel,
 ]
 
 # Source: schema/draft/execution-event.schema.json#/$defs/fileChange
@@ -2207,199 +1649,73 @@ ExecutionEventFilechange = TypedDict(
 )
 
 # Source: schema/draft/execution-event.schema.json#/$defs/mcp
-_ExecutionEventMcpField0ConnectionVariant0Variant0Field0GapsItemModel = TypedDict(
-    "_ExecutionEventMcpField0ConnectionVariant0Variant0Field0GapsItemModel",
+_ExecutionEventMcpField0ConnectionHttpField0GapsItemModel = TypedDict(
+    "_ExecutionEventMcpField0ConnectionHttpField0GapsItemModel",
     {"path": Required[str], "reason": Required[str]},
     total=False,
 )
-_ExecutionEventMcpField0ConnectionVariant0Variant0Model = TypedDict(
-    "_ExecutionEventMcpField0ConnectionVariant0Variant0Model",
+_ExecutionEventMcpField0ConnectionHttpModel = TypedDict(
+    "_ExecutionEventMcpField0ConnectionHttpModel",
     {
         "gaps": NotRequired[
-            list[_ExecutionEventMcpField0ConnectionVariant0Variant0Field0GapsItemModel]
+            list[_ExecutionEventMcpField0ConnectionHttpField0GapsItemModel]
         ],
         "transport": Required[Literal["http"]],
         "url": NotRequired[str],
     },
     total=False,
 )
-__ExecutionEventMcpField0ConnectionVariant0Variant1Variant0ModelKnownFields = TypedDict(
-    "__ExecutionEventMcpField0ConnectionVariant0Variant1Variant0ModelKnownFields",
-    {"url": Required[JsonValue]},
-    total=False,
-)
-_ExecutionEventMcpField0ConnectionVariant0Variant1Variant0Model: TypeAlias = (
-    __ExecutionEventMcpField0ConnectionVariant0Variant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ExecutionEventMcpField0ConnectionVariant0Variant1Variant1ModelKnownFields = TypedDict(
-    "__ExecutionEventMcpField0ConnectionVariant0Variant1Variant1ModelKnownFields",
-    {"gaps": Required[JsonValue]},
-    total=False,
-)
-_ExecutionEventMcpField0ConnectionVariant0Variant1Variant1Model: TypeAlias = (
-    __ExecutionEventMcpField0ConnectionVariant0Variant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-_ExecutionEventMcpField0ConnectionVariant1Variant0Field0GapsItemModel = TypedDict(
-    "_ExecutionEventMcpField0ConnectionVariant1Variant0Field0GapsItemModel",
+_ExecutionEventMcpField0ConnectionSseField0GapsItemModel = TypedDict(
+    "_ExecutionEventMcpField0ConnectionSseField0GapsItemModel",
     {"path": Required[str], "reason": Required[str]},
     total=False,
 )
-_ExecutionEventMcpField0ConnectionVariant1Variant0Model = TypedDict(
-    "_ExecutionEventMcpField0ConnectionVariant1Variant0Model",
+_ExecutionEventMcpField0ConnectionSseModel = TypedDict(
+    "_ExecutionEventMcpField0ConnectionSseModel",
     {
         "gaps": NotRequired[
-            list[_ExecutionEventMcpField0ConnectionVariant1Variant0Field0GapsItemModel]
+            list[_ExecutionEventMcpField0ConnectionSseField0GapsItemModel]
         ],
         "transport": Required[Literal["sse"]],
         "url": NotRequired[str],
     },
     total=False,
 )
-__ExecutionEventMcpField0ConnectionVariant1Variant1Variant0ModelKnownFields = TypedDict(
-    "__ExecutionEventMcpField0ConnectionVariant1Variant1Variant0ModelKnownFields",
-    {"url": Required[JsonValue]},
-    total=False,
-)
-_ExecutionEventMcpField0ConnectionVariant1Variant1Variant0Model: TypeAlias = (
-    __ExecutionEventMcpField0ConnectionVariant1Variant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ExecutionEventMcpField0ConnectionVariant1Variant1Variant1ModelKnownFields = TypedDict(
-    "__ExecutionEventMcpField0ConnectionVariant1Variant1Variant1ModelKnownFields",
-    {"gaps": Required[JsonValue]},
-    total=False,
-)
-_ExecutionEventMcpField0ConnectionVariant1Variant1Variant1Model: TypeAlias = (
-    __ExecutionEventMcpField0ConnectionVariant1Variant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-_ExecutionEventMcpField0ConnectionVariant2Variant0Field3GapsItemModel = TypedDict(
-    "_ExecutionEventMcpField0ConnectionVariant2Variant0Field3GapsItemModel",
+_ExecutionEventMcpField0ConnectionStdioField3GapsItemModel = TypedDict(
+    "_ExecutionEventMcpField0ConnectionStdioField3GapsItemModel",
     {"path": Required[str], "reason": Required[str]},
     total=False,
 )
-_ExecutionEventMcpField0ConnectionVariant2Variant0Model = TypedDict(
-    "_ExecutionEventMcpField0ConnectionVariant2Variant0Model",
+_ExecutionEventMcpField0ConnectionStdioModel = TypedDict(
+    "_ExecutionEventMcpField0ConnectionStdioModel",
     {
         "args": NotRequired[list[str]],
         "command": NotRequired[str],
         "cwd": NotRequired[str],
         "gaps": NotRequired[
-            list[_ExecutionEventMcpField0ConnectionVariant2Variant0Field3GapsItemModel]
+            list[_ExecutionEventMcpField0ConnectionStdioField3GapsItemModel]
         ],
         "transport": Required[Literal["stdio"]],
     },
     total=False,
 )
-__ExecutionEventMcpField0ConnectionVariant2Variant1Variant0ModelKnownFields = TypedDict(
-    "__ExecutionEventMcpField0ConnectionVariant2Variant1Variant0ModelKnownFields",
-    {"command": Required[JsonValue]},
-    total=False,
-)
-_ExecutionEventMcpField0ConnectionVariant2Variant1Variant0Model: TypeAlias = (
-    __ExecutionEventMcpField0ConnectionVariant2Variant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ExecutionEventMcpField0ConnectionVariant2Variant1Variant1ModelKnownFields = TypedDict(
-    "__ExecutionEventMcpField0ConnectionVariant2Variant1Variant1ModelKnownFields",
-    {"gaps": Required[JsonValue]},
-    total=False,
-)
-_ExecutionEventMcpField0ConnectionVariant2Variant1Variant1Model: TypeAlias = (
-    __ExecutionEventMcpField0ConnectionVariant2Variant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ExecutionEventMcpField0ConnectionVariant2Variant2Variant0ModelKnownFields = TypedDict(
-    "__ExecutionEventMcpField0ConnectionVariant2Variant2Variant0ModelKnownFields",
-    {"args": Required[JsonValue]},
-    total=False,
-)
-_ExecutionEventMcpField0ConnectionVariant2Variant2Variant0Model: TypeAlias = (
-    __ExecutionEventMcpField0ConnectionVariant2Variant2Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ExecutionEventMcpField0ConnectionVariant2Variant2Variant1ModelKnownFields = TypedDict(
-    "__ExecutionEventMcpField0ConnectionVariant2Variant2Variant1ModelKnownFields",
-    {"gaps": Required[JsonValue]},
-    total=False,
-)
-_ExecutionEventMcpField0ConnectionVariant2Variant2Variant1Model: TypeAlias = (
-    __ExecutionEventMcpField0ConnectionVariant2Variant2Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ExecutionEventMcpField0ConnectionVariant2Variant3Variant0ModelKnownFields = TypedDict(
-    "__ExecutionEventMcpField0ConnectionVariant2Variant3Variant0ModelKnownFields",
-    {"cwd": Required[JsonValue]},
-    total=False,
-)
-_ExecutionEventMcpField0ConnectionVariant2Variant3Variant0Model: TypeAlias = (
-    __ExecutionEventMcpField0ConnectionVariant2Variant3Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ExecutionEventMcpField0ConnectionVariant2Variant3Variant1ModelKnownFields = TypedDict(
-    "__ExecutionEventMcpField0ConnectionVariant2Variant3Variant1ModelKnownFields",
-    {"gaps": Required[JsonValue]},
-    total=False,
-)
-_ExecutionEventMcpField0ConnectionVariant2Variant3Variant1Model: TypeAlias = (
-    __ExecutionEventMcpField0ConnectionVariant2Variant3Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-_ExecutionEventMcpField0ConnectionVariant3Variant0Field2GapsItemModel = TypedDict(
-    "_ExecutionEventMcpField0ConnectionVariant3Variant0Field2GapsItemModel",
+_ExecutionEventMcpField0ConnectionCustomTransportField2GapsItemModel = TypedDict(
+    "_ExecutionEventMcpField0ConnectionCustomTransportField2GapsItemModel",
     {"path": Required[str], "reason": Required[str]},
     total=False,
 )
-_ExecutionEventMcpField0ConnectionVariant3Variant0Model = TypedDict(
-    "_ExecutionEventMcpField0ConnectionVariant3Variant0Model",
+_ExecutionEventMcpField0ConnectionCustomTransportModel = TypedDict(
+    "_ExecutionEventMcpField0ConnectionCustomTransportModel",
     {
         "address": NotRequired[str],
         "addressForm": NotRequired[str],
         "gaps": NotRequired[
-            list[_ExecutionEventMcpField0ConnectionVariant3Variant0Field2GapsItemModel]
+            list[_ExecutionEventMcpField0ConnectionCustomTransportField2GapsItemModel]
         ],
         "transport": Required[str],
     },
     total=False,
 )
-__ExecutionEventMcpField0ConnectionVariant3Variant1Variant0ModelKnownFields = TypedDict(
-    "__ExecutionEventMcpField0ConnectionVariant3Variant1Variant0ModelKnownFields",
-    {"addressForm": Required[JsonValue]},
-    total=False,
-)
-_ExecutionEventMcpField0ConnectionVariant3Variant1Variant0Model: TypeAlias = (
-    __ExecutionEventMcpField0ConnectionVariant3Variant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ExecutionEventMcpField0ConnectionVariant3Variant1Variant1ModelKnownFields = TypedDict(
-    "__ExecutionEventMcpField0ConnectionVariant3Variant1Variant1ModelKnownFields",
-    {"gaps": Required[JsonValue]},
-    total=False,
-)
-_ExecutionEventMcpField0ConnectionVariant3Variant1Variant1Model: TypeAlias = (
-    __ExecutionEventMcpField0ConnectionVariant3Variant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ExecutionEventMcpField0ConnectionVariant3Variant2Variant0ModelKnownFields = TypedDict(
-    "__ExecutionEventMcpField0ConnectionVariant3Variant2Variant0ModelKnownFields",
-    {"address": Required[JsonValue]},
-    total=False,
-)
-_ExecutionEventMcpField0ConnectionVariant3Variant2Variant0Model: TypeAlias = (
-    __ExecutionEventMcpField0ConnectionVariant3Variant2Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ExecutionEventMcpField0ConnectionVariant3Variant2Variant1ModelKnownFields = TypedDict(
-    "__ExecutionEventMcpField0ConnectionVariant3Variant2Variant1ModelKnownFields",
-    {"gaps": Required[JsonValue]},
-    total=False,
-)
-_ExecutionEventMcpField0ConnectionVariant3Variant2Variant1Model: TypeAlias = (
-    __ExecutionEventMcpField0ConnectionVariant3Variant2Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
 _ExecutionEventMcpField2ServerModel = TypedDict(
     "_ExecutionEventMcpField2ServerModel",
     {"id": Required[str], "name": NotRequired[str]},
@@ -2408,7 +1724,15 @@ _ExecutionEventMcpField2ServerModel = TypedDict(
 ExecutionEventMcp = TypedDict(
     "ExecutionEventMcp",
     {
-        "connection": Required[Union[JsonValue, UnknownVariant]],
+        "connection": Required[
+            Union[
+                _ExecutionEventMcpField0ConnectionHttpModel,
+                _ExecutionEventMcpField0ConnectionSseModel,
+                _ExecutionEventMcpField0ConnectionStdioModel,
+                _ExecutionEventMcpField0ConnectionCustomTransportModel,
+                UnknownVariant,
+            ]
+        ],
         "provenance": Required[OpenString],
         "server": Required[_ExecutionEventMcpField2ServerModel],
         "toolName": Required[str],
@@ -2422,13 +1746,74 @@ ExecutionEventModel = TypedDict(
 )
 
 # Source: schema/draft/execution-event.schema.json#/$defs/model.error
-__ExecutionEventModelErrorField2ExecutionVariant1ModelKnownFields = TypedDict(
-    "__ExecutionEventModelErrorField2ExecutionVariant1ModelKnownFields",
-    {"status": NotRequired[Literal["executed"]]},
+__ExecutionEventModelErrorField2ExecutionExecutedModelKnownFields = TypedDict(
+    "__ExecutionEventModelErrorField2ExecutionExecutedModelKnownFields",
+    {"status": Required[Literal["executed"]]},
     total=False,
 )
-_ExecutionEventModelErrorField2ExecutionVariant1Model: TypeAlias = (
-    __ExecutionEventModelErrorField2ExecutionVariant1ModelKnownFields | JsonObject
+_ExecutionEventModelErrorField2ExecutionExecutedModel: TypeAlias = (
+    __ExecutionEventModelErrorField2ExecutionExecutedModelKnownFields | JsonObject
+)  # permits additional JSON fields
+__ExecutionEventModelErrorField2ExecutionSkippedSuppliedResultModelKnownFields = TypedDict(
+    "__ExecutionEventModelErrorField2ExecutionSkippedSuppliedResultModelKnownFields",
+    {
+        "reason": Required[Literal["supplied_result"]],
+        "status": Required[Literal["skipped"]],
+    },
+    total=False,
+)
+_ExecutionEventModelErrorField2ExecutionSkippedSuppliedResultModel: TypeAlias = (
+    __ExecutionEventModelErrorField2ExecutionSkippedSuppliedResultModelKnownFields
+    | JsonObject
+)  # permits additional JSON fields
+__ExecutionEventModelErrorField2ExecutionSkippedPolicyModelKnownFields = TypedDict(
+    "__ExecutionEventModelErrorField2ExecutionSkippedPolicyModelKnownFields",
+    {
+        "detail": NotRequired[str],
+        "reason": Required[Literal["policy"]],
+        "status": Required[Literal["skipped"]],
+    },
+    total=False,
+)
+_ExecutionEventModelErrorField2ExecutionSkippedPolicyModel: TypeAlias = (
+    __ExecutionEventModelErrorField2ExecutionSkippedPolicyModelKnownFields | JsonObject
+)  # permits additional JSON fields
+__ExecutionEventModelErrorField2ExecutionSkippedCancelledModelKnownFields = TypedDict(
+    "__ExecutionEventModelErrorField2ExecutionSkippedCancelledModelKnownFields",
+    {
+        "detail": NotRequired[str],
+        "reason": Required[Literal["cancelled"]],
+        "status": Required[Literal["skipped"]],
+    },
+    total=False,
+)
+_ExecutionEventModelErrorField2ExecutionSkippedCancelledModel: TypeAlias = (
+    __ExecutionEventModelErrorField2ExecutionSkippedCancelledModelKnownFields
+    | JsonObject
+)  # permits additional JSON fields
+__ExecutionEventModelErrorField2ExecutionSkippedTimeoutModelKnownFields = TypedDict(
+    "__ExecutionEventModelErrorField2ExecutionSkippedTimeoutModelKnownFields",
+    {
+        "detail": NotRequired[str],
+        "reason": Required[Literal["timeout"]],
+        "status": Required[Literal["skipped"]],
+    },
+    total=False,
+)
+_ExecutionEventModelErrorField2ExecutionSkippedTimeoutModel: TypeAlias = (
+    __ExecutionEventModelErrorField2ExecutionSkippedTimeoutModelKnownFields | JsonObject
+)  # permits additional JSON fields
+__ExecutionEventModelErrorField2ExecutionSkippedOtherModelKnownFields = TypedDict(
+    "__ExecutionEventModelErrorField2ExecutionSkippedOtherModelKnownFields",
+    {
+        "detail": NotRequired[str],
+        "reason": Required[Literal["other"]],
+        "status": Required[Literal["skipped"]],
+    },
+    total=False,
+)
+_ExecutionEventModelErrorField2ExecutionSkippedOtherModel: TypeAlias = (
+    __ExecutionEventModelErrorField2ExecutionSkippedOtherModelKnownFields | JsonObject
 )  # permits additional JSON fields
 __ExecutionEventModelErrorField4GapsItemModelKnownFields = TypedDict(
     "__ExecutionEventModelErrorField4GapsItemModelKnownFields",
@@ -2448,7 +1833,16 @@ _ExecutionEventModelErrorKnownFields = TypedDict(
     {
         "attempt": Required["ExecutionEventAttempt"],
         "error": Required["ExecutionEventError"],
-        "execution": Required[JsonValue],
+        "execution": Required[
+            Union[
+                _ExecutionEventModelErrorField2ExecutionExecutedModel,
+                _ExecutionEventModelErrorField2ExecutionSkippedSuppliedResultModel,
+                _ExecutionEventModelErrorField2ExecutionSkippedPolicyModel,
+                _ExecutionEventModelErrorField2ExecutionSkippedCancelledModel,
+                _ExecutionEventModelErrorField2ExecutionSkippedTimeoutModel,
+                _ExecutionEventModelErrorField2ExecutionSkippedOtherModel,
+            ]
+        ],
         "extensions": NotRequired["Extensions"],
         "gaps": NotRequired[list[_ExecutionEventModelErrorField4GapsItemModel]],
         "id": Required[str],
@@ -3084,10 +2478,10 @@ _ExecutionEventTurnusageKnownFields = TypedDict(
         "completeness": Required[OpenString],
         "cost": NotRequired[_ExecutionEventTurnusageField3CostModel],
         "inputTokens": NotRequired[int | Decimal],
-        "kind": Required[JsonValue],
+        "kind": Required[OpenString],
         "outputTokens": NotRequired[int | Decimal],
         "provenance": Required[OpenString],
-        "scope": Required[JsonValue],
+        "scope": Required[OpenString],
     },
     total=False,
 )
@@ -3310,20 +2704,105 @@ InteractionEventUserAttention: TypeAlias = (
 )  # permits additional JSON fields
 
 # Source: schema/draft/interaction-event.schema.json#/$defs/user.elicitation.request
-__InteractionEventUserElicitationRequestField0ElicitationField1RequestVariant1ModelKnownFields = TypedDict(
-    "__InteractionEventUserElicitationRequestField0ElicitationField1RequestVariant1ModelKnownFields",
-    {"mediaType": NotRequired[Literal["application/json"]]},
+__InteractionEventUserElicitationRequestField0ElicitationField1RequestBodyModelKnownFields = TypedDict(
+    "__InteractionEventUserElicitationRequestField0ElicitationField1RequestBodyModelKnownFields",
+    {
+        "body": Required["ContentReference"],
+        "category": NotRequired[str],
+        "id": Required[str],
+        "kind": Required[str],
+        "mediaType": Required[Literal["application/json"]],
+        "parentItemId": NotRequired[str],
+        "role": NotRequired[str],
+        "selection": Required[Literal["body"]],
+        "synthesized": NotRequired[bool],
+    },
     total=False,
 )
-_InteractionEventUserElicitationRequestField0ElicitationField1RequestVariant1Model: TypeAlias = (
-    __InteractionEventUserElicitationRequestField0ElicitationField1RequestVariant1ModelKnownFields
+_InteractionEventUserElicitationRequestField0ElicitationField1RequestBodyModel: TypeAlias = (
+    __InteractionEventUserElicitationRequestField0ElicitationField1RequestBodyModelKnownFields
+    | JsonObject
+)  # permits additional JSON fields
+_InteractionEventUserElicitationRequestField0ElicitationField1RequestBodyGapField1GapModel = TypedDict(
+    "_InteractionEventUserElicitationRequestField0ElicitationField1RequestBodyGapField1GapModel",
+    {"path": NotRequired[str], "reason": Required[str]},
+    total=False,
+)
+__InteractionEventUserElicitationRequestField0ElicitationField1RequestBodyGapModelKnownFields = TypedDict(
+    "__InteractionEventUserElicitationRequestField0ElicitationField1RequestBodyGapModelKnownFields",
+    {
+        "category": NotRequired[str],
+        "gap": Required[
+            _InteractionEventUserElicitationRequestField0ElicitationField1RequestBodyGapField1GapModel
+        ],
+        "id": Required[str],
+        "kind": Required[str],
+        "mediaType": Required[Literal["application/json"]],
+        "parentItemId": NotRequired[str],
+        "role": NotRequired[str],
+        "selection": Required[Literal["body"]],
+        "sha256": NotRequired[str],
+        "size": NotRequired[int | Decimal],
+        "synthesized": NotRequired[bool],
+    },
+    total=False,
+)
+_InteractionEventUserElicitationRequestField0ElicitationField1RequestBodyGapModel: TypeAlias = (
+    __InteractionEventUserElicitationRequestField0ElicitationField1RequestBodyGapModelKnownFields
+    | JsonObject
+)  # permits additional JSON fields
+__InteractionEventUserElicitationRequestField0ElicitationField1RequestMetadataModelKnownFields = TypedDict(
+    "__InteractionEventUserElicitationRequestField0ElicitationField1RequestMetadataModelKnownFields",
+    {
+        "category": NotRequired[str],
+        "id": Required[str],
+        "kind": Required[str],
+        "mediaType": Required[Literal["application/json"]],
+        "parentItemId": NotRequired[str],
+        "role": NotRequired[str],
+        "selection": Required[Literal["metadata"]],
+        "sha256": NotRequired[str],
+        "size": NotRequired[int | Decimal],
+        "synthesized": NotRequired[bool],
+    },
+    total=False,
+)
+_InteractionEventUserElicitationRequestField0ElicitationField1RequestMetadataModel: TypeAlias = (
+    __InteractionEventUserElicitationRequestField0ElicitationField1RequestMetadataModelKnownFields
+    | JsonObject
+)  # permits additional JSON fields
+__InteractionEventUserElicitationRequestField0ElicitationField1RequestOmitModelKnownFields = TypedDict(
+    "__InteractionEventUserElicitationRequestField0ElicitationField1RequestOmitModelKnownFields",
+    {
+        "category": NotRequired[str],
+        "id": Required[str],
+        "kind": Required[str],
+        "mediaType": Required[Literal["application/json"]],
+        "parentItemId": NotRequired[str],
+        "role": NotRequired[str],
+        "selection": Required[Literal["omit"]],
+        "sha256": NotRequired[str],
+        "size": NotRequired[int | Decimal],
+        "synthesized": NotRequired[bool],
+    },
+    total=False,
+)
+_InteractionEventUserElicitationRequestField0ElicitationField1RequestOmitModel: TypeAlias = (
+    __InteractionEventUserElicitationRequestField0ElicitationField1RequestOmitModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
 _InteractionEventUserElicitationRequestField0ElicitationModel = TypedDict(
     "_InteractionEventUserElicitationRequestField0ElicitationModel",
     {
         "mode": Required[OpenString],
-        "request": NotRequired[JsonValue],
+        "request": NotRequired[
+            Union[
+                _InteractionEventUserElicitationRequestField0ElicitationField1RequestBodyModel,
+                _InteractionEventUserElicitationRequestField0ElicitationField1RequestBodyGapModel,
+                _InteractionEventUserElicitationRequestField0ElicitationField1RequestMetadataModel,
+                _InteractionEventUserElicitationRequestField0ElicitationField1RequestOmitModel,
+            ]
+        ],
         "server": Required[str],
     },
     total=False,
@@ -3343,13 +2822,91 @@ InteractionEventUserElicitationRequest: TypeAlias = (
 )  # permits additional JSON fields
 
 # Source: schema/draft/interaction-event.schema.json#/$defs/user.elicitation.result
-__InteractionEventUserElicitationResultField0ElicitationField2ResultVariant1ModelKnownFields = TypedDict(
-    "__InteractionEventUserElicitationResultField0ElicitationField2ResultVariant1ModelKnownFields",
-    {"mediaType": NotRequired[Literal["application/json"]]},
+__InteractionEventUserElicitationResultField0ElicitationField2ResultBodyModelKnownFields = TypedDict(
+    "__InteractionEventUserElicitationResultField0ElicitationField2ResultBodyModelKnownFields",
+    {
+        "body": Required["ContentReference"],
+        "category": NotRequired[str],
+        "id": Required[str],
+        "kind": Required[str],
+        "mediaType": Required[Literal["application/json"]],
+        "parentItemId": NotRequired[str],
+        "role": NotRequired[str],
+        "selection": Required[Literal["body"]],
+        "synthesized": NotRequired[bool],
+    },
     total=False,
 )
-_InteractionEventUserElicitationResultField0ElicitationField2ResultVariant1Model: TypeAlias = (
-    __InteractionEventUserElicitationResultField0ElicitationField2ResultVariant1ModelKnownFields
+_InteractionEventUserElicitationResultField0ElicitationField2ResultBodyModel: TypeAlias = (
+    __InteractionEventUserElicitationResultField0ElicitationField2ResultBodyModelKnownFields
+    | JsonObject
+)  # permits additional JSON fields
+_InteractionEventUserElicitationResultField0ElicitationField2ResultBodyGapField1GapModel = TypedDict(
+    "_InteractionEventUserElicitationResultField0ElicitationField2ResultBodyGapField1GapModel",
+    {"path": NotRequired[str], "reason": Required[str]},
+    total=False,
+)
+__InteractionEventUserElicitationResultField0ElicitationField2ResultBodyGapModelKnownFields = TypedDict(
+    "__InteractionEventUserElicitationResultField0ElicitationField2ResultBodyGapModelKnownFields",
+    {
+        "category": NotRequired[str],
+        "gap": Required[
+            _InteractionEventUserElicitationResultField0ElicitationField2ResultBodyGapField1GapModel
+        ],
+        "id": Required[str],
+        "kind": Required[str],
+        "mediaType": Required[Literal["application/json"]],
+        "parentItemId": NotRequired[str],
+        "role": NotRequired[str],
+        "selection": Required[Literal["body"]],
+        "sha256": NotRequired[str],
+        "size": NotRequired[int | Decimal],
+        "synthesized": NotRequired[bool],
+    },
+    total=False,
+)
+_InteractionEventUserElicitationResultField0ElicitationField2ResultBodyGapModel: TypeAlias = (
+    __InteractionEventUserElicitationResultField0ElicitationField2ResultBodyGapModelKnownFields
+    | JsonObject
+)  # permits additional JSON fields
+__InteractionEventUserElicitationResultField0ElicitationField2ResultMetadataModelKnownFields = TypedDict(
+    "__InteractionEventUserElicitationResultField0ElicitationField2ResultMetadataModelKnownFields",
+    {
+        "category": NotRequired[str],
+        "id": Required[str],
+        "kind": Required[str],
+        "mediaType": Required[Literal["application/json"]],
+        "parentItemId": NotRequired[str],
+        "role": NotRequired[str],
+        "selection": Required[Literal["metadata"]],
+        "sha256": NotRequired[str],
+        "size": NotRequired[int | Decimal],
+        "synthesized": NotRequired[bool],
+    },
+    total=False,
+)
+_InteractionEventUserElicitationResultField0ElicitationField2ResultMetadataModel: TypeAlias = (
+    __InteractionEventUserElicitationResultField0ElicitationField2ResultMetadataModelKnownFields
+    | JsonObject
+)  # permits additional JSON fields
+__InteractionEventUserElicitationResultField0ElicitationField2ResultOmitModelKnownFields = TypedDict(
+    "__InteractionEventUserElicitationResultField0ElicitationField2ResultOmitModelKnownFields",
+    {
+        "category": NotRequired[str],
+        "id": Required[str],
+        "kind": Required[str],
+        "mediaType": Required[Literal["application/json"]],
+        "parentItemId": NotRequired[str],
+        "role": NotRequired[str],
+        "selection": Required[Literal["omit"]],
+        "sha256": NotRequired[str],
+        "size": NotRequired[int | Decimal],
+        "synthesized": NotRequired[bool],
+    },
+    total=False,
+)
+_InteractionEventUserElicitationResultField0ElicitationField2ResultOmitModel: TypeAlias = (
+    __InteractionEventUserElicitationResultField0ElicitationField2ResultOmitModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
 _InteractionEventUserElicitationResultField0ElicitationModel = TypedDict(
@@ -3357,7 +2914,14 @@ _InteractionEventUserElicitationResultField0ElicitationModel = TypedDict(
     {
         "action": Required[OpenString],
         "mode": Required[OpenString],
-        "result": NotRequired[JsonValue],
+        "result": NotRequired[
+            Union[
+                _InteractionEventUserElicitationResultField0ElicitationField2ResultBodyModel,
+                _InteractionEventUserElicitationResultField0ElicitationField2ResultBodyGapModel,
+                _InteractionEventUserElicitationResultField0ElicitationField2ResultMetadataModel,
+                _InteractionEventUserElicitationResultField0ElicitationField2ResultOmitModel,
+            ]
+        ],
         "server": Required[str],
     },
     total=False,
@@ -3539,265 +3103,119 @@ _InterceptRequestField3ParamsField0CapabilitiesField3InjectModel: TypeAlias = (
     __InterceptRequestField3ParamsField0CapabilitiesField3InjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField0ContentVariant0ModelKnownFields = TypedDict(
-    "__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField0ContentVariant0ModelKnownFields",
+__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField0ContentModelKnownFields = TypedDict(
+    "__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField0ContentModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_InterceptRequestField3ParamsField0CapabilitiesField4ModifyField0ContentVariant0Model: TypeAlias = (
-    __InterceptRequestField3ParamsField0CapabilitiesField4ModifyField0ContentVariant0ModelKnownFields
+_InterceptRequestField3ParamsField0CapabilitiesField4ModifyField0ContentModel: TypeAlias = (
+    __InterceptRequestField3ParamsField0CapabilitiesField4ModifyField0ContentModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField0ContentVariant1Variant0ModelKnownFields = TypedDict(
-    "__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField0ContentVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_InterceptRequestField3ParamsField0CapabilitiesField4ModifyField0ContentVariant1Variant0Model: TypeAlias = (
-    __InterceptRequestField3ParamsField0CapabilitiesField4ModifyField0ContentVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField0ContentVariant1Variant1ModelKnownFields = TypedDict(
-    "__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField0ContentVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_InterceptRequestField3ParamsField0CapabilitiesField4ModifyField0ContentVariant1Variant1Model: TypeAlias = (
-    __InterceptRequestField3ParamsField0CapabilitiesField4ModifyField0ContentVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField1InputVariant0ModelKnownFields = TypedDict(
-    "__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField1InputVariant0ModelKnownFields",
+__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField1InputModelKnownFields = TypedDict(
+    "__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField1InputModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_InterceptRequestField3ParamsField0CapabilitiesField4ModifyField1InputVariant0Model: TypeAlias = (
-    __InterceptRequestField3ParamsField0CapabilitiesField4ModifyField1InputVariant0ModelKnownFields
+_InterceptRequestField3ParamsField0CapabilitiesField4ModifyField1InputModel: TypeAlias = (
+    __InterceptRequestField3ParamsField0CapabilitiesField4ModifyField1InputModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField1InputVariant1Variant0ModelKnownFields = TypedDict(
-    "__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField1InputVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_InterceptRequestField3ParamsField0CapabilitiesField4ModifyField1InputVariant1Variant0Model: TypeAlias = (
-    __InterceptRequestField3ParamsField0CapabilitiesField4ModifyField1InputVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField1InputVariant1Variant1ModelKnownFields = TypedDict(
-    "__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField1InputVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_InterceptRequestField3ParamsField0CapabilitiesField4ModifyField1InputVariant1Variant1Model: TypeAlias = (
-    __InterceptRequestField3ParamsField0CapabilitiesField4ModifyField1InputVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField2InstructionsVariant0ModelKnownFields = TypedDict(
-    "__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField2InstructionsVariant0ModelKnownFields",
+__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField2InstructionsModelKnownFields = TypedDict(
+    "__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField2InstructionsModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_InterceptRequestField3ParamsField0CapabilitiesField4ModifyField2InstructionsVariant0Model: TypeAlias = (
-    __InterceptRequestField3ParamsField0CapabilitiesField4ModifyField2InstructionsVariant0ModelKnownFields
+_InterceptRequestField3ParamsField0CapabilitiesField4ModifyField2InstructionsModel: TypeAlias = (
+    __InterceptRequestField3ParamsField0CapabilitiesField4ModifyField2InstructionsModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField2InstructionsVariant1Variant0ModelKnownFields = TypedDict(
-    "__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField2InstructionsVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_InterceptRequestField3ParamsField0CapabilitiesField4ModifyField2InstructionsVariant1Variant0Model: TypeAlias = (
-    __InterceptRequestField3ParamsField0CapabilitiesField4ModifyField2InstructionsVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField2InstructionsVariant1Variant1ModelKnownFields = TypedDict(
-    "__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField2InstructionsVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_InterceptRequestField3ParamsField0CapabilitiesField4ModifyField2InstructionsVariant1Variant1Model: TypeAlias = (
-    __InterceptRequestField3ParamsField0CapabilitiesField4ModifyField2InstructionsVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField3OutputVariant0ModelKnownFields = TypedDict(
-    "__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField3OutputVariant0ModelKnownFields",
+__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField3OutputModelKnownFields = TypedDict(
+    "__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField3OutputModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_InterceptRequestField3ParamsField0CapabilitiesField4ModifyField3OutputVariant0Model: TypeAlias = (
-    __InterceptRequestField3ParamsField0CapabilitiesField4ModifyField3OutputVariant0ModelKnownFields
+_InterceptRequestField3ParamsField0CapabilitiesField4ModifyField3OutputModel: TypeAlias = (
+    __InterceptRequestField3ParamsField0CapabilitiesField4ModifyField3OutputModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField3OutputVariant1Variant0ModelKnownFields = TypedDict(
-    "__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField3OutputVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_InterceptRequestField3ParamsField0CapabilitiesField4ModifyField3OutputVariant1Variant0Model: TypeAlias = (
-    __InterceptRequestField3ParamsField0CapabilitiesField4ModifyField3OutputVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField3OutputVariant1Variant1ModelKnownFields = TypedDict(
-    "__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField3OutputVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_InterceptRequestField3ParamsField0CapabilitiesField4ModifyField3OutputVariant1Variant1Model: TypeAlias = (
-    __InterceptRequestField3ParamsField0CapabilitiesField4ModifyField3OutputVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField4PromptVariant0ModelKnownFields = TypedDict(
-    "__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField4PromptVariant0ModelKnownFields",
+__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField4PromptModelKnownFields = TypedDict(
+    "__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField4PromptModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_InterceptRequestField3ParamsField0CapabilitiesField4ModifyField4PromptVariant0Model: TypeAlias = (
-    __InterceptRequestField3ParamsField0CapabilitiesField4ModifyField4PromptVariant0ModelKnownFields
+_InterceptRequestField3ParamsField0CapabilitiesField4ModifyField4PromptModel: TypeAlias = (
+    __InterceptRequestField3ParamsField0CapabilitiesField4ModifyField4PromptModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField4PromptVariant1Variant0ModelKnownFields = TypedDict(
-    "__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField4PromptVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_InterceptRequestField3ParamsField0CapabilitiesField4ModifyField4PromptVariant1Variant0Model: TypeAlias = (
-    __InterceptRequestField3ParamsField0CapabilitiesField4ModifyField4PromptVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField4PromptVariant1Variant1ModelKnownFields = TypedDict(
-    "__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField4PromptVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_InterceptRequestField3ParamsField0CapabilitiesField4ModifyField4PromptVariant1Variant1Model: TypeAlias = (
-    __InterceptRequestField3ParamsField0CapabilitiesField4ModifyField4PromptVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField5RequestVariant0ModelKnownFields = TypedDict(
-    "__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField5RequestVariant0ModelKnownFields",
+__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField5RequestModelKnownFields = TypedDict(
+    "__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField5RequestModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_InterceptRequestField3ParamsField0CapabilitiesField4ModifyField5RequestVariant0Model: TypeAlias = (
-    __InterceptRequestField3ParamsField0CapabilitiesField4ModifyField5RequestVariant0ModelKnownFields
+_InterceptRequestField3ParamsField0CapabilitiesField4ModifyField5RequestModel: TypeAlias = (
+    __InterceptRequestField3ParamsField0CapabilitiesField4ModifyField5RequestModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField5RequestVariant1Variant0ModelKnownFields = TypedDict(
-    "__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField5RequestVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_InterceptRequestField3ParamsField0CapabilitiesField4ModifyField5RequestVariant1Variant0Model: TypeAlias = (
-    __InterceptRequestField3ParamsField0CapabilitiesField4ModifyField5RequestVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField5RequestVariant1Variant1ModelKnownFields = TypedDict(
-    "__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField5RequestVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_InterceptRequestField3ParamsField0CapabilitiesField4ModifyField5RequestVariant1Variant1Model: TypeAlias = (
-    __InterceptRequestField3ParamsField0CapabilitiesField4ModifyField5RequestVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField6ResponseVariant0ModelKnownFields = TypedDict(
-    "__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField6ResponseVariant0ModelKnownFields",
+__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField6ResponseModelKnownFields = TypedDict(
+    "__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField6ResponseModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_InterceptRequestField3ParamsField0CapabilitiesField4ModifyField6ResponseVariant0Model: TypeAlias = (
-    __InterceptRequestField3ParamsField0CapabilitiesField4ModifyField6ResponseVariant0ModelKnownFields
+_InterceptRequestField3ParamsField0CapabilitiesField4ModifyField6ResponseModel: TypeAlias = (
+    __InterceptRequestField3ParamsField0CapabilitiesField4ModifyField6ResponseModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField6ResponseVariant1Variant0ModelKnownFields = TypedDict(
-    "__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField6ResponseVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_InterceptRequestField3ParamsField0CapabilitiesField4ModifyField6ResponseVariant1Variant0Model: TypeAlias = (
-    __InterceptRequestField3ParamsField0CapabilitiesField4ModifyField6ResponseVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField6ResponseVariant1Variant1ModelKnownFields = TypedDict(
-    "__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField6ResponseVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_InterceptRequestField3ParamsField0CapabilitiesField4ModifyField6ResponseVariant1Variant1Model: TypeAlias = (
-    __InterceptRequestField3ParamsField0CapabilitiesField4ModifyField6ResponseVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField7SummaryVariant0ModelKnownFields = TypedDict(
-    "__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField7SummaryVariant0ModelKnownFields",
+__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField7SummaryModelKnownFields = TypedDict(
+    "__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField7SummaryModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_InterceptRequestField3ParamsField0CapabilitiesField4ModifyField7SummaryVariant0Model: TypeAlias = (
-    __InterceptRequestField3ParamsField0CapabilitiesField4ModifyField7SummaryVariant0ModelKnownFields
+_InterceptRequestField3ParamsField0CapabilitiesField4ModifyField7SummaryModel: TypeAlias = (
+    __InterceptRequestField3ParamsField0CapabilitiesField4ModifyField7SummaryModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField7SummaryVariant1Variant0ModelKnownFields = TypedDict(
-    "__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField7SummaryVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_InterceptRequestField3ParamsField0CapabilitiesField4ModifyField7SummaryVariant1Variant0Model: TypeAlias = (
-    __InterceptRequestField3ParamsField0CapabilitiesField4ModifyField7SummaryVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField7SummaryVariant1Variant1ModelKnownFields = TypedDict(
-    "__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField7SummaryVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_InterceptRequestField3ParamsField0CapabilitiesField4ModifyField7SummaryVariant1Variant1Model: TypeAlias = (
-    __InterceptRequestField3ParamsField0CapabilitiesField4ModifyField7SummaryVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField8WorkspaceVariant0ModelKnownFields = TypedDict(
-    "__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField8WorkspaceVariant0ModelKnownFields",
+__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField8WorkspaceModelKnownFields = TypedDict(
+    "__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField8WorkspaceModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_InterceptRequestField3ParamsField0CapabilitiesField4ModifyField8WorkspaceVariant0Model: TypeAlias = (
-    __InterceptRequestField3ParamsField0CapabilitiesField4ModifyField8WorkspaceVariant0ModelKnownFields
+_InterceptRequestField3ParamsField0CapabilitiesField4ModifyField8WorkspaceModel: TypeAlias = (
+    __InterceptRequestField3ParamsField0CapabilitiesField4ModifyField8WorkspaceModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField8WorkspaceVariant1Variant0ModelKnownFields = TypedDict(
-    "__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField8WorkspaceVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
+__InterceptRequestField3ParamsField0CapabilitiesField4ModifyModelKnownFields = TypedDict(
+    "__InterceptRequestField3ParamsField0CapabilitiesField4ModifyModelKnownFields",
+    {
+        "content": NotRequired[
+            _InterceptRequestField3ParamsField0CapabilitiesField4ModifyField0ContentModel
+        ],
+        "input": NotRequired[
+            _InterceptRequestField3ParamsField0CapabilitiesField4ModifyField1InputModel
+        ],
+        "instructions": NotRequired[
+            _InterceptRequestField3ParamsField0CapabilitiesField4ModifyField2InstructionsModel
+        ],
+        "output": NotRequired[
+            _InterceptRequestField3ParamsField0CapabilitiesField4ModifyField3OutputModel
+        ],
+        "prompt": NotRequired[
+            _InterceptRequestField3ParamsField0CapabilitiesField4ModifyField4PromptModel
+        ],
+        "request": NotRequired[
+            _InterceptRequestField3ParamsField0CapabilitiesField4ModifyField5RequestModel
+        ],
+        "response": NotRequired[
+            _InterceptRequestField3ParamsField0CapabilitiesField4ModifyField6ResponseModel
+        ],
+        "summary": NotRequired[
+            _InterceptRequestField3ParamsField0CapabilitiesField4ModifyField7SummaryModel
+        ],
+        "workspace": NotRequired[
+            _InterceptRequestField3ParamsField0CapabilitiesField4ModifyField8WorkspaceModel
+        ],
+    },
     total=False,
-)
-_InterceptRequestField3ParamsField0CapabilitiesField4ModifyField8WorkspaceVariant1Variant0Model: TypeAlias = (
-    __InterceptRequestField3ParamsField0CapabilitiesField4ModifyField8WorkspaceVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField8WorkspaceVariant1Variant1ModelKnownFields = TypedDict(
-    "__InterceptRequestField3ParamsField0CapabilitiesField4ModifyField8WorkspaceVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_InterceptRequestField3ParamsField0CapabilitiesField4ModifyField8WorkspaceVariant1Variant1Model: TypeAlias = (
-    __InterceptRequestField3ParamsField0CapabilitiesField4ModifyField8WorkspaceVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__InterceptRequestField3ParamsField0CapabilitiesField4ModifyModelKnownFields = (
-    TypedDict(
-        "__InterceptRequestField3ParamsField0CapabilitiesField4ModifyModelKnownFields",
-        {
-            "content": NotRequired[JsonValue],
-            "input": NotRequired[JsonValue],
-            "instructions": NotRequired[JsonValue],
-            "output": NotRequired[JsonValue],
-            "prompt": NotRequired[JsonValue],
-            "request": NotRequired[JsonValue],
-            "response": NotRequired[JsonValue],
-            "summary": NotRequired[JsonValue],
-            "workspace": NotRequired[JsonValue],
-        },
-        total=False,
-    )
 )
 _InterceptRequestField3ParamsField0CapabilitiesField4ModifyModel: TypeAlias = (
     __InterceptRequestField3ParamsField0CapabilitiesField4ModifyModelKnownFields
@@ -3825,27 +3243,27 @@ __InterceptRequestField3ParamsField0CapabilitiesModelKnownFields = TypedDict(
 _InterceptRequestField3ParamsField0CapabilitiesModel: TypeAlias = (
     __InterceptRequestField3ParamsField0CapabilitiesModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__InterceptRequestField3ParamsField4StateField0CandidateVariant1Field0ProvenanceModelKnownFields = TypedDict(
-    "__InterceptRequestField3ParamsField4StateField0CandidateVariant1Field0ProvenanceModelKnownFields",
+__InterceptRequestField3ParamsField4StateField0CandidateValueObjectField0ProvenanceModelKnownFields = TypedDict(
+    "__InterceptRequestField3ParamsField4StateField0CandidateValueObjectField0ProvenanceModelKnownFields",
     {},
     total=False,
 )
-_InterceptRequestField3ParamsField4StateField0CandidateVariant1Field0ProvenanceModel: TypeAlias = (
-    __InterceptRequestField3ParamsField4StateField0CandidateVariant1Field0ProvenanceModelKnownFields
+_InterceptRequestField3ParamsField4StateField0CandidateValueObjectField0ProvenanceModel: TypeAlias = (
+    __InterceptRequestField3ParamsField4StateField0CandidateValueObjectField0ProvenanceModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__InterceptRequestField3ParamsField4StateField0CandidateVariant1ModelKnownFields = TypedDict(
-    "__InterceptRequestField3ParamsField4StateField0CandidateVariant1ModelKnownFields",
+__InterceptRequestField3ParamsField4StateField0CandidateValueObjectModelKnownFields = TypedDict(
+    "__InterceptRequestField3ParamsField4StateField0CandidateValueObjectModelKnownFields",
     {
         "provenance": NotRequired[
-            _InterceptRequestField3ParamsField4StateField0CandidateVariant1Field0ProvenanceModel
+            _InterceptRequestField3ParamsField4StateField0CandidateValueObjectField0ProvenanceModel
         ],
         "value": Required[JsonValue],
     },
     total=False,
 )
-_InterceptRequestField3ParamsField4StateField0CandidateVariant1Model: TypeAlias = (
-    __InterceptRequestField3ParamsField4StateField0CandidateVariant1ModelKnownFields
+_InterceptRequestField3ParamsField4StateField0CandidateValueObjectModel: TypeAlias = (
+    __InterceptRequestField3ParamsField4StateField0CandidateValueObjectModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
 __InterceptRequestField3ParamsField4StateModelKnownFields = TypedDict(
@@ -3854,7 +3272,7 @@ __InterceptRequestField3ParamsField4StateModelKnownFields = TypedDict(
         "candidate": Required[
             Union[
                 None,
-                _InterceptRequestField3ParamsField4StateField0CandidateVariant1Model,
+                _InterceptRequestField3ParamsField4StateField0CandidateValueObjectModel,
             ]
         ],
         "flow": NotRequired[OpenString],
@@ -3871,29 +3289,7 @@ __InterceptRequestField3ParamsModelKnownFields = TypedDict(
     "__InterceptRequestField3ParamsModelKnownFields",
     {
         "capabilities": Required[_InterceptRequestField3ParamsField0CapabilitiesModel],
-        "event": Required[
-            Union[
-                "ToolBeforeEvent",
-                "ToolAfterEvent",
-                "SessionStartEvent",
-                "ConfigChangeBeforeEvent",
-                "TurnStartEvent",
-                "TurnFinishBeforeEvent",
-                "ModelRequestBeforeEvent",
-                "ModelSwitchBeforeEvent",
-                "ToolPermissionRequestEvent",
-                "ToolBatchAfterEvent",
-                "ContextCompactBeforeEvent",
-                "ContextCompactAfterEvent",
-                "TaskChangeBeforeEvent",
-                "UserElicitationRequestEvent",
-                "UserElicitationResultEvent",
-                "UserMessageInboundEvent",
-                "UserMessageOutboundEvent",
-                "WorkspaceChangeBeforeEvent",
-                "ModelResponseAfterEvent",
-            ]
-        ],
+        "event": Required["Event"],
         "extensions": NotRequired["Extensions"],
         "protocolVersion": Required["ProtocolVersion"],
         "state": NotRequired[_InterceptRequestField3ParamsField4StateModel],
@@ -4388,7 +3784,7 @@ __ModelRequestBeforeCapabilitiesField2FlowModelKnownFields = TypedDict(
     {
         "continuationCount": NotRequired[int | Decimal],
         "maxContinuations": NotRequired[int | Decimal],
-        "operations": Required[JsonValue],
+        "operations": Required[list[OpenString]],
         "remainingContinuations": NotRequired[int | Decimal],
     },
     total=False,
@@ -4417,261 +3813,116 @@ __ModelRequestBeforeCapabilitiesField3InjectModelKnownFields = TypedDict(
 _ModelRequestBeforeCapabilitiesField3InjectModel: TypeAlias = (
     __ModelRequestBeforeCapabilitiesField3InjectModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__ModelRequestBeforeCapabilitiesField4ModifyField0ContentVariant0ModelKnownFields = TypedDict(
-    "__ModelRequestBeforeCapabilitiesField4ModifyField0ContentVariant0ModelKnownFields",
+__ModelRequestBeforeCapabilitiesField4ModifyField0ContentModelKnownFields = TypedDict(
+    "__ModelRequestBeforeCapabilitiesField4ModifyField0ContentModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ModelRequestBeforeCapabilitiesField4ModifyField0ContentVariant0Model: TypeAlias = (
-    __ModelRequestBeforeCapabilitiesField4ModifyField0ContentVariant0ModelKnownFields
+_ModelRequestBeforeCapabilitiesField4ModifyField0ContentModel: TypeAlias = (
+    __ModelRequestBeforeCapabilitiesField4ModifyField0ContentModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ModelRequestBeforeCapabilitiesField4ModifyField0ContentVariant1Variant0ModelKnownFields = TypedDict(
-    "__ModelRequestBeforeCapabilitiesField4ModifyField0ContentVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_ModelRequestBeforeCapabilitiesField4ModifyField0ContentVariant1Variant0Model: TypeAlias = (
-    __ModelRequestBeforeCapabilitiesField4ModifyField0ContentVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ModelRequestBeforeCapabilitiesField4ModifyField0ContentVariant1Variant1ModelKnownFields = TypedDict(
-    "__ModelRequestBeforeCapabilitiesField4ModifyField0ContentVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_ModelRequestBeforeCapabilitiesField4ModifyField0ContentVariant1Variant1Model: TypeAlias = (
-    __ModelRequestBeforeCapabilitiesField4ModifyField0ContentVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ModelRequestBeforeCapabilitiesField4ModifyField1InputVariant0ModelKnownFields = TypedDict(
-    "__ModelRequestBeforeCapabilitiesField4ModifyField1InputVariant0ModelKnownFields",
+__ModelRequestBeforeCapabilitiesField4ModifyField1InputModelKnownFields = TypedDict(
+    "__ModelRequestBeforeCapabilitiesField4ModifyField1InputModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ModelRequestBeforeCapabilitiesField4ModifyField1InputVariant0Model: TypeAlias = (
-    __ModelRequestBeforeCapabilitiesField4ModifyField1InputVariant0ModelKnownFields
-    | JsonObject
+_ModelRequestBeforeCapabilitiesField4ModifyField1InputModel: TypeAlias = (
+    __ModelRequestBeforeCapabilitiesField4ModifyField1InputModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__ModelRequestBeforeCapabilitiesField4ModifyField1InputVariant1Variant0ModelKnownFields = TypedDict(
-    "__ModelRequestBeforeCapabilitiesField4ModifyField1InputVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_ModelRequestBeforeCapabilitiesField4ModifyField1InputVariant1Variant0Model: TypeAlias = (
-    __ModelRequestBeforeCapabilitiesField4ModifyField1InputVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ModelRequestBeforeCapabilitiesField4ModifyField1InputVariant1Variant1ModelKnownFields = TypedDict(
-    "__ModelRequestBeforeCapabilitiesField4ModifyField1InputVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_ModelRequestBeforeCapabilitiesField4ModifyField1InputVariant1Variant1Model: TypeAlias = (
-    __ModelRequestBeforeCapabilitiesField4ModifyField1InputVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ModelRequestBeforeCapabilitiesField4ModifyField2InstructionsVariant0ModelKnownFields = TypedDict(
-    "__ModelRequestBeforeCapabilitiesField4ModifyField2InstructionsVariant0ModelKnownFields",
+__ModelRequestBeforeCapabilitiesField4ModifyField2InstructionsModelKnownFields = TypedDict(
+    "__ModelRequestBeforeCapabilitiesField4ModifyField2InstructionsModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ModelRequestBeforeCapabilitiesField4ModifyField2InstructionsVariant0Model: TypeAlias = (
-    __ModelRequestBeforeCapabilitiesField4ModifyField2InstructionsVariant0ModelKnownFields
+_ModelRequestBeforeCapabilitiesField4ModifyField2InstructionsModel: TypeAlias = (
+    __ModelRequestBeforeCapabilitiesField4ModifyField2InstructionsModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ModelRequestBeforeCapabilitiesField4ModifyField2InstructionsVariant1Variant0ModelKnownFields = TypedDict(
-    "__ModelRequestBeforeCapabilitiesField4ModifyField2InstructionsVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_ModelRequestBeforeCapabilitiesField4ModifyField2InstructionsVariant1Variant0Model: TypeAlias = (
-    __ModelRequestBeforeCapabilitiesField4ModifyField2InstructionsVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ModelRequestBeforeCapabilitiesField4ModifyField2InstructionsVariant1Variant1ModelKnownFields = TypedDict(
-    "__ModelRequestBeforeCapabilitiesField4ModifyField2InstructionsVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_ModelRequestBeforeCapabilitiesField4ModifyField2InstructionsVariant1Variant1Model: TypeAlias = (
-    __ModelRequestBeforeCapabilitiesField4ModifyField2InstructionsVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ModelRequestBeforeCapabilitiesField4ModifyField3OutputVariant0ModelKnownFields = TypedDict(
-    "__ModelRequestBeforeCapabilitiesField4ModifyField3OutputVariant0ModelKnownFields",
+__ModelRequestBeforeCapabilitiesField4ModifyField3OutputModelKnownFields = TypedDict(
+    "__ModelRequestBeforeCapabilitiesField4ModifyField3OutputModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ModelRequestBeforeCapabilitiesField4ModifyField3OutputVariant0Model: TypeAlias = (
-    __ModelRequestBeforeCapabilitiesField4ModifyField3OutputVariant0ModelKnownFields
+_ModelRequestBeforeCapabilitiesField4ModifyField3OutputModel: TypeAlias = (
+    __ModelRequestBeforeCapabilitiesField4ModifyField3OutputModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ModelRequestBeforeCapabilitiesField4ModifyField3OutputVariant1Variant0ModelKnownFields = TypedDict(
-    "__ModelRequestBeforeCapabilitiesField4ModifyField3OutputVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_ModelRequestBeforeCapabilitiesField4ModifyField3OutputVariant1Variant0Model: TypeAlias = (
-    __ModelRequestBeforeCapabilitiesField4ModifyField3OutputVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ModelRequestBeforeCapabilitiesField4ModifyField3OutputVariant1Variant1ModelKnownFields = TypedDict(
-    "__ModelRequestBeforeCapabilitiesField4ModifyField3OutputVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_ModelRequestBeforeCapabilitiesField4ModifyField3OutputVariant1Variant1Model: TypeAlias = (
-    __ModelRequestBeforeCapabilitiesField4ModifyField3OutputVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ModelRequestBeforeCapabilitiesField4ModifyField4PromptVariant0ModelKnownFields = TypedDict(
-    "__ModelRequestBeforeCapabilitiesField4ModifyField4PromptVariant0ModelKnownFields",
+__ModelRequestBeforeCapabilitiesField4ModifyField4PromptModelKnownFields = TypedDict(
+    "__ModelRequestBeforeCapabilitiesField4ModifyField4PromptModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ModelRequestBeforeCapabilitiesField4ModifyField4PromptVariant0Model: TypeAlias = (
-    __ModelRequestBeforeCapabilitiesField4ModifyField4PromptVariant0ModelKnownFields
+_ModelRequestBeforeCapabilitiesField4ModifyField4PromptModel: TypeAlias = (
+    __ModelRequestBeforeCapabilitiesField4ModifyField4PromptModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ModelRequestBeforeCapabilitiesField4ModifyField4PromptVariant1Variant0ModelKnownFields = TypedDict(
-    "__ModelRequestBeforeCapabilitiesField4ModifyField4PromptVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_ModelRequestBeforeCapabilitiesField4ModifyField4PromptVariant1Variant0Model: TypeAlias = (
-    __ModelRequestBeforeCapabilitiesField4ModifyField4PromptVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ModelRequestBeforeCapabilitiesField4ModifyField4PromptVariant1Variant1ModelKnownFields = TypedDict(
-    "__ModelRequestBeforeCapabilitiesField4ModifyField4PromptVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_ModelRequestBeforeCapabilitiesField4ModifyField4PromptVariant1Variant1Model: TypeAlias = (
-    __ModelRequestBeforeCapabilitiesField4ModifyField4PromptVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ModelRequestBeforeCapabilitiesField4ModifyField5RequestVariant0ModelKnownFields = TypedDict(
-    "__ModelRequestBeforeCapabilitiesField4ModifyField5RequestVariant0ModelKnownFields",
+__ModelRequestBeforeCapabilitiesField4ModifyField5RequestModelKnownFields = TypedDict(
+    "__ModelRequestBeforeCapabilitiesField4ModifyField5RequestModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ModelRequestBeforeCapabilitiesField4ModifyField5RequestVariant0Model: TypeAlias = (
-    __ModelRequestBeforeCapabilitiesField4ModifyField5RequestVariant0ModelKnownFields
+_ModelRequestBeforeCapabilitiesField4ModifyField5RequestModel: TypeAlias = (
+    __ModelRequestBeforeCapabilitiesField4ModifyField5RequestModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ModelRequestBeforeCapabilitiesField4ModifyField5RequestVariant1Variant0ModelKnownFields = TypedDict(
-    "__ModelRequestBeforeCapabilitiesField4ModifyField5RequestVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_ModelRequestBeforeCapabilitiesField4ModifyField5RequestVariant1Variant0Model: TypeAlias = (
-    __ModelRequestBeforeCapabilitiesField4ModifyField5RequestVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ModelRequestBeforeCapabilitiesField4ModifyField5RequestVariant1Variant1ModelKnownFields = TypedDict(
-    "__ModelRequestBeforeCapabilitiesField4ModifyField5RequestVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_ModelRequestBeforeCapabilitiesField4ModifyField5RequestVariant1Variant1Model: TypeAlias = (
-    __ModelRequestBeforeCapabilitiesField4ModifyField5RequestVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ModelRequestBeforeCapabilitiesField4ModifyField6ResponseVariant0ModelKnownFields = TypedDict(
-    "__ModelRequestBeforeCapabilitiesField4ModifyField6ResponseVariant0ModelKnownFields",
+__ModelRequestBeforeCapabilitiesField4ModifyField6ResponseModelKnownFields = TypedDict(
+    "__ModelRequestBeforeCapabilitiesField4ModifyField6ResponseModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ModelRequestBeforeCapabilitiesField4ModifyField6ResponseVariant0Model: TypeAlias = (
-    __ModelRequestBeforeCapabilitiesField4ModifyField6ResponseVariant0ModelKnownFields
+_ModelRequestBeforeCapabilitiesField4ModifyField6ResponseModel: TypeAlias = (
+    __ModelRequestBeforeCapabilitiesField4ModifyField6ResponseModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ModelRequestBeforeCapabilitiesField4ModifyField6ResponseVariant1Variant0ModelKnownFields = TypedDict(
-    "__ModelRequestBeforeCapabilitiesField4ModifyField6ResponseVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_ModelRequestBeforeCapabilitiesField4ModifyField6ResponseVariant1Variant0Model: TypeAlias = (
-    __ModelRequestBeforeCapabilitiesField4ModifyField6ResponseVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ModelRequestBeforeCapabilitiesField4ModifyField6ResponseVariant1Variant1ModelKnownFields = TypedDict(
-    "__ModelRequestBeforeCapabilitiesField4ModifyField6ResponseVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_ModelRequestBeforeCapabilitiesField4ModifyField6ResponseVariant1Variant1Model: TypeAlias = (
-    __ModelRequestBeforeCapabilitiesField4ModifyField6ResponseVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ModelRequestBeforeCapabilitiesField4ModifyField7SummaryVariant0ModelKnownFields = TypedDict(
-    "__ModelRequestBeforeCapabilitiesField4ModifyField7SummaryVariant0ModelKnownFields",
+__ModelRequestBeforeCapabilitiesField4ModifyField7SummaryModelKnownFields = TypedDict(
+    "__ModelRequestBeforeCapabilitiesField4ModifyField7SummaryModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ModelRequestBeforeCapabilitiesField4ModifyField7SummaryVariant0Model: TypeAlias = (
-    __ModelRequestBeforeCapabilitiesField4ModifyField7SummaryVariant0ModelKnownFields
+_ModelRequestBeforeCapabilitiesField4ModifyField7SummaryModel: TypeAlias = (
+    __ModelRequestBeforeCapabilitiesField4ModifyField7SummaryModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ModelRequestBeforeCapabilitiesField4ModifyField7SummaryVariant1Variant0ModelKnownFields = TypedDict(
-    "__ModelRequestBeforeCapabilitiesField4ModifyField7SummaryVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_ModelRequestBeforeCapabilitiesField4ModifyField7SummaryVariant1Variant0Model: TypeAlias = (
-    __ModelRequestBeforeCapabilitiesField4ModifyField7SummaryVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ModelRequestBeforeCapabilitiesField4ModifyField7SummaryVariant1Variant1ModelKnownFields = TypedDict(
-    "__ModelRequestBeforeCapabilitiesField4ModifyField7SummaryVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_ModelRequestBeforeCapabilitiesField4ModifyField7SummaryVariant1Variant1Model: TypeAlias = (
-    __ModelRequestBeforeCapabilitiesField4ModifyField7SummaryVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ModelRequestBeforeCapabilitiesField4ModifyField8WorkspaceVariant0ModelKnownFields = TypedDict(
-    "__ModelRequestBeforeCapabilitiesField4ModifyField8WorkspaceVariant0ModelKnownFields",
+__ModelRequestBeforeCapabilitiesField4ModifyField8WorkspaceModelKnownFields = TypedDict(
+    "__ModelRequestBeforeCapabilitiesField4ModifyField8WorkspaceModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ModelRequestBeforeCapabilitiesField4ModifyField8WorkspaceVariant0Model: TypeAlias = (
-    __ModelRequestBeforeCapabilitiesField4ModifyField8WorkspaceVariant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ModelRequestBeforeCapabilitiesField4ModifyField8WorkspaceVariant1Variant0ModelKnownFields = TypedDict(
-    "__ModelRequestBeforeCapabilitiesField4ModifyField8WorkspaceVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_ModelRequestBeforeCapabilitiesField4ModifyField8WorkspaceVariant1Variant0Model: TypeAlias = (
-    __ModelRequestBeforeCapabilitiesField4ModifyField8WorkspaceVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ModelRequestBeforeCapabilitiesField4ModifyField8WorkspaceVariant1Variant1ModelKnownFields = TypedDict(
-    "__ModelRequestBeforeCapabilitiesField4ModifyField8WorkspaceVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_ModelRequestBeforeCapabilitiesField4ModifyField8WorkspaceVariant1Variant1Model: TypeAlias = (
-    __ModelRequestBeforeCapabilitiesField4ModifyField8WorkspaceVariant1Variant1ModelKnownFields
+_ModelRequestBeforeCapabilitiesField4ModifyField8WorkspaceModel: TypeAlias = (
+    __ModelRequestBeforeCapabilitiesField4ModifyField8WorkspaceModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
 __ModelRequestBeforeCapabilitiesField4ModifyModelKnownFields = TypedDict(
     "__ModelRequestBeforeCapabilitiesField4ModifyModelKnownFields",
     {
-        "content": NotRequired[JsonValue],
-        "input": NotRequired[JsonValue],
-        "instructions": NotRequired[JsonValue],
-        "output": NotRequired[JsonValue],
-        "prompt": NotRequired[JsonValue],
-        "request": NotRequired[JsonValue],
-        "response": NotRequired[JsonValue],
-        "summary": NotRequired[JsonValue],
-        "workspace": NotRequired[JsonValue],
+        "content": NotRequired[
+            _ModelRequestBeforeCapabilitiesField4ModifyField0ContentModel
+        ],
+        "input": NotRequired[
+            _ModelRequestBeforeCapabilitiesField4ModifyField1InputModel
+        ],
+        "instructions": NotRequired[
+            _ModelRequestBeforeCapabilitiesField4ModifyField2InstructionsModel
+        ],
+        "output": NotRequired[
+            _ModelRequestBeforeCapabilitiesField4ModifyField3OutputModel
+        ],
+        "prompt": NotRequired[
+            _ModelRequestBeforeCapabilitiesField4ModifyField4PromptModel
+        ],
+        "request": NotRequired[
+            _ModelRequestBeforeCapabilitiesField4ModifyField5RequestModel
+        ],
+        "response": NotRequired[
+            _ModelRequestBeforeCapabilitiesField4ModifyField6ResponseModel
+        ],
+        "summary": NotRequired[
+            _ModelRequestBeforeCapabilitiesField4ModifyField7SummaryModel
+        ],
+        "workspace": NotRequired[
+            _ModelRequestBeforeCapabilitiesField4ModifyField8WorkspaceModel
+        ],
     },
     total=False,
 )
@@ -4681,7 +3932,7 @@ _ModelRequestBeforeCapabilitiesField4ModifyModel: TypeAlias = (
 _ModelRequestBeforeCapabilitiesKnownFields = TypedDict(
     "_ModelRequestBeforeCapabilitiesKnownFields",
     {
-        "effects": Required[JsonValue],
+        "effects": Required[list[Union[OpenString, str]]],
         "elicitation": NotRequired[
             _ModelRequestBeforeCapabilitiesField1ElicitationModel
         ],
@@ -4737,7 +3988,7 @@ __ModelResponseAfterCapabilitiesField2FlowModelKnownFields = TypedDict(
     {
         "continuationCount": NotRequired[int | Decimal],
         "maxContinuations": NotRequired[int | Decimal],
-        "operations": Required[JsonValue],
+        "operations": Required[list[OpenString]],
         "remainingContinuations": NotRequired[int | Decimal],
     },
     total=False,
@@ -4766,261 +4017,116 @@ __ModelResponseAfterCapabilitiesField3InjectModelKnownFields = TypedDict(
 _ModelResponseAfterCapabilitiesField3InjectModel: TypeAlias = (
     __ModelResponseAfterCapabilitiesField3InjectModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__ModelResponseAfterCapabilitiesField4ModifyField0ContentVariant0ModelKnownFields = TypedDict(
-    "__ModelResponseAfterCapabilitiesField4ModifyField0ContentVariant0ModelKnownFields",
+__ModelResponseAfterCapabilitiesField4ModifyField0ContentModelKnownFields = TypedDict(
+    "__ModelResponseAfterCapabilitiesField4ModifyField0ContentModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ModelResponseAfterCapabilitiesField4ModifyField0ContentVariant0Model: TypeAlias = (
-    __ModelResponseAfterCapabilitiesField4ModifyField0ContentVariant0ModelKnownFields
+_ModelResponseAfterCapabilitiesField4ModifyField0ContentModel: TypeAlias = (
+    __ModelResponseAfterCapabilitiesField4ModifyField0ContentModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ModelResponseAfterCapabilitiesField4ModifyField0ContentVariant1Variant0ModelKnownFields = TypedDict(
-    "__ModelResponseAfterCapabilitiesField4ModifyField0ContentVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_ModelResponseAfterCapabilitiesField4ModifyField0ContentVariant1Variant0Model: TypeAlias = (
-    __ModelResponseAfterCapabilitiesField4ModifyField0ContentVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ModelResponseAfterCapabilitiesField4ModifyField0ContentVariant1Variant1ModelKnownFields = TypedDict(
-    "__ModelResponseAfterCapabilitiesField4ModifyField0ContentVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_ModelResponseAfterCapabilitiesField4ModifyField0ContentVariant1Variant1Model: TypeAlias = (
-    __ModelResponseAfterCapabilitiesField4ModifyField0ContentVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ModelResponseAfterCapabilitiesField4ModifyField1InputVariant0ModelKnownFields = TypedDict(
-    "__ModelResponseAfterCapabilitiesField4ModifyField1InputVariant0ModelKnownFields",
+__ModelResponseAfterCapabilitiesField4ModifyField1InputModelKnownFields = TypedDict(
+    "__ModelResponseAfterCapabilitiesField4ModifyField1InputModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ModelResponseAfterCapabilitiesField4ModifyField1InputVariant0Model: TypeAlias = (
-    __ModelResponseAfterCapabilitiesField4ModifyField1InputVariant0ModelKnownFields
-    | JsonObject
+_ModelResponseAfterCapabilitiesField4ModifyField1InputModel: TypeAlias = (
+    __ModelResponseAfterCapabilitiesField4ModifyField1InputModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__ModelResponseAfterCapabilitiesField4ModifyField1InputVariant1Variant0ModelKnownFields = TypedDict(
-    "__ModelResponseAfterCapabilitiesField4ModifyField1InputVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_ModelResponseAfterCapabilitiesField4ModifyField1InputVariant1Variant0Model: TypeAlias = (
-    __ModelResponseAfterCapabilitiesField4ModifyField1InputVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ModelResponseAfterCapabilitiesField4ModifyField1InputVariant1Variant1ModelKnownFields = TypedDict(
-    "__ModelResponseAfterCapabilitiesField4ModifyField1InputVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_ModelResponseAfterCapabilitiesField4ModifyField1InputVariant1Variant1Model: TypeAlias = (
-    __ModelResponseAfterCapabilitiesField4ModifyField1InputVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ModelResponseAfterCapabilitiesField4ModifyField2InstructionsVariant0ModelKnownFields = TypedDict(
-    "__ModelResponseAfterCapabilitiesField4ModifyField2InstructionsVariant0ModelKnownFields",
+__ModelResponseAfterCapabilitiesField4ModifyField2InstructionsModelKnownFields = TypedDict(
+    "__ModelResponseAfterCapabilitiesField4ModifyField2InstructionsModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ModelResponseAfterCapabilitiesField4ModifyField2InstructionsVariant0Model: TypeAlias = (
-    __ModelResponseAfterCapabilitiesField4ModifyField2InstructionsVariant0ModelKnownFields
+_ModelResponseAfterCapabilitiesField4ModifyField2InstructionsModel: TypeAlias = (
+    __ModelResponseAfterCapabilitiesField4ModifyField2InstructionsModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ModelResponseAfterCapabilitiesField4ModifyField2InstructionsVariant1Variant0ModelKnownFields = TypedDict(
-    "__ModelResponseAfterCapabilitiesField4ModifyField2InstructionsVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_ModelResponseAfterCapabilitiesField4ModifyField2InstructionsVariant1Variant0Model: TypeAlias = (
-    __ModelResponseAfterCapabilitiesField4ModifyField2InstructionsVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ModelResponseAfterCapabilitiesField4ModifyField2InstructionsVariant1Variant1ModelKnownFields = TypedDict(
-    "__ModelResponseAfterCapabilitiesField4ModifyField2InstructionsVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_ModelResponseAfterCapabilitiesField4ModifyField2InstructionsVariant1Variant1Model: TypeAlias = (
-    __ModelResponseAfterCapabilitiesField4ModifyField2InstructionsVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ModelResponseAfterCapabilitiesField4ModifyField3OutputVariant0ModelKnownFields = TypedDict(
-    "__ModelResponseAfterCapabilitiesField4ModifyField3OutputVariant0ModelKnownFields",
+__ModelResponseAfterCapabilitiesField4ModifyField3OutputModelKnownFields = TypedDict(
+    "__ModelResponseAfterCapabilitiesField4ModifyField3OutputModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ModelResponseAfterCapabilitiesField4ModifyField3OutputVariant0Model: TypeAlias = (
-    __ModelResponseAfterCapabilitiesField4ModifyField3OutputVariant0ModelKnownFields
+_ModelResponseAfterCapabilitiesField4ModifyField3OutputModel: TypeAlias = (
+    __ModelResponseAfterCapabilitiesField4ModifyField3OutputModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ModelResponseAfterCapabilitiesField4ModifyField3OutputVariant1Variant0ModelKnownFields = TypedDict(
-    "__ModelResponseAfterCapabilitiesField4ModifyField3OutputVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_ModelResponseAfterCapabilitiesField4ModifyField3OutputVariant1Variant0Model: TypeAlias = (
-    __ModelResponseAfterCapabilitiesField4ModifyField3OutputVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ModelResponseAfterCapabilitiesField4ModifyField3OutputVariant1Variant1ModelKnownFields = TypedDict(
-    "__ModelResponseAfterCapabilitiesField4ModifyField3OutputVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_ModelResponseAfterCapabilitiesField4ModifyField3OutputVariant1Variant1Model: TypeAlias = (
-    __ModelResponseAfterCapabilitiesField4ModifyField3OutputVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ModelResponseAfterCapabilitiesField4ModifyField4PromptVariant0ModelKnownFields = TypedDict(
-    "__ModelResponseAfterCapabilitiesField4ModifyField4PromptVariant0ModelKnownFields",
+__ModelResponseAfterCapabilitiesField4ModifyField4PromptModelKnownFields = TypedDict(
+    "__ModelResponseAfterCapabilitiesField4ModifyField4PromptModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ModelResponseAfterCapabilitiesField4ModifyField4PromptVariant0Model: TypeAlias = (
-    __ModelResponseAfterCapabilitiesField4ModifyField4PromptVariant0ModelKnownFields
+_ModelResponseAfterCapabilitiesField4ModifyField4PromptModel: TypeAlias = (
+    __ModelResponseAfterCapabilitiesField4ModifyField4PromptModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ModelResponseAfterCapabilitiesField4ModifyField4PromptVariant1Variant0ModelKnownFields = TypedDict(
-    "__ModelResponseAfterCapabilitiesField4ModifyField4PromptVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_ModelResponseAfterCapabilitiesField4ModifyField4PromptVariant1Variant0Model: TypeAlias = (
-    __ModelResponseAfterCapabilitiesField4ModifyField4PromptVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ModelResponseAfterCapabilitiesField4ModifyField4PromptVariant1Variant1ModelKnownFields = TypedDict(
-    "__ModelResponseAfterCapabilitiesField4ModifyField4PromptVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_ModelResponseAfterCapabilitiesField4ModifyField4PromptVariant1Variant1Model: TypeAlias = (
-    __ModelResponseAfterCapabilitiesField4ModifyField4PromptVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ModelResponseAfterCapabilitiesField4ModifyField5RequestVariant0ModelKnownFields = TypedDict(
-    "__ModelResponseAfterCapabilitiesField4ModifyField5RequestVariant0ModelKnownFields",
+__ModelResponseAfterCapabilitiesField4ModifyField5RequestModelKnownFields = TypedDict(
+    "__ModelResponseAfterCapabilitiesField4ModifyField5RequestModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ModelResponseAfterCapabilitiesField4ModifyField5RequestVariant0Model: TypeAlias = (
-    __ModelResponseAfterCapabilitiesField4ModifyField5RequestVariant0ModelKnownFields
+_ModelResponseAfterCapabilitiesField4ModifyField5RequestModel: TypeAlias = (
+    __ModelResponseAfterCapabilitiesField4ModifyField5RequestModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ModelResponseAfterCapabilitiesField4ModifyField5RequestVariant1Variant0ModelKnownFields = TypedDict(
-    "__ModelResponseAfterCapabilitiesField4ModifyField5RequestVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_ModelResponseAfterCapabilitiesField4ModifyField5RequestVariant1Variant0Model: TypeAlias = (
-    __ModelResponseAfterCapabilitiesField4ModifyField5RequestVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ModelResponseAfterCapabilitiesField4ModifyField5RequestVariant1Variant1ModelKnownFields = TypedDict(
-    "__ModelResponseAfterCapabilitiesField4ModifyField5RequestVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_ModelResponseAfterCapabilitiesField4ModifyField5RequestVariant1Variant1Model: TypeAlias = (
-    __ModelResponseAfterCapabilitiesField4ModifyField5RequestVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ModelResponseAfterCapabilitiesField4ModifyField6ResponseVariant0ModelKnownFields = TypedDict(
-    "__ModelResponseAfterCapabilitiesField4ModifyField6ResponseVariant0ModelKnownFields",
+__ModelResponseAfterCapabilitiesField4ModifyField6ResponseModelKnownFields = TypedDict(
+    "__ModelResponseAfterCapabilitiesField4ModifyField6ResponseModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ModelResponseAfterCapabilitiesField4ModifyField6ResponseVariant0Model: TypeAlias = (
-    __ModelResponseAfterCapabilitiesField4ModifyField6ResponseVariant0ModelKnownFields
+_ModelResponseAfterCapabilitiesField4ModifyField6ResponseModel: TypeAlias = (
+    __ModelResponseAfterCapabilitiesField4ModifyField6ResponseModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ModelResponseAfterCapabilitiesField4ModifyField6ResponseVariant1Variant0ModelKnownFields = TypedDict(
-    "__ModelResponseAfterCapabilitiesField4ModifyField6ResponseVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_ModelResponseAfterCapabilitiesField4ModifyField6ResponseVariant1Variant0Model: TypeAlias = (
-    __ModelResponseAfterCapabilitiesField4ModifyField6ResponseVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ModelResponseAfterCapabilitiesField4ModifyField6ResponseVariant1Variant1ModelKnownFields = TypedDict(
-    "__ModelResponseAfterCapabilitiesField4ModifyField6ResponseVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_ModelResponseAfterCapabilitiesField4ModifyField6ResponseVariant1Variant1Model: TypeAlias = (
-    __ModelResponseAfterCapabilitiesField4ModifyField6ResponseVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ModelResponseAfterCapabilitiesField4ModifyField7SummaryVariant0ModelKnownFields = TypedDict(
-    "__ModelResponseAfterCapabilitiesField4ModifyField7SummaryVariant0ModelKnownFields",
+__ModelResponseAfterCapabilitiesField4ModifyField7SummaryModelKnownFields = TypedDict(
+    "__ModelResponseAfterCapabilitiesField4ModifyField7SummaryModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ModelResponseAfterCapabilitiesField4ModifyField7SummaryVariant0Model: TypeAlias = (
-    __ModelResponseAfterCapabilitiesField4ModifyField7SummaryVariant0ModelKnownFields
+_ModelResponseAfterCapabilitiesField4ModifyField7SummaryModel: TypeAlias = (
+    __ModelResponseAfterCapabilitiesField4ModifyField7SummaryModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ModelResponseAfterCapabilitiesField4ModifyField7SummaryVariant1Variant0ModelKnownFields = TypedDict(
-    "__ModelResponseAfterCapabilitiesField4ModifyField7SummaryVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_ModelResponseAfterCapabilitiesField4ModifyField7SummaryVariant1Variant0Model: TypeAlias = (
-    __ModelResponseAfterCapabilitiesField4ModifyField7SummaryVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ModelResponseAfterCapabilitiesField4ModifyField7SummaryVariant1Variant1ModelKnownFields = TypedDict(
-    "__ModelResponseAfterCapabilitiesField4ModifyField7SummaryVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_ModelResponseAfterCapabilitiesField4ModifyField7SummaryVariant1Variant1Model: TypeAlias = (
-    __ModelResponseAfterCapabilitiesField4ModifyField7SummaryVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ModelResponseAfterCapabilitiesField4ModifyField8WorkspaceVariant0ModelKnownFields = TypedDict(
-    "__ModelResponseAfterCapabilitiesField4ModifyField8WorkspaceVariant0ModelKnownFields",
+__ModelResponseAfterCapabilitiesField4ModifyField8WorkspaceModelKnownFields = TypedDict(
+    "__ModelResponseAfterCapabilitiesField4ModifyField8WorkspaceModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ModelResponseAfterCapabilitiesField4ModifyField8WorkspaceVariant0Model: TypeAlias = (
-    __ModelResponseAfterCapabilitiesField4ModifyField8WorkspaceVariant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ModelResponseAfterCapabilitiesField4ModifyField8WorkspaceVariant1Variant0ModelKnownFields = TypedDict(
-    "__ModelResponseAfterCapabilitiesField4ModifyField8WorkspaceVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_ModelResponseAfterCapabilitiesField4ModifyField8WorkspaceVariant1Variant0Model: TypeAlias = (
-    __ModelResponseAfterCapabilitiesField4ModifyField8WorkspaceVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ModelResponseAfterCapabilitiesField4ModifyField8WorkspaceVariant1Variant1ModelKnownFields = TypedDict(
-    "__ModelResponseAfterCapabilitiesField4ModifyField8WorkspaceVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_ModelResponseAfterCapabilitiesField4ModifyField8WorkspaceVariant1Variant1Model: TypeAlias = (
-    __ModelResponseAfterCapabilitiesField4ModifyField8WorkspaceVariant1Variant1ModelKnownFields
+_ModelResponseAfterCapabilitiesField4ModifyField8WorkspaceModel: TypeAlias = (
+    __ModelResponseAfterCapabilitiesField4ModifyField8WorkspaceModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
 __ModelResponseAfterCapabilitiesField4ModifyModelKnownFields = TypedDict(
     "__ModelResponseAfterCapabilitiesField4ModifyModelKnownFields",
     {
-        "content": NotRequired[JsonValue],
-        "input": NotRequired[JsonValue],
-        "instructions": NotRequired[JsonValue],
-        "output": NotRequired[JsonValue],
-        "prompt": NotRequired[JsonValue],
-        "request": NotRequired[JsonValue],
-        "response": NotRequired[JsonValue],
-        "summary": NotRequired[JsonValue],
-        "workspace": NotRequired[JsonValue],
+        "content": NotRequired[
+            _ModelResponseAfterCapabilitiesField4ModifyField0ContentModel
+        ],
+        "input": NotRequired[
+            _ModelResponseAfterCapabilitiesField4ModifyField1InputModel
+        ],
+        "instructions": NotRequired[
+            _ModelResponseAfterCapabilitiesField4ModifyField2InstructionsModel
+        ],
+        "output": NotRequired[
+            _ModelResponseAfterCapabilitiesField4ModifyField3OutputModel
+        ],
+        "prompt": NotRequired[
+            _ModelResponseAfterCapabilitiesField4ModifyField4PromptModel
+        ],
+        "request": NotRequired[
+            _ModelResponseAfterCapabilitiesField4ModifyField5RequestModel
+        ],
+        "response": NotRequired[
+            _ModelResponseAfterCapabilitiesField4ModifyField6ResponseModel
+        ],
+        "summary": NotRequired[
+            _ModelResponseAfterCapabilitiesField4ModifyField7SummaryModel
+        ],
+        "workspace": NotRequired[
+            _ModelResponseAfterCapabilitiesField4ModifyField8WorkspaceModel
+        ],
     },
     total=False,
 )
@@ -5030,7 +4136,7 @@ _ModelResponseAfterCapabilitiesField4ModifyModel: TypeAlias = (
 _ModelResponseAfterCapabilitiesKnownFields = TypedDict(
     "_ModelResponseAfterCapabilitiesKnownFields",
     {
-        "effects": Required[JsonValue],
+        "effects": Required[list[Union[OpenString, str]]],
         "elicitation": NotRequired[
             _ModelResponseAfterCapabilitiesField1ElicitationModel
         ],
@@ -5089,7 +4195,7 @@ __ModelSwitchBeforeCapabilitiesField2FlowModelKnownFields = TypedDict(
     {
         "continuationCount": NotRequired[int | Decimal],
         "maxContinuations": NotRequired[int | Decimal],
-        "operations": Required[JsonValue],
+        "operations": Required[list[OpenString]],
         "remainingContinuations": NotRequired[int | Decimal],
     },
     total=False,
@@ -5114,261 +4220,116 @@ __ModelSwitchBeforeCapabilitiesField3InjectModelKnownFields = TypedDict(
 _ModelSwitchBeforeCapabilitiesField3InjectModel: TypeAlias = (
     __ModelSwitchBeforeCapabilitiesField3InjectModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__ModelSwitchBeforeCapabilitiesField4ModifyField0ContentVariant0ModelKnownFields = TypedDict(
-    "__ModelSwitchBeforeCapabilitiesField4ModifyField0ContentVariant0ModelKnownFields",
+__ModelSwitchBeforeCapabilitiesField4ModifyField0ContentModelKnownFields = TypedDict(
+    "__ModelSwitchBeforeCapabilitiesField4ModifyField0ContentModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ModelSwitchBeforeCapabilitiesField4ModifyField0ContentVariant0Model: TypeAlias = (
-    __ModelSwitchBeforeCapabilitiesField4ModifyField0ContentVariant0ModelKnownFields
+_ModelSwitchBeforeCapabilitiesField4ModifyField0ContentModel: TypeAlias = (
+    __ModelSwitchBeforeCapabilitiesField4ModifyField0ContentModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ModelSwitchBeforeCapabilitiesField4ModifyField0ContentVariant1Variant0ModelKnownFields = TypedDict(
-    "__ModelSwitchBeforeCapabilitiesField4ModifyField0ContentVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_ModelSwitchBeforeCapabilitiesField4ModifyField0ContentVariant1Variant0Model: TypeAlias = (
-    __ModelSwitchBeforeCapabilitiesField4ModifyField0ContentVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ModelSwitchBeforeCapabilitiesField4ModifyField0ContentVariant1Variant1ModelKnownFields = TypedDict(
-    "__ModelSwitchBeforeCapabilitiesField4ModifyField0ContentVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_ModelSwitchBeforeCapabilitiesField4ModifyField0ContentVariant1Variant1Model: TypeAlias = (
-    __ModelSwitchBeforeCapabilitiesField4ModifyField0ContentVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ModelSwitchBeforeCapabilitiesField4ModifyField1InputVariant0ModelKnownFields = TypedDict(
-    "__ModelSwitchBeforeCapabilitiesField4ModifyField1InputVariant0ModelKnownFields",
+__ModelSwitchBeforeCapabilitiesField4ModifyField1InputModelKnownFields = TypedDict(
+    "__ModelSwitchBeforeCapabilitiesField4ModifyField1InputModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ModelSwitchBeforeCapabilitiesField4ModifyField1InputVariant0Model: TypeAlias = (
-    __ModelSwitchBeforeCapabilitiesField4ModifyField1InputVariant0ModelKnownFields
-    | JsonObject
+_ModelSwitchBeforeCapabilitiesField4ModifyField1InputModel: TypeAlias = (
+    __ModelSwitchBeforeCapabilitiesField4ModifyField1InputModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__ModelSwitchBeforeCapabilitiesField4ModifyField1InputVariant1Variant0ModelKnownFields = TypedDict(
-    "__ModelSwitchBeforeCapabilitiesField4ModifyField1InputVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
+__ModelSwitchBeforeCapabilitiesField4ModifyField2InstructionsModelKnownFields = (
+    TypedDict(
+        "__ModelSwitchBeforeCapabilitiesField4ModifyField2InstructionsModelKnownFields",
+        {"merge": Required[bool], "replace": Required[bool]},
+        total=False,
+    )
 )
-_ModelSwitchBeforeCapabilitiesField4ModifyField1InputVariant1Variant0Model: TypeAlias = (
-    __ModelSwitchBeforeCapabilitiesField4ModifyField1InputVariant1Variant0ModelKnownFields
+_ModelSwitchBeforeCapabilitiesField4ModifyField2InstructionsModel: TypeAlias = (
+    __ModelSwitchBeforeCapabilitiesField4ModifyField2InstructionsModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ModelSwitchBeforeCapabilitiesField4ModifyField1InputVariant1Variant1ModelKnownFields = TypedDict(
-    "__ModelSwitchBeforeCapabilitiesField4ModifyField1InputVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_ModelSwitchBeforeCapabilitiesField4ModifyField1InputVariant1Variant1Model: TypeAlias = (
-    __ModelSwitchBeforeCapabilitiesField4ModifyField1InputVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ModelSwitchBeforeCapabilitiesField4ModifyField2InstructionsVariant0ModelKnownFields = TypedDict(
-    "__ModelSwitchBeforeCapabilitiesField4ModifyField2InstructionsVariant0ModelKnownFields",
+__ModelSwitchBeforeCapabilitiesField4ModifyField3OutputModelKnownFields = TypedDict(
+    "__ModelSwitchBeforeCapabilitiesField4ModifyField3OutputModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ModelSwitchBeforeCapabilitiesField4ModifyField2InstructionsVariant0Model: TypeAlias = (
-    __ModelSwitchBeforeCapabilitiesField4ModifyField2InstructionsVariant0ModelKnownFields
-    | JsonObject
+_ModelSwitchBeforeCapabilitiesField4ModifyField3OutputModel: TypeAlias = (
+    __ModelSwitchBeforeCapabilitiesField4ModifyField3OutputModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__ModelSwitchBeforeCapabilitiesField4ModifyField2InstructionsVariant1Variant0ModelKnownFields = TypedDict(
-    "__ModelSwitchBeforeCapabilitiesField4ModifyField2InstructionsVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_ModelSwitchBeforeCapabilitiesField4ModifyField2InstructionsVariant1Variant0Model: TypeAlias = (
-    __ModelSwitchBeforeCapabilitiesField4ModifyField2InstructionsVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ModelSwitchBeforeCapabilitiesField4ModifyField2InstructionsVariant1Variant1ModelKnownFields = TypedDict(
-    "__ModelSwitchBeforeCapabilitiesField4ModifyField2InstructionsVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_ModelSwitchBeforeCapabilitiesField4ModifyField2InstructionsVariant1Variant1Model: TypeAlias = (
-    __ModelSwitchBeforeCapabilitiesField4ModifyField2InstructionsVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ModelSwitchBeforeCapabilitiesField4ModifyField3OutputVariant0ModelKnownFields = TypedDict(
-    "__ModelSwitchBeforeCapabilitiesField4ModifyField3OutputVariant0ModelKnownFields",
+__ModelSwitchBeforeCapabilitiesField4ModifyField4PromptModelKnownFields = TypedDict(
+    "__ModelSwitchBeforeCapabilitiesField4ModifyField4PromptModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ModelSwitchBeforeCapabilitiesField4ModifyField3OutputVariant0Model: TypeAlias = (
-    __ModelSwitchBeforeCapabilitiesField4ModifyField3OutputVariant0ModelKnownFields
-    | JsonObject
+_ModelSwitchBeforeCapabilitiesField4ModifyField4PromptModel: TypeAlias = (
+    __ModelSwitchBeforeCapabilitiesField4ModifyField4PromptModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__ModelSwitchBeforeCapabilitiesField4ModifyField3OutputVariant1Variant0ModelKnownFields = TypedDict(
-    "__ModelSwitchBeforeCapabilitiesField4ModifyField3OutputVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_ModelSwitchBeforeCapabilitiesField4ModifyField3OutputVariant1Variant0Model: TypeAlias = (
-    __ModelSwitchBeforeCapabilitiesField4ModifyField3OutputVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ModelSwitchBeforeCapabilitiesField4ModifyField3OutputVariant1Variant1ModelKnownFields = TypedDict(
-    "__ModelSwitchBeforeCapabilitiesField4ModifyField3OutputVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_ModelSwitchBeforeCapabilitiesField4ModifyField3OutputVariant1Variant1Model: TypeAlias = (
-    __ModelSwitchBeforeCapabilitiesField4ModifyField3OutputVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ModelSwitchBeforeCapabilitiesField4ModifyField4PromptVariant0ModelKnownFields = TypedDict(
-    "__ModelSwitchBeforeCapabilitiesField4ModifyField4PromptVariant0ModelKnownFields",
+__ModelSwitchBeforeCapabilitiesField4ModifyField5RequestModelKnownFields = TypedDict(
+    "__ModelSwitchBeforeCapabilitiesField4ModifyField5RequestModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ModelSwitchBeforeCapabilitiesField4ModifyField4PromptVariant0Model: TypeAlias = (
-    __ModelSwitchBeforeCapabilitiesField4ModifyField4PromptVariant0ModelKnownFields
+_ModelSwitchBeforeCapabilitiesField4ModifyField5RequestModel: TypeAlias = (
+    __ModelSwitchBeforeCapabilitiesField4ModifyField5RequestModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ModelSwitchBeforeCapabilitiesField4ModifyField4PromptVariant1Variant0ModelKnownFields = TypedDict(
-    "__ModelSwitchBeforeCapabilitiesField4ModifyField4PromptVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_ModelSwitchBeforeCapabilitiesField4ModifyField4PromptVariant1Variant0Model: TypeAlias = (
-    __ModelSwitchBeforeCapabilitiesField4ModifyField4PromptVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ModelSwitchBeforeCapabilitiesField4ModifyField4PromptVariant1Variant1ModelKnownFields = TypedDict(
-    "__ModelSwitchBeforeCapabilitiesField4ModifyField4PromptVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_ModelSwitchBeforeCapabilitiesField4ModifyField4PromptVariant1Variant1Model: TypeAlias = (
-    __ModelSwitchBeforeCapabilitiesField4ModifyField4PromptVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ModelSwitchBeforeCapabilitiesField4ModifyField5RequestVariant0ModelKnownFields = TypedDict(
-    "__ModelSwitchBeforeCapabilitiesField4ModifyField5RequestVariant0ModelKnownFields",
+__ModelSwitchBeforeCapabilitiesField4ModifyField6ResponseModelKnownFields = TypedDict(
+    "__ModelSwitchBeforeCapabilitiesField4ModifyField6ResponseModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ModelSwitchBeforeCapabilitiesField4ModifyField5RequestVariant0Model: TypeAlias = (
-    __ModelSwitchBeforeCapabilitiesField4ModifyField5RequestVariant0ModelKnownFields
+_ModelSwitchBeforeCapabilitiesField4ModifyField6ResponseModel: TypeAlias = (
+    __ModelSwitchBeforeCapabilitiesField4ModifyField6ResponseModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ModelSwitchBeforeCapabilitiesField4ModifyField5RequestVariant1Variant0ModelKnownFields = TypedDict(
-    "__ModelSwitchBeforeCapabilitiesField4ModifyField5RequestVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_ModelSwitchBeforeCapabilitiesField4ModifyField5RequestVariant1Variant0Model: TypeAlias = (
-    __ModelSwitchBeforeCapabilitiesField4ModifyField5RequestVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ModelSwitchBeforeCapabilitiesField4ModifyField5RequestVariant1Variant1ModelKnownFields = TypedDict(
-    "__ModelSwitchBeforeCapabilitiesField4ModifyField5RequestVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_ModelSwitchBeforeCapabilitiesField4ModifyField5RequestVariant1Variant1Model: TypeAlias = (
-    __ModelSwitchBeforeCapabilitiesField4ModifyField5RequestVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ModelSwitchBeforeCapabilitiesField4ModifyField6ResponseVariant0ModelKnownFields = TypedDict(
-    "__ModelSwitchBeforeCapabilitiesField4ModifyField6ResponseVariant0ModelKnownFields",
+__ModelSwitchBeforeCapabilitiesField4ModifyField7SummaryModelKnownFields = TypedDict(
+    "__ModelSwitchBeforeCapabilitiesField4ModifyField7SummaryModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ModelSwitchBeforeCapabilitiesField4ModifyField6ResponseVariant0Model: TypeAlias = (
-    __ModelSwitchBeforeCapabilitiesField4ModifyField6ResponseVariant0ModelKnownFields
+_ModelSwitchBeforeCapabilitiesField4ModifyField7SummaryModel: TypeAlias = (
+    __ModelSwitchBeforeCapabilitiesField4ModifyField7SummaryModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ModelSwitchBeforeCapabilitiesField4ModifyField6ResponseVariant1Variant0ModelKnownFields = TypedDict(
-    "__ModelSwitchBeforeCapabilitiesField4ModifyField6ResponseVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_ModelSwitchBeforeCapabilitiesField4ModifyField6ResponseVariant1Variant0Model: TypeAlias = (
-    __ModelSwitchBeforeCapabilitiesField4ModifyField6ResponseVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ModelSwitchBeforeCapabilitiesField4ModifyField6ResponseVariant1Variant1ModelKnownFields = TypedDict(
-    "__ModelSwitchBeforeCapabilitiesField4ModifyField6ResponseVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_ModelSwitchBeforeCapabilitiesField4ModifyField6ResponseVariant1Variant1Model: TypeAlias = (
-    __ModelSwitchBeforeCapabilitiesField4ModifyField6ResponseVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ModelSwitchBeforeCapabilitiesField4ModifyField7SummaryVariant0ModelKnownFields = TypedDict(
-    "__ModelSwitchBeforeCapabilitiesField4ModifyField7SummaryVariant0ModelKnownFields",
+__ModelSwitchBeforeCapabilitiesField4ModifyField8WorkspaceModelKnownFields = TypedDict(
+    "__ModelSwitchBeforeCapabilitiesField4ModifyField8WorkspaceModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ModelSwitchBeforeCapabilitiesField4ModifyField7SummaryVariant0Model: TypeAlias = (
-    __ModelSwitchBeforeCapabilitiesField4ModifyField7SummaryVariant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ModelSwitchBeforeCapabilitiesField4ModifyField7SummaryVariant1Variant0ModelKnownFields = TypedDict(
-    "__ModelSwitchBeforeCapabilitiesField4ModifyField7SummaryVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_ModelSwitchBeforeCapabilitiesField4ModifyField7SummaryVariant1Variant0Model: TypeAlias = (
-    __ModelSwitchBeforeCapabilitiesField4ModifyField7SummaryVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ModelSwitchBeforeCapabilitiesField4ModifyField7SummaryVariant1Variant1ModelKnownFields = TypedDict(
-    "__ModelSwitchBeforeCapabilitiesField4ModifyField7SummaryVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_ModelSwitchBeforeCapabilitiesField4ModifyField7SummaryVariant1Variant1Model: TypeAlias = (
-    __ModelSwitchBeforeCapabilitiesField4ModifyField7SummaryVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ModelSwitchBeforeCapabilitiesField4ModifyField8WorkspaceVariant0ModelKnownFields = TypedDict(
-    "__ModelSwitchBeforeCapabilitiesField4ModifyField8WorkspaceVariant0ModelKnownFields",
-    {"merge": Required[bool], "replace": Required[bool]},
-    total=False,
-)
-_ModelSwitchBeforeCapabilitiesField4ModifyField8WorkspaceVariant0Model: TypeAlias = (
-    __ModelSwitchBeforeCapabilitiesField4ModifyField8WorkspaceVariant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ModelSwitchBeforeCapabilitiesField4ModifyField8WorkspaceVariant1Variant0ModelKnownFields = TypedDict(
-    "__ModelSwitchBeforeCapabilitiesField4ModifyField8WorkspaceVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_ModelSwitchBeforeCapabilitiesField4ModifyField8WorkspaceVariant1Variant0Model: TypeAlias = (
-    __ModelSwitchBeforeCapabilitiesField4ModifyField8WorkspaceVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ModelSwitchBeforeCapabilitiesField4ModifyField8WorkspaceVariant1Variant1ModelKnownFields = TypedDict(
-    "__ModelSwitchBeforeCapabilitiesField4ModifyField8WorkspaceVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_ModelSwitchBeforeCapabilitiesField4ModifyField8WorkspaceVariant1Variant1Model: TypeAlias = (
-    __ModelSwitchBeforeCapabilitiesField4ModifyField8WorkspaceVariant1Variant1ModelKnownFields
+_ModelSwitchBeforeCapabilitiesField4ModifyField8WorkspaceModel: TypeAlias = (
+    __ModelSwitchBeforeCapabilitiesField4ModifyField8WorkspaceModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
 __ModelSwitchBeforeCapabilitiesField4ModifyModelKnownFields = TypedDict(
     "__ModelSwitchBeforeCapabilitiesField4ModifyModelKnownFields",
     {
-        "content": NotRequired[JsonValue],
-        "input": NotRequired[JsonValue],
-        "instructions": NotRequired[JsonValue],
-        "output": NotRequired[JsonValue],
-        "prompt": NotRequired[JsonValue],
-        "request": NotRequired[JsonValue],
-        "response": NotRequired[JsonValue],
-        "summary": NotRequired[JsonValue],
-        "workspace": NotRequired[JsonValue],
+        "content": NotRequired[
+            _ModelSwitchBeforeCapabilitiesField4ModifyField0ContentModel
+        ],
+        "input": NotRequired[
+            _ModelSwitchBeforeCapabilitiesField4ModifyField1InputModel
+        ],
+        "instructions": NotRequired[
+            _ModelSwitchBeforeCapabilitiesField4ModifyField2InstructionsModel
+        ],
+        "output": NotRequired[
+            _ModelSwitchBeforeCapabilitiesField4ModifyField3OutputModel
+        ],
+        "prompt": NotRequired[
+            _ModelSwitchBeforeCapabilitiesField4ModifyField4PromptModel
+        ],
+        "request": NotRequired[
+            _ModelSwitchBeforeCapabilitiesField4ModifyField5RequestModel
+        ],
+        "response": NotRequired[
+            _ModelSwitchBeforeCapabilitiesField4ModifyField6ResponseModel
+        ],
+        "summary": NotRequired[
+            _ModelSwitchBeforeCapabilitiesField4ModifyField7SummaryModel
+        ],
+        "workspace": NotRequired[
+            _ModelSwitchBeforeCapabilitiesField4ModifyField8WorkspaceModel
+        ],
     },
     total=False,
 )
@@ -5378,7 +4339,7 @@ _ModelSwitchBeforeCapabilitiesField4ModifyModel: TypeAlias = (
 _ModelSwitchBeforeCapabilitiesKnownFields = TypedDict(
     "_ModelSwitchBeforeCapabilitiesKnownFields",
     {
-        "effects": Required[JsonValue],
+        "effects": Required[list[Union[OpenString, str]]],
         "elicitation": NotRequired[
             _ModelSwitchBeforeCapabilitiesField1ElicitationModel
         ],
@@ -5396,13 +4357,93 @@ ModelSwitchBeforeCapabilities: TypeAlias = (
 ModelSwitchBeforeEvent: TypeAlias = "ExecutionEventModelSwitchBefore"
 
 # Source: schema/draft/content-item.schema.json#/$defs/modelVisibleItem
-__ModelVisibleItemVariant1ModelKnownFields = TypedDict(
-    "__ModelVisibleItemVariant1ModelKnownFields", {"role": Required[str]}, total=False
+__ModelVisibleItemBodyModelKnownFields = TypedDict(
+    "__ModelVisibleItemBodyModelKnownFields",
+    {
+        "body": Required["ContentReference"],
+        "category": NotRequired[str],
+        "id": Required[str],
+        "kind": Required[str],
+        "mediaType": Required[str],
+        "parentItemId": NotRequired[str],
+        "role": Required[str],
+        "selection": Required[Literal["body"]],
+        "synthesized": NotRequired[bool],
+    },
+    total=False,
 )
-_ModelVisibleItemVariant1Model: TypeAlias = (
-    __ModelVisibleItemVariant1ModelKnownFields | JsonObject
+_ModelVisibleItemBodyModel: TypeAlias = (
+    __ModelVisibleItemBodyModelKnownFields | JsonObject
 )  # permits additional JSON fields
-ModelVisibleItem: TypeAlias = JsonValue
+_ModelVisibleItemBodyGapField1GapModel = TypedDict(
+    "_ModelVisibleItemBodyGapField1GapModel",
+    {"path": NotRequired[str], "reason": Required[str]},
+    total=False,
+)
+__ModelVisibleItemBodyGapModelKnownFields = TypedDict(
+    "__ModelVisibleItemBodyGapModelKnownFields",
+    {
+        "category": NotRequired[str],
+        "gap": Required[_ModelVisibleItemBodyGapField1GapModel],
+        "id": Required[str],
+        "kind": Required[str],
+        "mediaType": Required[str],
+        "parentItemId": NotRequired[str],
+        "role": Required[str],
+        "selection": Required[Literal["body"]],
+        "sha256": NotRequired[str],
+        "size": NotRequired[int | Decimal],
+        "synthesized": NotRequired[bool],
+    },
+    total=False,
+)
+_ModelVisibleItemBodyGapModel: TypeAlias = (
+    __ModelVisibleItemBodyGapModelKnownFields | JsonObject
+)  # permits additional JSON fields
+__ModelVisibleItemMetadataModelKnownFields = TypedDict(
+    "__ModelVisibleItemMetadataModelKnownFields",
+    {
+        "category": NotRequired[str],
+        "id": Required[str],
+        "kind": Required[str],
+        "mediaType": Required[str],
+        "parentItemId": NotRequired[str],
+        "role": Required[str],
+        "selection": Required[Literal["metadata"]],
+        "sha256": NotRequired[str],
+        "size": NotRequired[int | Decimal],
+        "synthesized": NotRequired[bool],
+    },
+    total=False,
+)
+_ModelVisibleItemMetadataModel: TypeAlias = (
+    __ModelVisibleItemMetadataModelKnownFields | JsonObject
+)  # permits additional JSON fields
+__ModelVisibleItemOmitModelKnownFields = TypedDict(
+    "__ModelVisibleItemOmitModelKnownFields",
+    {
+        "category": NotRequired[str],
+        "id": Required[str],
+        "kind": Required[str],
+        "mediaType": Required[str],
+        "parentItemId": NotRequired[str],
+        "role": Required[str],
+        "selection": Required[Literal["omit"]],
+        "sha256": NotRequired[str],
+        "size": NotRequired[int | Decimal],
+        "synthesized": NotRequired[bool],
+    },
+    total=False,
+)
+_ModelVisibleItemOmitModel: TypeAlias = (
+    __ModelVisibleItemOmitModelKnownFields | JsonObject
+)  # permits additional JSON fields
+ModelVisibleItem: TypeAlias = Union[
+    _ModelVisibleItemBodyModel,
+    _ModelVisibleItemBodyGapModel,
+    _ModelVisibleItemMetadataModel,
+    _ModelVisibleItemOmitModel,
+]
 
 # Source: schema/draft/common.schema.json#/$defs/native
 NativeEvent: TypeAlias = JsonValue
@@ -5410,45 +4451,7 @@ NativeEvent: TypeAlias = JsonValue
 # Source: schema/draft/observe-notification.schema.json#
 __ObserveNotificationField2ParamsModelKnownFields = TypedDict(
     "__ObserveNotificationField2ParamsModelKnownFields",
-    {
-        "event": Required[
-            Union[
-                "ToolBeforeEvent",
-                "ToolAfterEvent",
-                "SessionStartEvent",
-                "SessionEndEvent",
-                "ConfigChangeBeforeEvent",
-                "ConfigChangeAfterEvent",
-                "TurnStartEvent",
-                "TurnFinishBeforeEvent",
-                "TurnEndEvent",
-                "TurnProgressEvent",
-                "ModelRequestBeforeEvent",
-                "ModelResponseAfterEvent",
-                "ModelErrorEvent",
-                "ModelSwitchBeforeEvent",
-                "ModelSwitchAfterEvent",
-                "ToolPermissionRequestEvent",
-                "ToolPermissionResolvedEvent",
-                "ToolProgressEvent",
-                "ToolBatchAfterEvent",
-                "ContextCompactBeforeEvent",
-                "ContextCompactAfterEvent",
-                "TaskChangeBeforeEvent",
-                "TaskChangeAfterEvent",
-                "UserAttentionEvent",
-                "UserElicitationRequestEvent",
-                "UserElicitationResultEvent",
-                "UserMessageInboundEvent",
-                "UserMessageOutboundEvent",
-                "WorkspaceChangeBeforeEvent",
-                "WorkspaceChangeAfterEvent",
-                "FileChangedEvent",
-                "HookFailureEvent",
-            ]
-        ],
-        "protocolVersion": Required["ProtocolVersion"],
-    },
+    {"event": Required["Event"], "protocolVersion": Required["ProtocolVersion"]},
     total=False,
 )
 _ObserveNotificationField2ParamsModel: TypeAlias = (
@@ -5656,265 +4659,97 @@ __SessionStartCapabilitiesField3InjectModelKnownFields = TypedDict(
 _SessionStartCapabilitiesField3InjectModel: TypeAlias = (
     __SessionStartCapabilitiesField3InjectModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__SessionStartCapabilitiesField4ModifyField0ContentVariant0ModelKnownFields = TypedDict(
-    "__SessionStartCapabilitiesField4ModifyField0ContentVariant0ModelKnownFields",
+__SessionStartCapabilitiesField4ModifyField0ContentModelKnownFields = TypedDict(
+    "__SessionStartCapabilitiesField4ModifyField0ContentModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_SessionStartCapabilitiesField4ModifyField0ContentVariant0Model: TypeAlias = (
-    __SessionStartCapabilitiesField4ModifyField0ContentVariant0ModelKnownFields
-    | JsonObject
+_SessionStartCapabilitiesField4ModifyField0ContentModel: TypeAlias = (
+    __SessionStartCapabilitiesField4ModifyField0ContentModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__SessionStartCapabilitiesField4ModifyField0ContentVariant1Variant0ModelKnownFields = TypedDict(
-    "__SessionStartCapabilitiesField4ModifyField0ContentVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_SessionStartCapabilitiesField4ModifyField0ContentVariant1Variant0Model: TypeAlias = (
-    __SessionStartCapabilitiesField4ModifyField0ContentVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__SessionStartCapabilitiesField4ModifyField0ContentVariant1Variant1ModelKnownFields = TypedDict(
-    "__SessionStartCapabilitiesField4ModifyField0ContentVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_SessionStartCapabilitiesField4ModifyField0ContentVariant1Variant1Model: TypeAlias = (
-    __SessionStartCapabilitiesField4ModifyField0ContentVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__SessionStartCapabilitiesField4ModifyField1InputVariant0ModelKnownFields = TypedDict(
-    "__SessionStartCapabilitiesField4ModifyField1InputVariant0ModelKnownFields",
+__SessionStartCapabilitiesField4ModifyField1InputModelKnownFields = TypedDict(
+    "__SessionStartCapabilitiesField4ModifyField1InputModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_SessionStartCapabilitiesField4ModifyField1InputVariant0Model: TypeAlias = (
-    __SessionStartCapabilitiesField4ModifyField1InputVariant0ModelKnownFields
-    | JsonObject
+_SessionStartCapabilitiesField4ModifyField1InputModel: TypeAlias = (
+    __SessionStartCapabilitiesField4ModifyField1InputModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__SessionStartCapabilitiesField4ModifyField1InputVariant1Variant0ModelKnownFields = TypedDict(
-    "__SessionStartCapabilitiesField4ModifyField1InputVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_SessionStartCapabilitiesField4ModifyField1InputVariant1Variant0Model: TypeAlias = (
-    __SessionStartCapabilitiesField4ModifyField1InputVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__SessionStartCapabilitiesField4ModifyField1InputVariant1Variant1ModelKnownFields = TypedDict(
-    "__SessionStartCapabilitiesField4ModifyField1InputVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_SessionStartCapabilitiesField4ModifyField1InputVariant1Variant1Model: TypeAlias = (
-    __SessionStartCapabilitiesField4ModifyField1InputVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__SessionStartCapabilitiesField4ModifyField2InstructionsVariant0ModelKnownFields = TypedDict(
-    "__SessionStartCapabilitiesField4ModifyField2InstructionsVariant0ModelKnownFields",
+__SessionStartCapabilitiesField4ModifyField2InstructionsModelKnownFields = TypedDict(
+    "__SessionStartCapabilitiesField4ModifyField2InstructionsModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_SessionStartCapabilitiesField4ModifyField2InstructionsVariant0Model: TypeAlias = (
-    __SessionStartCapabilitiesField4ModifyField2InstructionsVariant0ModelKnownFields
+_SessionStartCapabilitiesField4ModifyField2InstructionsModel: TypeAlias = (
+    __SessionStartCapabilitiesField4ModifyField2InstructionsModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__SessionStartCapabilitiesField4ModifyField2InstructionsVariant1Variant0ModelKnownFields = TypedDict(
-    "__SessionStartCapabilitiesField4ModifyField2InstructionsVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_SessionStartCapabilitiesField4ModifyField2InstructionsVariant1Variant0Model: TypeAlias = (
-    __SessionStartCapabilitiesField4ModifyField2InstructionsVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__SessionStartCapabilitiesField4ModifyField2InstructionsVariant1Variant1ModelKnownFields = TypedDict(
-    "__SessionStartCapabilitiesField4ModifyField2InstructionsVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_SessionStartCapabilitiesField4ModifyField2InstructionsVariant1Variant1Model: TypeAlias = (
-    __SessionStartCapabilitiesField4ModifyField2InstructionsVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__SessionStartCapabilitiesField4ModifyField3OutputVariant0ModelKnownFields = TypedDict(
-    "__SessionStartCapabilitiesField4ModifyField3OutputVariant0ModelKnownFields",
+__SessionStartCapabilitiesField4ModifyField3OutputModelKnownFields = TypedDict(
+    "__SessionStartCapabilitiesField4ModifyField3OutputModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_SessionStartCapabilitiesField4ModifyField3OutputVariant0Model: TypeAlias = (
-    __SessionStartCapabilitiesField4ModifyField3OutputVariant0ModelKnownFields
-    | JsonObject
+_SessionStartCapabilitiesField4ModifyField3OutputModel: TypeAlias = (
+    __SessionStartCapabilitiesField4ModifyField3OutputModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__SessionStartCapabilitiesField4ModifyField3OutputVariant1Variant0ModelKnownFields = TypedDict(
-    "__SessionStartCapabilitiesField4ModifyField3OutputVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_SessionStartCapabilitiesField4ModifyField3OutputVariant1Variant0Model: TypeAlias = (
-    __SessionStartCapabilitiesField4ModifyField3OutputVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__SessionStartCapabilitiesField4ModifyField3OutputVariant1Variant1ModelKnownFields = TypedDict(
-    "__SessionStartCapabilitiesField4ModifyField3OutputVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_SessionStartCapabilitiesField4ModifyField3OutputVariant1Variant1Model: TypeAlias = (
-    __SessionStartCapabilitiesField4ModifyField3OutputVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__SessionStartCapabilitiesField4ModifyField4PromptVariant0ModelKnownFields = TypedDict(
-    "__SessionStartCapabilitiesField4ModifyField4PromptVariant0ModelKnownFields",
+__SessionStartCapabilitiesField4ModifyField4PromptModelKnownFields = TypedDict(
+    "__SessionStartCapabilitiesField4ModifyField4PromptModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_SessionStartCapabilitiesField4ModifyField4PromptVariant0Model: TypeAlias = (
-    __SessionStartCapabilitiesField4ModifyField4PromptVariant0ModelKnownFields
-    | JsonObject
+_SessionStartCapabilitiesField4ModifyField4PromptModel: TypeAlias = (
+    __SessionStartCapabilitiesField4ModifyField4PromptModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__SessionStartCapabilitiesField4ModifyField4PromptVariant1Variant0ModelKnownFields = TypedDict(
-    "__SessionStartCapabilitiesField4ModifyField4PromptVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_SessionStartCapabilitiesField4ModifyField4PromptVariant1Variant0Model: TypeAlias = (
-    __SessionStartCapabilitiesField4ModifyField4PromptVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__SessionStartCapabilitiesField4ModifyField4PromptVariant1Variant1ModelKnownFields = TypedDict(
-    "__SessionStartCapabilitiesField4ModifyField4PromptVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_SessionStartCapabilitiesField4ModifyField4PromptVariant1Variant1Model: TypeAlias = (
-    __SessionStartCapabilitiesField4ModifyField4PromptVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__SessionStartCapabilitiesField4ModifyField5RequestVariant0ModelKnownFields = TypedDict(
-    "__SessionStartCapabilitiesField4ModifyField5RequestVariant0ModelKnownFields",
+__SessionStartCapabilitiesField4ModifyField5RequestModelKnownFields = TypedDict(
+    "__SessionStartCapabilitiesField4ModifyField5RequestModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_SessionStartCapabilitiesField4ModifyField5RequestVariant0Model: TypeAlias = (
-    __SessionStartCapabilitiesField4ModifyField5RequestVariant0ModelKnownFields
-    | JsonObject
+_SessionStartCapabilitiesField4ModifyField5RequestModel: TypeAlias = (
+    __SessionStartCapabilitiesField4ModifyField5RequestModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__SessionStartCapabilitiesField4ModifyField5RequestVariant1Variant0ModelKnownFields = TypedDict(
-    "__SessionStartCapabilitiesField4ModifyField5RequestVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_SessionStartCapabilitiesField4ModifyField5RequestVariant1Variant0Model: TypeAlias = (
-    __SessionStartCapabilitiesField4ModifyField5RequestVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__SessionStartCapabilitiesField4ModifyField5RequestVariant1Variant1ModelKnownFields = TypedDict(
-    "__SessionStartCapabilitiesField4ModifyField5RequestVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_SessionStartCapabilitiesField4ModifyField5RequestVariant1Variant1Model: TypeAlias = (
-    __SessionStartCapabilitiesField4ModifyField5RequestVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__SessionStartCapabilitiesField4ModifyField6ResponseVariant0ModelKnownFields = (
-    TypedDict(
-        "__SessionStartCapabilitiesField4ModifyField6ResponseVariant0ModelKnownFields",
-        {"merge": Required[bool], "replace": Required[bool]},
-        total=False,
-    )
-)
-_SessionStartCapabilitiesField4ModifyField6ResponseVariant0Model: TypeAlias = (
-    __SessionStartCapabilitiesField4ModifyField6ResponseVariant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__SessionStartCapabilitiesField4ModifyField6ResponseVariant1Variant0ModelKnownFields = TypedDict(
-    "__SessionStartCapabilitiesField4ModifyField6ResponseVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_SessionStartCapabilitiesField4ModifyField6ResponseVariant1Variant0Model: TypeAlias = (
-    __SessionStartCapabilitiesField4ModifyField6ResponseVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__SessionStartCapabilitiesField4ModifyField6ResponseVariant1Variant1ModelKnownFields = TypedDict(
-    "__SessionStartCapabilitiesField4ModifyField6ResponseVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_SessionStartCapabilitiesField4ModifyField6ResponseVariant1Variant1Model: TypeAlias = (
-    __SessionStartCapabilitiesField4ModifyField6ResponseVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__SessionStartCapabilitiesField4ModifyField7SummaryVariant0ModelKnownFields = TypedDict(
-    "__SessionStartCapabilitiesField4ModifyField7SummaryVariant0ModelKnownFields",
+__SessionStartCapabilitiesField4ModifyField6ResponseModelKnownFields = TypedDict(
+    "__SessionStartCapabilitiesField4ModifyField6ResponseModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_SessionStartCapabilitiesField4ModifyField7SummaryVariant0Model: TypeAlias = (
-    __SessionStartCapabilitiesField4ModifyField7SummaryVariant0ModelKnownFields
-    | JsonObject
+_SessionStartCapabilitiesField4ModifyField6ResponseModel: TypeAlias = (
+    __SessionStartCapabilitiesField4ModifyField6ResponseModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__SessionStartCapabilitiesField4ModifyField7SummaryVariant1Variant0ModelKnownFields = TypedDict(
-    "__SessionStartCapabilitiesField4ModifyField7SummaryVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
+__SessionStartCapabilitiesField4ModifyField7SummaryModelKnownFields = TypedDict(
+    "__SessionStartCapabilitiesField4ModifyField7SummaryModelKnownFields",
+    {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_SessionStartCapabilitiesField4ModifyField7SummaryVariant1Variant0Model: TypeAlias = (
-    __SessionStartCapabilitiesField4ModifyField7SummaryVariant1Variant0ModelKnownFields
-    | JsonObject
+_SessionStartCapabilitiesField4ModifyField7SummaryModel: TypeAlias = (
+    __SessionStartCapabilitiesField4ModifyField7SummaryModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__SessionStartCapabilitiesField4ModifyField7SummaryVariant1Variant1ModelKnownFields = TypedDict(
-    "__SessionStartCapabilitiesField4ModifyField7SummaryVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
+__SessionStartCapabilitiesField4ModifyField8WorkspaceModelKnownFields = TypedDict(
+    "__SessionStartCapabilitiesField4ModifyField8WorkspaceModelKnownFields",
+    {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_SessionStartCapabilitiesField4ModifyField7SummaryVariant1Variant1Model: TypeAlias = (
-    __SessionStartCapabilitiesField4ModifyField7SummaryVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__SessionStartCapabilitiesField4ModifyField8WorkspaceVariant0ModelKnownFields = (
-    TypedDict(
-        "__SessionStartCapabilitiesField4ModifyField8WorkspaceVariant0ModelKnownFields",
-        {"merge": Required[bool], "replace": Required[bool]},
-        total=False,
-    )
-)
-_SessionStartCapabilitiesField4ModifyField8WorkspaceVariant0Model: TypeAlias = (
-    __SessionStartCapabilitiesField4ModifyField8WorkspaceVariant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__SessionStartCapabilitiesField4ModifyField8WorkspaceVariant1Variant0ModelKnownFields = TypedDict(
-    "__SessionStartCapabilitiesField4ModifyField8WorkspaceVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_SessionStartCapabilitiesField4ModifyField8WorkspaceVariant1Variant0Model: TypeAlias = (
-    __SessionStartCapabilitiesField4ModifyField8WorkspaceVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__SessionStartCapabilitiesField4ModifyField8WorkspaceVariant1Variant1ModelKnownFields = TypedDict(
-    "__SessionStartCapabilitiesField4ModifyField8WorkspaceVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_SessionStartCapabilitiesField4ModifyField8WorkspaceVariant1Variant1Model: TypeAlias = (
-    __SessionStartCapabilitiesField4ModifyField8WorkspaceVariant1Variant1ModelKnownFields
-    | JsonObject
+_SessionStartCapabilitiesField4ModifyField8WorkspaceModel: TypeAlias = (
+    __SessionStartCapabilitiesField4ModifyField8WorkspaceModelKnownFields | JsonObject
 )  # permits additional JSON fields
 __SessionStartCapabilitiesField4ModifyModelKnownFields = TypedDict(
     "__SessionStartCapabilitiesField4ModifyModelKnownFields",
     {
-        "content": NotRequired[JsonValue],
-        "input": NotRequired[JsonValue],
-        "instructions": NotRequired[JsonValue],
-        "output": NotRequired[JsonValue],
-        "prompt": NotRequired[JsonValue],
-        "request": NotRequired[JsonValue],
-        "response": NotRequired[JsonValue],
-        "summary": NotRequired[JsonValue],
-        "workspace": NotRequired[JsonValue],
+        "content": NotRequired[_SessionStartCapabilitiesField4ModifyField0ContentModel],
+        "input": NotRequired[_SessionStartCapabilitiesField4ModifyField1InputModel],
+        "instructions": NotRequired[
+            _SessionStartCapabilitiesField4ModifyField2InstructionsModel
+        ],
+        "output": NotRequired[_SessionStartCapabilitiesField4ModifyField3OutputModel],
+        "prompt": NotRequired[_SessionStartCapabilitiesField4ModifyField4PromptModel],
+        "request": NotRequired[_SessionStartCapabilitiesField4ModifyField5RequestModel],
+        "response": NotRequired[
+            _SessionStartCapabilitiesField4ModifyField6ResponseModel
+        ],
+        "summary": NotRequired[_SessionStartCapabilitiesField4ModifyField7SummaryModel],
+        "workspace": NotRequired[
+            _SessionStartCapabilitiesField4ModifyField8WorkspaceModel
+        ],
     },
     total=False,
 )
@@ -5924,7 +4759,7 @@ _SessionStartCapabilitiesField4ModifyModel: TypeAlias = (
 _SessionStartCapabilitiesKnownFields = TypedDict(
     "_SessionStartCapabilitiesKnownFields",
     {
-        "effects": Required[JsonValue],
+        "effects": Required[list[Union[OpenString, str]]],
         "elicitation": NotRequired[_SessionStartCapabilitiesField1ElicitationModel],
         "flow": NotRequired[_SessionStartCapabilitiesField2FlowModel],
         "inject": NotRequired[_SessionStartCapabilitiesField3InjectModel],
@@ -6133,263 +4968,111 @@ __TaskChangeBeforeCapabilitiesField3InjectModelKnownFields = TypedDict(
 _TaskChangeBeforeCapabilitiesField3InjectModel: TypeAlias = (
     __TaskChangeBeforeCapabilitiesField3InjectModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__TaskChangeBeforeCapabilitiesField4ModifyField0ContentVariant0ModelKnownFields = TypedDict(
-    "__TaskChangeBeforeCapabilitiesField4ModifyField0ContentVariant0ModelKnownFields",
+__TaskChangeBeforeCapabilitiesField4ModifyField0ContentModelKnownFields = TypedDict(
+    "__TaskChangeBeforeCapabilitiesField4ModifyField0ContentModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_TaskChangeBeforeCapabilitiesField4ModifyField0ContentVariant0Model: TypeAlias = (
-    __TaskChangeBeforeCapabilitiesField4ModifyField0ContentVariant0ModelKnownFields
-    | JsonObject
+_TaskChangeBeforeCapabilitiesField4ModifyField0ContentModel: TypeAlias = (
+    __TaskChangeBeforeCapabilitiesField4ModifyField0ContentModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__TaskChangeBeforeCapabilitiesField4ModifyField0ContentVariant1Variant0ModelKnownFields = TypedDict(
-    "__TaskChangeBeforeCapabilitiesField4ModifyField0ContentVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
+__TaskChangeBeforeCapabilitiesField4ModifyField1InputModelKnownFields = TypedDict(
+    "__TaskChangeBeforeCapabilitiesField4ModifyField1InputModelKnownFields",
+    {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_TaskChangeBeforeCapabilitiesField4ModifyField0ContentVariant1Variant0Model: TypeAlias = (
-    __TaskChangeBeforeCapabilitiesField4ModifyField0ContentVariant1Variant0ModelKnownFields
-    | JsonObject
+_TaskChangeBeforeCapabilitiesField4ModifyField1InputModel: TypeAlias = (
+    __TaskChangeBeforeCapabilitiesField4ModifyField1InputModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__TaskChangeBeforeCapabilitiesField4ModifyField0ContentVariant1Variant1ModelKnownFields = TypedDict(
-    "__TaskChangeBeforeCapabilitiesField4ModifyField0ContentVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_TaskChangeBeforeCapabilitiesField4ModifyField0ContentVariant1Variant1Model: TypeAlias = (
-    __TaskChangeBeforeCapabilitiesField4ModifyField0ContentVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__TaskChangeBeforeCapabilitiesField4ModifyField1InputVariant0ModelKnownFields = (
+__TaskChangeBeforeCapabilitiesField4ModifyField2InstructionsModelKnownFields = (
     TypedDict(
-        "__TaskChangeBeforeCapabilitiesField4ModifyField1InputVariant0ModelKnownFields",
+        "__TaskChangeBeforeCapabilitiesField4ModifyField2InstructionsModelKnownFields",
         {"merge": Required[bool], "replace": Required[bool]},
         total=False,
     )
 )
-_TaskChangeBeforeCapabilitiesField4ModifyField1InputVariant0Model: TypeAlias = (
-    __TaskChangeBeforeCapabilitiesField4ModifyField1InputVariant0ModelKnownFields
+_TaskChangeBeforeCapabilitiesField4ModifyField2InstructionsModel: TypeAlias = (
+    __TaskChangeBeforeCapabilitiesField4ModifyField2InstructionsModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__TaskChangeBeforeCapabilitiesField4ModifyField1InputVariant1Variant0ModelKnownFields = TypedDict(
-    "__TaskChangeBeforeCapabilitiesField4ModifyField1InputVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_TaskChangeBeforeCapabilitiesField4ModifyField1InputVariant1Variant0Model: TypeAlias = (
-    __TaskChangeBeforeCapabilitiesField4ModifyField1InputVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__TaskChangeBeforeCapabilitiesField4ModifyField1InputVariant1Variant1ModelKnownFields = TypedDict(
-    "__TaskChangeBeforeCapabilitiesField4ModifyField1InputVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_TaskChangeBeforeCapabilitiesField4ModifyField1InputVariant1Variant1Model: TypeAlias = (
-    __TaskChangeBeforeCapabilitiesField4ModifyField1InputVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__TaskChangeBeforeCapabilitiesField4ModifyField2InstructionsVariant0ModelKnownFields = TypedDict(
-    "__TaskChangeBeforeCapabilitiesField4ModifyField2InstructionsVariant0ModelKnownFields",
+__TaskChangeBeforeCapabilitiesField4ModifyField3OutputModelKnownFields = TypedDict(
+    "__TaskChangeBeforeCapabilitiesField4ModifyField3OutputModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_TaskChangeBeforeCapabilitiesField4ModifyField2InstructionsVariant0Model: TypeAlias = (
-    __TaskChangeBeforeCapabilitiesField4ModifyField2InstructionsVariant0ModelKnownFields
-    | JsonObject
+_TaskChangeBeforeCapabilitiesField4ModifyField3OutputModel: TypeAlias = (
+    __TaskChangeBeforeCapabilitiesField4ModifyField3OutputModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__TaskChangeBeforeCapabilitiesField4ModifyField2InstructionsVariant1Variant0ModelKnownFields = TypedDict(
-    "__TaskChangeBeforeCapabilitiesField4ModifyField2InstructionsVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_TaskChangeBeforeCapabilitiesField4ModifyField2InstructionsVariant1Variant0Model: TypeAlias = (
-    __TaskChangeBeforeCapabilitiesField4ModifyField2InstructionsVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__TaskChangeBeforeCapabilitiesField4ModifyField2InstructionsVariant1Variant1ModelKnownFields = TypedDict(
-    "__TaskChangeBeforeCapabilitiesField4ModifyField2InstructionsVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_TaskChangeBeforeCapabilitiesField4ModifyField2InstructionsVariant1Variant1Model: TypeAlias = (
-    __TaskChangeBeforeCapabilitiesField4ModifyField2InstructionsVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__TaskChangeBeforeCapabilitiesField4ModifyField3OutputVariant0ModelKnownFields = TypedDict(
-    "__TaskChangeBeforeCapabilitiesField4ModifyField3OutputVariant0ModelKnownFields",
+__TaskChangeBeforeCapabilitiesField4ModifyField4PromptModelKnownFields = TypedDict(
+    "__TaskChangeBeforeCapabilitiesField4ModifyField4PromptModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_TaskChangeBeforeCapabilitiesField4ModifyField3OutputVariant0Model: TypeAlias = (
-    __TaskChangeBeforeCapabilitiesField4ModifyField3OutputVariant0ModelKnownFields
-    | JsonObject
+_TaskChangeBeforeCapabilitiesField4ModifyField4PromptModel: TypeAlias = (
+    __TaskChangeBeforeCapabilitiesField4ModifyField4PromptModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__TaskChangeBeforeCapabilitiesField4ModifyField3OutputVariant1Variant0ModelKnownFields = TypedDict(
-    "__TaskChangeBeforeCapabilitiesField4ModifyField3OutputVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_TaskChangeBeforeCapabilitiesField4ModifyField3OutputVariant1Variant0Model: TypeAlias = (
-    __TaskChangeBeforeCapabilitiesField4ModifyField3OutputVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__TaskChangeBeforeCapabilitiesField4ModifyField3OutputVariant1Variant1ModelKnownFields = TypedDict(
-    "__TaskChangeBeforeCapabilitiesField4ModifyField3OutputVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_TaskChangeBeforeCapabilitiesField4ModifyField3OutputVariant1Variant1Model: TypeAlias = (
-    __TaskChangeBeforeCapabilitiesField4ModifyField3OutputVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__TaskChangeBeforeCapabilitiesField4ModifyField4PromptVariant0ModelKnownFields = TypedDict(
-    "__TaskChangeBeforeCapabilitiesField4ModifyField4PromptVariant0ModelKnownFields",
+__TaskChangeBeforeCapabilitiesField4ModifyField5RequestModelKnownFields = TypedDict(
+    "__TaskChangeBeforeCapabilitiesField4ModifyField5RequestModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_TaskChangeBeforeCapabilitiesField4ModifyField4PromptVariant0Model: TypeAlias = (
-    __TaskChangeBeforeCapabilitiesField4ModifyField4PromptVariant0ModelKnownFields
-    | JsonObject
+_TaskChangeBeforeCapabilitiesField4ModifyField5RequestModel: TypeAlias = (
+    __TaskChangeBeforeCapabilitiesField4ModifyField5RequestModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__TaskChangeBeforeCapabilitiesField4ModifyField4PromptVariant1Variant0ModelKnownFields = TypedDict(
-    "__TaskChangeBeforeCapabilitiesField4ModifyField4PromptVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_TaskChangeBeforeCapabilitiesField4ModifyField4PromptVariant1Variant0Model: TypeAlias = (
-    __TaskChangeBeforeCapabilitiesField4ModifyField4PromptVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__TaskChangeBeforeCapabilitiesField4ModifyField4PromptVariant1Variant1ModelKnownFields = TypedDict(
-    "__TaskChangeBeforeCapabilitiesField4ModifyField4PromptVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_TaskChangeBeforeCapabilitiesField4ModifyField4PromptVariant1Variant1Model: TypeAlias = (
-    __TaskChangeBeforeCapabilitiesField4ModifyField4PromptVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__TaskChangeBeforeCapabilitiesField4ModifyField5RequestVariant0ModelKnownFields = TypedDict(
-    "__TaskChangeBeforeCapabilitiesField4ModifyField5RequestVariant0ModelKnownFields",
+__TaskChangeBeforeCapabilitiesField4ModifyField6ResponseModelKnownFields = TypedDict(
+    "__TaskChangeBeforeCapabilitiesField4ModifyField6ResponseModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_TaskChangeBeforeCapabilitiesField4ModifyField5RequestVariant0Model: TypeAlias = (
-    __TaskChangeBeforeCapabilitiesField4ModifyField5RequestVariant0ModelKnownFields
+_TaskChangeBeforeCapabilitiesField4ModifyField6ResponseModel: TypeAlias = (
+    __TaskChangeBeforeCapabilitiesField4ModifyField6ResponseModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__TaskChangeBeforeCapabilitiesField4ModifyField5RequestVariant1Variant0ModelKnownFields = TypedDict(
-    "__TaskChangeBeforeCapabilitiesField4ModifyField5RequestVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_TaskChangeBeforeCapabilitiesField4ModifyField5RequestVariant1Variant0Model: TypeAlias = (
-    __TaskChangeBeforeCapabilitiesField4ModifyField5RequestVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__TaskChangeBeforeCapabilitiesField4ModifyField5RequestVariant1Variant1ModelKnownFields = TypedDict(
-    "__TaskChangeBeforeCapabilitiesField4ModifyField5RequestVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_TaskChangeBeforeCapabilitiesField4ModifyField5RequestVariant1Variant1Model: TypeAlias = (
-    __TaskChangeBeforeCapabilitiesField4ModifyField5RequestVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__TaskChangeBeforeCapabilitiesField4ModifyField6ResponseVariant0ModelKnownFields = TypedDict(
-    "__TaskChangeBeforeCapabilitiesField4ModifyField6ResponseVariant0ModelKnownFields",
+__TaskChangeBeforeCapabilitiesField4ModifyField7SummaryModelKnownFields = TypedDict(
+    "__TaskChangeBeforeCapabilitiesField4ModifyField7SummaryModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_TaskChangeBeforeCapabilitiesField4ModifyField6ResponseVariant0Model: TypeAlias = (
-    __TaskChangeBeforeCapabilitiesField4ModifyField6ResponseVariant0ModelKnownFields
-    | JsonObject
+_TaskChangeBeforeCapabilitiesField4ModifyField7SummaryModel: TypeAlias = (
+    __TaskChangeBeforeCapabilitiesField4ModifyField7SummaryModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__TaskChangeBeforeCapabilitiesField4ModifyField6ResponseVariant1Variant0ModelKnownFields = TypedDict(
-    "__TaskChangeBeforeCapabilitiesField4ModifyField6ResponseVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_TaskChangeBeforeCapabilitiesField4ModifyField6ResponseVariant1Variant0Model: TypeAlias = (
-    __TaskChangeBeforeCapabilitiesField4ModifyField6ResponseVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__TaskChangeBeforeCapabilitiesField4ModifyField6ResponseVariant1Variant1ModelKnownFields = TypedDict(
-    "__TaskChangeBeforeCapabilitiesField4ModifyField6ResponseVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_TaskChangeBeforeCapabilitiesField4ModifyField6ResponseVariant1Variant1Model: TypeAlias = (
-    __TaskChangeBeforeCapabilitiesField4ModifyField6ResponseVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__TaskChangeBeforeCapabilitiesField4ModifyField7SummaryVariant0ModelKnownFields = TypedDict(
-    "__TaskChangeBeforeCapabilitiesField4ModifyField7SummaryVariant0ModelKnownFields",
+__TaskChangeBeforeCapabilitiesField4ModifyField8WorkspaceModelKnownFields = TypedDict(
+    "__TaskChangeBeforeCapabilitiesField4ModifyField8WorkspaceModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_TaskChangeBeforeCapabilitiesField4ModifyField7SummaryVariant0Model: TypeAlias = (
-    __TaskChangeBeforeCapabilitiesField4ModifyField7SummaryVariant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__TaskChangeBeforeCapabilitiesField4ModifyField7SummaryVariant1Variant0ModelKnownFields = TypedDict(
-    "__TaskChangeBeforeCapabilitiesField4ModifyField7SummaryVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_TaskChangeBeforeCapabilitiesField4ModifyField7SummaryVariant1Variant0Model: TypeAlias = (
-    __TaskChangeBeforeCapabilitiesField4ModifyField7SummaryVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__TaskChangeBeforeCapabilitiesField4ModifyField7SummaryVariant1Variant1ModelKnownFields = TypedDict(
-    "__TaskChangeBeforeCapabilitiesField4ModifyField7SummaryVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_TaskChangeBeforeCapabilitiesField4ModifyField7SummaryVariant1Variant1Model: TypeAlias = (
-    __TaskChangeBeforeCapabilitiesField4ModifyField7SummaryVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__TaskChangeBeforeCapabilitiesField4ModifyField8WorkspaceVariant0ModelKnownFields = TypedDict(
-    "__TaskChangeBeforeCapabilitiesField4ModifyField8WorkspaceVariant0ModelKnownFields",
-    {"merge": Required[bool], "replace": Required[bool]},
-    total=False,
-)
-_TaskChangeBeforeCapabilitiesField4ModifyField8WorkspaceVariant0Model: TypeAlias = (
-    __TaskChangeBeforeCapabilitiesField4ModifyField8WorkspaceVariant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__TaskChangeBeforeCapabilitiesField4ModifyField8WorkspaceVariant1Variant0ModelKnownFields = TypedDict(
-    "__TaskChangeBeforeCapabilitiesField4ModifyField8WorkspaceVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_TaskChangeBeforeCapabilitiesField4ModifyField8WorkspaceVariant1Variant0Model: TypeAlias = (
-    __TaskChangeBeforeCapabilitiesField4ModifyField8WorkspaceVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__TaskChangeBeforeCapabilitiesField4ModifyField8WorkspaceVariant1Variant1ModelKnownFields = TypedDict(
-    "__TaskChangeBeforeCapabilitiesField4ModifyField8WorkspaceVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_TaskChangeBeforeCapabilitiesField4ModifyField8WorkspaceVariant1Variant1Model: TypeAlias = (
-    __TaskChangeBeforeCapabilitiesField4ModifyField8WorkspaceVariant1Variant1ModelKnownFields
+_TaskChangeBeforeCapabilitiesField4ModifyField8WorkspaceModel: TypeAlias = (
+    __TaskChangeBeforeCapabilitiesField4ModifyField8WorkspaceModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
 __TaskChangeBeforeCapabilitiesField4ModifyModelKnownFields = TypedDict(
     "__TaskChangeBeforeCapabilitiesField4ModifyModelKnownFields",
     {
-        "content": NotRequired[JsonValue],
-        "input": NotRequired[JsonValue],
-        "instructions": NotRequired[JsonValue],
-        "output": NotRequired[JsonValue],
-        "prompt": NotRequired[JsonValue],
-        "request": NotRequired[JsonValue],
-        "response": NotRequired[JsonValue],
-        "summary": NotRequired[JsonValue],
-        "workspace": NotRequired[JsonValue],
+        "content": NotRequired[
+            _TaskChangeBeforeCapabilitiesField4ModifyField0ContentModel
+        ],
+        "input": NotRequired[_TaskChangeBeforeCapabilitiesField4ModifyField1InputModel],
+        "instructions": NotRequired[
+            _TaskChangeBeforeCapabilitiesField4ModifyField2InstructionsModel
+        ],
+        "output": NotRequired[
+            _TaskChangeBeforeCapabilitiesField4ModifyField3OutputModel
+        ],
+        "prompt": NotRequired[
+            _TaskChangeBeforeCapabilitiesField4ModifyField4PromptModel
+        ],
+        "request": NotRequired[
+            _TaskChangeBeforeCapabilitiesField4ModifyField5RequestModel
+        ],
+        "response": NotRequired[
+            _TaskChangeBeforeCapabilitiesField4ModifyField6ResponseModel
+        ],
+        "summary": NotRequired[
+            _TaskChangeBeforeCapabilitiesField4ModifyField7SummaryModel
+        ],
+        "workspace": NotRequired[
+            _TaskChangeBeforeCapabilitiesField4ModifyField8WorkspaceModel
+        ],
     },
     total=False,
 )
@@ -6399,7 +5082,7 @@ _TaskChangeBeforeCapabilitiesField4ModifyModel: TypeAlias = (
 _TaskChangeBeforeCapabilitiesKnownFields = TypedDict(
     "_TaskChangeBeforeCapabilitiesKnownFields",
     {
-        "effects": Required[JsonValue],
+        "effects": Required[list[Union[OpenString, str]]],
         "elicitation": NotRequired[_TaskChangeBeforeCapabilitiesField1ElicitationModel],
         "flow": NotRequired[_TaskChangeBeforeCapabilitiesField2FlowModel],
         "inject": NotRequired[_TaskChangeBeforeCapabilitiesField3InjectModel],
@@ -6818,260 +5501,94 @@ __ToolAfterCapabilitiesField3InjectModelKnownFields = TypedDict(
 _ToolAfterCapabilitiesField3InjectModel: TypeAlias = (
     __ToolAfterCapabilitiesField3InjectModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__ToolAfterCapabilitiesField4ModifyField0ContentVariant0ModelKnownFields = TypedDict(
-    "__ToolAfterCapabilitiesField4ModifyField0ContentVariant0ModelKnownFields",
+__ToolAfterCapabilitiesField4ModifyField0ContentModelKnownFields = TypedDict(
+    "__ToolAfterCapabilitiesField4ModifyField0ContentModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ToolAfterCapabilitiesField4ModifyField0ContentVariant0Model: TypeAlias = (
-    __ToolAfterCapabilitiesField4ModifyField0ContentVariant0ModelKnownFields
-    | JsonObject
+_ToolAfterCapabilitiesField4ModifyField0ContentModel: TypeAlias = (
+    __ToolAfterCapabilitiesField4ModifyField0ContentModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__ToolAfterCapabilitiesField4ModifyField0ContentVariant1Variant0ModelKnownFields = TypedDict(
-    "__ToolAfterCapabilitiesField4ModifyField0ContentVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_ToolAfterCapabilitiesField4ModifyField0ContentVariant1Variant0Model: TypeAlias = (
-    __ToolAfterCapabilitiesField4ModifyField0ContentVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ToolAfterCapabilitiesField4ModifyField0ContentVariant1Variant1ModelKnownFields = TypedDict(
-    "__ToolAfterCapabilitiesField4ModifyField0ContentVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_ToolAfterCapabilitiesField4ModifyField0ContentVariant1Variant1Model: TypeAlias = (
-    __ToolAfterCapabilitiesField4ModifyField0ContentVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ToolAfterCapabilitiesField4ModifyField1InputVariant0ModelKnownFields = TypedDict(
-    "__ToolAfterCapabilitiesField4ModifyField1InputVariant0ModelKnownFields",
+__ToolAfterCapabilitiesField4ModifyField1InputModelKnownFields = TypedDict(
+    "__ToolAfterCapabilitiesField4ModifyField1InputModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ToolAfterCapabilitiesField4ModifyField1InputVariant0Model: TypeAlias = (
-    __ToolAfterCapabilitiesField4ModifyField1InputVariant0ModelKnownFields | JsonObject
+_ToolAfterCapabilitiesField4ModifyField1InputModel: TypeAlias = (
+    __ToolAfterCapabilitiesField4ModifyField1InputModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__ToolAfterCapabilitiesField4ModifyField1InputVariant1Variant0ModelKnownFields = TypedDict(
-    "__ToolAfterCapabilitiesField4ModifyField1InputVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_ToolAfterCapabilitiesField4ModifyField1InputVariant1Variant0Model: TypeAlias = (
-    __ToolAfterCapabilitiesField4ModifyField1InputVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ToolAfterCapabilitiesField4ModifyField1InputVariant1Variant1ModelKnownFields = TypedDict(
-    "__ToolAfterCapabilitiesField4ModifyField1InputVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_ToolAfterCapabilitiesField4ModifyField1InputVariant1Variant1Model: TypeAlias = (
-    __ToolAfterCapabilitiesField4ModifyField1InputVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ToolAfterCapabilitiesField4ModifyField2InstructionsVariant0ModelKnownFields = (
-    TypedDict(
-        "__ToolAfterCapabilitiesField4ModifyField2InstructionsVariant0ModelKnownFields",
-        {"merge": Required[bool], "replace": Required[bool]},
-        total=False,
-    )
-)
-_ToolAfterCapabilitiesField4ModifyField2InstructionsVariant0Model: TypeAlias = (
-    __ToolAfterCapabilitiesField4ModifyField2InstructionsVariant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ToolAfterCapabilitiesField4ModifyField2InstructionsVariant1Variant0ModelKnownFields = TypedDict(
-    "__ToolAfterCapabilitiesField4ModifyField2InstructionsVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_ToolAfterCapabilitiesField4ModifyField2InstructionsVariant1Variant0Model: TypeAlias = (
-    __ToolAfterCapabilitiesField4ModifyField2InstructionsVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ToolAfterCapabilitiesField4ModifyField2InstructionsVariant1Variant1ModelKnownFields = TypedDict(
-    "__ToolAfterCapabilitiesField4ModifyField2InstructionsVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_ToolAfterCapabilitiesField4ModifyField2InstructionsVariant1Variant1Model: TypeAlias = (
-    __ToolAfterCapabilitiesField4ModifyField2InstructionsVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ToolAfterCapabilitiesField4ModifyField3OutputVariant0ModelKnownFields = TypedDict(
-    "__ToolAfterCapabilitiesField4ModifyField3OutputVariant0ModelKnownFields",
+__ToolAfterCapabilitiesField4ModifyField2InstructionsModelKnownFields = TypedDict(
+    "__ToolAfterCapabilitiesField4ModifyField2InstructionsModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ToolAfterCapabilitiesField4ModifyField3OutputVariant0Model: TypeAlias = (
-    __ToolAfterCapabilitiesField4ModifyField3OutputVariant0ModelKnownFields | JsonObject
+_ToolAfterCapabilitiesField4ModifyField2InstructionsModel: TypeAlias = (
+    __ToolAfterCapabilitiesField4ModifyField2InstructionsModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__ToolAfterCapabilitiesField4ModifyField3OutputVariant1Variant0ModelKnownFields = TypedDict(
-    "__ToolAfterCapabilitiesField4ModifyField3OutputVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_ToolAfterCapabilitiesField4ModifyField3OutputVariant1Variant0Model: TypeAlias = (
-    __ToolAfterCapabilitiesField4ModifyField3OutputVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ToolAfterCapabilitiesField4ModifyField3OutputVariant1Variant1ModelKnownFields = TypedDict(
-    "__ToolAfterCapabilitiesField4ModifyField3OutputVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_ToolAfterCapabilitiesField4ModifyField3OutputVariant1Variant1Model: TypeAlias = (
-    __ToolAfterCapabilitiesField4ModifyField3OutputVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ToolAfterCapabilitiesField4ModifyField4PromptVariant0ModelKnownFields = TypedDict(
-    "__ToolAfterCapabilitiesField4ModifyField4PromptVariant0ModelKnownFields",
+__ToolAfterCapabilitiesField4ModifyField3OutputModelKnownFields = TypedDict(
+    "__ToolAfterCapabilitiesField4ModifyField3OutputModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ToolAfterCapabilitiesField4ModifyField4PromptVariant0Model: TypeAlias = (
-    __ToolAfterCapabilitiesField4ModifyField4PromptVariant0ModelKnownFields | JsonObject
+_ToolAfterCapabilitiesField4ModifyField3OutputModel: TypeAlias = (
+    __ToolAfterCapabilitiesField4ModifyField3OutputModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__ToolAfterCapabilitiesField4ModifyField4PromptVariant1Variant0ModelKnownFields = TypedDict(
-    "__ToolAfterCapabilitiesField4ModifyField4PromptVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_ToolAfterCapabilitiesField4ModifyField4PromptVariant1Variant0Model: TypeAlias = (
-    __ToolAfterCapabilitiesField4ModifyField4PromptVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ToolAfterCapabilitiesField4ModifyField4PromptVariant1Variant1ModelKnownFields = TypedDict(
-    "__ToolAfterCapabilitiesField4ModifyField4PromptVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_ToolAfterCapabilitiesField4ModifyField4PromptVariant1Variant1Model: TypeAlias = (
-    __ToolAfterCapabilitiesField4ModifyField4PromptVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ToolAfterCapabilitiesField4ModifyField5RequestVariant0ModelKnownFields = TypedDict(
-    "__ToolAfterCapabilitiesField4ModifyField5RequestVariant0ModelKnownFields",
+__ToolAfterCapabilitiesField4ModifyField4PromptModelKnownFields = TypedDict(
+    "__ToolAfterCapabilitiesField4ModifyField4PromptModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ToolAfterCapabilitiesField4ModifyField5RequestVariant0Model: TypeAlias = (
-    __ToolAfterCapabilitiesField4ModifyField5RequestVariant0ModelKnownFields
-    | JsonObject
+_ToolAfterCapabilitiesField4ModifyField4PromptModel: TypeAlias = (
+    __ToolAfterCapabilitiesField4ModifyField4PromptModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__ToolAfterCapabilitiesField4ModifyField5RequestVariant1Variant0ModelKnownFields = TypedDict(
-    "__ToolAfterCapabilitiesField4ModifyField5RequestVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_ToolAfterCapabilitiesField4ModifyField5RequestVariant1Variant0Model: TypeAlias = (
-    __ToolAfterCapabilitiesField4ModifyField5RequestVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ToolAfterCapabilitiesField4ModifyField5RequestVariant1Variant1ModelKnownFields = TypedDict(
-    "__ToolAfterCapabilitiesField4ModifyField5RequestVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_ToolAfterCapabilitiesField4ModifyField5RequestVariant1Variant1Model: TypeAlias = (
-    __ToolAfterCapabilitiesField4ModifyField5RequestVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ToolAfterCapabilitiesField4ModifyField6ResponseVariant0ModelKnownFields = TypedDict(
-    "__ToolAfterCapabilitiesField4ModifyField6ResponseVariant0ModelKnownFields",
+__ToolAfterCapabilitiesField4ModifyField5RequestModelKnownFields = TypedDict(
+    "__ToolAfterCapabilitiesField4ModifyField5RequestModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ToolAfterCapabilitiesField4ModifyField6ResponseVariant0Model: TypeAlias = (
-    __ToolAfterCapabilitiesField4ModifyField6ResponseVariant0ModelKnownFields
-    | JsonObject
+_ToolAfterCapabilitiesField4ModifyField5RequestModel: TypeAlias = (
+    __ToolAfterCapabilitiesField4ModifyField5RequestModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__ToolAfterCapabilitiesField4ModifyField6ResponseVariant1Variant0ModelKnownFields = TypedDict(
-    "__ToolAfterCapabilitiesField4ModifyField6ResponseVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_ToolAfterCapabilitiesField4ModifyField6ResponseVariant1Variant0Model: TypeAlias = (
-    __ToolAfterCapabilitiesField4ModifyField6ResponseVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ToolAfterCapabilitiesField4ModifyField6ResponseVariant1Variant1ModelKnownFields = TypedDict(
-    "__ToolAfterCapabilitiesField4ModifyField6ResponseVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_ToolAfterCapabilitiesField4ModifyField6ResponseVariant1Variant1Model: TypeAlias = (
-    __ToolAfterCapabilitiesField4ModifyField6ResponseVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ToolAfterCapabilitiesField4ModifyField7SummaryVariant0ModelKnownFields = TypedDict(
-    "__ToolAfterCapabilitiesField4ModifyField7SummaryVariant0ModelKnownFields",
+__ToolAfterCapabilitiesField4ModifyField6ResponseModelKnownFields = TypedDict(
+    "__ToolAfterCapabilitiesField4ModifyField6ResponseModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ToolAfterCapabilitiesField4ModifyField7SummaryVariant0Model: TypeAlias = (
-    __ToolAfterCapabilitiesField4ModifyField7SummaryVariant0ModelKnownFields
-    | JsonObject
+_ToolAfterCapabilitiesField4ModifyField6ResponseModel: TypeAlias = (
+    __ToolAfterCapabilitiesField4ModifyField6ResponseModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__ToolAfterCapabilitiesField4ModifyField7SummaryVariant1Variant0ModelKnownFields = TypedDict(
-    "__ToolAfterCapabilitiesField4ModifyField7SummaryVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_ToolAfterCapabilitiesField4ModifyField7SummaryVariant1Variant0Model: TypeAlias = (
-    __ToolAfterCapabilitiesField4ModifyField7SummaryVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ToolAfterCapabilitiesField4ModifyField7SummaryVariant1Variant1ModelKnownFields = TypedDict(
-    "__ToolAfterCapabilitiesField4ModifyField7SummaryVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_ToolAfterCapabilitiesField4ModifyField7SummaryVariant1Variant1Model: TypeAlias = (
-    __ToolAfterCapabilitiesField4ModifyField7SummaryVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ToolAfterCapabilitiesField4ModifyField8WorkspaceVariant0ModelKnownFields = TypedDict(
-    "__ToolAfterCapabilitiesField4ModifyField8WorkspaceVariant0ModelKnownFields",
+__ToolAfterCapabilitiesField4ModifyField7SummaryModelKnownFields = TypedDict(
+    "__ToolAfterCapabilitiesField4ModifyField7SummaryModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ToolAfterCapabilitiesField4ModifyField8WorkspaceVariant0Model: TypeAlias = (
-    __ToolAfterCapabilitiesField4ModifyField8WorkspaceVariant0ModelKnownFields
-    | JsonObject
+_ToolAfterCapabilitiesField4ModifyField7SummaryModel: TypeAlias = (
+    __ToolAfterCapabilitiesField4ModifyField7SummaryModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__ToolAfterCapabilitiesField4ModifyField8WorkspaceVariant1Variant0ModelKnownFields = TypedDict(
-    "__ToolAfterCapabilitiesField4ModifyField8WorkspaceVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
+__ToolAfterCapabilitiesField4ModifyField8WorkspaceModelKnownFields = TypedDict(
+    "__ToolAfterCapabilitiesField4ModifyField8WorkspaceModelKnownFields",
+    {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ToolAfterCapabilitiesField4ModifyField8WorkspaceVariant1Variant0Model: TypeAlias = (
-    __ToolAfterCapabilitiesField4ModifyField8WorkspaceVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ToolAfterCapabilitiesField4ModifyField8WorkspaceVariant1Variant1ModelKnownFields = TypedDict(
-    "__ToolAfterCapabilitiesField4ModifyField8WorkspaceVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_ToolAfterCapabilitiesField4ModifyField8WorkspaceVariant1Variant1Model: TypeAlias = (
-    __ToolAfterCapabilitiesField4ModifyField8WorkspaceVariant1Variant1ModelKnownFields
-    | JsonObject
+_ToolAfterCapabilitiesField4ModifyField8WorkspaceModel: TypeAlias = (
+    __ToolAfterCapabilitiesField4ModifyField8WorkspaceModelKnownFields | JsonObject
 )  # permits additional JSON fields
 __ToolAfterCapabilitiesField4ModifyModelKnownFields = TypedDict(
     "__ToolAfterCapabilitiesField4ModifyModelKnownFields",
     {
-        "content": NotRequired[JsonValue],
-        "input": NotRequired[JsonValue],
-        "instructions": NotRequired[JsonValue],
-        "output": NotRequired[JsonValue],
-        "prompt": NotRequired[JsonValue],
-        "request": NotRequired[JsonValue],
-        "response": NotRequired[JsonValue],
-        "summary": NotRequired[JsonValue],
-        "workspace": NotRequired[JsonValue],
+        "content": NotRequired[_ToolAfterCapabilitiesField4ModifyField0ContentModel],
+        "input": NotRequired[_ToolAfterCapabilitiesField4ModifyField1InputModel],
+        "instructions": NotRequired[
+            _ToolAfterCapabilitiesField4ModifyField2InstructionsModel
+        ],
+        "output": NotRequired[_ToolAfterCapabilitiesField4ModifyField3OutputModel],
+        "prompt": NotRequired[_ToolAfterCapabilitiesField4ModifyField4PromptModel],
+        "request": NotRequired[_ToolAfterCapabilitiesField4ModifyField5RequestModel],
+        "response": NotRequired[_ToolAfterCapabilitiesField4ModifyField6ResponseModel],
+        "summary": NotRequired[_ToolAfterCapabilitiesField4ModifyField7SummaryModel],
+        "workspace": NotRequired[
+            _ToolAfterCapabilitiesField4ModifyField8WorkspaceModel
+        ],
     },
     total=False,
 )
@@ -7081,7 +5598,7 @@ _ToolAfterCapabilitiesField4ModifyModel: TypeAlias = (
 _ToolAfterCapabilitiesKnownFields = TypedDict(
     "_ToolAfterCapabilitiesKnownFields",
     {
-        "effects": Required[JsonValue],
+        "effects": Required[list[Union[OpenString, str]]],
         "elicitation": NotRequired[_ToolAfterCapabilitiesField1ElicitationModel],
         "flow": NotRequired[_ToolAfterCapabilitiesField2FlowModel],
         "inject": NotRequired[_ToolAfterCapabilitiesField3InjectModel],
@@ -7181,7 +5698,7 @@ __ToolBatchAfterCapabilitiesField2FlowModelKnownFields = TypedDict(
     {
         "continuationCount": NotRequired[int | Decimal],
         "maxContinuations": NotRequired[int | Decimal],
-        "operations": Required[JsonValue],
+        "operations": Required[list[OpenString]],
         "remainingContinuations": NotRequired[int | Decimal],
     },
     total=False,
@@ -7205,271 +5722,103 @@ __ToolBatchAfterCapabilitiesField3InjectModelKnownFields = TypedDict(
 _ToolBatchAfterCapabilitiesField3InjectModel: TypeAlias = (
     __ToolBatchAfterCapabilitiesField3InjectModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__ToolBatchAfterCapabilitiesField4ModifyField0ContentVariant0ModelKnownFields = (
-    TypedDict(
-        "__ToolBatchAfterCapabilitiesField4ModifyField0ContentVariant0ModelKnownFields",
-        {"merge": Required[bool], "replace": Required[bool]},
-        total=False,
-    )
-)
-_ToolBatchAfterCapabilitiesField4ModifyField0ContentVariant0Model: TypeAlias = (
-    __ToolBatchAfterCapabilitiesField4ModifyField0ContentVariant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ToolBatchAfterCapabilitiesField4ModifyField0ContentVariant1Variant0ModelKnownFields = TypedDict(
-    "__ToolBatchAfterCapabilitiesField4ModifyField0ContentVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_ToolBatchAfterCapabilitiesField4ModifyField0ContentVariant1Variant0Model: TypeAlias = (
-    __ToolBatchAfterCapabilitiesField4ModifyField0ContentVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ToolBatchAfterCapabilitiesField4ModifyField0ContentVariant1Variant1ModelKnownFields = TypedDict(
-    "__ToolBatchAfterCapabilitiesField4ModifyField0ContentVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_ToolBatchAfterCapabilitiesField4ModifyField0ContentVariant1Variant1Model: TypeAlias = (
-    __ToolBatchAfterCapabilitiesField4ModifyField0ContentVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ToolBatchAfterCapabilitiesField4ModifyField1InputVariant0ModelKnownFields = TypedDict(
-    "__ToolBatchAfterCapabilitiesField4ModifyField1InputVariant0ModelKnownFields",
+__ToolBatchAfterCapabilitiesField4ModifyField0ContentModelKnownFields = TypedDict(
+    "__ToolBatchAfterCapabilitiesField4ModifyField0ContentModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ToolBatchAfterCapabilitiesField4ModifyField1InputVariant0Model: TypeAlias = (
-    __ToolBatchAfterCapabilitiesField4ModifyField1InputVariant0ModelKnownFields
-    | JsonObject
+_ToolBatchAfterCapabilitiesField4ModifyField0ContentModel: TypeAlias = (
+    __ToolBatchAfterCapabilitiesField4ModifyField0ContentModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__ToolBatchAfterCapabilitiesField4ModifyField1InputVariant1Variant0ModelKnownFields = TypedDict(
-    "__ToolBatchAfterCapabilitiesField4ModifyField1InputVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_ToolBatchAfterCapabilitiesField4ModifyField1InputVariant1Variant0Model: TypeAlias = (
-    __ToolBatchAfterCapabilitiesField4ModifyField1InputVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ToolBatchAfterCapabilitiesField4ModifyField1InputVariant1Variant1ModelKnownFields = TypedDict(
-    "__ToolBatchAfterCapabilitiesField4ModifyField1InputVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_ToolBatchAfterCapabilitiesField4ModifyField1InputVariant1Variant1Model: TypeAlias = (
-    __ToolBatchAfterCapabilitiesField4ModifyField1InputVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ToolBatchAfterCapabilitiesField4ModifyField2InstructionsVariant0ModelKnownFields = TypedDict(
-    "__ToolBatchAfterCapabilitiesField4ModifyField2InstructionsVariant0ModelKnownFields",
+__ToolBatchAfterCapabilitiesField4ModifyField1InputModelKnownFields = TypedDict(
+    "__ToolBatchAfterCapabilitiesField4ModifyField1InputModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ToolBatchAfterCapabilitiesField4ModifyField2InstructionsVariant0Model: TypeAlias = (
-    __ToolBatchAfterCapabilitiesField4ModifyField2InstructionsVariant0ModelKnownFields
-    | JsonObject
+_ToolBatchAfterCapabilitiesField4ModifyField1InputModel: TypeAlias = (
+    __ToolBatchAfterCapabilitiesField4ModifyField1InputModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__ToolBatchAfterCapabilitiesField4ModifyField2InstructionsVariant1Variant0ModelKnownFields = TypedDict(
-    "__ToolBatchAfterCapabilitiesField4ModifyField2InstructionsVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_ToolBatchAfterCapabilitiesField4ModifyField2InstructionsVariant1Variant0Model: TypeAlias = (
-    __ToolBatchAfterCapabilitiesField4ModifyField2InstructionsVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ToolBatchAfterCapabilitiesField4ModifyField2InstructionsVariant1Variant1ModelKnownFields = TypedDict(
-    "__ToolBatchAfterCapabilitiesField4ModifyField2InstructionsVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_ToolBatchAfterCapabilitiesField4ModifyField2InstructionsVariant1Variant1Model: TypeAlias = (
-    __ToolBatchAfterCapabilitiesField4ModifyField2InstructionsVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ToolBatchAfterCapabilitiesField4ModifyField3OutputVariant0ModelKnownFields = (
-    TypedDict(
-        "__ToolBatchAfterCapabilitiesField4ModifyField3OutputVariant0ModelKnownFields",
-        {"merge": Required[bool], "replace": Required[bool]},
-        total=False,
-    )
-)
-_ToolBatchAfterCapabilitiesField4ModifyField3OutputVariant0Model: TypeAlias = (
-    __ToolBatchAfterCapabilitiesField4ModifyField3OutputVariant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ToolBatchAfterCapabilitiesField4ModifyField3OutputVariant1Variant0ModelKnownFields = TypedDict(
-    "__ToolBatchAfterCapabilitiesField4ModifyField3OutputVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_ToolBatchAfterCapabilitiesField4ModifyField3OutputVariant1Variant0Model: TypeAlias = (
-    __ToolBatchAfterCapabilitiesField4ModifyField3OutputVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ToolBatchAfterCapabilitiesField4ModifyField3OutputVariant1Variant1ModelKnownFields = TypedDict(
-    "__ToolBatchAfterCapabilitiesField4ModifyField3OutputVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_ToolBatchAfterCapabilitiesField4ModifyField3OutputVariant1Variant1Model: TypeAlias = (
-    __ToolBatchAfterCapabilitiesField4ModifyField3OutputVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ToolBatchAfterCapabilitiesField4ModifyField4PromptVariant0ModelKnownFields = (
-    TypedDict(
-        "__ToolBatchAfterCapabilitiesField4ModifyField4PromptVariant0ModelKnownFields",
-        {"merge": Required[bool], "replace": Required[bool]},
-        total=False,
-    )
-)
-_ToolBatchAfterCapabilitiesField4ModifyField4PromptVariant0Model: TypeAlias = (
-    __ToolBatchAfterCapabilitiesField4ModifyField4PromptVariant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ToolBatchAfterCapabilitiesField4ModifyField4PromptVariant1Variant0ModelKnownFields = TypedDict(
-    "__ToolBatchAfterCapabilitiesField4ModifyField4PromptVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_ToolBatchAfterCapabilitiesField4ModifyField4PromptVariant1Variant0Model: TypeAlias = (
-    __ToolBatchAfterCapabilitiesField4ModifyField4PromptVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ToolBatchAfterCapabilitiesField4ModifyField4PromptVariant1Variant1ModelKnownFields = TypedDict(
-    "__ToolBatchAfterCapabilitiesField4ModifyField4PromptVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_ToolBatchAfterCapabilitiesField4ModifyField4PromptVariant1Variant1Model: TypeAlias = (
-    __ToolBatchAfterCapabilitiesField4ModifyField4PromptVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ToolBatchAfterCapabilitiesField4ModifyField5RequestVariant0ModelKnownFields = (
-    TypedDict(
-        "__ToolBatchAfterCapabilitiesField4ModifyField5RequestVariant0ModelKnownFields",
-        {"merge": Required[bool], "replace": Required[bool]},
-        total=False,
-    )
-)
-_ToolBatchAfterCapabilitiesField4ModifyField5RequestVariant0Model: TypeAlias = (
-    __ToolBatchAfterCapabilitiesField4ModifyField5RequestVariant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ToolBatchAfterCapabilitiesField4ModifyField5RequestVariant1Variant0ModelKnownFields = TypedDict(
-    "__ToolBatchAfterCapabilitiesField4ModifyField5RequestVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_ToolBatchAfterCapabilitiesField4ModifyField5RequestVariant1Variant0Model: TypeAlias = (
-    __ToolBatchAfterCapabilitiesField4ModifyField5RequestVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ToolBatchAfterCapabilitiesField4ModifyField5RequestVariant1Variant1ModelKnownFields = TypedDict(
-    "__ToolBatchAfterCapabilitiesField4ModifyField5RequestVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_ToolBatchAfterCapabilitiesField4ModifyField5RequestVariant1Variant1Model: TypeAlias = (
-    __ToolBatchAfterCapabilitiesField4ModifyField5RequestVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ToolBatchAfterCapabilitiesField4ModifyField6ResponseVariant0ModelKnownFields = TypedDict(
-    "__ToolBatchAfterCapabilitiesField4ModifyField6ResponseVariant0ModelKnownFields",
+__ToolBatchAfterCapabilitiesField4ModifyField2InstructionsModelKnownFields = TypedDict(
+    "__ToolBatchAfterCapabilitiesField4ModifyField2InstructionsModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ToolBatchAfterCapabilitiesField4ModifyField6ResponseVariant0Model: TypeAlias = (
-    __ToolBatchAfterCapabilitiesField4ModifyField6ResponseVariant0ModelKnownFields
+_ToolBatchAfterCapabilitiesField4ModifyField2InstructionsModel: TypeAlias = (
+    __ToolBatchAfterCapabilitiesField4ModifyField2InstructionsModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ToolBatchAfterCapabilitiesField4ModifyField6ResponseVariant1Variant0ModelKnownFields = TypedDict(
-    "__ToolBatchAfterCapabilitiesField4ModifyField6ResponseVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_ToolBatchAfterCapabilitiesField4ModifyField6ResponseVariant1Variant0Model: TypeAlias = (
-    __ToolBatchAfterCapabilitiesField4ModifyField6ResponseVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ToolBatchAfterCapabilitiesField4ModifyField6ResponseVariant1Variant1ModelKnownFields = TypedDict(
-    "__ToolBatchAfterCapabilitiesField4ModifyField6ResponseVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_ToolBatchAfterCapabilitiesField4ModifyField6ResponseVariant1Variant1Model: TypeAlias = (
-    __ToolBatchAfterCapabilitiesField4ModifyField6ResponseVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ToolBatchAfterCapabilitiesField4ModifyField7SummaryVariant0ModelKnownFields = (
-    TypedDict(
-        "__ToolBatchAfterCapabilitiesField4ModifyField7SummaryVariant0ModelKnownFields",
-        {"merge": Required[bool], "replace": Required[bool]},
-        total=False,
-    )
-)
-_ToolBatchAfterCapabilitiesField4ModifyField7SummaryVariant0Model: TypeAlias = (
-    __ToolBatchAfterCapabilitiesField4ModifyField7SummaryVariant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ToolBatchAfterCapabilitiesField4ModifyField7SummaryVariant1Variant0ModelKnownFields = TypedDict(
-    "__ToolBatchAfterCapabilitiesField4ModifyField7SummaryVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_ToolBatchAfterCapabilitiesField4ModifyField7SummaryVariant1Variant0Model: TypeAlias = (
-    __ToolBatchAfterCapabilitiesField4ModifyField7SummaryVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ToolBatchAfterCapabilitiesField4ModifyField7SummaryVariant1Variant1ModelKnownFields = TypedDict(
-    "__ToolBatchAfterCapabilitiesField4ModifyField7SummaryVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_ToolBatchAfterCapabilitiesField4ModifyField7SummaryVariant1Variant1Model: TypeAlias = (
-    __ToolBatchAfterCapabilitiesField4ModifyField7SummaryVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ToolBatchAfterCapabilitiesField4ModifyField8WorkspaceVariant0ModelKnownFields = TypedDict(
-    "__ToolBatchAfterCapabilitiesField4ModifyField8WorkspaceVariant0ModelKnownFields",
+__ToolBatchAfterCapabilitiesField4ModifyField3OutputModelKnownFields = TypedDict(
+    "__ToolBatchAfterCapabilitiesField4ModifyField3OutputModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ToolBatchAfterCapabilitiesField4ModifyField8WorkspaceVariant0Model: TypeAlias = (
-    __ToolBatchAfterCapabilitiesField4ModifyField8WorkspaceVariant0ModelKnownFields
-    | JsonObject
+_ToolBatchAfterCapabilitiesField4ModifyField3OutputModel: TypeAlias = (
+    __ToolBatchAfterCapabilitiesField4ModifyField3OutputModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__ToolBatchAfterCapabilitiesField4ModifyField8WorkspaceVariant1Variant0ModelKnownFields = TypedDict(
-    "__ToolBatchAfterCapabilitiesField4ModifyField8WorkspaceVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
+__ToolBatchAfterCapabilitiesField4ModifyField4PromptModelKnownFields = TypedDict(
+    "__ToolBatchAfterCapabilitiesField4ModifyField4PromptModelKnownFields",
+    {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ToolBatchAfterCapabilitiesField4ModifyField8WorkspaceVariant1Variant0Model: TypeAlias = (
-    __ToolBatchAfterCapabilitiesField4ModifyField8WorkspaceVariant1Variant0ModelKnownFields
-    | JsonObject
+_ToolBatchAfterCapabilitiesField4ModifyField4PromptModel: TypeAlias = (
+    __ToolBatchAfterCapabilitiesField4ModifyField4PromptModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__ToolBatchAfterCapabilitiesField4ModifyField8WorkspaceVariant1Variant1ModelKnownFields = TypedDict(
-    "__ToolBatchAfterCapabilitiesField4ModifyField8WorkspaceVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
+__ToolBatchAfterCapabilitiesField4ModifyField5RequestModelKnownFields = TypedDict(
+    "__ToolBatchAfterCapabilitiesField4ModifyField5RequestModelKnownFields",
+    {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ToolBatchAfterCapabilitiesField4ModifyField8WorkspaceVariant1Variant1Model: TypeAlias = (
-    __ToolBatchAfterCapabilitiesField4ModifyField8WorkspaceVariant1Variant1ModelKnownFields
-    | JsonObject
+_ToolBatchAfterCapabilitiesField4ModifyField5RequestModel: TypeAlias = (
+    __ToolBatchAfterCapabilitiesField4ModifyField5RequestModelKnownFields | JsonObject
+)  # permits additional JSON fields
+__ToolBatchAfterCapabilitiesField4ModifyField6ResponseModelKnownFields = TypedDict(
+    "__ToolBatchAfterCapabilitiesField4ModifyField6ResponseModelKnownFields",
+    {"merge": Required[bool], "replace": Required[bool]},
+    total=False,
+)
+_ToolBatchAfterCapabilitiesField4ModifyField6ResponseModel: TypeAlias = (
+    __ToolBatchAfterCapabilitiesField4ModifyField6ResponseModelKnownFields | JsonObject
+)  # permits additional JSON fields
+__ToolBatchAfterCapabilitiesField4ModifyField7SummaryModelKnownFields = TypedDict(
+    "__ToolBatchAfterCapabilitiesField4ModifyField7SummaryModelKnownFields",
+    {"merge": Required[bool], "replace": Required[bool]},
+    total=False,
+)
+_ToolBatchAfterCapabilitiesField4ModifyField7SummaryModel: TypeAlias = (
+    __ToolBatchAfterCapabilitiesField4ModifyField7SummaryModelKnownFields | JsonObject
+)  # permits additional JSON fields
+__ToolBatchAfterCapabilitiesField4ModifyField8WorkspaceModelKnownFields = TypedDict(
+    "__ToolBatchAfterCapabilitiesField4ModifyField8WorkspaceModelKnownFields",
+    {"merge": Required[bool], "replace": Required[bool]},
+    total=False,
+)
+_ToolBatchAfterCapabilitiesField4ModifyField8WorkspaceModel: TypeAlias = (
+    __ToolBatchAfterCapabilitiesField4ModifyField8WorkspaceModelKnownFields | JsonObject
 )  # permits additional JSON fields
 __ToolBatchAfterCapabilitiesField4ModifyModelKnownFields = TypedDict(
     "__ToolBatchAfterCapabilitiesField4ModifyModelKnownFields",
     {
-        "content": NotRequired[JsonValue],
-        "input": NotRequired[JsonValue],
-        "instructions": NotRequired[JsonValue],
-        "output": NotRequired[JsonValue],
-        "prompt": NotRequired[JsonValue],
-        "request": NotRequired[JsonValue],
-        "response": NotRequired[JsonValue],
-        "summary": NotRequired[JsonValue],
-        "workspace": NotRequired[JsonValue],
+        "content": NotRequired[
+            _ToolBatchAfterCapabilitiesField4ModifyField0ContentModel
+        ],
+        "input": NotRequired[_ToolBatchAfterCapabilitiesField4ModifyField1InputModel],
+        "instructions": NotRequired[
+            _ToolBatchAfterCapabilitiesField4ModifyField2InstructionsModel
+        ],
+        "output": NotRequired[_ToolBatchAfterCapabilitiesField4ModifyField3OutputModel],
+        "prompt": NotRequired[_ToolBatchAfterCapabilitiesField4ModifyField4PromptModel],
+        "request": NotRequired[
+            _ToolBatchAfterCapabilitiesField4ModifyField5RequestModel
+        ],
+        "response": NotRequired[
+            _ToolBatchAfterCapabilitiesField4ModifyField6ResponseModel
+        ],
+        "summary": NotRequired[
+            _ToolBatchAfterCapabilitiesField4ModifyField7SummaryModel
+        ],
+        "workspace": NotRequired[
+            _ToolBatchAfterCapabilitiesField4ModifyField8WorkspaceModel
+        ],
     },
     total=False,
 )
@@ -7479,7 +5828,7 @@ _ToolBatchAfterCapabilitiesField4ModifyModel: TypeAlias = (
 _ToolBatchAfterCapabilitiesKnownFields = TypedDict(
     "_ToolBatchAfterCapabilitiesKnownFields",
     {
-        "effects": Required[JsonValue],
+        "effects": Required[list[Union[OpenString, str]]],
         "elicitation": NotRequired[_ToolBatchAfterCapabilitiesField1ElicitationModel],
         "flow": NotRequired[_ToolBatchAfterCapabilitiesField2FlowModel],
         "inject": NotRequired[_ToolBatchAfterCapabilitiesField3InjectModel],
@@ -7527,7 +5876,7 @@ __ToolBeforeCapabilitiesField2FlowModelKnownFields = TypedDict(
     {
         "continuationCount": NotRequired[int | Decimal],
         "maxContinuations": NotRequired[int | Decimal],
-        "operations": Required[JsonValue],
+        "operations": Required[list[OpenString]],
         "remainingContinuations": NotRequired[int | Decimal],
     },
     total=False,
@@ -7551,260 +5900,94 @@ __ToolBeforeCapabilitiesField3InjectModelKnownFields = TypedDict(
 _ToolBeforeCapabilitiesField3InjectModel: TypeAlias = (
     __ToolBeforeCapabilitiesField3InjectModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__ToolBeforeCapabilitiesField4ModifyField0ContentVariant0ModelKnownFields = TypedDict(
-    "__ToolBeforeCapabilitiesField4ModifyField0ContentVariant0ModelKnownFields",
+__ToolBeforeCapabilitiesField4ModifyField0ContentModelKnownFields = TypedDict(
+    "__ToolBeforeCapabilitiesField4ModifyField0ContentModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ToolBeforeCapabilitiesField4ModifyField0ContentVariant0Model: TypeAlias = (
-    __ToolBeforeCapabilitiesField4ModifyField0ContentVariant0ModelKnownFields
-    | JsonObject
+_ToolBeforeCapabilitiesField4ModifyField0ContentModel: TypeAlias = (
+    __ToolBeforeCapabilitiesField4ModifyField0ContentModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__ToolBeforeCapabilitiesField4ModifyField0ContentVariant1Variant0ModelKnownFields = TypedDict(
-    "__ToolBeforeCapabilitiesField4ModifyField0ContentVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_ToolBeforeCapabilitiesField4ModifyField0ContentVariant1Variant0Model: TypeAlias = (
-    __ToolBeforeCapabilitiesField4ModifyField0ContentVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ToolBeforeCapabilitiesField4ModifyField0ContentVariant1Variant1ModelKnownFields = TypedDict(
-    "__ToolBeforeCapabilitiesField4ModifyField0ContentVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_ToolBeforeCapabilitiesField4ModifyField0ContentVariant1Variant1Model: TypeAlias = (
-    __ToolBeforeCapabilitiesField4ModifyField0ContentVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ToolBeforeCapabilitiesField4ModifyField1InputVariant0ModelKnownFields = TypedDict(
-    "__ToolBeforeCapabilitiesField4ModifyField1InputVariant0ModelKnownFields",
+__ToolBeforeCapabilitiesField4ModifyField1InputModelKnownFields = TypedDict(
+    "__ToolBeforeCapabilitiesField4ModifyField1InputModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ToolBeforeCapabilitiesField4ModifyField1InputVariant0Model: TypeAlias = (
-    __ToolBeforeCapabilitiesField4ModifyField1InputVariant0ModelKnownFields | JsonObject
+_ToolBeforeCapabilitiesField4ModifyField1InputModel: TypeAlias = (
+    __ToolBeforeCapabilitiesField4ModifyField1InputModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__ToolBeforeCapabilitiesField4ModifyField1InputVariant1Variant0ModelKnownFields = TypedDict(
-    "__ToolBeforeCapabilitiesField4ModifyField1InputVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_ToolBeforeCapabilitiesField4ModifyField1InputVariant1Variant0Model: TypeAlias = (
-    __ToolBeforeCapabilitiesField4ModifyField1InputVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ToolBeforeCapabilitiesField4ModifyField1InputVariant1Variant1ModelKnownFields = TypedDict(
-    "__ToolBeforeCapabilitiesField4ModifyField1InputVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_ToolBeforeCapabilitiesField4ModifyField1InputVariant1Variant1Model: TypeAlias = (
-    __ToolBeforeCapabilitiesField4ModifyField1InputVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ToolBeforeCapabilitiesField4ModifyField2InstructionsVariant0ModelKnownFields = TypedDict(
-    "__ToolBeforeCapabilitiesField4ModifyField2InstructionsVariant0ModelKnownFields",
+__ToolBeforeCapabilitiesField4ModifyField2InstructionsModelKnownFields = TypedDict(
+    "__ToolBeforeCapabilitiesField4ModifyField2InstructionsModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ToolBeforeCapabilitiesField4ModifyField2InstructionsVariant0Model: TypeAlias = (
-    __ToolBeforeCapabilitiesField4ModifyField2InstructionsVariant0ModelKnownFields
-    | JsonObject
+_ToolBeforeCapabilitiesField4ModifyField2InstructionsModel: TypeAlias = (
+    __ToolBeforeCapabilitiesField4ModifyField2InstructionsModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__ToolBeforeCapabilitiesField4ModifyField2InstructionsVariant1Variant0ModelKnownFields = TypedDict(
-    "__ToolBeforeCapabilitiesField4ModifyField2InstructionsVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_ToolBeforeCapabilitiesField4ModifyField2InstructionsVariant1Variant0Model: TypeAlias = (
-    __ToolBeforeCapabilitiesField4ModifyField2InstructionsVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ToolBeforeCapabilitiesField4ModifyField2InstructionsVariant1Variant1ModelKnownFields = TypedDict(
-    "__ToolBeforeCapabilitiesField4ModifyField2InstructionsVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_ToolBeforeCapabilitiesField4ModifyField2InstructionsVariant1Variant1Model: TypeAlias = (
-    __ToolBeforeCapabilitiesField4ModifyField2InstructionsVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ToolBeforeCapabilitiesField4ModifyField3OutputVariant0ModelKnownFields = TypedDict(
-    "__ToolBeforeCapabilitiesField4ModifyField3OutputVariant0ModelKnownFields",
+__ToolBeforeCapabilitiesField4ModifyField3OutputModelKnownFields = TypedDict(
+    "__ToolBeforeCapabilitiesField4ModifyField3OutputModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ToolBeforeCapabilitiesField4ModifyField3OutputVariant0Model: TypeAlias = (
-    __ToolBeforeCapabilitiesField4ModifyField3OutputVariant0ModelKnownFields
-    | JsonObject
+_ToolBeforeCapabilitiesField4ModifyField3OutputModel: TypeAlias = (
+    __ToolBeforeCapabilitiesField4ModifyField3OutputModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__ToolBeforeCapabilitiesField4ModifyField3OutputVariant1Variant0ModelKnownFields = TypedDict(
-    "__ToolBeforeCapabilitiesField4ModifyField3OutputVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_ToolBeforeCapabilitiesField4ModifyField3OutputVariant1Variant0Model: TypeAlias = (
-    __ToolBeforeCapabilitiesField4ModifyField3OutputVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ToolBeforeCapabilitiesField4ModifyField3OutputVariant1Variant1ModelKnownFields = TypedDict(
-    "__ToolBeforeCapabilitiesField4ModifyField3OutputVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_ToolBeforeCapabilitiesField4ModifyField3OutputVariant1Variant1Model: TypeAlias = (
-    __ToolBeforeCapabilitiesField4ModifyField3OutputVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ToolBeforeCapabilitiesField4ModifyField4PromptVariant0ModelKnownFields = TypedDict(
-    "__ToolBeforeCapabilitiesField4ModifyField4PromptVariant0ModelKnownFields",
+__ToolBeforeCapabilitiesField4ModifyField4PromptModelKnownFields = TypedDict(
+    "__ToolBeforeCapabilitiesField4ModifyField4PromptModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ToolBeforeCapabilitiesField4ModifyField4PromptVariant0Model: TypeAlias = (
-    __ToolBeforeCapabilitiesField4ModifyField4PromptVariant0ModelKnownFields
-    | JsonObject
+_ToolBeforeCapabilitiesField4ModifyField4PromptModel: TypeAlias = (
+    __ToolBeforeCapabilitiesField4ModifyField4PromptModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__ToolBeforeCapabilitiesField4ModifyField4PromptVariant1Variant0ModelKnownFields = TypedDict(
-    "__ToolBeforeCapabilitiesField4ModifyField4PromptVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_ToolBeforeCapabilitiesField4ModifyField4PromptVariant1Variant0Model: TypeAlias = (
-    __ToolBeforeCapabilitiesField4ModifyField4PromptVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ToolBeforeCapabilitiesField4ModifyField4PromptVariant1Variant1ModelKnownFields = TypedDict(
-    "__ToolBeforeCapabilitiesField4ModifyField4PromptVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_ToolBeforeCapabilitiesField4ModifyField4PromptVariant1Variant1Model: TypeAlias = (
-    __ToolBeforeCapabilitiesField4ModifyField4PromptVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ToolBeforeCapabilitiesField4ModifyField5RequestVariant0ModelKnownFields = TypedDict(
-    "__ToolBeforeCapabilitiesField4ModifyField5RequestVariant0ModelKnownFields",
+__ToolBeforeCapabilitiesField4ModifyField5RequestModelKnownFields = TypedDict(
+    "__ToolBeforeCapabilitiesField4ModifyField5RequestModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ToolBeforeCapabilitiesField4ModifyField5RequestVariant0Model: TypeAlias = (
-    __ToolBeforeCapabilitiesField4ModifyField5RequestVariant0ModelKnownFields
-    | JsonObject
+_ToolBeforeCapabilitiesField4ModifyField5RequestModel: TypeAlias = (
+    __ToolBeforeCapabilitiesField4ModifyField5RequestModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__ToolBeforeCapabilitiesField4ModifyField5RequestVariant1Variant0ModelKnownFields = TypedDict(
-    "__ToolBeforeCapabilitiesField4ModifyField5RequestVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_ToolBeforeCapabilitiesField4ModifyField5RequestVariant1Variant0Model: TypeAlias = (
-    __ToolBeforeCapabilitiesField4ModifyField5RequestVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ToolBeforeCapabilitiesField4ModifyField5RequestVariant1Variant1ModelKnownFields = TypedDict(
-    "__ToolBeforeCapabilitiesField4ModifyField5RequestVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_ToolBeforeCapabilitiesField4ModifyField5RequestVariant1Variant1Model: TypeAlias = (
-    __ToolBeforeCapabilitiesField4ModifyField5RequestVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ToolBeforeCapabilitiesField4ModifyField6ResponseVariant0ModelKnownFields = TypedDict(
-    "__ToolBeforeCapabilitiesField4ModifyField6ResponseVariant0ModelKnownFields",
+__ToolBeforeCapabilitiesField4ModifyField6ResponseModelKnownFields = TypedDict(
+    "__ToolBeforeCapabilitiesField4ModifyField6ResponseModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ToolBeforeCapabilitiesField4ModifyField6ResponseVariant0Model: TypeAlias = (
-    __ToolBeforeCapabilitiesField4ModifyField6ResponseVariant0ModelKnownFields
-    | JsonObject
+_ToolBeforeCapabilitiesField4ModifyField6ResponseModel: TypeAlias = (
+    __ToolBeforeCapabilitiesField4ModifyField6ResponseModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__ToolBeforeCapabilitiesField4ModifyField6ResponseVariant1Variant0ModelKnownFields = TypedDict(
-    "__ToolBeforeCapabilitiesField4ModifyField6ResponseVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_ToolBeforeCapabilitiesField4ModifyField6ResponseVariant1Variant0Model: TypeAlias = (
-    __ToolBeforeCapabilitiesField4ModifyField6ResponseVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ToolBeforeCapabilitiesField4ModifyField6ResponseVariant1Variant1ModelKnownFields = TypedDict(
-    "__ToolBeforeCapabilitiesField4ModifyField6ResponseVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_ToolBeforeCapabilitiesField4ModifyField6ResponseVariant1Variant1Model: TypeAlias = (
-    __ToolBeforeCapabilitiesField4ModifyField6ResponseVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ToolBeforeCapabilitiesField4ModifyField7SummaryVariant0ModelKnownFields = TypedDict(
-    "__ToolBeforeCapabilitiesField4ModifyField7SummaryVariant0ModelKnownFields",
+__ToolBeforeCapabilitiesField4ModifyField7SummaryModelKnownFields = TypedDict(
+    "__ToolBeforeCapabilitiesField4ModifyField7SummaryModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ToolBeforeCapabilitiesField4ModifyField7SummaryVariant0Model: TypeAlias = (
-    __ToolBeforeCapabilitiesField4ModifyField7SummaryVariant0ModelKnownFields
-    | JsonObject
+_ToolBeforeCapabilitiesField4ModifyField7SummaryModel: TypeAlias = (
+    __ToolBeforeCapabilitiesField4ModifyField7SummaryModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__ToolBeforeCapabilitiesField4ModifyField7SummaryVariant1Variant0ModelKnownFields = TypedDict(
-    "__ToolBeforeCapabilitiesField4ModifyField7SummaryVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_ToolBeforeCapabilitiesField4ModifyField7SummaryVariant1Variant0Model: TypeAlias = (
-    __ToolBeforeCapabilitiesField4ModifyField7SummaryVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ToolBeforeCapabilitiesField4ModifyField7SummaryVariant1Variant1ModelKnownFields = TypedDict(
-    "__ToolBeforeCapabilitiesField4ModifyField7SummaryVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_ToolBeforeCapabilitiesField4ModifyField7SummaryVariant1Variant1Model: TypeAlias = (
-    __ToolBeforeCapabilitiesField4ModifyField7SummaryVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ToolBeforeCapabilitiesField4ModifyField8WorkspaceVariant0ModelKnownFields = TypedDict(
-    "__ToolBeforeCapabilitiesField4ModifyField8WorkspaceVariant0ModelKnownFields",
+__ToolBeforeCapabilitiesField4ModifyField8WorkspaceModelKnownFields = TypedDict(
+    "__ToolBeforeCapabilitiesField4ModifyField8WorkspaceModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ToolBeforeCapabilitiesField4ModifyField8WorkspaceVariant0Model: TypeAlias = (
-    __ToolBeforeCapabilitiesField4ModifyField8WorkspaceVariant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ToolBeforeCapabilitiesField4ModifyField8WorkspaceVariant1Variant0ModelKnownFields = TypedDict(
-    "__ToolBeforeCapabilitiesField4ModifyField8WorkspaceVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_ToolBeforeCapabilitiesField4ModifyField8WorkspaceVariant1Variant0Model: TypeAlias = (
-    __ToolBeforeCapabilitiesField4ModifyField8WorkspaceVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ToolBeforeCapabilitiesField4ModifyField8WorkspaceVariant1Variant1ModelKnownFields = TypedDict(
-    "__ToolBeforeCapabilitiesField4ModifyField8WorkspaceVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_ToolBeforeCapabilitiesField4ModifyField8WorkspaceVariant1Variant1Model: TypeAlias = (
-    __ToolBeforeCapabilitiesField4ModifyField8WorkspaceVariant1Variant1ModelKnownFields
-    | JsonObject
+_ToolBeforeCapabilitiesField4ModifyField8WorkspaceModel: TypeAlias = (
+    __ToolBeforeCapabilitiesField4ModifyField8WorkspaceModelKnownFields | JsonObject
 )  # permits additional JSON fields
 __ToolBeforeCapabilitiesField4ModifyModelKnownFields = TypedDict(
     "__ToolBeforeCapabilitiesField4ModifyModelKnownFields",
     {
-        "content": NotRequired[JsonValue],
-        "input": NotRequired[JsonValue],
-        "instructions": NotRequired[JsonValue],
-        "output": NotRequired[JsonValue],
-        "prompt": NotRequired[JsonValue],
-        "request": NotRequired[JsonValue],
-        "response": NotRequired[JsonValue],
-        "summary": NotRequired[JsonValue],
-        "workspace": NotRequired[JsonValue],
+        "content": NotRequired[_ToolBeforeCapabilitiesField4ModifyField0ContentModel],
+        "input": NotRequired[_ToolBeforeCapabilitiesField4ModifyField1InputModel],
+        "instructions": NotRequired[
+            _ToolBeforeCapabilitiesField4ModifyField2InstructionsModel
+        ],
+        "output": NotRequired[_ToolBeforeCapabilitiesField4ModifyField3OutputModel],
+        "prompt": NotRequired[_ToolBeforeCapabilitiesField4ModifyField4PromptModel],
+        "request": NotRequired[_ToolBeforeCapabilitiesField4ModifyField5RequestModel],
+        "response": NotRequired[_ToolBeforeCapabilitiesField4ModifyField6ResponseModel],
+        "summary": NotRequired[_ToolBeforeCapabilitiesField4ModifyField7SummaryModel],
+        "workspace": NotRequired[
+            _ToolBeforeCapabilitiesField4ModifyField8WorkspaceModel
+        ],
     },
     total=False,
 )
@@ -7814,7 +5997,7 @@ _ToolBeforeCapabilitiesField4ModifyModel: TypeAlias = (
 _ToolBeforeCapabilitiesKnownFields = TypedDict(
     "_ToolBeforeCapabilitiesKnownFields",
     {
-        "effects": Required[JsonValue],
+        "effects": Required[list[Union[OpenString, str]]],
         "elicitation": NotRequired[_ToolBeforeCapabilitiesField1ElicitationModel],
         "flow": NotRequired[_ToolBeforeCapabilitiesField2FlowModel],
         "inject": NotRequired[_ToolBeforeCapabilitiesField3InjectModel],
@@ -7915,7 +6098,7 @@ __ToolPermissionRequestCapabilitiesField2FlowModelKnownFields = TypedDict(
     {
         "continuationCount": NotRequired[int | Decimal],
         "maxContinuations": NotRequired[int | Decimal],
-        "operations": Required[JsonValue],
+        "operations": Required[list[OpenString]],
         "remainingContinuations": NotRequired[int | Decimal],
     },
     total=False,
@@ -7946,261 +6129,125 @@ __ToolPermissionRequestCapabilitiesField3InjectModelKnownFields = TypedDict(
 _ToolPermissionRequestCapabilitiesField3InjectModel: TypeAlias = (
     __ToolPermissionRequestCapabilitiesField3InjectModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__ToolPermissionRequestCapabilitiesField4ModifyField0ContentVariant0ModelKnownFields = TypedDict(
-    "__ToolPermissionRequestCapabilitiesField4ModifyField0ContentVariant0ModelKnownFields",
+__ToolPermissionRequestCapabilitiesField4ModifyField0ContentModelKnownFields = (
+    TypedDict(
+        "__ToolPermissionRequestCapabilitiesField4ModifyField0ContentModelKnownFields",
+        {"merge": Required[bool], "replace": Required[bool]},
+        total=False,
+    )
+)
+_ToolPermissionRequestCapabilitiesField4ModifyField0ContentModel: TypeAlias = (
+    __ToolPermissionRequestCapabilitiesField4ModifyField0ContentModelKnownFields
+    | JsonObject
+)  # permits additional JSON fields
+__ToolPermissionRequestCapabilitiesField4ModifyField1InputModelKnownFields = TypedDict(
+    "__ToolPermissionRequestCapabilitiesField4ModifyField1InputModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ToolPermissionRequestCapabilitiesField4ModifyField0ContentVariant0Model: TypeAlias = (
-    __ToolPermissionRequestCapabilitiesField4ModifyField0ContentVariant0ModelKnownFields
+_ToolPermissionRequestCapabilitiesField4ModifyField1InputModel: TypeAlias = (
+    __ToolPermissionRequestCapabilitiesField4ModifyField1InputModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ToolPermissionRequestCapabilitiesField4ModifyField0ContentVariant1Variant0ModelKnownFields = TypedDict(
-    "__ToolPermissionRequestCapabilitiesField4ModifyField0ContentVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_ToolPermissionRequestCapabilitiesField4ModifyField0ContentVariant1Variant0Model: TypeAlias = (
-    __ToolPermissionRequestCapabilitiesField4ModifyField0ContentVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ToolPermissionRequestCapabilitiesField4ModifyField0ContentVariant1Variant1ModelKnownFields = TypedDict(
-    "__ToolPermissionRequestCapabilitiesField4ModifyField0ContentVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_ToolPermissionRequestCapabilitiesField4ModifyField0ContentVariant1Variant1Model: TypeAlias = (
-    __ToolPermissionRequestCapabilitiesField4ModifyField0ContentVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ToolPermissionRequestCapabilitiesField4ModifyField1InputVariant0ModelKnownFields = TypedDict(
-    "__ToolPermissionRequestCapabilitiesField4ModifyField1InputVariant0ModelKnownFields",
+__ToolPermissionRequestCapabilitiesField4ModifyField2InstructionsModelKnownFields = TypedDict(
+    "__ToolPermissionRequestCapabilitiesField4ModifyField2InstructionsModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ToolPermissionRequestCapabilitiesField4ModifyField1InputVariant0Model: TypeAlias = (
-    __ToolPermissionRequestCapabilitiesField4ModifyField1InputVariant0ModelKnownFields
+_ToolPermissionRequestCapabilitiesField4ModifyField2InstructionsModel: TypeAlias = (
+    __ToolPermissionRequestCapabilitiesField4ModifyField2InstructionsModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ToolPermissionRequestCapabilitiesField4ModifyField1InputVariant1Variant0ModelKnownFields = TypedDict(
-    "__ToolPermissionRequestCapabilitiesField4ModifyField1InputVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_ToolPermissionRequestCapabilitiesField4ModifyField1InputVariant1Variant0Model: TypeAlias = (
-    __ToolPermissionRequestCapabilitiesField4ModifyField1InputVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ToolPermissionRequestCapabilitiesField4ModifyField1InputVariant1Variant1ModelKnownFields = TypedDict(
-    "__ToolPermissionRequestCapabilitiesField4ModifyField1InputVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_ToolPermissionRequestCapabilitiesField4ModifyField1InputVariant1Variant1Model: TypeAlias = (
-    __ToolPermissionRequestCapabilitiesField4ModifyField1InputVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ToolPermissionRequestCapabilitiesField4ModifyField2InstructionsVariant0ModelKnownFields = TypedDict(
-    "__ToolPermissionRequestCapabilitiesField4ModifyField2InstructionsVariant0ModelKnownFields",
+__ToolPermissionRequestCapabilitiesField4ModifyField3OutputModelKnownFields = TypedDict(
+    "__ToolPermissionRequestCapabilitiesField4ModifyField3OutputModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ToolPermissionRequestCapabilitiesField4ModifyField2InstructionsVariant0Model: TypeAlias = (
-    __ToolPermissionRequestCapabilitiesField4ModifyField2InstructionsVariant0ModelKnownFields
+_ToolPermissionRequestCapabilitiesField4ModifyField3OutputModel: TypeAlias = (
+    __ToolPermissionRequestCapabilitiesField4ModifyField3OutputModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ToolPermissionRequestCapabilitiesField4ModifyField2InstructionsVariant1Variant0ModelKnownFields = TypedDict(
-    "__ToolPermissionRequestCapabilitiesField4ModifyField2InstructionsVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_ToolPermissionRequestCapabilitiesField4ModifyField2InstructionsVariant1Variant0Model: TypeAlias = (
-    __ToolPermissionRequestCapabilitiesField4ModifyField2InstructionsVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ToolPermissionRequestCapabilitiesField4ModifyField2InstructionsVariant1Variant1ModelKnownFields = TypedDict(
-    "__ToolPermissionRequestCapabilitiesField4ModifyField2InstructionsVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_ToolPermissionRequestCapabilitiesField4ModifyField2InstructionsVariant1Variant1Model: TypeAlias = (
-    __ToolPermissionRequestCapabilitiesField4ModifyField2InstructionsVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ToolPermissionRequestCapabilitiesField4ModifyField3OutputVariant0ModelKnownFields = TypedDict(
-    "__ToolPermissionRequestCapabilitiesField4ModifyField3OutputVariant0ModelKnownFields",
+__ToolPermissionRequestCapabilitiesField4ModifyField4PromptModelKnownFields = TypedDict(
+    "__ToolPermissionRequestCapabilitiesField4ModifyField4PromptModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ToolPermissionRequestCapabilitiesField4ModifyField3OutputVariant0Model: TypeAlias = (
-    __ToolPermissionRequestCapabilitiesField4ModifyField3OutputVariant0ModelKnownFields
+_ToolPermissionRequestCapabilitiesField4ModifyField4PromptModel: TypeAlias = (
+    __ToolPermissionRequestCapabilitiesField4ModifyField4PromptModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ToolPermissionRequestCapabilitiesField4ModifyField3OutputVariant1Variant0ModelKnownFields = TypedDict(
-    "__ToolPermissionRequestCapabilitiesField4ModifyField3OutputVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
+__ToolPermissionRequestCapabilitiesField4ModifyField5RequestModelKnownFields = (
+    TypedDict(
+        "__ToolPermissionRequestCapabilitiesField4ModifyField5RequestModelKnownFields",
+        {"merge": Required[bool], "replace": Required[bool]},
+        total=False,
+    )
 )
-_ToolPermissionRequestCapabilitiesField4ModifyField3OutputVariant1Variant0Model: TypeAlias = (
-    __ToolPermissionRequestCapabilitiesField4ModifyField3OutputVariant1Variant0ModelKnownFields
+_ToolPermissionRequestCapabilitiesField4ModifyField5RequestModel: TypeAlias = (
+    __ToolPermissionRequestCapabilitiesField4ModifyField5RequestModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ToolPermissionRequestCapabilitiesField4ModifyField3OutputVariant1Variant1ModelKnownFields = TypedDict(
-    "__ToolPermissionRequestCapabilitiesField4ModifyField3OutputVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
+__ToolPermissionRequestCapabilitiesField4ModifyField6ResponseModelKnownFields = (
+    TypedDict(
+        "__ToolPermissionRequestCapabilitiesField4ModifyField6ResponseModelKnownFields",
+        {"merge": Required[bool], "replace": Required[bool]},
+        total=False,
+    )
 )
-_ToolPermissionRequestCapabilitiesField4ModifyField3OutputVariant1Variant1Model: TypeAlias = (
-    __ToolPermissionRequestCapabilitiesField4ModifyField3OutputVariant1Variant1ModelKnownFields
+_ToolPermissionRequestCapabilitiesField4ModifyField6ResponseModel: TypeAlias = (
+    __ToolPermissionRequestCapabilitiesField4ModifyField6ResponseModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__ToolPermissionRequestCapabilitiesField4ModifyField4PromptVariant0ModelKnownFields = TypedDict(
-    "__ToolPermissionRequestCapabilitiesField4ModifyField4PromptVariant0ModelKnownFields",
+__ToolPermissionRequestCapabilitiesField4ModifyField7SummaryModelKnownFields = (
+    TypedDict(
+        "__ToolPermissionRequestCapabilitiesField4ModifyField7SummaryModelKnownFields",
+        {"merge": Required[bool], "replace": Required[bool]},
+        total=False,
+    )
+)
+_ToolPermissionRequestCapabilitiesField4ModifyField7SummaryModel: TypeAlias = (
+    __ToolPermissionRequestCapabilitiesField4ModifyField7SummaryModelKnownFields
+    | JsonObject
+)  # permits additional JSON fields
+__ToolPermissionRequestCapabilitiesField4ModifyField8WorkspaceModelKnownFields = TypedDict(
+    "__ToolPermissionRequestCapabilitiesField4ModifyField8WorkspaceModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_ToolPermissionRequestCapabilitiesField4ModifyField4PromptVariant0Model: TypeAlias = (
-    __ToolPermissionRequestCapabilitiesField4ModifyField4PromptVariant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ToolPermissionRequestCapabilitiesField4ModifyField4PromptVariant1Variant0ModelKnownFields = TypedDict(
-    "__ToolPermissionRequestCapabilitiesField4ModifyField4PromptVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_ToolPermissionRequestCapabilitiesField4ModifyField4PromptVariant1Variant0Model: TypeAlias = (
-    __ToolPermissionRequestCapabilitiesField4ModifyField4PromptVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ToolPermissionRequestCapabilitiesField4ModifyField4PromptVariant1Variant1ModelKnownFields = TypedDict(
-    "__ToolPermissionRequestCapabilitiesField4ModifyField4PromptVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_ToolPermissionRequestCapabilitiesField4ModifyField4PromptVariant1Variant1Model: TypeAlias = (
-    __ToolPermissionRequestCapabilitiesField4ModifyField4PromptVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ToolPermissionRequestCapabilitiesField4ModifyField5RequestVariant0ModelKnownFields = TypedDict(
-    "__ToolPermissionRequestCapabilitiesField4ModifyField5RequestVariant0ModelKnownFields",
-    {"merge": Required[bool], "replace": Required[bool]},
-    total=False,
-)
-_ToolPermissionRequestCapabilitiesField4ModifyField5RequestVariant0Model: TypeAlias = (
-    __ToolPermissionRequestCapabilitiesField4ModifyField5RequestVariant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ToolPermissionRequestCapabilitiesField4ModifyField5RequestVariant1Variant0ModelKnownFields = TypedDict(
-    "__ToolPermissionRequestCapabilitiesField4ModifyField5RequestVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_ToolPermissionRequestCapabilitiesField4ModifyField5RequestVariant1Variant0Model: TypeAlias = (
-    __ToolPermissionRequestCapabilitiesField4ModifyField5RequestVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ToolPermissionRequestCapabilitiesField4ModifyField5RequestVariant1Variant1ModelKnownFields = TypedDict(
-    "__ToolPermissionRequestCapabilitiesField4ModifyField5RequestVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_ToolPermissionRequestCapabilitiesField4ModifyField5RequestVariant1Variant1Model: TypeAlias = (
-    __ToolPermissionRequestCapabilitiesField4ModifyField5RequestVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ToolPermissionRequestCapabilitiesField4ModifyField6ResponseVariant0ModelKnownFields = TypedDict(
-    "__ToolPermissionRequestCapabilitiesField4ModifyField6ResponseVariant0ModelKnownFields",
-    {"merge": Required[bool], "replace": Required[bool]},
-    total=False,
-)
-_ToolPermissionRequestCapabilitiesField4ModifyField6ResponseVariant0Model: TypeAlias = (
-    __ToolPermissionRequestCapabilitiesField4ModifyField6ResponseVariant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ToolPermissionRequestCapabilitiesField4ModifyField6ResponseVariant1Variant0ModelKnownFields = TypedDict(
-    "__ToolPermissionRequestCapabilitiesField4ModifyField6ResponseVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_ToolPermissionRequestCapabilitiesField4ModifyField6ResponseVariant1Variant0Model: TypeAlias = (
-    __ToolPermissionRequestCapabilitiesField4ModifyField6ResponseVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ToolPermissionRequestCapabilitiesField4ModifyField6ResponseVariant1Variant1ModelKnownFields = TypedDict(
-    "__ToolPermissionRequestCapabilitiesField4ModifyField6ResponseVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_ToolPermissionRequestCapabilitiesField4ModifyField6ResponseVariant1Variant1Model: TypeAlias = (
-    __ToolPermissionRequestCapabilitiesField4ModifyField6ResponseVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ToolPermissionRequestCapabilitiesField4ModifyField7SummaryVariant0ModelKnownFields = TypedDict(
-    "__ToolPermissionRequestCapabilitiesField4ModifyField7SummaryVariant0ModelKnownFields",
-    {"merge": Required[bool], "replace": Required[bool]},
-    total=False,
-)
-_ToolPermissionRequestCapabilitiesField4ModifyField7SummaryVariant0Model: TypeAlias = (
-    __ToolPermissionRequestCapabilitiesField4ModifyField7SummaryVariant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ToolPermissionRequestCapabilitiesField4ModifyField7SummaryVariant1Variant0ModelKnownFields = TypedDict(
-    "__ToolPermissionRequestCapabilitiesField4ModifyField7SummaryVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_ToolPermissionRequestCapabilitiesField4ModifyField7SummaryVariant1Variant0Model: TypeAlias = (
-    __ToolPermissionRequestCapabilitiesField4ModifyField7SummaryVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ToolPermissionRequestCapabilitiesField4ModifyField7SummaryVariant1Variant1ModelKnownFields = TypedDict(
-    "__ToolPermissionRequestCapabilitiesField4ModifyField7SummaryVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_ToolPermissionRequestCapabilitiesField4ModifyField7SummaryVariant1Variant1Model: TypeAlias = (
-    __ToolPermissionRequestCapabilitiesField4ModifyField7SummaryVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ToolPermissionRequestCapabilitiesField4ModifyField8WorkspaceVariant0ModelKnownFields = TypedDict(
-    "__ToolPermissionRequestCapabilitiesField4ModifyField8WorkspaceVariant0ModelKnownFields",
-    {"merge": Required[bool], "replace": Required[bool]},
-    total=False,
-)
-_ToolPermissionRequestCapabilitiesField4ModifyField8WorkspaceVariant0Model: TypeAlias = (
-    __ToolPermissionRequestCapabilitiesField4ModifyField8WorkspaceVariant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ToolPermissionRequestCapabilitiesField4ModifyField8WorkspaceVariant1Variant0ModelKnownFields = TypedDict(
-    "__ToolPermissionRequestCapabilitiesField4ModifyField8WorkspaceVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_ToolPermissionRequestCapabilitiesField4ModifyField8WorkspaceVariant1Variant0Model: TypeAlias = (
-    __ToolPermissionRequestCapabilitiesField4ModifyField8WorkspaceVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__ToolPermissionRequestCapabilitiesField4ModifyField8WorkspaceVariant1Variant1ModelKnownFields = TypedDict(
-    "__ToolPermissionRequestCapabilitiesField4ModifyField8WorkspaceVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_ToolPermissionRequestCapabilitiesField4ModifyField8WorkspaceVariant1Variant1Model: TypeAlias = (
-    __ToolPermissionRequestCapabilitiesField4ModifyField8WorkspaceVariant1Variant1ModelKnownFields
+_ToolPermissionRequestCapabilitiesField4ModifyField8WorkspaceModel: TypeAlias = (
+    __ToolPermissionRequestCapabilitiesField4ModifyField8WorkspaceModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
 __ToolPermissionRequestCapabilitiesField4ModifyModelKnownFields = TypedDict(
     "__ToolPermissionRequestCapabilitiesField4ModifyModelKnownFields",
     {
-        "content": NotRequired[JsonValue],
-        "input": NotRequired[JsonValue],
-        "instructions": NotRequired[JsonValue],
-        "output": NotRequired[JsonValue],
-        "prompt": NotRequired[JsonValue],
-        "request": NotRequired[JsonValue],
-        "response": NotRequired[JsonValue],
-        "summary": NotRequired[JsonValue],
-        "workspace": NotRequired[JsonValue],
+        "content": NotRequired[
+            _ToolPermissionRequestCapabilitiesField4ModifyField0ContentModel
+        ],
+        "input": NotRequired[
+            _ToolPermissionRequestCapabilitiesField4ModifyField1InputModel
+        ],
+        "instructions": NotRequired[
+            _ToolPermissionRequestCapabilitiesField4ModifyField2InstructionsModel
+        ],
+        "output": NotRequired[
+            _ToolPermissionRequestCapabilitiesField4ModifyField3OutputModel
+        ],
+        "prompt": NotRequired[
+            _ToolPermissionRequestCapabilitiesField4ModifyField4PromptModel
+        ],
+        "request": NotRequired[
+            _ToolPermissionRequestCapabilitiesField4ModifyField5RequestModel
+        ],
+        "response": NotRequired[
+            _ToolPermissionRequestCapabilitiesField4ModifyField6ResponseModel
+        ],
+        "summary": NotRequired[
+            _ToolPermissionRequestCapabilitiesField4ModifyField7SummaryModel
+        ],
+        "workspace": NotRequired[
+            _ToolPermissionRequestCapabilitiesField4ModifyField8WorkspaceModel
+        ],
     },
     total=False,
 )
@@ -8210,7 +6257,7 @@ _ToolPermissionRequestCapabilitiesField4ModifyModel: TypeAlias = (
 _ToolPermissionRequestCapabilitiesKnownFields = TypedDict(
     "_ToolPermissionRequestCapabilitiesKnownFields",
     {
-        "effects": Required[JsonValue],
+        "effects": Required[list[Union[OpenString, str]]],
         "elicitation": NotRequired[
             _ToolPermissionRequestCapabilitiesField1ElicitationModel
         ],
@@ -8299,263 +6346,111 @@ __TurnFinishBeforeCapabilitiesField3InjectModelKnownFields = TypedDict(
 _TurnFinishBeforeCapabilitiesField3InjectModel: TypeAlias = (
     __TurnFinishBeforeCapabilitiesField3InjectModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__TurnFinishBeforeCapabilitiesField4ModifyField0ContentVariant0ModelKnownFields = TypedDict(
-    "__TurnFinishBeforeCapabilitiesField4ModifyField0ContentVariant0ModelKnownFields",
+__TurnFinishBeforeCapabilitiesField4ModifyField0ContentModelKnownFields = TypedDict(
+    "__TurnFinishBeforeCapabilitiesField4ModifyField0ContentModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_TurnFinishBeforeCapabilitiesField4ModifyField0ContentVariant0Model: TypeAlias = (
-    __TurnFinishBeforeCapabilitiesField4ModifyField0ContentVariant0ModelKnownFields
-    | JsonObject
+_TurnFinishBeforeCapabilitiesField4ModifyField0ContentModel: TypeAlias = (
+    __TurnFinishBeforeCapabilitiesField4ModifyField0ContentModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__TurnFinishBeforeCapabilitiesField4ModifyField0ContentVariant1Variant0ModelKnownFields = TypedDict(
-    "__TurnFinishBeforeCapabilitiesField4ModifyField0ContentVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
+__TurnFinishBeforeCapabilitiesField4ModifyField1InputModelKnownFields = TypedDict(
+    "__TurnFinishBeforeCapabilitiesField4ModifyField1InputModelKnownFields",
+    {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_TurnFinishBeforeCapabilitiesField4ModifyField0ContentVariant1Variant0Model: TypeAlias = (
-    __TurnFinishBeforeCapabilitiesField4ModifyField0ContentVariant1Variant0ModelKnownFields
-    | JsonObject
+_TurnFinishBeforeCapabilitiesField4ModifyField1InputModel: TypeAlias = (
+    __TurnFinishBeforeCapabilitiesField4ModifyField1InputModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__TurnFinishBeforeCapabilitiesField4ModifyField0ContentVariant1Variant1ModelKnownFields = TypedDict(
-    "__TurnFinishBeforeCapabilitiesField4ModifyField0ContentVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_TurnFinishBeforeCapabilitiesField4ModifyField0ContentVariant1Variant1Model: TypeAlias = (
-    __TurnFinishBeforeCapabilitiesField4ModifyField0ContentVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__TurnFinishBeforeCapabilitiesField4ModifyField1InputVariant0ModelKnownFields = (
+__TurnFinishBeforeCapabilitiesField4ModifyField2InstructionsModelKnownFields = (
     TypedDict(
-        "__TurnFinishBeforeCapabilitiesField4ModifyField1InputVariant0ModelKnownFields",
+        "__TurnFinishBeforeCapabilitiesField4ModifyField2InstructionsModelKnownFields",
         {"merge": Required[bool], "replace": Required[bool]},
         total=False,
     )
 )
-_TurnFinishBeforeCapabilitiesField4ModifyField1InputVariant0Model: TypeAlias = (
-    __TurnFinishBeforeCapabilitiesField4ModifyField1InputVariant0ModelKnownFields
+_TurnFinishBeforeCapabilitiesField4ModifyField2InstructionsModel: TypeAlias = (
+    __TurnFinishBeforeCapabilitiesField4ModifyField2InstructionsModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__TurnFinishBeforeCapabilitiesField4ModifyField1InputVariant1Variant0ModelKnownFields = TypedDict(
-    "__TurnFinishBeforeCapabilitiesField4ModifyField1InputVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_TurnFinishBeforeCapabilitiesField4ModifyField1InputVariant1Variant0Model: TypeAlias = (
-    __TurnFinishBeforeCapabilitiesField4ModifyField1InputVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__TurnFinishBeforeCapabilitiesField4ModifyField1InputVariant1Variant1ModelKnownFields = TypedDict(
-    "__TurnFinishBeforeCapabilitiesField4ModifyField1InputVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_TurnFinishBeforeCapabilitiesField4ModifyField1InputVariant1Variant1Model: TypeAlias = (
-    __TurnFinishBeforeCapabilitiesField4ModifyField1InputVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__TurnFinishBeforeCapabilitiesField4ModifyField2InstructionsVariant0ModelKnownFields = TypedDict(
-    "__TurnFinishBeforeCapabilitiesField4ModifyField2InstructionsVariant0ModelKnownFields",
+__TurnFinishBeforeCapabilitiesField4ModifyField3OutputModelKnownFields = TypedDict(
+    "__TurnFinishBeforeCapabilitiesField4ModifyField3OutputModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_TurnFinishBeforeCapabilitiesField4ModifyField2InstructionsVariant0Model: TypeAlias = (
-    __TurnFinishBeforeCapabilitiesField4ModifyField2InstructionsVariant0ModelKnownFields
-    | JsonObject
+_TurnFinishBeforeCapabilitiesField4ModifyField3OutputModel: TypeAlias = (
+    __TurnFinishBeforeCapabilitiesField4ModifyField3OutputModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__TurnFinishBeforeCapabilitiesField4ModifyField2InstructionsVariant1Variant0ModelKnownFields = TypedDict(
-    "__TurnFinishBeforeCapabilitiesField4ModifyField2InstructionsVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_TurnFinishBeforeCapabilitiesField4ModifyField2InstructionsVariant1Variant0Model: TypeAlias = (
-    __TurnFinishBeforeCapabilitiesField4ModifyField2InstructionsVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__TurnFinishBeforeCapabilitiesField4ModifyField2InstructionsVariant1Variant1ModelKnownFields = TypedDict(
-    "__TurnFinishBeforeCapabilitiesField4ModifyField2InstructionsVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_TurnFinishBeforeCapabilitiesField4ModifyField2InstructionsVariant1Variant1Model: TypeAlias = (
-    __TurnFinishBeforeCapabilitiesField4ModifyField2InstructionsVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__TurnFinishBeforeCapabilitiesField4ModifyField3OutputVariant0ModelKnownFields = TypedDict(
-    "__TurnFinishBeforeCapabilitiesField4ModifyField3OutputVariant0ModelKnownFields",
+__TurnFinishBeforeCapabilitiesField4ModifyField4PromptModelKnownFields = TypedDict(
+    "__TurnFinishBeforeCapabilitiesField4ModifyField4PromptModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_TurnFinishBeforeCapabilitiesField4ModifyField3OutputVariant0Model: TypeAlias = (
-    __TurnFinishBeforeCapabilitiesField4ModifyField3OutputVariant0ModelKnownFields
-    | JsonObject
+_TurnFinishBeforeCapabilitiesField4ModifyField4PromptModel: TypeAlias = (
+    __TurnFinishBeforeCapabilitiesField4ModifyField4PromptModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__TurnFinishBeforeCapabilitiesField4ModifyField3OutputVariant1Variant0ModelKnownFields = TypedDict(
-    "__TurnFinishBeforeCapabilitiesField4ModifyField3OutputVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_TurnFinishBeforeCapabilitiesField4ModifyField3OutputVariant1Variant0Model: TypeAlias = (
-    __TurnFinishBeforeCapabilitiesField4ModifyField3OutputVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__TurnFinishBeforeCapabilitiesField4ModifyField3OutputVariant1Variant1ModelKnownFields = TypedDict(
-    "__TurnFinishBeforeCapabilitiesField4ModifyField3OutputVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_TurnFinishBeforeCapabilitiesField4ModifyField3OutputVariant1Variant1Model: TypeAlias = (
-    __TurnFinishBeforeCapabilitiesField4ModifyField3OutputVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__TurnFinishBeforeCapabilitiesField4ModifyField4PromptVariant0ModelKnownFields = TypedDict(
-    "__TurnFinishBeforeCapabilitiesField4ModifyField4PromptVariant0ModelKnownFields",
+__TurnFinishBeforeCapabilitiesField4ModifyField5RequestModelKnownFields = TypedDict(
+    "__TurnFinishBeforeCapabilitiesField4ModifyField5RequestModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_TurnFinishBeforeCapabilitiesField4ModifyField4PromptVariant0Model: TypeAlias = (
-    __TurnFinishBeforeCapabilitiesField4ModifyField4PromptVariant0ModelKnownFields
-    | JsonObject
+_TurnFinishBeforeCapabilitiesField4ModifyField5RequestModel: TypeAlias = (
+    __TurnFinishBeforeCapabilitiesField4ModifyField5RequestModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__TurnFinishBeforeCapabilitiesField4ModifyField4PromptVariant1Variant0ModelKnownFields = TypedDict(
-    "__TurnFinishBeforeCapabilitiesField4ModifyField4PromptVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_TurnFinishBeforeCapabilitiesField4ModifyField4PromptVariant1Variant0Model: TypeAlias = (
-    __TurnFinishBeforeCapabilitiesField4ModifyField4PromptVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__TurnFinishBeforeCapabilitiesField4ModifyField4PromptVariant1Variant1ModelKnownFields = TypedDict(
-    "__TurnFinishBeforeCapabilitiesField4ModifyField4PromptVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_TurnFinishBeforeCapabilitiesField4ModifyField4PromptVariant1Variant1Model: TypeAlias = (
-    __TurnFinishBeforeCapabilitiesField4ModifyField4PromptVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__TurnFinishBeforeCapabilitiesField4ModifyField5RequestVariant0ModelKnownFields = TypedDict(
-    "__TurnFinishBeforeCapabilitiesField4ModifyField5RequestVariant0ModelKnownFields",
+__TurnFinishBeforeCapabilitiesField4ModifyField6ResponseModelKnownFields = TypedDict(
+    "__TurnFinishBeforeCapabilitiesField4ModifyField6ResponseModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_TurnFinishBeforeCapabilitiesField4ModifyField5RequestVariant0Model: TypeAlias = (
-    __TurnFinishBeforeCapabilitiesField4ModifyField5RequestVariant0ModelKnownFields
+_TurnFinishBeforeCapabilitiesField4ModifyField6ResponseModel: TypeAlias = (
+    __TurnFinishBeforeCapabilitiesField4ModifyField6ResponseModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__TurnFinishBeforeCapabilitiesField4ModifyField5RequestVariant1Variant0ModelKnownFields = TypedDict(
-    "__TurnFinishBeforeCapabilitiesField4ModifyField5RequestVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_TurnFinishBeforeCapabilitiesField4ModifyField5RequestVariant1Variant0Model: TypeAlias = (
-    __TurnFinishBeforeCapabilitiesField4ModifyField5RequestVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__TurnFinishBeforeCapabilitiesField4ModifyField5RequestVariant1Variant1ModelKnownFields = TypedDict(
-    "__TurnFinishBeforeCapabilitiesField4ModifyField5RequestVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_TurnFinishBeforeCapabilitiesField4ModifyField5RequestVariant1Variant1Model: TypeAlias = (
-    __TurnFinishBeforeCapabilitiesField4ModifyField5RequestVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__TurnFinishBeforeCapabilitiesField4ModifyField6ResponseVariant0ModelKnownFields = TypedDict(
-    "__TurnFinishBeforeCapabilitiesField4ModifyField6ResponseVariant0ModelKnownFields",
+__TurnFinishBeforeCapabilitiesField4ModifyField7SummaryModelKnownFields = TypedDict(
+    "__TurnFinishBeforeCapabilitiesField4ModifyField7SummaryModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_TurnFinishBeforeCapabilitiesField4ModifyField6ResponseVariant0Model: TypeAlias = (
-    __TurnFinishBeforeCapabilitiesField4ModifyField6ResponseVariant0ModelKnownFields
-    | JsonObject
+_TurnFinishBeforeCapabilitiesField4ModifyField7SummaryModel: TypeAlias = (
+    __TurnFinishBeforeCapabilitiesField4ModifyField7SummaryModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__TurnFinishBeforeCapabilitiesField4ModifyField6ResponseVariant1Variant0ModelKnownFields = TypedDict(
-    "__TurnFinishBeforeCapabilitiesField4ModifyField6ResponseVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_TurnFinishBeforeCapabilitiesField4ModifyField6ResponseVariant1Variant0Model: TypeAlias = (
-    __TurnFinishBeforeCapabilitiesField4ModifyField6ResponseVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__TurnFinishBeforeCapabilitiesField4ModifyField6ResponseVariant1Variant1ModelKnownFields = TypedDict(
-    "__TurnFinishBeforeCapabilitiesField4ModifyField6ResponseVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_TurnFinishBeforeCapabilitiesField4ModifyField6ResponseVariant1Variant1Model: TypeAlias = (
-    __TurnFinishBeforeCapabilitiesField4ModifyField6ResponseVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__TurnFinishBeforeCapabilitiesField4ModifyField7SummaryVariant0ModelKnownFields = TypedDict(
-    "__TurnFinishBeforeCapabilitiesField4ModifyField7SummaryVariant0ModelKnownFields",
+__TurnFinishBeforeCapabilitiesField4ModifyField8WorkspaceModelKnownFields = TypedDict(
+    "__TurnFinishBeforeCapabilitiesField4ModifyField8WorkspaceModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_TurnFinishBeforeCapabilitiesField4ModifyField7SummaryVariant0Model: TypeAlias = (
-    __TurnFinishBeforeCapabilitiesField4ModifyField7SummaryVariant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__TurnFinishBeforeCapabilitiesField4ModifyField7SummaryVariant1Variant0ModelKnownFields = TypedDict(
-    "__TurnFinishBeforeCapabilitiesField4ModifyField7SummaryVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_TurnFinishBeforeCapabilitiesField4ModifyField7SummaryVariant1Variant0Model: TypeAlias = (
-    __TurnFinishBeforeCapabilitiesField4ModifyField7SummaryVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__TurnFinishBeforeCapabilitiesField4ModifyField7SummaryVariant1Variant1ModelKnownFields = TypedDict(
-    "__TurnFinishBeforeCapabilitiesField4ModifyField7SummaryVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_TurnFinishBeforeCapabilitiesField4ModifyField7SummaryVariant1Variant1Model: TypeAlias = (
-    __TurnFinishBeforeCapabilitiesField4ModifyField7SummaryVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__TurnFinishBeforeCapabilitiesField4ModifyField8WorkspaceVariant0ModelKnownFields = TypedDict(
-    "__TurnFinishBeforeCapabilitiesField4ModifyField8WorkspaceVariant0ModelKnownFields",
-    {"merge": Required[bool], "replace": Required[bool]},
-    total=False,
-)
-_TurnFinishBeforeCapabilitiesField4ModifyField8WorkspaceVariant0Model: TypeAlias = (
-    __TurnFinishBeforeCapabilitiesField4ModifyField8WorkspaceVariant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__TurnFinishBeforeCapabilitiesField4ModifyField8WorkspaceVariant1Variant0ModelKnownFields = TypedDict(
-    "__TurnFinishBeforeCapabilitiesField4ModifyField8WorkspaceVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_TurnFinishBeforeCapabilitiesField4ModifyField8WorkspaceVariant1Variant0Model: TypeAlias = (
-    __TurnFinishBeforeCapabilitiesField4ModifyField8WorkspaceVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__TurnFinishBeforeCapabilitiesField4ModifyField8WorkspaceVariant1Variant1ModelKnownFields = TypedDict(
-    "__TurnFinishBeforeCapabilitiesField4ModifyField8WorkspaceVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_TurnFinishBeforeCapabilitiesField4ModifyField8WorkspaceVariant1Variant1Model: TypeAlias = (
-    __TurnFinishBeforeCapabilitiesField4ModifyField8WorkspaceVariant1Variant1ModelKnownFields
+_TurnFinishBeforeCapabilitiesField4ModifyField8WorkspaceModel: TypeAlias = (
+    __TurnFinishBeforeCapabilitiesField4ModifyField8WorkspaceModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
 __TurnFinishBeforeCapabilitiesField4ModifyModelKnownFields = TypedDict(
     "__TurnFinishBeforeCapabilitiesField4ModifyModelKnownFields",
     {
-        "content": NotRequired[JsonValue],
-        "input": NotRequired[JsonValue],
-        "instructions": NotRequired[JsonValue],
-        "output": NotRequired[JsonValue],
-        "prompt": NotRequired[JsonValue],
-        "request": NotRequired[JsonValue],
-        "response": NotRequired[JsonValue],
-        "summary": NotRequired[JsonValue],
-        "workspace": NotRequired[JsonValue],
+        "content": NotRequired[
+            _TurnFinishBeforeCapabilitiesField4ModifyField0ContentModel
+        ],
+        "input": NotRequired[_TurnFinishBeforeCapabilitiesField4ModifyField1InputModel],
+        "instructions": NotRequired[
+            _TurnFinishBeforeCapabilitiesField4ModifyField2InstructionsModel
+        ],
+        "output": NotRequired[
+            _TurnFinishBeforeCapabilitiesField4ModifyField3OutputModel
+        ],
+        "prompt": NotRequired[
+            _TurnFinishBeforeCapabilitiesField4ModifyField4PromptModel
+        ],
+        "request": NotRequired[
+            _TurnFinishBeforeCapabilitiesField4ModifyField5RequestModel
+        ],
+        "response": NotRequired[
+            _TurnFinishBeforeCapabilitiesField4ModifyField6ResponseModel
+        ],
+        "summary": NotRequired[
+            _TurnFinishBeforeCapabilitiesField4ModifyField7SummaryModel
+        ],
+        "workspace": NotRequired[
+            _TurnFinishBeforeCapabilitiesField4ModifyField8WorkspaceModel
+        ],
     },
     total=False,
 )
@@ -8565,7 +6460,7 @@ _TurnFinishBeforeCapabilitiesField4ModifyModel: TypeAlias = (
 _TurnFinishBeforeCapabilitiesKnownFields = TypedDict(
     "_TurnFinishBeforeCapabilitiesKnownFields",
     {
-        "effects": Required[JsonValue],
+        "effects": Required[list[Union[OpenString, str]]],
         "elicitation": NotRequired[_TurnFinishBeforeCapabilitiesField1ElicitationModel],
         "flow": NotRequired[_TurnFinishBeforeCapabilitiesField2FlowModel],
         "inject": NotRequired[_TurnFinishBeforeCapabilitiesField3InjectModel],
@@ -8614,7 +6509,7 @@ __TurnStartCapabilitiesField2FlowModelKnownFields = TypedDict(
     {
         "continuationCount": NotRequired[int | Decimal],
         "maxContinuations": NotRequired[int | Decimal],
-        "operations": Required[JsonValue],
+        "operations": Required[list[OpenString]],
         "remainingContinuations": NotRequired[int | Decimal],
     },
     total=False,
@@ -8638,260 +6533,94 @@ __TurnStartCapabilitiesField3InjectModelKnownFields = TypedDict(
 _TurnStartCapabilitiesField3InjectModel: TypeAlias = (
     __TurnStartCapabilitiesField3InjectModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__TurnStartCapabilitiesField4ModifyField0ContentVariant0ModelKnownFields = TypedDict(
-    "__TurnStartCapabilitiesField4ModifyField0ContentVariant0ModelKnownFields",
+__TurnStartCapabilitiesField4ModifyField0ContentModelKnownFields = TypedDict(
+    "__TurnStartCapabilitiesField4ModifyField0ContentModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_TurnStartCapabilitiesField4ModifyField0ContentVariant0Model: TypeAlias = (
-    __TurnStartCapabilitiesField4ModifyField0ContentVariant0ModelKnownFields
-    | JsonObject
+_TurnStartCapabilitiesField4ModifyField0ContentModel: TypeAlias = (
+    __TurnStartCapabilitiesField4ModifyField0ContentModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__TurnStartCapabilitiesField4ModifyField0ContentVariant1Variant0ModelKnownFields = TypedDict(
-    "__TurnStartCapabilitiesField4ModifyField0ContentVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_TurnStartCapabilitiesField4ModifyField0ContentVariant1Variant0Model: TypeAlias = (
-    __TurnStartCapabilitiesField4ModifyField0ContentVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__TurnStartCapabilitiesField4ModifyField0ContentVariant1Variant1ModelKnownFields = TypedDict(
-    "__TurnStartCapabilitiesField4ModifyField0ContentVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_TurnStartCapabilitiesField4ModifyField0ContentVariant1Variant1Model: TypeAlias = (
-    __TurnStartCapabilitiesField4ModifyField0ContentVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__TurnStartCapabilitiesField4ModifyField1InputVariant0ModelKnownFields = TypedDict(
-    "__TurnStartCapabilitiesField4ModifyField1InputVariant0ModelKnownFields",
+__TurnStartCapabilitiesField4ModifyField1InputModelKnownFields = TypedDict(
+    "__TurnStartCapabilitiesField4ModifyField1InputModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_TurnStartCapabilitiesField4ModifyField1InputVariant0Model: TypeAlias = (
-    __TurnStartCapabilitiesField4ModifyField1InputVariant0ModelKnownFields | JsonObject
+_TurnStartCapabilitiesField4ModifyField1InputModel: TypeAlias = (
+    __TurnStartCapabilitiesField4ModifyField1InputModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__TurnStartCapabilitiesField4ModifyField1InputVariant1Variant0ModelKnownFields = TypedDict(
-    "__TurnStartCapabilitiesField4ModifyField1InputVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_TurnStartCapabilitiesField4ModifyField1InputVariant1Variant0Model: TypeAlias = (
-    __TurnStartCapabilitiesField4ModifyField1InputVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__TurnStartCapabilitiesField4ModifyField1InputVariant1Variant1ModelKnownFields = TypedDict(
-    "__TurnStartCapabilitiesField4ModifyField1InputVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_TurnStartCapabilitiesField4ModifyField1InputVariant1Variant1Model: TypeAlias = (
-    __TurnStartCapabilitiesField4ModifyField1InputVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__TurnStartCapabilitiesField4ModifyField2InstructionsVariant0ModelKnownFields = (
-    TypedDict(
-        "__TurnStartCapabilitiesField4ModifyField2InstructionsVariant0ModelKnownFields",
-        {"merge": Required[bool], "replace": Required[bool]},
-        total=False,
-    )
-)
-_TurnStartCapabilitiesField4ModifyField2InstructionsVariant0Model: TypeAlias = (
-    __TurnStartCapabilitiesField4ModifyField2InstructionsVariant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__TurnStartCapabilitiesField4ModifyField2InstructionsVariant1Variant0ModelKnownFields = TypedDict(
-    "__TurnStartCapabilitiesField4ModifyField2InstructionsVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_TurnStartCapabilitiesField4ModifyField2InstructionsVariant1Variant0Model: TypeAlias = (
-    __TurnStartCapabilitiesField4ModifyField2InstructionsVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__TurnStartCapabilitiesField4ModifyField2InstructionsVariant1Variant1ModelKnownFields = TypedDict(
-    "__TurnStartCapabilitiesField4ModifyField2InstructionsVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_TurnStartCapabilitiesField4ModifyField2InstructionsVariant1Variant1Model: TypeAlias = (
-    __TurnStartCapabilitiesField4ModifyField2InstructionsVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__TurnStartCapabilitiesField4ModifyField3OutputVariant0ModelKnownFields = TypedDict(
-    "__TurnStartCapabilitiesField4ModifyField3OutputVariant0ModelKnownFields",
+__TurnStartCapabilitiesField4ModifyField2InstructionsModelKnownFields = TypedDict(
+    "__TurnStartCapabilitiesField4ModifyField2InstructionsModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_TurnStartCapabilitiesField4ModifyField3OutputVariant0Model: TypeAlias = (
-    __TurnStartCapabilitiesField4ModifyField3OutputVariant0ModelKnownFields | JsonObject
+_TurnStartCapabilitiesField4ModifyField2InstructionsModel: TypeAlias = (
+    __TurnStartCapabilitiesField4ModifyField2InstructionsModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__TurnStartCapabilitiesField4ModifyField3OutputVariant1Variant0ModelKnownFields = TypedDict(
-    "__TurnStartCapabilitiesField4ModifyField3OutputVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_TurnStartCapabilitiesField4ModifyField3OutputVariant1Variant0Model: TypeAlias = (
-    __TurnStartCapabilitiesField4ModifyField3OutputVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__TurnStartCapabilitiesField4ModifyField3OutputVariant1Variant1ModelKnownFields = TypedDict(
-    "__TurnStartCapabilitiesField4ModifyField3OutputVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_TurnStartCapabilitiesField4ModifyField3OutputVariant1Variant1Model: TypeAlias = (
-    __TurnStartCapabilitiesField4ModifyField3OutputVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__TurnStartCapabilitiesField4ModifyField4PromptVariant0ModelKnownFields = TypedDict(
-    "__TurnStartCapabilitiesField4ModifyField4PromptVariant0ModelKnownFields",
+__TurnStartCapabilitiesField4ModifyField3OutputModelKnownFields = TypedDict(
+    "__TurnStartCapabilitiesField4ModifyField3OutputModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_TurnStartCapabilitiesField4ModifyField4PromptVariant0Model: TypeAlias = (
-    __TurnStartCapabilitiesField4ModifyField4PromptVariant0ModelKnownFields | JsonObject
+_TurnStartCapabilitiesField4ModifyField3OutputModel: TypeAlias = (
+    __TurnStartCapabilitiesField4ModifyField3OutputModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__TurnStartCapabilitiesField4ModifyField4PromptVariant1Variant0ModelKnownFields = TypedDict(
-    "__TurnStartCapabilitiesField4ModifyField4PromptVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_TurnStartCapabilitiesField4ModifyField4PromptVariant1Variant0Model: TypeAlias = (
-    __TurnStartCapabilitiesField4ModifyField4PromptVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__TurnStartCapabilitiesField4ModifyField4PromptVariant1Variant1ModelKnownFields = TypedDict(
-    "__TurnStartCapabilitiesField4ModifyField4PromptVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_TurnStartCapabilitiesField4ModifyField4PromptVariant1Variant1Model: TypeAlias = (
-    __TurnStartCapabilitiesField4ModifyField4PromptVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__TurnStartCapabilitiesField4ModifyField5RequestVariant0ModelKnownFields = TypedDict(
-    "__TurnStartCapabilitiesField4ModifyField5RequestVariant0ModelKnownFields",
+__TurnStartCapabilitiesField4ModifyField4PromptModelKnownFields = TypedDict(
+    "__TurnStartCapabilitiesField4ModifyField4PromptModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_TurnStartCapabilitiesField4ModifyField5RequestVariant0Model: TypeAlias = (
-    __TurnStartCapabilitiesField4ModifyField5RequestVariant0ModelKnownFields
-    | JsonObject
+_TurnStartCapabilitiesField4ModifyField4PromptModel: TypeAlias = (
+    __TurnStartCapabilitiesField4ModifyField4PromptModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__TurnStartCapabilitiesField4ModifyField5RequestVariant1Variant0ModelKnownFields = TypedDict(
-    "__TurnStartCapabilitiesField4ModifyField5RequestVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_TurnStartCapabilitiesField4ModifyField5RequestVariant1Variant0Model: TypeAlias = (
-    __TurnStartCapabilitiesField4ModifyField5RequestVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__TurnStartCapabilitiesField4ModifyField5RequestVariant1Variant1ModelKnownFields = TypedDict(
-    "__TurnStartCapabilitiesField4ModifyField5RequestVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_TurnStartCapabilitiesField4ModifyField5RequestVariant1Variant1Model: TypeAlias = (
-    __TurnStartCapabilitiesField4ModifyField5RequestVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__TurnStartCapabilitiesField4ModifyField6ResponseVariant0ModelKnownFields = TypedDict(
-    "__TurnStartCapabilitiesField4ModifyField6ResponseVariant0ModelKnownFields",
+__TurnStartCapabilitiesField4ModifyField5RequestModelKnownFields = TypedDict(
+    "__TurnStartCapabilitiesField4ModifyField5RequestModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_TurnStartCapabilitiesField4ModifyField6ResponseVariant0Model: TypeAlias = (
-    __TurnStartCapabilitiesField4ModifyField6ResponseVariant0ModelKnownFields
-    | JsonObject
+_TurnStartCapabilitiesField4ModifyField5RequestModel: TypeAlias = (
+    __TurnStartCapabilitiesField4ModifyField5RequestModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__TurnStartCapabilitiesField4ModifyField6ResponseVariant1Variant0ModelKnownFields = TypedDict(
-    "__TurnStartCapabilitiesField4ModifyField6ResponseVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_TurnStartCapabilitiesField4ModifyField6ResponseVariant1Variant0Model: TypeAlias = (
-    __TurnStartCapabilitiesField4ModifyField6ResponseVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__TurnStartCapabilitiesField4ModifyField6ResponseVariant1Variant1ModelKnownFields = TypedDict(
-    "__TurnStartCapabilitiesField4ModifyField6ResponseVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_TurnStartCapabilitiesField4ModifyField6ResponseVariant1Variant1Model: TypeAlias = (
-    __TurnStartCapabilitiesField4ModifyField6ResponseVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__TurnStartCapabilitiesField4ModifyField7SummaryVariant0ModelKnownFields = TypedDict(
-    "__TurnStartCapabilitiesField4ModifyField7SummaryVariant0ModelKnownFields",
+__TurnStartCapabilitiesField4ModifyField6ResponseModelKnownFields = TypedDict(
+    "__TurnStartCapabilitiesField4ModifyField6ResponseModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_TurnStartCapabilitiesField4ModifyField7SummaryVariant0Model: TypeAlias = (
-    __TurnStartCapabilitiesField4ModifyField7SummaryVariant0ModelKnownFields
-    | JsonObject
+_TurnStartCapabilitiesField4ModifyField6ResponseModel: TypeAlias = (
+    __TurnStartCapabilitiesField4ModifyField6ResponseModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__TurnStartCapabilitiesField4ModifyField7SummaryVariant1Variant0ModelKnownFields = TypedDict(
-    "__TurnStartCapabilitiesField4ModifyField7SummaryVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_TurnStartCapabilitiesField4ModifyField7SummaryVariant1Variant0Model: TypeAlias = (
-    __TurnStartCapabilitiesField4ModifyField7SummaryVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__TurnStartCapabilitiesField4ModifyField7SummaryVariant1Variant1ModelKnownFields = TypedDict(
-    "__TurnStartCapabilitiesField4ModifyField7SummaryVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_TurnStartCapabilitiesField4ModifyField7SummaryVariant1Variant1Model: TypeAlias = (
-    __TurnStartCapabilitiesField4ModifyField7SummaryVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__TurnStartCapabilitiesField4ModifyField8WorkspaceVariant0ModelKnownFields = TypedDict(
-    "__TurnStartCapabilitiesField4ModifyField8WorkspaceVariant0ModelKnownFields",
+__TurnStartCapabilitiesField4ModifyField7SummaryModelKnownFields = TypedDict(
+    "__TurnStartCapabilitiesField4ModifyField7SummaryModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_TurnStartCapabilitiesField4ModifyField8WorkspaceVariant0Model: TypeAlias = (
-    __TurnStartCapabilitiesField4ModifyField8WorkspaceVariant0ModelKnownFields
-    | JsonObject
+_TurnStartCapabilitiesField4ModifyField7SummaryModel: TypeAlias = (
+    __TurnStartCapabilitiesField4ModifyField7SummaryModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__TurnStartCapabilitiesField4ModifyField8WorkspaceVariant1Variant0ModelKnownFields = TypedDict(
-    "__TurnStartCapabilitiesField4ModifyField8WorkspaceVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
+__TurnStartCapabilitiesField4ModifyField8WorkspaceModelKnownFields = TypedDict(
+    "__TurnStartCapabilitiesField4ModifyField8WorkspaceModelKnownFields",
+    {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_TurnStartCapabilitiesField4ModifyField8WorkspaceVariant1Variant0Model: TypeAlias = (
-    __TurnStartCapabilitiesField4ModifyField8WorkspaceVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__TurnStartCapabilitiesField4ModifyField8WorkspaceVariant1Variant1ModelKnownFields = TypedDict(
-    "__TurnStartCapabilitiesField4ModifyField8WorkspaceVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_TurnStartCapabilitiesField4ModifyField8WorkspaceVariant1Variant1Model: TypeAlias = (
-    __TurnStartCapabilitiesField4ModifyField8WorkspaceVariant1Variant1ModelKnownFields
-    | JsonObject
+_TurnStartCapabilitiesField4ModifyField8WorkspaceModel: TypeAlias = (
+    __TurnStartCapabilitiesField4ModifyField8WorkspaceModelKnownFields | JsonObject
 )  # permits additional JSON fields
 __TurnStartCapabilitiesField4ModifyModelKnownFields = TypedDict(
     "__TurnStartCapabilitiesField4ModifyModelKnownFields",
     {
-        "content": NotRequired[JsonValue],
-        "input": NotRequired[JsonValue],
-        "instructions": NotRequired[JsonValue],
-        "output": NotRequired[JsonValue],
-        "prompt": NotRequired[JsonValue],
-        "request": NotRequired[JsonValue],
-        "response": NotRequired[JsonValue],
-        "summary": NotRequired[JsonValue],
-        "workspace": NotRequired[JsonValue],
+        "content": NotRequired[_TurnStartCapabilitiesField4ModifyField0ContentModel],
+        "input": NotRequired[_TurnStartCapabilitiesField4ModifyField1InputModel],
+        "instructions": NotRequired[
+            _TurnStartCapabilitiesField4ModifyField2InstructionsModel
+        ],
+        "output": NotRequired[_TurnStartCapabilitiesField4ModifyField3OutputModel],
+        "prompt": NotRequired[_TurnStartCapabilitiesField4ModifyField4PromptModel],
+        "request": NotRequired[_TurnStartCapabilitiesField4ModifyField5RequestModel],
+        "response": NotRequired[_TurnStartCapabilitiesField4ModifyField6ResponseModel],
+        "summary": NotRequired[_TurnStartCapabilitiesField4ModifyField7SummaryModel],
+        "workspace": NotRequired[
+            _TurnStartCapabilitiesField4ModifyField8WorkspaceModel
+        ],
     },
     total=False,
 )
@@ -8901,7 +6630,7 @@ _TurnStartCapabilitiesField4ModifyModel: TypeAlias = (
 _TurnStartCapabilitiesKnownFields = TypedDict(
     "_TurnStartCapabilitiesKnownFields",
     {
-        "effects": Required[JsonValue],
+        "effects": Required[list[Union[OpenString, str]]],
         "elicitation": NotRequired[_TurnStartCapabilitiesField1ElicitationModel],
         "flow": NotRequired[_TurnStartCapabilitiesField2FlowModel],
         "inject": NotRequired[_TurnStartCapabilitiesField3InjectModel],
@@ -9035,261 +6764,127 @@ __UserElicitationRequestCapabilitiesField3InjectModelKnownFields = TypedDict(
 _UserElicitationRequestCapabilitiesField3InjectModel: TypeAlias = (
     __UserElicitationRequestCapabilitiesField3InjectModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__UserElicitationRequestCapabilitiesField4ModifyField0ContentVariant0ModelKnownFields = TypedDict(
-    "__UserElicitationRequestCapabilitiesField4ModifyField0ContentVariant0ModelKnownFields",
+__UserElicitationRequestCapabilitiesField4ModifyField0ContentModelKnownFields = (
+    TypedDict(
+        "__UserElicitationRequestCapabilitiesField4ModifyField0ContentModelKnownFields",
+        {"merge": Required[bool], "replace": Required[bool]},
+        total=False,
+    )
+)
+_UserElicitationRequestCapabilitiesField4ModifyField0ContentModel: TypeAlias = (
+    __UserElicitationRequestCapabilitiesField4ModifyField0ContentModelKnownFields
+    | JsonObject
+)  # permits additional JSON fields
+__UserElicitationRequestCapabilitiesField4ModifyField1InputModelKnownFields = TypedDict(
+    "__UserElicitationRequestCapabilitiesField4ModifyField1InputModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_UserElicitationRequestCapabilitiesField4ModifyField0ContentVariant0Model: TypeAlias = (
-    __UserElicitationRequestCapabilitiesField4ModifyField0ContentVariant0ModelKnownFields
+_UserElicitationRequestCapabilitiesField4ModifyField1InputModel: TypeAlias = (
+    __UserElicitationRequestCapabilitiesField4ModifyField1InputModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserElicitationRequestCapabilitiesField4ModifyField0ContentVariant1Variant0ModelKnownFields = TypedDict(
-    "__UserElicitationRequestCapabilitiesField4ModifyField0ContentVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_UserElicitationRequestCapabilitiesField4ModifyField0ContentVariant1Variant0Model: TypeAlias = (
-    __UserElicitationRequestCapabilitiesField4ModifyField0ContentVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__UserElicitationRequestCapabilitiesField4ModifyField0ContentVariant1Variant1ModelKnownFields = TypedDict(
-    "__UserElicitationRequestCapabilitiesField4ModifyField0ContentVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_UserElicitationRequestCapabilitiesField4ModifyField0ContentVariant1Variant1Model: TypeAlias = (
-    __UserElicitationRequestCapabilitiesField4ModifyField0ContentVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__UserElicitationRequestCapabilitiesField4ModifyField1InputVariant0ModelKnownFields = TypedDict(
-    "__UserElicitationRequestCapabilitiesField4ModifyField1InputVariant0ModelKnownFields",
+__UserElicitationRequestCapabilitiesField4ModifyField2InstructionsModelKnownFields = TypedDict(
+    "__UserElicitationRequestCapabilitiesField4ModifyField2InstructionsModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_UserElicitationRequestCapabilitiesField4ModifyField1InputVariant0Model: TypeAlias = (
-    __UserElicitationRequestCapabilitiesField4ModifyField1InputVariant0ModelKnownFields
+_UserElicitationRequestCapabilitiesField4ModifyField2InstructionsModel: TypeAlias = (
+    __UserElicitationRequestCapabilitiesField4ModifyField2InstructionsModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserElicitationRequestCapabilitiesField4ModifyField1InputVariant1Variant0ModelKnownFields = TypedDict(
-    "__UserElicitationRequestCapabilitiesField4ModifyField1InputVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
+__UserElicitationRequestCapabilitiesField4ModifyField3OutputModelKnownFields = (
+    TypedDict(
+        "__UserElicitationRequestCapabilitiesField4ModifyField3OutputModelKnownFields",
+        {"merge": Required[bool], "replace": Required[bool]},
+        total=False,
+    )
 )
-_UserElicitationRequestCapabilitiesField4ModifyField1InputVariant1Variant0Model: TypeAlias = (
-    __UserElicitationRequestCapabilitiesField4ModifyField1InputVariant1Variant0ModelKnownFields
+_UserElicitationRequestCapabilitiesField4ModifyField3OutputModel: TypeAlias = (
+    __UserElicitationRequestCapabilitiesField4ModifyField3OutputModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserElicitationRequestCapabilitiesField4ModifyField1InputVariant1Variant1ModelKnownFields = TypedDict(
-    "__UserElicitationRequestCapabilitiesField4ModifyField1InputVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
+__UserElicitationRequestCapabilitiesField4ModifyField4PromptModelKnownFields = (
+    TypedDict(
+        "__UserElicitationRequestCapabilitiesField4ModifyField4PromptModelKnownFields",
+        {"merge": Required[bool], "replace": Required[bool]},
+        total=False,
+    )
 )
-_UserElicitationRequestCapabilitiesField4ModifyField1InputVariant1Variant1Model: TypeAlias = (
-    __UserElicitationRequestCapabilitiesField4ModifyField1InputVariant1Variant1ModelKnownFields
+_UserElicitationRequestCapabilitiesField4ModifyField4PromptModel: TypeAlias = (
+    __UserElicitationRequestCapabilitiesField4ModifyField4PromptModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserElicitationRequestCapabilitiesField4ModifyField2InstructionsVariant0ModelKnownFields = TypedDict(
-    "__UserElicitationRequestCapabilitiesField4ModifyField2InstructionsVariant0ModelKnownFields",
+__UserElicitationRequestCapabilitiesField4ModifyField5RequestModelKnownFields = (
+    TypedDict(
+        "__UserElicitationRequestCapabilitiesField4ModifyField5RequestModelKnownFields",
+        {"merge": Required[bool], "replace": Required[bool]},
+        total=False,
+    )
+)
+_UserElicitationRequestCapabilitiesField4ModifyField5RequestModel: TypeAlias = (
+    __UserElicitationRequestCapabilitiesField4ModifyField5RequestModelKnownFields
+    | JsonObject
+)  # permits additional JSON fields
+__UserElicitationRequestCapabilitiesField4ModifyField6ResponseModelKnownFields = TypedDict(
+    "__UserElicitationRequestCapabilitiesField4ModifyField6ResponseModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_UserElicitationRequestCapabilitiesField4ModifyField2InstructionsVariant0Model: TypeAlias = (
-    __UserElicitationRequestCapabilitiesField4ModifyField2InstructionsVariant0ModelKnownFields
+_UserElicitationRequestCapabilitiesField4ModifyField6ResponseModel: TypeAlias = (
+    __UserElicitationRequestCapabilitiesField4ModifyField6ResponseModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserElicitationRequestCapabilitiesField4ModifyField2InstructionsVariant1Variant0ModelKnownFields = TypedDict(
-    "__UserElicitationRequestCapabilitiesField4ModifyField2InstructionsVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
+__UserElicitationRequestCapabilitiesField4ModifyField7SummaryModelKnownFields = (
+    TypedDict(
+        "__UserElicitationRequestCapabilitiesField4ModifyField7SummaryModelKnownFields",
+        {"merge": Required[bool], "replace": Required[bool]},
+        total=False,
+    )
 )
-_UserElicitationRequestCapabilitiesField4ModifyField2InstructionsVariant1Variant0Model: TypeAlias = (
-    __UserElicitationRequestCapabilitiesField4ModifyField2InstructionsVariant1Variant0ModelKnownFields
+_UserElicitationRequestCapabilitiesField4ModifyField7SummaryModel: TypeAlias = (
+    __UserElicitationRequestCapabilitiesField4ModifyField7SummaryModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserElicitationRequestCapabilitiesField4ModifyField2InstructionsVariant1Variant1ModelKnownFields = TypedDict(
-    "__UserElicitationRequestCapabilitiesField4ModifyField2InstructionsVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_UserElicitationRequestCapabilitiesField4ModifyField2InstructionsVariant1Variant1Model: TypeAlias = (
-    __UserElicitationRequestCapabilitiesField4ModifyField2InstructionsVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__UserElicitationRequestCapabilitiesField4ModifyField3OutputVariant0ModelKnownFields = TypedDict(
-    "__UserElicitationRequestCapabilitiesField4ModifyField3OutputVariant0ModelKnownFields",
+__UserElicitationRequestCapabilitiesField4ModifyField8WorkspaceModelKnownFields = TypedDict(
+    "__UserElicitationRequestCapabilitiesField4ModifyField8WorkspaceModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_UserElicitationRequestCapabilitiesField4ModifyField3OutputVariant0Model: TypeAlias = (
-    __UserElicitationRequestCapabilitiesField4ModifyField3OutputVariant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__UserElicitationRequestCapabilitiesField4ModifyField3OutputVariant1Variant0ModelKnownFields = TypedDict(
-    "__UserElicitationRequestCapabilitiesField4ModifyField3OutputVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_UserElicitationRequestCapabilitiesField4ModifyField3OutputVariant1Variant0Model: TypeAlias = (
-    __UserElicitationRequestCapabilitiesField4ModifyField3OutputVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__UserElicitationRequestCapabilitiesField4ModifyField3OutputVariant1Variant1ModelKnownFields = TypedDict(
-    "__UserElicitationRequestCapabilitiesField4ModifyField3OutputVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_UserElicitationRequestCapabilitiesField4ModifyField3OutputVariant1Variant1Model: TypeAlias = (
-    __UserElicitationRequestCapabilitiesField4ModifyField3OutputVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__UserElicitationRequestCapabilitiesField4ModifyField4PromptVariant0ModelKnownFields = TypedDict(
-    "__UserElicitationRequestCapabilitiesField4ModifyField4PromptVariant0ModelKnownFields",
-    {"merge": Required[bool], "replace": Required[bool]},
-    total=False,
-)
-_UserElicitationRequestCapabilitiesField4ModifyField4PromptVariant0Model: TypeAlias = (
-    __UserElicitationRequestCapabilitiesField4ModifyField4PromptVariant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__UserElicitationRequestCapabilitiesField4ModifyField4PromptVariant1Variant0ModelKnownFields = TypedDict(
-    "__UserElicitationRequestCapabilitiesField4ModifyField4PromptVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_UserElicitationRequestCapabilitiesField4ModifyField4PromptVariant1Variant0Model: TypeAlias = (
-    __UserElicitationRequestCapabilitiesField4ModifyField4PromptVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__UserElicitationRequestCapabilitiesField4ModifyField4PromptVariant1Variant1ModelKnownFields = TypedDict(
-    "__UserElicitationRequestCapabilitiesField4ModifyField4PromptVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_UserElicitationRequestCapabilitiesField4ModifyField4PromptVariant1Variant1Model: TypeAlias = (
-    __UserElicitationRequestCapabilitiesField4ModifyField4PromptVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__UserElicitationRequestCapabilitiesField4ModifyField5RequestVariant0ModelKnownFields = TypedDict(
-    "__UserElicitationRequestCapabilitiesField4ModifyField5RequestVariant0ModelKnownFields",
-    {"merge": Required[bool], "replace": Required[bool]},
-    total=False,
-)
-_UserElicitationRequestCapabilitiesField4ModifyField5RequestVariant0Model: TypeAlias = (
-    __UserElicitationRequestCapabilitiesField4ModifyField5RequestVariant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__UserElicitationRequestCapabilitiesField4ModifyField5RequestVariant1Variant0ModelKnownFields = TypedDict(
-    "__UserElicitationRequestCapabilitiesField4ModifyField5RequestVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_UserElicitationRequestCapabilitiesField4ModifyField5RequestVariant1Variant0Model: TypeAlias = (
-    __UserElicitationRequestCapabilitiesField4ModifyField5RequestVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__UserElicitationRequestCapabilitiesField4ModifyField5RequestVariant1Variant1ModelKnownFields = TypedDict(
-    "__UserElicitationRequestCapabilitiesField4ModifyField5RequestVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_UserElicitationRequestCapabilitiesField4ModifyField5RequestVariant1Variant1Model: TypeAlias = (
-    __UserElicitationRequestCapabilitiesField4ModifyField5RequestVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__UserElicitationRequestCapabilitiesField4ModifyField6ResponseVariant0ModelKnownFields = TypedDict(
-    "__UserElicitationRequestCapabilitiesField4ModifyField6ResponseVariant0ModelKnownFields",
-    {"merge": Required[bool], "replace": Required[bool]},
-    total=False,
-)
-_UserElicitationRequestCapabilitiesField4ModifyField6ResponseVariant0Model: TypeAlias = (
-    __UserElicitationRequestCapabilitiesField4ModifyField6ResponseVariant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__UserElicitationRequestCapabilitiesField4ModifyField6ResponseVariant1Variant0ModelKnownFields = TypedDict(
-    "__UserElicitationRequestCapabilitiesField4ModifyField6ResponseVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_UserElicitationRequestCapabilitiesField4ModifyField6ResponseVariant1Variant0Model: TypeAlias = (
-    __UserElicitationRequestCapabilitiesField4ModifyField6ResponseVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__UserElicitationRequestCapabilitiesField4ModifyField6ResponseVariant1Variant1ModelKnownFields = TypedDict(
-    "__UserElicitationRequestCapabilitiesField4ModifyField6ResponseVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_UserElicitationRequestCapabilitiesField4ModifyField6ResponseVariant1Variant1Model: TypeAlias = (
-    __UserElicitationRequestCapabilitiesField4ModifyField6ResponseVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__UserElicitationRequestCapabilitiesField4ModifyField7SummaryVariant0ModelKnownFields = TypedDict(
-    "__UserElicitationRequestCapabilitiesField4ModifyField7SummaryVariant0ModelKnownFields",
-    {"merge": Required[bool], "replace": Required[bool]},
-    total=False,
-)
-_UserElicitationRequestCapabilitiesField4ModifyField7SummaryVariant0Model: TypeAlias = (
-    __UserElicitationRequestCapabilitiesField4ModifyField7SummaryVariant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__UserElicitationRequestCapabilitiesField4ModifyField7SummaryVariant1Variant0ModelKnownFields = TypedDict(
-    "__UserElicitationRequestCapabilitiesField4ModifyField7SummaryVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_UserElicitationRequestCapabilitiesField4ModifyField7SummaryVariant1Variant0Model: TypeAlias = (
-    __UserElicitationRequestCapabilitiesField4ModifyField7SummaryVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__UserElicitationRequestCapabilitiesField4ModifyField7SummaryVariant1Variant1ModelKnownFields = TypedDict(
-    "__UserElicitationRequestCapabilitiesField4ModifyField7SummaryVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_UserElicitationRequestCapabilitiesField4ModifyField7SummaryVariant1Variant1Model: TypeAlias = (
-    __UserElicitationRequestCapabilitiesField4ModifyField7SummaryVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__UserElicitationRequestCapabilitiesField4ModifyField8WorkspaceVariant0ModelKnownFields = TypedDict(
-    "__UserElicitationRequestCapabilitiesField4ModifyField8WorkspaceVariant0ModelKnownFields",
-    {"merge": Required[bool], "replace": Required[bool]},
-    total=False,
-)
-_UserElicitationRequestCapabilitiesField4ModifyField8WorkspaceVariant0Model: TypeAlias = (
-    __UserElicitationRequestCapabilitiesField4ModifyField8WorkspaceVariant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__UserElicitationRequestCapabilitiesField4ModifyField8WorkspaceVariant1Variant0ModelKnownFields = TypedDict(
-    "__UserElicitationRequestCapabilitiesField4ModifyField8WorkspaceVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_UserElicitationRequestCapabilitiesField4ModifyField8WorkspaceVariant1Variant0Model: TypeAlias = (
-    __UserElicitationRequestCapabilitiesField4ModifyField8WorkspaceVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__UserElicitationRequestCapabilitiesField4ModifyField8WorkspaceVariant1Variant1ModelKnownFields = TypedDict(
-    "__UserElicitationRequestCapabilitiesField4ModifyField8WorkspaceVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_UserElicitationRequestCapabilitiesField4ModifyField8WorkspaceVariant1Variant1Model: TypeAlias = (
-    __UserElicitationRequestCapabilitiesField4ModifyField8WorkspaceVariant1Variant1ModelKnownFields
+_UserElicitationRequestCapabilitiesField4ModifyField8WorkspaceModel: TypeAlias = (
+    __UserElicitationRequestCapabilitiesField4ModifyField8WorkspaceModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
 __UserElicitationRequestCapabilitiesField4ModifyModelKnownFields = TypedDict(
     "__UserElicitationRequestCapabilitiesField4ModifyModelKnownFields",
     {
-        "content": NotRequired[JsonValue],
-        "input": NotRequired[JsonValue],
-        "instructions": NotRequired[JsonValue],
-        "output": NotRequired[JsonValue],
-        "prompt": NotRequired[JsonValue],
-        "request": NotRequired[JsonValue],
-        "response": NotRequired[JsonValue],
-        "summary": NotRequired[JsonValue],
-        "workspace": NotRequired[JsonValue],
+        "content": NotRequired[
+            _UserElicitationRequestCapabilitiesField4ModifyField0ContentModel
+        ],
+        "input": NotRequired[
+            _UserElicitationRequestCapabilitiesField4ModifyField1InputModel
+        ],
+        "instructions": NotRequired[
+            _UserElicitationRequestCapabilitiesField4ModifyField2InstructionsModel
+        ],
+        "output": NotRequired[
+            _UserElicitationRequestCapabilitiesField4ModifyField3OutputModel
+        ],
+        "prompt": NotRequired[
+            _UserElicitationRequestCapabilitiesField4ModifyField4PromptModel
+        ],
+        "request": NotRequired[
+            _UserElicitationRequestCapabilitiesField4ModifyField5RequestModel
+        ],
+        "response": NotRequired[
+            _UserElicitationRequestCapabilitiesField4ModifyField6ResponseModel
+        ],
+        "summary": NotRequired[
+            _UserElicitationRequestCapabilitiesField4ModifyField7SummaryModel
+        ],
+        "workspace": NotRequired[
+            _UserElicitationRequestCapabilitiesField4ModifyField8WorkspaceModel
+        ],
     },
     total=False,
 )
@@ -9299,7 +6894,7 @@ _UserElicitationRequestCapabilitiesField4ModifyModel: TypeAlias = (
 _UserElicitationRequestCapabilitiesKnownFields = TypedDict(
     "_UserElicitationRequestCapabilitiesKnownFields",
     {
-        "effects": Required[JsonValue],
+        "effects": Required[list[Union[OpenString, str]]],
         "elicitation": NotRequired[
             _UserElicitationRequestCapabilitiesField1ElicitationModel
         ],
@@ -9330,20 +6925,105 @@ __UserElicitationRequestEventField10TurnModelKnownFields = TypedDict(
 _UserElicitationRequestEventField10TurnModel: TypeAlias = (
     __UserElicitationRequestEventField10TurnModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__UserElicitationRequestEventField12ElicitationField1RequestVariant1ModelKnownFields = TypedDict(
-    "__UserElicitationRequestEventField12ElicitationField1RequestVariant1ModelKnownFields",
-    {"mediaType": NotRequired[Literal["application/json"]]},
+__UserElicitationRequestEventField12ElicitationField1RequestBodyModelKnownFields = TypedDict(
+    "__UserElicitationRequestEventField12ElicitationField1RequestBodyModelKnownFields",
+    {
+        "body": Required["ContentReference"],
+        "category": NotRequired[str],
+        "id": Required[str],
+        "kind": Required[str],
+        "mediaType": Required[Literal["application/json"]],
+        "parentItemId": NotRequired[str],
+        "role": NotRequired[str],
+        "selection": Required[Literal["body"]],
+        "synthesized": NotRequired[bool],
+    },
     total=False,
 )
-_UserElicitationRequestEventField12ElicitationField1RequestVariant1Model: TypeAlias = (
-    __UserElicitationRequestEventField12ElicitationField1RequestVariant1ModelKnownFields
+_UserElicitationRequestEventField12ElicitationField1RequestBodyModel: TypeAlias = (
+    __UserElicitationRequestEventField12ElicitationField1RequestBodyModelKnownFields
+    | JsonObject
+)  # permits additional JSON fields
+_UserElicitationRequestEventField12ElicitationField1RequestBodyGapField1GapModel = TypedDict(
+    "_UserElicitationRequestEventField12ElicitationField1RequestBodyGapField1GapModel",
+    {"path": NotRequired[str], "reason": Required[str]},
+    total=False,
+)
+__UserElicitationRequestEventField12ElicitationField1RequestBodyGapModelKnownFields = TypedDict(
+    "__UserElicitationRequestEventField12ElicitationField1RequestBodyGapModelKnownFields",
+    {
+        "category": NotRequired[str],
+        "gap": Required[
+            _UserElicitationRequestEventField12ElicitationField1RequestBodyGapField1GapModel
+        ],
+        "id": Required[str],
+        "kind": Required[str],
+        "mediaType": Required[Literal["application/json"]],
+        "parentItemId": NotRequired[str],
+        "role": NotRequired[str],
+        "selection": Required[Literal["body"]],
+        "sha256": NotRequired[str],
+        "size": NotRequired[int | Decimal],
+        "synthesized": NotRequired[bool],
+    },
+    total=False,
+)
+_UserElicitationRequestEventField12ElicitationField1RequestBodyGapModel: TypeAlias = (
+    __UserElicitationRequestEventField12ElicitationField1RequestBodyGapModelKnownFields
+    | JsonObject
+)  # permits additional JSON fields
+__UserElicitationRequestEventField12ElicitationField1RequestMetadataModelKnownFields = TypedDict(
+    "__UserElicitationRequestEventField12ElicitationField1RequestMetadataModelKnownFields",
+    {
+        "category": NotRequired[str],
+        "id": Required[str],
+        "kind": Required[str],
+        "mediaType": Required[Literal["application/json"]],
+        "parentItemId": NotRequired[str],
+        "role": NotRequired[str],
+        "selection": Required[Literal["metadata"]],
+        "sha256": NotRequired[str],
+        "size": NotRequired[int | Decimal],
+        "synthesized": NotRequired[bool],
+    },
+    total=False,
+)
+_UserElicitationRequestEventField12ElicitationField1RequestMetadataModel: TypeAlias = (
+    __UserElicitationRequestEventField12ElicitationField1RequestMetadataModelKnownFields
+    | JsonObject
+)  # permits additional JSON fields
+__UserElicitationRequestEventField12ElicitationField1RequestOmitModelKnownFields = TypedDict(
+    "__UserElicitationRequestEventField12ElicitationField1RequestOmitModelKnownFields",
+    {
+        "category": NotRequired[str],
+        "id": Required[str],
+        "kind": Required[str],
+        "mediaType": Required[Literal["application/json"]],
+        "parentItemId": NotRequired[str],
+        "role": NotRequired[str],
+        "selection": Required[Literal["omit"]],
+        "sha256": NotRequired[str],
+        "size": NotRequired[int | Decimal],
+        "synthesized": NotRequired[bool],
+    },
+    total=False,
+)
+_UserElicitationRequestEventField12ElicitationField1RequestOmitModel: TypeAlias = (
+    __UserElicitationRequestEventField12ElicitationField1RequestOmitModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
 _UserElicitationRequestEventField12ElicitationModel = TypedDict(
     "_UserElicitationRequestEventField12ElicitationModel",
     {
         "mode": Required[OpenString],
-        "request": NotRequired[JsonValue],
+        "request": NotRequired[
+            Union[
+                _UserElicitationRequestEventField12ElicitationField1RequestBodyModel,
+                _UserElicitationRequestEventField12ElicitationField1RequestBodyGapModel,
+                _UserElicitationRequestEventField12ElicitationField1RequestMetadataModel,
+                _UserElicitationRequestEventField12ElicitationField1RequestOmitModel,
+            ]
+        ],
         "server": Required[str],
     },
     total=False,
@@ -9443,261 +7123,125 @@ __UserElicitationResultCapabilitiesField3InjectModelKnownFields = TypedDict(
 _UserElicitationResultCapabilitiesField3InjectModel: TypeAlias = (
     __UserElicitationResultCapabilitiesField3InjectModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__UserElicitationResultCapabilitiesField4ModifyField0ContentVariant0ModelKnownFields = TypedDict(
-    "__UserElicitationResultCapabilitiesField4ModifyField0ContentVariant0ModelKnownFields",
+__UserElicitationResultCapabilitiesField4ModifyField0ContentModelKnownFields = (
+    TypedDict(
+        "__UserElicitationResultCapabilitiesField4ModifyField0ContentModelKnownFields",
+        {"merge": Required[bool], "replace": Required[bool]},
+        total=False,
+    )
+)
+_UserElicitationResultCapabilitiesField4ModifyField0ContentModel: TypeAlias = (
+    __UserElicitationResultCapabilitiesField4ModifyField0ContentModelKnownFields
+    | JsonObject
+)  # permits additional JSON fields
+__UserElicitationResultCapabilitiesField4ModifyField1InputModelKnownFields = TypedDict(
+    "__UserElicitationResultCapabilitiesField4ModifyField1InputModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_UserElicitationResultCapabilitiesField4ModifyField0ContentVariant0Model: TypeAlias = (
-    __UserElicitationResultCapabilitiesField4ModifyField0ContentVariant0ModelKnownFields
+_UserElicitationResultCapabilitiesField4ModifyField1InputModel: TypeAlias = (
+    __UserElicitationResultCapabilitiesField4ModifyField1InputModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserElicitationResultCapabilitiesField4ModifyField0ContentVariant1Variant0ModelKnownFields = TypedDict(
-    "__UserElicitationResultCapabilitiesField4ModifyField0ContentVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_UserElicitationResultCapabilitiesField4ModifyField0ContentVariant1Variant0Model: TypeAlias = (
-    __UserElicitationResultCapabilitiesField4ModifyField0ContentVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__UserElicitationResultCapabilitiesField4ModifyField0ContentVariant1Variant1ModelKnownFields = TypedDict(
-    "__UserElicitationResultCapabilitiesField4ModifyField0ContentVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_UserElicitationResultCapabilitiesField4ModifyField0ContentVariant1Variant1Model: TypeAlias = (
-    __UserElicitationResultCapabilitiesField4ModifyField0ContentVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__UserElicitationResultCapabilitiesField4ModifyField1InputVariant0ModelKnownFields = TypedDict(
-    "__UserElicitationResultCapabilitiesField4ModifyField1InputVariant0ModelKnownFields",
+__UserElicitationResultCapabilitiesField4ModifyField2InstructionsModelKnownFields = TypedDict(
+    "__UserElicitationResultCapabilitiesField4ModifyField2InstructionsModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_UserElicitationResultCapabilitiesField4ModifyField1InputVariant0Model: TypeAlias = (
-    __UserElicitationResultCapabilitiesField4ModifyField1InputVariant0ModelKnownFields
+_UserElicitationResultCapabilitiesField4ModifyField2InstructionsModel: TypeAlias = (
+    __UserElicitationResultCapabilitiesField4ModifyField2InstructionsModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserElicitationResultCapabilitiesField4ModifyField1InputVariant1Variant0ModelKnownFields = TypedDict(
-    "__UserElicitationResultCapabilitiesField4ModifyField1InputVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_UserElicitationResultCapabilitiesField4ModifyField1InputVariant1Variant0Model: TypeAlias = (
-    __UserElicitationResultCapabilitiesField4ModifyField1InputVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__UserElicitationResultCapabilitiesField4ModifyField1InputVariant1Variant1ModelKnownFields = TypedDict(
-    "__UserElicitationResultCapabilitiesField4ModifyField1InputVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_UserElicitationResultCapabilitiesField4ModifyField1InputVariant1Variant1Model: TypeAlias = (
-    __UserElicitationResultCapabilitiesField4ModifyField1InputVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__UserElicitationResultCapabilitiesField4ModifyField2InstructionsVariant0ModelKnownFields = TypedDict(
-    "__UserElicitationResultCapabilitiesField4ModifyField2InstructionsVariant0ModelKnownFields",
+__UserElicitationResultCapabilitiesField4ModifyField3OutputModelKnownFields = TypedDict(
+    "__UserElicitationResultCapabilitiesField4ModifyField3OutputModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_UserElicitationResultCapabilitiesField4ModifyField2InstructionsVariant0Model: TypeAlias = (
-    __UserElicitationResultCapabilitiesField4ModifyField2InstructionsVariant0ModelKnownFields
+_UserElicitationResultCapabilitiesField4ModifyField3OutputModel: TypeAlias = (
+    __UserElicitationResultCapabilitiesField4ModifyField3OutputModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserElicitationResultCapabilitiesField4ModifyField2InstructionsVariant1Variant0ModelKnownFields = TypedDict(
-    "__UserElicitationResultCapabilitiesField4ModifyField2InstructionsVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_UserElicitationResultCapabilitiesField4ModifyField2InstructionsVariant1Variant0Model: TypeAlias = (
-    __UserElicitationResultCapabilitiesField4ModifyField2InstructionsVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__UserElicitationResultCapabilitiesField4ModifyField2InstructionsVariant1Variant1ModelKnownFields = TypedDict(
-    "__UserElicitationResultCapabilitiesField4ModifyField2InstructionsVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_UserElicitationResultCapabilitiesField4ModifyField2InstructionsVariant1Variant1Model: TypeAlias = (
-    __UserElicitationResultCapabilitiesField4ModifyField2InstructionsVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__UserElicitationResultCapabilitiesField4ModifyField3OutputVariant0ModelKnownFields = TypedDict(
-    "__UserElicitationResultCapabilitiesField4ModifyField3OutputVariant0ModelKnownFields",
+__UserElicitationResultCapabilitiesField4ModifyField4PromptModelKnownFields = TypedDict(
+    "__UserElicitationResultCapabilitiesField4ModifyField4PromptModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_UserElicitationResultCapabilitiesField4ModifyField3OutputVariant0Model: TypeAlias = (
-    __UserElicitationResultCapabilitiesField4ModifyField3OutputVariant0ModelKnownFields
+_UserElicitationResultCapabilitiesField4ModifyField4PromptModel: TypeAlias = (
+    __UserElicitationResultCapabilitiesField4ModifyField4PromptModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserElicitationResultCapabilitiesField4ModifyField3OutputVariant1Variant0ModelKnownFields = TypedDict(
-    "__UserElicitationResultCapabilitiesField4ModifyField3OutputVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
+__UserElicitationResultCapabilitiesField4ModifyField5RequestModelKnownFields = (
+    TypedDict(
+        "__UserElicitationResultCapabilitiesField4ModifyField5RequestModelKnownFields",
+        {"merge": Required[bool], "replace": Required[bool]},
+        total=False,
+    )
 )
-_UserElicitationResultCapabilitiesField4ModifyField3OutputVariant1Variant0Model: TypeAlias = (
-    __UserElicitationResultCapabilitiesField4ModifyField3OutputVariant1Variant0ModelKnownFields
+_UserElicitationResultCapabilitiesField4ModifyField5RequestModel: TypeAlias = (
+    __UserElicitationResultCapabilitiesField4ModifyField5RequestModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserElicitationResultCapabilitiesField4ModifyField3OutputVariant1Variant1ModelKnownFields = TypedDict(
-    "__UserElicitationResultCapabilitiesField4ModifyField3OutputVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
+__UserElicitationResultCapabilitiesField4ModifyField6ResponseModelKnownFields = (
+    TypedDict(
+        "__UserElicitationResultCapabilitiesField4ModifyField6ResponseModelKnownFields",
+        {"merge": Required[bool], "replace": Required[bool]},
+        total=False,
+    )
 )
-_UserElicitationResultCapabilitiesField4ModifyField3OutputVariant1Variant1Model: TypeAlias = (
-    __UserElicitationResultCapabilitiesField4ModifyField3OutputVariant1Variant1ModelKnownFields
+_UserElicitationResultCapabilitiesField4ModifyField6ResponseModel: TypeAlias = (
+    __UserElicitationResultCapabilitiesField4ModifyField6ResponseModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserElicitationResultCapabilitiesField4ModifyField4PromptVariant0ModelKnownFields = TypedDict(
-    "__UserElicitationResultCapabilitiesField4ModifyField4PromptVariant0ModelKnownFields",
+__UserElicitationResultCapabilitiesField4ModifyField7SummaryModelKnownFields = (
+    TypedDict(
+        "__UserElicitationResultCapabilitiesField4ModifyField7SummaryModelKnownFields",
+        {"merge": Required[bool], "replace": Required[bool]},
+        total=False,
+    )
+)
+_UserElicitationResultCapabilitiesField4ModifyField7SummaryModel: TypeAlias = (
+    __UserElicitationResultCapabilitiesField4ModifyField7SummaryModelKnownFields
+    | JsonObject
+)  # permits additional JSON fields
+__UserElicitationResultCapabilitiesField4ModifyField8WorkspaceModelKnownFields = TypedDict(
+    "__UserElicitationResultCapabilitiesField4ModifyField8WorkspaceModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_UserElicitationResultCapabilitiesField4ModifyField4PromptVariant0Model: TypeAlias = (
-    __UserElicitationResultCapabilitiesField4ModifyField4PromptVariant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__UserElicitationResultCapabilitiesField4ModifyField4PromptVariant1Variant0ModelKnownFields = TypedDict(
-    "__UserElicitationResultCapabilitiesField4ModifyField4PromptVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_UserElicitationResultCapabilitiesField4ModifyField4PromptVariant1Variant0Model: TypeAlias = (
-    __UserElicitationResultCapabilitiesField4ModifyField4PromptVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__UserElicitationResultCapabilitiesField4ModifyField4PromptVariant1Variant1ModelKnownFields = TypedDict(
-    "__UserElicitationResultCapabilitiesField4ModifyField4PromptVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_UserElicitationResultCapabilitiesField4ModifyField4PromptVariant1Variant1Model: TypeAlias = (
-    __UserElicitationResultCapabilitiesField4ModifyField4PromptVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__UserElicitationResultCapabilitiesField4ModifyField5RequestVariant0ModelKnownFields = TypedDict(
-    "__UserElicitationResultCapabilitiesField4ModifyField5RequestVariant0ModelKnownFields",
-    {"merge": Required[bool], "replace": Required[bool]},
-    total=False,
-)
-_UserElicitationResultCapabilitiesField4ModifyField5RequestVariant0Model: TypeAlias = (
-    __UserElicitationResultCapabilitiesField4ModifyField5RequestVariant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__UserElicitationResultCapabilitiesField4ModifyField5RequestVariant1Variant0ModelKnownFields = TypedDict(
-    "__UserElicitationResultCapabilitiesField4ModifyField5RequestVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_UserElicitationResultCapabilitiesField4ModifyField5RequestVariant1Variant0Model: TypeAlias = (
-    __UserElicitationResultCapabilitiesField4ModifyField5RequestVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__UserElicitationResultCapabilitiesField4ModifyField5RequestVariant1Variant1ModelKnownFields = TypedDict(
-    "__UserElicitationResultCapabilitiesField4ModifyField5RequestVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_UserElicitationResultCapabilitiesField4ModifyField5RequestVariant1Variant1Model: TypeAlias = (
-    __UserElicitationResultCapabilitiesField4ModifyField5RequestVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__UserElicitationResultCapabilitiesField4ModifyField6ResponseVariant0ModelKnownFields = TypedDict(
-    "__UserElicitationResultCapabilitiesField4ModifyField6ResponseVariant0ModelKnownFields",
-    {"merge": Required[bool], "replace": Required[bool]},
-    total=False,
-)
-_UserElicitationResultCapabilitiesField4ModifyField6ResponseVariant0Model: TypeAlias = (
-    __UserElicitationResultCapabilitiesField4ModifyField6ResponseVariant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__UserElicitationResultCapabilitiesField4ModifyField6ResponseVariant1Variant0ModelKnownFields = TypedDict(
-    "__UserElicitationResultCapabilitiesField4ModifyField6ResponseVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_UserElicitationResultCapabilitiesField4ModifyField6ResponseVariant1Variant0Model: TypeAlias = (
-    __UserElicitationResultCapabilitiesField4ModifyField6ResponseVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__UserElicitationResultCapabilitiesField4ModifyField6ResponseVariant1Variant1ModelKnownFields = TypedDict(
-    "__UserElicitationResultCapabilitiesField4ModifyField6ResponseVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_UserElicitationResultCapabilitiesField4ModifyField6ResponseVariant1Variant1Model: TypeAlias = (
-    __UserElicitationResultCapabilitiesField4ModifyField6ResponseVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__UserElicitationResultCapabilitiesField4ModifyField7SummaryVariant0ModelKnownFields = TypedDict(
-    "__UserElicitationResultCapabilitiesField4ModifyField7SummaryVariant0ModelKnownFields",
-    {"merge": Required[bool], "replace": Required[bool]},
-    total=False,
-)
-_UserElicitationResultCapabilitiesField4ModifyField7SummaryVariant0Model: TypeAlias = (
-    __UserElicitationResultCapabilitiesField4ModifyField7SummaryVariant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__UserElicitationResultCapabilitiesField4ModifyField7SummaryVariant1Variant0ModelKnownFields = TypedDict(
-    "__UserElicitationResultCapabilitiesField4ModifyField7SummaryVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_UserElicitationResultCapabilitiesField4ModifyField7SummaryVariant1Variant0Model: TypeAlias = (
-    __UserElicitationResultCapabilitiesField4ModifyField7SummaryVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__UserElicitationResultCapabilitiesField4ModifyField7SummaryVariant1Variant1ModelKnownFields = TypedDict(
-    "__UserElicitationResultCapabilitiesField4ModifyField7SummaryVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_UserElicitationResultCapabilitiesField4ModifyField7SummaryVariant1Variant1Model: TypeAlias = (
-    __UserElicitationResultCapabilitiesField4ModifyField7SummaryVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__UserElicitationResultCapabilitiesField4ModifyField8WorkspaceVariant0ModelKnownFields = TypedDict(
-    "__UserElicitationResultCapabilitiesField4ModifyField8WorkspaceVariant0ModelKnownFields",
-    {"merge": Required[bool], "replace": Required[bool]},
-    total=False,
-)
-_UserElicitationResultCapabilitiesField4ModifyField8WorkspaceVariant0Model: TypeAlias = (
-    __UserElicitationResultCapabilitiesField4ModifyField8WorkspaceVariant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__UserElicitationResultCapabilitiesField4ModifyField8WorkspaceVariant1Variant0ModelKnownFields = TypedDict(
-    "__UserElicitationResultCapabilitiesField4ModifyField8WorkspaceVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_UserElicitationResultCapabilitiesField4ModifyField8WorkspaceVariant1Variant0Model: TypeAlias = (
-    __UserElicitationResultCapabilitiesField4ModifyField8WorkspaceVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__UserElicitationResultCapabilitiesField4ModifyField8WorkspaceVariant1Variant1ModelKnownFields = TypedDict(
-    "__UserElicitationResultCapabilitiesField4ModifyField8WorkspaceVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_UserElicitationResultCapabilitiesField4ModifyField8WorkspaceVariant1Variant1Model: TypeAlias = (
-    __UserElicitationResultCapabilitiesField4ModifyField8WorkspaceVariant1Variant1ModelKnownFields
+_UserElicitationResultCapabilitiesField4ModifyField8WorkspaceModel: TypeAlias = (
+    __UserElicitationResultCapabilitiesField4ModifyField8WorkspaceModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
 __UserElicitationResultCapabilitiesField4ModifyModelKnownFields = TypedDict(
     "__UserElicitationResultCapabilitiesField4ModifyModelKnownFields",
     {
-        "content": NotRequired[JsonValue],
-        "input": NotRequired[JsonValue],
-        "instructions": NotRequired[JsonValue],
-        "output": NotRequired[JsonValue],
-        "prompt": NotRequired[JsonValue],
-        "request": NotRequired[JsonValue],
-        "response": NotRequired[JsonValue],
-        "summary": NotRequired[JsonValue],
-        "workspace": NotRequired[JsonValue],
+        "content": NotRequired[
+            _UserElicitationResultCapabilitiesField4ModifyField0ContentModel
+        ],
+        "input": NotRequired[
+            _UserElicitationResultCapabilitiesField4ModifyField1InputModel
+        ],
+        "instructions": NotRequired[
+            _UserElicitationResultCapabilitiesField4ModifyField2InstructionsModel
+        ],
+        "output": NotRequired[
+            _UserElicitationResultCapabilitiesField4ModifyField3OutputModel
+        ],
+        "prompt": NotRequired[
+            _UserElicitationResultCapabilitiesField4ModifyField4PromptModel
+        ],
+        "request": NotRequired[
+            _UserElicitationResultCapabilitiesField4ModifyField5RequestModel
+        ],
+        "response": NotRequired[
+            _UserElicitationResultCapabilitiesField4ModifyField6ResponseModel
+        ],
+        "summary": NotRequired[
+            _UserElicitationResultCapabilitiesField4ModifyField7SummaryModel
+        ],
+        "workspace": NotRequired[
+            _UserElicitationResultCapabilitiesField4ModifyField8WorkspaceModel
+        ],
     },
     total=False,
 )
@@ -9707,7 +7251,7 @@ _UserElicitationResultCapabilitiesField4ModifyModel: TypeAlias = (
 _UserElicitationResultCapabilitiesKnownFields = TypedDict(
     "_UserElicitationResultCapabilitiesKnownFields",
     {
-        "effects": Required[JsonValue],
+        "effects": Required[list[Union[OpenString, str]]],
         "elicitation": NotRequired[
             _UserElicitationResultCapabilitiesField1ElicitationModel
         ],
@@ -9738,13 +7282,91 @@ __UserElicitationResultEventField10TurnModelKnownFields = TypedDict(
 _UserElicitationResultEventField10TurnModel: TypeAlias = (
     __UserElicitationResultEventField10TurnModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__UserElicitationResultEventField12ElicitationField2ResultVariant1ModelKnownFields = TypedDict(
-    "__UserElicitationResultEventField12ElicitationField2ResultVariant1ModelKnownFields",
-    {"mediaType": NotRequired[Literal["application/json"]]},
+__UserElicitationResultEventField12ElicitationField2ResultBodyModelKnownFields = TypedDict(
+    "__UserElicitationResultEventField12ElicitationField2ResultBodyModelKnownFields",
+    {
+        "body": Required["ContentReference"],
+        "category": NotRequired[str],
+        "id": Required[str],
+        "kind": Required[str],
+        "mediaType": Required[Literal["application/json"]],
+        "parentItemId": NotRequired[str],
+        "role": NotRequired[str],
+        "selection": Required[Literal["body"]],
+        "synthesized": NotRequired[bool],
+    },
     total=False,
 )
-_UserElicitationResultEventField12ElicitationField2ResultVariant1Model: TypeAlias = (
-    __UserElicitationResultEventField12ElicitationField2ResultVariant1ModelKnownFields
+_UserElicitationResultEventField12ElicitationField2ResultBodyModel: TypeAlias = (
+    __UserElicitationResultEventField12ElicitationField2ResultBodyModelKnownFields
+    | JsonObject
+)  # permits additional JSON fields
+_UserElicitationResultEventField12ElicitationField2ResultBodyGapField1GapModel = TypedDict(
+    "_UserElicitationResultEventField12ElicitationField2ResultBodyGapField1GapModel",
+    {"path": NotRequired[str], "reason": Required[str]},
+    total=False,
+)
+__UserElicitationResultEventField12ElicitationField2ResultBodyGapModelKnownFields = TypedDict(
+    "__UserElicitationResultEventField12ElicitationField2ResultBodyGapModelKnownFields",
+    {
+        "category": NotRequired[str],
+        "gap": Required[
+            _UserElicitationResultEventField12ElicitationField2ResultBodyGapField1GapModel
+        ],
+        "id": Required[str],
+        "kind": Required[str],
+        "mediaType": Required[Literal["application/json"]],
+        "parentItemId": NotRequired[str],
+        "role": NotRequired[str],
+        "selection": Required[Literal["body"]],
+        "sha256": NotRequired[str],
+        "size": NotRequired[int | Decimal],
+        "synthesized": NotRequired[bool],
+    },
+    total=False,
+)
+_UserElicitationResultEventField12ElicitationField2ResultBodyGapModel: TypeAlias = (
+    __UserElicitationResultEventField12ElicitationField2ResultBodyGapModelKnownFields
+    | JsonObject
+)  # permits additional JSON fields
+__UserElicitationResultEventField12ElicitationField2ResultMetadataModelKnownFields = TypedDict(
+    "__UserElicitationResultEventField12ElicitationField2ResultMetadataModelKnownFields",
+    {
+        "category": NotRequired[str],
+        "id": Required[str],
+        "kind": Required[str],
+        "mediaType": Required[Literal["application/json"]],
+        "parentItemId": NotRequired[str],
+        "role": NotRequired[str],
+        "selection": Required[Literal["metadata"]],
+        "sha256": NotRequired[str],
+        "size": NotRequired[int | Decimal],
+        "synthesized": NotRequired[bool],
+    },
+    total=False,
+)
+_UserElicitationResultEventField12ElicitationField2ResultMetadataModel: TypeAlias = (
+    __UserElicitationResultEventField12ElicitationField2ResultMetadataModelKnownFields
+    | JsonObject
+)  # permits additional JSON fields
+__UserElicitationResultEventField12ElicitationField2ResultOmitModelKnownFields = TypedDict(
+    "__UserElicitationResultEventField12ElicitationField2ResultOmitModelKnownFields",
+    {
+        "category": NotRequired[str],
+        "id": Required[str],
+        "kind": Required[str],
+        "mediaType": Required[Literal["application/json"]],
+        "parentItemId": NotRequired[str],
+        "role": NotRequired[str],
+        "selection": Required[Literal["omit"]],
+        "sha256": NotRequired[str],
+        "size": NotRequired[int | Decimal],
+        "synthesized": NotRequired[bool],
+    },
+    total=False,
+)
+_UserElicitationResultEventField12ElicitationField2ResultOmitModel: TypeAlias = (
+    __UserElicitationResultEventField12ElicitationField2ResultOmitModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
 _UserElicitationResultEventField12ElicitationModel = TypedDict(
@@ -9752,7 +7374,14 @@ _UserElicitationResultEventField12ElicitationModel = TypedDict(
     {
         "action": Required[OpenString],
         "mode": Required[OpenString],
-        "result": NotRequired[JsonValue],
+        "result": NotRequired[
+            Union[
+                _UserElicitationResultEventField12ElicitationField2ResultBodyModel,
+                _UserElicitationResultEventField12ElicitationField2ResultBodyGapModel,
+                _UserElicitationResultEventField12ElicitationField2ResultMetadataModel,
+                _UserElicitationResultEventField12ElicitationField2ResultOmitModel,
+            ]
+        ],
         "server": Required[str],
     },
     total=False,
@@ -9848,261 +7477,116 @@ __UserMessageInboundCapabilitiesField3InjectModelKnownFields = TypedDict(
 _UserMessageInboundCapabilitiesField3InjectModel: TypeAlias = (
     __UserMessageInboundCapabilitiesField3InjectModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__UserMessageInboundCapabilitiesField4ModifyField0ContentVariant0ModelKnownFields = TypedDict(
-    "__UserMessageInboundCapabilitiesField4ModifyField0ContentVariant0ModelKnownFields",
+__UserMessageInboundCapabilitiesField4ModifyField0ContentModelKnownFields = TypedDict(
+    "__UserMessageInboundCapabilitiesField4ModifyField0ContentModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_UserMessageInboundCapabilitiesField4ModifyField0ContentVariant0Model: TypeAlias = (
-    __UserMessageInboundCapabilitiesField4ModifyField0ContentVariant0ModelKnownFields
+_UserMessageInboundCapabilitiesField4ModifyField0ContentModel: TypeAlias = (
+    __UserMessageInboundCapabilitiesField4ModifyField0ContentModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserMessageInboundCapabilitiesField4ModifyField0ContentVariant1Variant0ModelKnownFields = TypedDict(
-    "__UserMessageInboundCapabilitiesField4ModifyField0ContentVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_UserMessageInboundCapabilitiesField4ModifyField0ContentVariant1Variant0Model: TypeAlias = (
-    __UserMessageInboundCapabilitiesField4ModifyField0ContentVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__UserMessageInboundCapabilitiesField4ModifyField0ContentVariant1Variant1ModelKnownFields = TypedDict(
-    "__UserMessageInboundCapabilitiesField4ModifyField0ContentVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_UserMessageInboundCapabilitiesField4ModifyField0ContentVariant1Variant1Model: TypeAlias = (
-    __UserMessageInboundCapabilitiesField4ModifyField0ContentVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__UserMessageInboundCapabilitiesField4ModifyField1InputVariant0ModelKnownFields = TypedDict(
-    "__UserMessageInboundCapabilitiesField4ModifyField1InputVariant0ModelKnownFields",
+__UserMessageInboundCapabilitiesField4ModifyField1InputModelKnownFields = TypedDict(
+    "__UserMessageInboundCapabilitiesField4ModifyField1InputModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_UserMessageInboundCapabilitiesField4ModifyField1InputVariant0Model: TypeAlias = (
-    __UserMessageInboundCapabilitiesField4ModifyField1InputVariant0ModelKnownFields
-    | JsonObject
+_UserMessageInboundCapabilitiesField4ModifyField1InputModel: TypeAlias = (
+    __UserMessageInboundCapabilitiesField4ModifyField1InputModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__UserMessageInboundCapabilitiesField4ModifyField1InputVariant1Variant0ModelKnownFields = TypedDict(
-    "__UserMessageInboundCapabilitiesField4ModifyField1InputVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_UserMessageInboundCapabilitiesField4ModifyField1InputVariant1Variant0Model: TypeAlias = (
-    __UserMessageInboundCapabilitiesField4ModifyField1InputVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__UserMessageInboundCapabilitiesField4ModifyField1InputVariant1Variant1ModelKnownFields = TypedDict(
-    "__UserMessageInboundCapabilitiesField4ModifyField1InputVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_UserMessageInboundCapabilitiesField4ModifyField1InputVariant1Variant1Model: TypeAlias = (
-    __UserMessageInboundCapabilitiesField4ModifyField1InputVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__UserMessageInboundCapabilitiesField4ModifyField2InstructionsVariant0ModelKnownFields = TypedDict(
-    "__UserMessageInboundCapabilitiesField4ModifyField2InstructionsVariant0ModelKnownFields",
+__UserMessageInboundCapabilitiesField4ModifyField2InstructionsModelKnownFields = TypedDict(
+    "__UserMessageInboundCapabilitiesField4ModifyField2InstructionsModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_UserMessageInboundCapabilitiesField4ModifyField2InstructionsVariant0Model: TypeAlias = (
-    __UserMessageInboundCapabilitiesField4ModifyField2InstructionsVariant0ModelKnownFields
+_UserMessageInboundCapabilitiesField4ModifyField2InstructionsModel: TypeAlias = (
+    __UserMessageInboundCapabilitiesField4ModifyField2InstructionsModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserMessageInboundCapabilitiesField4ModifyField2InstructionsVariant1Variant0ModelKnownFields = TypedDict(
-    "__UserMessageInboundCapabilitiesField4ModifyField2InstructionsVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_UserMessageInboundCapabilitiesField4ModifyField2InstructionsVariant1Variant0Model: TypeAlias = (
-    __UserMessageInboundCapabilitiesField4ModifyField2InstructionsVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__UserMessageInboundCapabilitiesField4ModifyField2InstructionsVariant1Variant1ModelKnownFields = TypedDict(
-    "__UserMessageInboundCapabilitiesField4ModifyField2InstructionsVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_UserMessageInboundCapabilitiesField4ModifyField2InstructionsVariant1Variant1Model: TypeAlias = (
-    __UserMessageInboundCapabilitiesField4ModifyField2InstructionsVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__UserMessageInboundCapabilitiesField4ModifyField3OutputVariant0ModelKnownFields = TypedDict(
-    "__UserMessageInboundCapabilitiesField4ModifyField3OutputVariant0ModelKnownFields",
+__UserMessageInboundCapabilitiesField4ModifyField3OutputModelKnownFields = TypedDict(
+    "__UserMessageInboundCapabilitiesField4ModifyField3OutputModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_UserMessageInboundCapabilitiesField4ModifyField3OutputVariant0Model: TypeAlias = (
-    __UserMessageInboundCapabilitiesField4ModifyField3OutputVariant0ModelKnownFields
+_UserMessageInboundCapabilitiesField4ModifyField3OutputModel: TypeAlias = (
+    __UserMessageInboundCapabilitiesField4ModifyField3OutputModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserMessageInboundCapabilitiesField4ModifyField3OutputVariant1Variant0ModelKnownFields = TypedDict(
-    "__UserMessageInboundCapabilitiesField4ModifyField3OutputVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_UserMessageInboundCapabilitiesField4ModifyField3OutputVariant1Variant0Model: TypeAlias = (
-    __UserMessageInboundCapabilitiesField4ModifyField3OutputVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__UserMessageInboundCapabilitiesField4ModifyField3OutputVariant1Variant1ModelKnownFields = TypedDict(
-    "__UserMessageInboundCapabilitiesField4ModifyField3OutputVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_UserMessageInboundCapabilitiesField4ModifyField3OutputVariant1Variant1Model: TypeAlias = (
-    __UserMessageInboundCapabilitiesField4ModifyField3OutputVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__UserMessageInboundCapabilitiesField4ModifyField4PromptVariant0ModelKnownFields = TypedDict(
-    "__UserMessageInboundCapabilitiesField4ModifyField4PromptVariant0ModelKnownFields",
+__UserMessageInboundCapabilitiesField4ModifyField4PromptModelKnownFields = TypedDict(
+    "__UserMessageInboundCapabilitiesField4ModifyField4PromptModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_UserMessageInboundCapabilitiesField4ModifyField4PromptVariant0Model: TypeAlias = (
-    __UserMessageInboundCapabilitiesField4ModifyField4PromptVariant0ModelKnownFields
+_UserMessageInboundCapabilitiesField4ModifyField4PromptModel: TypeAlias = (
+    __UserMessageInboundCapabilitiesField4ModifyField4PromptModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserMessageInboundCapabilitiesField4ModifyField4PromptVariant1Variant0ModelKnownFields = TypedDict(
-    "__UserMessageInboundCapabilitiesField4ModifyField4PromptVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_UserMessageInboundCapabilitiesField4ModifyField4PromptVariant1Variant0Model: TypeAlias = (
-    __UserMessageInboundCapabilitiesField4ModifyField4PromptVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__UserMessageInboundCapabilitiesField4ModifyField4PromptVariant1Variant1ModelKnownFields = TypedDict(
-    "__UserMessageInboundCapabilitiesField4ModifyField4PromptVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_UserMessageInboundCapabilitiesField4ModifyField4PromptVariant1Variant1Model: TypeAlias = (
-    __UserMessageInboundCapabilitiesField4ModifyField4PromptVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__UserMessageInboundCapabilitiesField4ModifyField5RequestVariant0ModelKnownFields = TypedDict(
-    "__UserMessageInboundCapabilitiesField4ModifyField5RequestVariant0ModelKnownFields",
+__UserMessageInboundCapabilitiesField4ModifyField5RequestModelKnownFields = TypedDict(
+    "__UserMessageInboundCapabilitiesField4ModifyField5RequestModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_UserMessageInboundCapabilitiesField4ModifyField5RequestVariant0Model: TypeAlias = (
-    __UserMessageInboundCapabilitiesField4ModifyField5RequestVariant0ModelKnownFields
+_UserMessageInboundCapabilitiesField4ModifyField5RequestModel: TypeAlias = (
+    __UserMessageInboundCapabilitiesField4ModifyField5RequestModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserMessageInboundCapabilitiesField4ModifyField5RequestVariant1Variant0ModelKnownFields = TypedDict(
-    "__UserMessageInboundCapabilitiesField4ModifyField5RequestVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_UserMessageInboundCapabilitiesField4ModifyField5RequestVariant1Variant0Model: TypeAlias = (
-    __UserMessageInboundCapabilitiesField4ModifyField5RequestVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__UserMessageInboundCapabilitiesField4ModifyField5RequestVariant1Variant1ModelKnownFields = TypedDict(
-    "__UserMessageInboundCapabilitiesField4ModifyField5RequestVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_UserMessageInboundCapabilitiesField4ModifyField5RequestVariant1Variant1Model: TypeAlias = (
-    __UserMessageInboundCapabilitiesField4ModifyField5RequestVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__UserMessageInboundCapabilitiesField4ModifyField6ResponseVariant0ModelKnownFields = TypedDict(
-    "__UserMessageInboundCapabilitiesField4ModifyField6ResponseVariant0ModelKnownFields",
+__UserMessageInboundCapabilitiesField4ModifyField6ResponseModelKnownFields = TypedDict(
+    "__UserMessageInboundCapabilitiesField4ModifyField6ResponseModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_UserMessageInboundCapabilitiesField4ModifyField6ResponseVariant0Model: TypeAlias = (
-    __UserMessageInboundCapabilitiesField4ModifyField6ResponseVariant0ModelKnownFields
+_UserMessageInboundCapabilitiesField4ModifyField6ResponseModel: TypeAlias = (
+    __UserMessageInboundCapabilitiesField4ModifyField6ResponseModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserMessageInboundCapabilitiesField4ModifyField6ResponseVariant1Variant0ModelKnownFields = TypedDict(
-    "__UserMessageInboundCapabilitiesField4ModifyField6ResponseVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_UserMessageInboundCapabilitiesField4ModifyField6ResponseVariant1Variant0Model: TypeAlias = (
-    __UserMessageInboundCapabilitiesField4ModifyField6ResponseVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__UserMessageInboundCapabilitiesField4ModifyField6ResponseVariant1Variant1ModelKnownFields = TypedDict(
-    "__UserMessageInboundCapabilitiesField4ModifyField6ResponseVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_UserMessageInboundCapabilitiesField4ModifyField6ResponseVariant1Variant1Model: TypeAlias = (
-    __UserMessageInboundCapabilitiesField4ModifyField6ResponseVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__UserMessageInboundCapabilitiesField4ModifyField7SummaryVariant0ModelKnownFields = TypedDict(
-    "__UserMessageInboundCapabilitiesField4ModifyField7SummaryVariant0ModelKnownFields",
+__UserMessageInboundCapabilitiesField4ModifyField7SummaryModelKnownFields = TypedDict(
+    "__UserMessageInboundCapabilitiesField4ModifyField7SummaryModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_UserMessageInboundCapabilitiesField4ModifyField7SummaryVariant0Model: TypeAlias = (
-    __UserMessageInboundCapabilitiesField4ModifyField7SummaryVariant0ModelKnownFields
+_UserMessageInboundCapabilitiesField4ModifyField7SummaryModel: TypeAlias = (
+    __UserMessageInboundCapabilitiesField4ModifyField7SummaryModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserMessageInboundCapabilitiesField4ModifyField7SummaryVariant1Variant0ModelKnownFields = TypedDict(
-    "__UserMessageInboundCapabilitiesField4ModifyField7SummaryVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_UserMessageInboundCapabilitiesField4ModifyField7SummaryVariant1Variant0Model: TypeAlias = (
-    __UserMessageInboundCapabilitiesField4ModifyField7SummaryVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__UserMessageInboundCapabilitiesField4ModifyField7SummaryVariant1Variant1ModelKnownFields = TypedDict(
-    "__UserMessageInboundCapabilitiesField4ModifyField7SummaryVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_UserMessageInboundCapabilitiesField4ModifyField7SummaryVariant1Variant1Model: TypeAlias = (
-    __UserMessageInboundCapabilitiesField4ModifyField7SummaryVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__UserMessageInboundCapabilitiesField4ModifyField8WorkspaceVariant0ModelKnownFields = TypedDict(
-    "__UserMessageInboundCapabilitiesField4ModifyField8WorkspaceVariant0ModelKnownFields",
+__UserMessageInboundCapabilitiesField4ModifyField8WorkspaceModelKnownFields = TypedDict(
+    "__UserMessageInboundCapabilitiesField4ModifyField8WorkspaceModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_UserMessageInboundCapabilitiesField4ModifyField8WorkspaceVariant0Model: TypeAlias = (
-    __UserMessageInboundCapabilitiesField4ModifyField8WorkspaceVariant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__UserMessageInboundCapabilitiesField4ModifyField8WorkspaceVariant1Variant0ModelKnownFields = TypedDict(
-    "__UserMessageInboundCapabilitiesField4ModifyField8WorkspaceVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_UserMessageInboundCapabilitiesField4ModifyField8WorkspaceVariant1Variant0Model: TypeAlias = (
-    __UserMessageInboundCapabilitiesField4ModifyField8WorkspaceVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__UserMessageInboundCapabilitiesField4ModifyField8WorkspaceVariant1Variant1ModelKnownFields = TypedDict(
-    "__UserMessageInboundCapabilitiesField4ModifyField8WorkspaceVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_UserMessageInboundCapabilitiesField4ModifyField8WorkspaceVariant1Variant1Model: TypeAlias = (
-    __UserMessageInboundCapabilitiesField4ModifyField8WorkspaceVariant1Variant1ModelKnownFields
+_UserMessageInboundCapabilitiesField4ModifyField8WorkspaceModel: TypeAlias = (
+    __UserMessageInboundCapabilitiesField4ModifyField8WorkspaceModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
 __UserMessageInboundCapabilitiesField4ModifyModelKnownFields = TypedDict(
     "__UserMessageInboundCapabilitiesField4ModifyModelKnownFields",
     {
-        "content": NotRequired[JsonValue],
-        "input": NotRequired[JsonValue],
-        "instructions": NotRequired[JsonValue],
-        "output": NotRequired[JsonValue],
-        "prompt": NotRequired[JsonValue],
-        "request": NotRequired[JsonValue],
-        "response": NotRequired[JsonValue],
-        "summary": NotRequired[JsonValue],
-        "workspace": NotRequired[JsonValue],
+        "content": NotRequired[
+            _UserMessageInboundCapabilitiesField4ModifyField0ContentModel
+        ],
+        "input": NotRequired[
+            _UserMessageInboundCapabilitiesField4ModifyField1InputModel
+        ],
+        "instructions": NotRequired[
+            _UserMessageInboundCapabilitiesField4ModifyField2InstructionsModel
+        ],
+        "output": NotRequired[
+            _UserMessageInboundCapabilitiesField4ModifyField3OutputModel
+        ],
+        "prompt": NotRequired[
+            _UserMessageInboundCapabilitiesField4ModifyField4PromptModel
+        ],
+        "request": NotRequired[
+            _UserMessageInboundCapabilitiesField4ModifyField5RequestModel
+        ],
+        "response": NotRequired[
+            _UserMessageInboundCapabilitiesField4ModifyField6ResponseModel
+        ],
+        "summary": NotRequired[
+            _UserMessageInboundCapabilitiesField4ModifyField7SummaryModel
+        ],
+        "workspace": NotRequired[
+            _UserMessageInboundCapabilitiesField4ModifyField8WorkspaceModel
+        ],
     },
     total=False,
 )
@@ -10112,7 +7596,7 @@ _UserMessageInboundCapabilitiesField4ModifyModel: TypeAlias = (
 _UserMessageInboundCapabilitiesKnownFields = TypedDict(
     "_UserMessageInboundCapabilitiesKnownFields",
     {
-        "effects": Required[JsonValue],
+        "effects": Required[list[Union[OpenString, str]]],
         "elicitation": NotRequired[
             _UserMessageInboundCapabilitiesField1ElicitationModel
         ],
@@ -10245,261 +7729,119 @@ __UserMessageOutboundCapabilitiesField3InjectModelKnownFields = TypedDict(
 _UserMessageOutboundCapabilitiesField3InjectModel: TypeAlias = (
     __UserMessageOutboundCapabilitiesField3InjectModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__UserMessageOutboundCapabilitiesField4ModifyField0ContentVariant0ModelKnownFields = TypedDict(
-    "__UserMessageOutboundCapabilitiesField4ModifyField0ContentVariant0ModelKnownFields",
+__UserMessageOutboundCapabilitiesField4ModifyField0ContentModelKnownFields = TypedDict(
+    "__UserMessageOutboundCapabilitiesField4ModifyField0ContentModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_UserMessageOutboundCapabilitiesField4ModifyField0ContentVariant0Model: TypeAlias = (
-    __UserMessageOutboundCapabilitiesField4ModifyField0ContentVariant0ModelKnownFields
+_UserMessageOutboundCapabilitiesField4ModifyField0ContentModel: TypeAlias = (
+    __UserMessageOutboundCapabilitiesField4ModifyField0ContentModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserMessageOutboundCapabilitiesField4ModifyField0ContentVariant1Variant0ModelKnownFields = TypedDict(
-    "__UserMessageOutboundCapabilitiesField4ModifyField0ContentVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_UserMessageOutboundCapabilitiesField4ModifyField0ContentVariant1Variant0Model: TypeAlias = (
-    __UserMessageOutboundCapabilitiesField4ModifyField0ContentVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__UserMessageOutboundCapabilitiesField4ModifyField0ContentVariant1Variant1ModelKnownFields = TypedDict(
-    "__UserMessageOutboundCapabilitiesField4ModifyField0ContentVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_UserMessageOutboundCapabilitiesField4ModifyField0ContentVariant1Variant1Model: TypeAlias = (
-    __UserMessageOutboundCapabilitiesField4ModifyField0ContentVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__UserMessageOutboundCapabilitiesField4ModifyField1InputVariant0ModelKnownFields = TypedDict(
-    "__UserMessageOutboundCapabilitiesField4ModifyField1InputVariant0ModelKnownFields",
+__UserMessageOutboundCapabilitiesField4ModifyField1InputModelKnownFields = TypedDict(
+    "__UserMessageOutboundCapabilitiesField4ModifyField1InputModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_UserMessageOutboundCapabilitiesField4ModifyField1InputVariant0Model: TypeAlias = (
-    __UserMessageOutboundCapabilitiesField4ModifyField1InputVariant0ModelKnownFields
+_UserMessageOutboundCapabilitiesField4ModifyField1InputModel: TypeAlias = (
+    __UserMessageOutboundCapabilitiesField4ModifyField1InputModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserMessageOutboundCapabilitiesField4ModifyField1InputVariant1Variant0ModelKnownFields = TypedDict(
-    "__UserMessageOutboundCapabilitiesField4ModifyField1InputVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_UserMessageOutboundCapabilitiesField4ModifyField1InputVariant1Variant0Model: TypeAlias = (
-    __UserMessageOutboundCapabilitiesField4ModifyField1InputVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__UserMessageOutboundCapabilitiesField4ModifyField1InputVariant1Variant1ModelKnownFields = TypedDict(
-    "__UserMessageOutboundCapabilitiesField4ModifyField1InputVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_UserMessageOutboundCapabilitiesField4ModifyField1InputVariant1Variant1Model: TypeAlias = (
-    __UserMessageOutboundCapabilitiesField4ModifyField1InputVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__UserMessageOutboundCapabilitiesField4ModifyField2InstructionsVariant0ModelKnownFields = TypedDict(
-    "__UserMessageOutboundCapabilitiesField4ModifyField2InstructionsVariant0ModelKnownFields",
+__UserMessageOutboundCapabilitiesField4ModifyField2InstructionsModelKnownFields = TypedDict(
+    "__UserMessageOutboundCapabilitiesField4ModifyField2InstructionsModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_UserMessageOutboundCapabilitiesField4ModifyField2InstructionsVariant0Model: TypeAlias = (
-    __UserMessageOutboundCapabilitiesField4ModifyField2InstructionsVariant0ModelKnownFields
+_UserMessageOutboundCapabilitiesField4ModifyField2InstructionsModel: TypeAlias = (
+    __UserMessageOutboundCapabilitiesField4ModifyField2InstructionsModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserMessageOutboundCapabilitiesField4ModifyField2InstructionsVariant1Variant0ModelKnownFields = TypedDict(
-    "__UserMessageOutboundCapabilitiesField4ModifyField2InstructionsVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_UserMessageOutboundCapabilitiesField4ModifyField2InstructionsVariant1Variant0Model: TypeAlias = (
-    __UserMessageOutboundCapabilitiesField4ModifyField2InstructionsVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__UserMessageOutboundCapabilitiesField4ModifyField2InstructionsVariant1Variant1ModelKnownFields = TypedDict(
-    "__UserMessageOutboundCapabilitiesField4ModifyField2InstructionsVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_UserMessageOutboundCapabilitiesField4ModifyField2InstructionsVariant1Variant1Model: TypeAlias = (
-    __UserMessageOutboundCapabilitiesField4ModifyField2InstructionsVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__UserMessageOutboundCapabilitiesField4ModifyField3OutputVariant0ModelKnownFields = TypedDict(
-    "__UserMessageOutboundCapabilitiesField4ModifyField3OutputVariant0ModelKnownFields",
+__UserMessageOutboundCapabilitiesField4ModifyField3OutputModelKnownFields = TypedDict(
+    "__UserMessageOutboundCapabilitiesField4ModifyField3OutputModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_UserMessageOutboundCapabilitiesField4ModifyField3OutputVariant0Model: TypeAlias = (
-    __UserMessageOutboundCapabilitiesField4ModifyField3OutputVariant0ModelKnownFields
+_UserMessageOutboundCapabilitiesField4ModifyField3OutputModel: TypeAlias = (
+    __UserMessageOutboundCapabilitiesField4ModifyField3OutputModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserMessageOutboundCapabilitiesField4ModifyField3OutputVariant1Variant0ModelKnownFields = TypedDict(
-    "__UserMessageOutboundCapabilitiesField4ModifyField3OutputVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_UserMessageOutboundCapabilitiesField4ModifyField3OutputVariant1Variant0Model: TypeAlias = (
-    __UserMessageOutboundCapabilitiesField4ModifyField3OutputVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__UserMessageOutboundCapabilitiesField4ModifyField3OutputVariant1Variant1ModelKnownFields = TypedDict(
-    "__UserMessageOutboundCapabilitiesField4ModifyField3OutputVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_UserMessageOutboundCapabilitiesField4ModifyField3OutputVariant1Variant1Model: TypeAlias = (
-    __UserMessageOutboundCapabilitiesField4ModifyField3OutputVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__UserMessageOutboundCapabilitiesField4ModifyField4PromptVariant0ModelKnownFields = TypedDict(
-    "__UserMessageOutboundCapabilitiesField4ModifyField4PromptVariant0ModelKnownFields",
+__UserMessageOutboundCapabilitiesField4ModifyField4PromptModelKnownFields = TypedDict(
+    "__UserMessageOutboundCapabilitiesField4ModifyField4PromptModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_UserMessageOutboundCapabilitiesField4ModifyField4PromptVariant0Model: TypeAlias = (
-    __UserMessageOutboundCapabilitiesField4ModifyField4PromptVariant0ModelKnownFields
+_UserMessageOutboundCapabilitiesField4ModifyField4PromptModel: TypeAlias = (
+    __UserMessageOutboundCapabilitiesField4ModifyField4PromptModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserMessageOutboundCapabilitiesField4ModifyField4PromptVariant1Variant0ModelKnownFields = TypedDict(
-    "__UserMessageOutboundCapabilitiesField4ModifyField4PromptVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_UserMessageOutboundCapabilitiesField4ModifyField4PromptVariant1Variant0Model: TypeAlias = (
-    __UserMessageOutboundCapabilitiesField4ModifyField4PromptVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__UserMessageOutboundCapabilitiesField4ModifyField4PromptVariant1Variant1ModelKnownFields = TypedDict(
-    "__UserMessageOutboundCapabilitiesField4ModifyField4PromptVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_UserMessageOutboundCapabilitiesField4ModifyField4PromptVariant1Variant1Model: TypeAlias = (
-    __UserMessageOutboundCapabilitiesField4ModifyField4PromptVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__UserMessageOutboundCapabilitiesField4ModifyField5RequestVariant0ModelKnownFields = TypedDict(
-    "__UserMessageOutboundCapabilitiesField4ModifyField5RequestVariant0ModelKnownFields",
+__UserMessageOutboundCapabilitiesField4ModifyField5RequestModelKnownFields = TypedDict(
+    "__UserMessageOutboundCapabilitiesField4ModifyField5RequestModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_UserMessageOutboundCapabilitiesField4ModifyField5RequestVariant0Model: TypeAlias = (
-    __UserMessageOutboundCapabilitiesField4ModifyField5RequestVariant0ModelKnownFields
+_UserMessageOutboundCapabilitiesField4ModifyField5RequestModel: TypeAlias = (
+    __UserMessageOutboundCapabilitiesField4ModifyField5RequestModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserMessageOutboundCapabilitiesField4ModifyField5RequestVariant1Variant0ModelKnownFields = TypedDict(
-    "__UserMessageOutboundCapabilitiesField4ModifyField5RequestVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_UserMessageOutboundCapabilitiesField4ModifyField5RequestVariant1Variant0Model: TypeAlias = (
-    __UserMessageOutboundCapabilitiesField4ModifyField5RequestVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__UserMessageOutboundCapabilitiesField4ModifyField5RequestVariant1Variant1ModelKnownFields = TypedDict(
-    "__UserMessageOutboundCapabilitiesField4ModifyField5RequestVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_UserMessageOutboundCapabilitiesField4ModifyField5RequestVariant1Variant1Model: TypeAlias = (
-    __UserMessageOutboundCapabilitiesField4ModifyField5RequestVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__UserMessageOutboundCapabilitiesField4ModifyField6ResponseVariant0ModelKnownFields = TypedDict(
-    "__UserMessageOutboundCapabilitiesField4ModifyField6ResponseVariant0ModelKnownFields",
+__UserMessageOutboundCapabilitiesField4ModifyField6ResponseModelKnownFields = TypedDict(
+    "__UserMessageOutboundCapabilitiesField4ModifyField6ResponseModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_UserMessageOutboundCapabilitiesField4ModifyField6ResponseVariant0Model: TypeAlias = (
-    __UserMessageOutboundCapabilitiesField4ModifyField6ResponseVariant0ModelKnownFields
+_UserMessageOutboundCapabilitiesField4ModifyField6ResponseModel: TypeAlias = (
+    __UserMessageOutboundCapabilitiesField4ModifyField6ResponseModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserMessageOutboundCapabilitiesField4ModifyField6ResponseVariant1Variant0ModelKnownFields = TypedDict(
-    "__UserMessageOutboundCapabilitiesField4ModifyField6ResponseVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_UserMessageOutboundCapabilitiesField4ModifyField6ResponseVariant1Variant0Model: TypeAlias = (
-    __UserMessageOutboundCapabilitiesField4ModifyField6ResponseVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__UserMessageOutboundCapabilitiesField4ModifyField6ResponseVariant1Variant1ModelKnownFields = TypedDict(
-    "__UserMessageOutboundCapabilitiesField4ModifyField6ResponseVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_UserMessageOutboundCapabilitiesField4ModifyField6ResponseVariant1Variant1Model: TypeAlias = (
-    __UserMessageOutboundCapabilitiesField4ModifyField6ResponseVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__UserMessageOutboundCapabilitiesField4ModifyField7SummaryVariant0ModelKnownFields = TypedDict(
-    "__UserMessageOutboundCapabilitiesField4ModifyField7SummaryVariant0ModelKnownFields",
+__UserMessageOutboundCapabilitiesField4ModifyField7SummaryModelKnownFields = TypedDict(
+    "__UserMessageOutboundCapabilitiesField4ModifyField7SummaryModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_UserMessageOutboundCapabilitiesField4ModifyField7SummaryVariant0Model: TypeAlias = (
-    __UserMessageOutboundCapabilitiesField4ModifyField7SummaryVariant0ModelKnownFields
+_UserMessageOutboundCapabilitiesField4ModifyField7SummaryModel: TypeAlias = (
+    __UserMessageOutboundCapabilitiesField4ModifyField7SummaryModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__UserMessageOutboundCapabilitiesField4ModifyField7SummaryVariant1Variant0ModelKnownFields = TypedDict(
-    "__UserMessageOutboundCapabilitiesField4ModifyField7SummaryVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
+__UserMessageOutboundCapabilitiesField4ModifyField8WorkspaceModelKnownFields = (
+    TypedDict(
+        "__UserMessageOutboundCapabilitiesField4ModifyField8WorkspaceModelKnownFields",
+        {"merge": Required[bool], "replace": Required[bool]},
+        total=False,
+    )
 )
-_UserMessageOutboundCapabilitiesField4ModifyField7SummaryVariant1Variant0Model: TypeAlias = (
-    __UserMessageOutboundCapabilitiesField4ModifyField7SummaryVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__UserMessageOutboundCapabilitiesField4ModifyField7SummaryVariant1Variant1ModelKnownFields = TypedDict(
-    "__UserMessageOutboundCapabilitiesField4ModifyField7SummaryVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_UserMessageOutboundCapabilitiesField4ModifyField7SummaryVariant1Variant1Model: TypeAlias = (
-    __UserMessageOutboundCapabilitiesField4ModifyField7SummaryVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__UserMessageOutboundCapabilitiesField4ModifyField8WorkspaceVariant0ModelKnownFields = TypedDict(
-    "__UserMessageOutboundCapabilitiesField4ModifyField8WorkspaceVariant0ModelKnownFields",
-    {"merge": Required[bool], "replace": Required[bool]},
-    total=False,
-)
-_UserMessageOutboundCapabilitiesField4ModifyField8WorkspaceVariant0Model: TypeAlias = (
-    __UserMessageOutboundCapabilitiesField4ModifyField8WorkspaceVariant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__UserMessageOutboundCapabilitiesField4ModifyField8WorkspaceVariant1Variant0ModelKnownFields = TypedDict(
-    "__UserMessageOutboundCapabilitiesField4ModifyField8WorkspaceVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_UserMessageOutboundCapabilitiesField4ModifyField8WorkspaceVariant1Variant0Model: TypeAlias = (
-    __UserMessageOutboundCapabilitiesField4ModifyField8WorkspaceVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__UserMessageOutboundCapabilitiesField4ModifyField8WorkspaceVariant1Variant1ModelKnownFields = TypedDict(
-    "__UserMessageOutboundCapabilitiesField4ModifyField8WorkspaceVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_UserMessageOutboundCapabilitiesField4ModifyField8WorkspaceVariant1Variant1Model: TypeAlias = (
-    __UserMessageOutboundCapabilitiesField4ModifyField8WorkspaceVariant1Variant1ModelKnownFields
+_UserMessageOutboundCapabilitiesField4ModifyField8WorkspaceModel: TypeAlias = (
+    __UserMessageOutboundCapabilitiesField4ModifyField8WorkspaceModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
 __UserMessageOutboundCapabilitiesField4ModifyModelKnownFields = TypedDict(
     "__UserMessageOutboundCapabilitiesField4ModifyModelKnownFields",
     {
-        "content": NotRequired[JsonValue],
-        "input": NotRequired[JsonValue],
-        "instructions": NotRequired[JsonValue],
-        "output": NotRequired[JsonValue],
-        "prompt": NotRequired[JsonValue],
-        "request": NotRequired[JsonValue],
-        "response": NotRequired[JsonValue],
-        "summary": NotRequired[JsonValue],
-        "workspace": NotRequired[JsonValue],
+        "content": NotRequired[
+            _UserMessageOutboundCapabilitiesField4ModifyField0ContentModel
+        ],
+        "input": NotRequired[
+            _UserMessageOutboundCapabilitiesField4ModifyField1InputModel
+        ],
+        "instructions": NotRequired[
+            _UserMessageOutboundCapabilitiesField4ModifyField2InstructionsModel
+        ],
+        "output": NotRequired[
+            _UserMessageOutboundCapabilitiesField4ModifyField3OutputModel
+        ],
+        "prompt": NotRequired[
+            _UserMessageOutboundCapabilitiesField4ModifyField4PromptModel
+        ],
+        "request": NotRequired[
+            _UserMessageOutboundCapabilitiesField4ModifyField5RequestModel
+        ],
+        "response": NotRequired[
+            _UserMessageOutboundCapabilitiesField4ModifyField6ResponseModel
+        ],
+        "summary": NotRequired[
+            _UserMessageOutboundCapabilitiesField4ModifyField7SummaryModel
+        ],
+        "workspace": NotRequired[
+            _UserMessageOutboundCapabilitiesField4ModifyField8WorkspaceModel
+        ],
     },
     total=False,
 )
@@ -10509,7 +7851,7 @@ _UserMessageOutboundCapabilitiesField4ModifyModel: TypeAlias = (
 _UserMessageOutboundCapabilitiesKnownFields = TypedDict(
     "_UserMessageOutboundCapabilitiesKnownFields",
     {
-        "effects": Required[JsonValue],
+        "effects": Required[list[Union[OpenString, str]]],
         "elicitation": NotRequired[
             _UserMessageOutboundCapabilitiesField1ElicitationModel
         ],
@@ -10653,261 +7995,125 @@ __WorkspaceChangeBeforeCapabilitiesField3InjectModelKnownFields = TypedDict(
 _WorkspaceChangeBeforeCapabilitiesField3InjectModel: TypeAlias = (
     __WorkspaceChangeBeforeCapabilitiesField3InjectModelKnownFields | JsonObject
 )  # permits additional JSON fields
-__WorkspaceChangeBeforeCapabilitiesField4ModifyField0ContentVariant0ModelKnownFields = TypedDict(
-    "__WorkspaceChangeBeforeCapabilitiesField4ModifyField0ContentVariant0ModelKnownFields",
+__WorkspaceChangeBeforeCapabilitiesField4ModifyField0ContentModelKnownFields = (
+    TypedDict(
+        "__WorkspaceChangeBeforeCapabilitiesField4ModifyField0ContentModelKnownFields",
+        {"merge": Required[bool], "replace": Required[bool]},
+        total=False,
+    )
+)
+_WorkspaceChangeBeforeCapabilitiesField4ModifyField0ContentModel: TypeAlias = (
+    __WorkspaceChangeBeforeCapabilitiesField4ModifyField0ContentModelKnownFields
+    | JsonObject
+)  # permits additional JSON fields
+__WorkspaceChangeBeforeCapabilitiesField4ModifyField1InputModelKnownFields = TypedDict(
+    "__WorkspaceChangeBeforeCapabilitiesField4ModifyField1InputModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_WorkspaceChangeBeforeCapabilitiesField4ModifyField0ContentVariant0Model: TypeAlias = (
-    __WorkspaceChangeBeforeCapabilitiesField4ModifyField0ContentVariant0ModelKnownFields
+_WorkspaceChangeBeforeCapabilitiesField4ModifyField1InputModel: TypeAlias = (
+    __WorkspaceChangeBeforeCapabilitiesField4ModifyField1InputModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__WorkspaceChangeBeforeCapabilitiesField4ModifyField0ContentVariant1Variant0ModelKnownFields = TypedDict(
-    "__WorkspaceChangeBeforeCapabilitiesField4ModifyField0ContentVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_WorkspaceChangeBeforeCapabilitiesField4ModifyField0ContentVariant1Variant0Model: TypeAlias = (
-    __WorkspaceChangeBeforeCapabilitiesField4ModifyField0ContentVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__WorkspaceChangeBeforeCapabilitiesField4ModifyField0ContentVariant1Variant1ModelKnownFields = TypedDict(
-    "__WorkspaceChangeBeforeCapabilitiesField4ModifyField0ContentVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_WorkspaceChangeBeforeCapabilitiesField4ModifyField0ContentVariant1Variant1Model: TypeAlias = (
-    __WorkspaceChangeBeforeCapabilitiesField4ModifyField0ContentVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__WorkspaceChangeBeforeCapabilitiesField4ModifyField1InputVariant0ModelKnownFields = TypedDict(
-    "__WorkspaceChangeBeforeCapabilitiesField4ModifyField1InputVariant0ModelKnownFields",
+__WorkspaceChangeBeforeCapabilitiesField4ModifyField2InstructionsModelKnownFields = TypedDict(
+    "__WorkspaceChangeBeforeCapabilitiesField4ModifyField2InstructionsModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_WorkspaceChangeBeforeCapabilitiesField4ModifyField1InputVariant0Model: TypeAlias = (
-    __WorkspaceChangeBeforeCapabilitiesField4ModifyField1InputVariant0ModelKnownFields
+_WorkspaceChangeBeforeCapabilitiesField4ModifyField2InstructionsModel: TypeAlias = (
+    __WorkspaceChangeBeforeCapabilitiesField4ModifyField2InstructionsModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__WorkspaceChangeBeforeCapabilitiesField4ModifyField1InputVariant1Variant0ModelKnownFields = TypedDict(
-    "__WorkspaceChangeBeforeCapabilitiesField4ModifyField1InputVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_WorkspaceChangeBeforeCapabilitiesField4ModifyField1InputVariant1Variant0Model: TypeAlias = (
-    __WorkspaceChangeBeforeCapabilitiesField4ModifyField1InputVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__WorkspaceChangeBeforeCapabilitiesField4ModifyField1InputVariant1Variant1ModelKnownFields = TypedDict(
-    "__WorkspaceChangeBeforeCapabilitiesField4ModifyField1InputVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_WorkspaceChangeBeforeCapabilitiesField4ModifyField1InputVariant1Variant1Model: TypeAlias = (
-    __WorkspaceChangeBeforeCapabilitiesField4ModifyField1InputVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__WorkspaceChangeBeforeCapabilitiesField4ModifyField2InstructionsVariant0ModelKnownFields = TypedDict(
-    "__WorkspaceChangeBeforeCapabilitiesField4ModifyField2InstructionsVariant0ModelKnownFields",
+__WorkspaceChangeBeforeCapabilitiesField4ModifyField3OutputModelKnownFields = TypedDict(
+    "__WorkspaceChangeBeforeCapabilitiesField4ModifyField3OutputModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_WorkspaceChangeBeforeCapabilitiesField4ModifyField2InstructionsVariant0Model: TypeAlias = (
-    __WorkspaceChangeBeforeCapabilitiesField4ModifyField2InstructionsVariant0ModelKnownFields
+_WorkspaceChangeBeforeCapabilitiesField4ModifyField3OutputModel: TypeAlias = (
+    __WorkspaceChangeBeforeCapabilitiesField4ModifyField3OutputModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__WorkspaceChangeBeforeCapabilitiesField4ModifyField2InstructionsVariant1Variant0ModelKnownFields = TypedDict(
-    "__WorkspaceChangeBeforeCapabilitiesField4ModifyField2InstructionsVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_WorkspaceChangeBeforeCapabilitiesField4ModifyField2InstructionsVariant1Variant0Model: TypeAlias = (
-    __WorkspaceChangeBeforeCapabilitiesField4ModifyField2InstructionsVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__WorkspaceChangeBeforeCapabilitiesField4ModifyField2InstructionsVariant1Variant1ModelKnownFields = TypedDict(
-    "__WorkspaceChangeBeforeCapabilitiesField4ModifyField2InstructionsVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_WorkspaceChangeBeforeCapabilitiesField4ModifyField2InstructionsVariant1Variant1Model: TypeAlias = (
-    __WorkspaceChangeBeforeCapabilitiesField4ModifyField2InstructionsVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__WorkspaceChangeBeforeCapabilitiesField4ModifyField3OutputVariant0ModelKnownFields = TypedDict(
-    "__WorkspaceChangeBeforeCapabilitiesField4ModifyField3OutputVariant0ModelKnownFields",
+__WorkspaceChangeBeforeCapabilitiesField4ModifyField4PromptModelKnownFields = TypedDict(
+    "__WorkspaceChangeBeforeCapabilitiesField4ModifyField4PromptModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_WorkspaceChangeBeforeCapabilitiesField4ModifyField3OutputVariant0Model: TypeAlias = (
-    __WorkspaceChangeBeforeCapabilitiesField4ModifyField3OutputVariant0ModelKnownFields
+_WorkspaceChangeBeforeCapabilitiesField4ModifyField4PromptModel: TypeAlias = (
+    __WorkspaceChangeBeforeCapabilitiesField4ModifyField4PromptModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__WorkspaceChangeBeforeCapabilitiesField4ModifyField3OutputVariant1Variant0ModelKnownFields = TypedDict(
-    "__WorkspaceChangeBeforeCapabilitiesField4ModifyField3OutputVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
+__WorkspaceChangeBeforeCapabilitiesField4ModifyField5RequestModelKnownFields = (
+    TypedDict(
+        "__WorkspaceChangeBeforeCapabilitiesField4ModifyField5RequestModelKnownFields",
+        {"merge": Required[bool], "replace": Required[bool]},
+        total=False,
+    )
 )
-_WorkspaceChangeBeforeCapabilitiesField4ModifyField3OutputVariant1Variant0Model: TypeAlias = (
-    __WorkspaceChangeBeforeCapabilitiesField4ModifyField3OutputVariant1Variant0ModelKnownFields
+_WorkspaceChangeBeforeCapabilitiesField4ModifyField5RequestModel: TypeAlias = (
+    __WorkspaceChangeBeforeCapabilitiesField4ModifyField5RequestModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__WorkspaceChangeBeforeCapabilitiesField4ModifyField3OutputVariant1Variant1ModelKnownFields = TypedDict(
-    "__WorkspaceChangeBeforeCapabilitiesField4ModifyField3OutputVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
+__WorkspaceChangeBeforeCapabilitiesField4ModifyField6ResponseModelKnownFields = (
+    TypedDict(
+        "__WorkspaceChangeBeforeCapabilitiesField4ModifyField6ResponseModelKnownFields",
+        {"merge": Required[bool], "replace": Required[bool]},
+        total=False,
+    )
 )
-_WorkspaceChangeBeforeCapabilitiesField4ModifyField3OutputVariant1Variant1Model: TypeAlias = (
-    __WorkspaceChangeBeforeCapabilitiesField4ModifyField3OutputVariant1Variant1ModelKnownFields
+_WorkspaceChangeBeforeCapabilitiesField4ModifyField6ResponseModel: TypeAlias = (
+    __WorkspaceChangeBeforeCapabilitiesField4ModifyField6ResponseModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-__WorkspaceChangeBeforeCapabilitiesField4ModifyField4PromptVariant0ModelKnownFields = TypedDict(
-    "__WorkspaceChangeBeforeCapabilitiesField4ModifyField4PromptVariant0ModelKnownFields",
+__WorkspaceChangeBeforeCapabilitiesField4ModifyField7SummaryModelKnownFields = (
+    TypedDict(
+        "__WorkspaceChangeBeforeCapabilitiesField4ModifyField7SummaryModelKnownFields",
+        {"merge": Required[bool], "replace": Required[bool]},
+        total=False,
+    )
+)
+_WorkspaceChangeBeforeCapabilitiesField4ModifyField7SummaryModel: TypeAlias = (
+    __WorkspaceChangeBeforeCapabilitiesField4ModifyField7SummaryModelKnownFields
+    | JsonObject
+)  # permits additional JSON fields
+__WorkspaceChangeBeforeCapabilitiesField4ModifyField8WorkspaceModelKnownFields = TypedDict(
+    "__WorkspaceChangeBeforeCapabilitiesField4ModifyField8WorkspaceModelKnownFields",
     {"merge": Required[bool], "replace": Required[bool]},
     total=False,
 )
-_WorkspaceChangeBeforeCapabilitiesField4ModifyField4PromptVariant0Model: TypeAlias = (
-    __WorkspaceChangeBeforeCapabilitiesField4ModifyField4PromptVariant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__WorkspaceChangeBeforeCapabilitiesField4ModifyField4PromptVariant1Variant0ModelKnownFields = TypedDict(
-    "__WorkspaceChangeBeforeCapabilitiesField4ModifyField4PromptVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_WorkspaceChangeBeforeCapabilitiesField4ModifyField4PromptVariant1Variant0Model: TypeAlias = (
-    __WorkspaceChangeBeforeCapabilitiesField4ModifyField4PromptVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__WorkspaceChangeBeforeCapabilitiesField4ModifyField4PromptVariant1Variant1ModelKnownFields = TypedDict(
-    "__WorkspaceChangeBeforeCapabilitiesField4ModifyField4PromptVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_WorkspaceChangeBeforeCapabilitiesField4ModifyField4PromptVariant1Variant1Model: TypeAlias = (
-    __WorkspaceChangeBeforeCapabilitiesField4ModifyField4PromptVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__WorkspaceChangeBeforeCapabilitiesField4ModifyField5RequestVariant0ModelKnownFields = TypedDict(
-    "__WorkspaceChangeBeforeCapabilitiesField4ModifyField5RequestVariant0ModelKnownFields",
-    {"merge": Required[bool], "replace": Required[bool]},
-    total=False,
-)
-_WorkspaceChangeBeforeCapabilitiesField4ModifyField5RequestVariant0Model: TypeAlias = (
-    __WorkspaceChangeBeforeCapabilitiesField4ModifyField5RequestVariant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__WorkspaceChangeBeforeCapabilitiesField4ModifyField5RequestVariant1Variant0ModelKnownFields = TypedDict(
-    "__WorkspaceChangeBeforeCapabilitiesField4ModifyField5RequestVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_WorkspaceChangeBeforeCapabilitiesField4ModifyField5RequestVariant1Variant0Model: TypeAlias = (
-    __WorkspaceChangeBeforeCapabilitiesField4ModifyField5RequestVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__WorkspaceChangeBeforeCapabilitiesField4ModifyField5RequestVariant1Variant1ModelKnownFields = TypedDict(
-    "__WorkspaceChangeBeforeCapabilitiesField4ModifyField5RequestVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_WorkspaceChangeBeforeCapabilitiesField4ModifyField5RequestVariant1Variant1Model: TypeAlias = (
-    __WorkspaceChangeBeforeCapabilitiesField4ModifyField5RequestVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__WorkspaceChangeBeforeCapabilitiesField4ModifyField6ResponseVariant0ModelKnownFields = TypedDict(
-    "__WorkspaceChangeBeforeCapabilitiesField4ModifyField6ResponseVariant0ModelKnownFields",
-    {"merge": Required[bool], "replace": Required[bool]},
-    total=False,
-)
-_WorkspaceChangeBeforeCapabilitiesField4ModifyField6ResponseVariant0Model: TypeAlias = (
-    __WorkspaceChangeBeforeCapabilitiesField4ModifyField6ResponseVariant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__WorkspaceChangeBeforeCapabilitiesField4ModifyField6ResponseVariant1Variant0ModelKnownFields = TypedDict(
-    "__WorkspaceChangeBeforeCapabilitiesField4ModifyField6ResponseVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_WorkspaceChangeBeforeCapabilitiesField4ModifyField6ResponseVariant1Variant0Model: TypeAlias = (
-    __WorkspaceChangeBeforeCapabilitiesField4ModifyField6ResponseVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__WorkspaceChangeBeforeCapabilitiesField4ModifyField6ResponseVariant1Variant1ModelKnownFields = TypedDict(
-    "__WorkspaceChangeBeforeCapabilitiesField4ModifyField6ResponseVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_WorkspaceChangeBeforeCapabilitiesField4ModifyField6ResponseVariant1Variant1Model: TypeAlias = (
-    __WorkspaceChangeBeforeCapabilitiesField4ModifyField6ResponseVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__WorkspaceChangeBeforeCapabilitiesField4ModifyField7SummaryVariant0ModelKnownFields = TypedDict(
-    "__WorkspaceChangeBeforeCapabilitiesField4ModifyField7SummaryVariant0ModelKnownFields",
-    {"merge": Required[bool], "replace": Required[bool]},
-    total=False,
-)
-_WorkspaceChangeBeforeCapabilitiesField4ModifyField7SummaryVariant0Model: TypeAlias = (
-    __WorkspaceChangeBeforeCapabilitiesField4ModifyField7SummaryVariant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__WorkspaceChangeBeforeCapabilitiesField4ModifyField7SummaryVariant1Variant0ModelKnownFields = TypedDict(
-    "__WorkspaceChangeBeforeCapabilitiesField4ModifyField7SummaryVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_WorkspaceChangeBeforeCapabilitiesField4ModifyField7SummaryVariant1Variant0Model: TypeAlias = (
-    __WorkspaceChangeBeforeCapabilitiesField4ModifyField7SummaryVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__WorkspaceChangeBeforeCapabilitiesField4ModifyField7SummaryVariant1Variant1ModelKnownFields = TypedDict(
-    "__WorkspaceChangeBeforeCapabilitiesField4ModifyField7SummaryVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_WorkspaceChangeBeforeCapabilitiesField4ModifyField7SummaryVariant1Variant1Model: TypeAlias = (
-    __WorkspaceChangeBeforeCapabilitiesField4ModifyField7SummaryVariant1Variant1ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__WorkspaceChangeBeforeCapabilitiesField4ModifyField8WorkspaceVariant0ModelKnownFields = TypedDict(
-    "__WorkspaceChangeBeforeCapabilitiesField4ModifyField8WorkspaceVariant0ModelKnownFields",
-    {"merge": Required[bool], "replace": Required[bool]},
-    total=False,
-)
-_WorkspaceChangeBeforeCapabilitiesField4ModifyField8WorkspaceVariant0Model: TypeAlias = (
-    __WorkspaceChangeBeforeCapabilitiesField4ModifyField8WorkspaceVariant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__WorkspaceChangeBeforeCapabilitiesField4ModifyField8WorkspaceVariant1Variant0ModelKnownFields = TypedDict(
-    "__WorkspaceChangeBeforeCapabilitiesField4ModifyField8WorkspaceVariant1Variant0ModelKnownFields",
-    {"replace": Required[Literal[True]]},
-    total=False,
-)
-_WorkspaceChangeBeforeCapabilitiesField4ModifyField8WorkspaceVariant1Variant0Model: TypeAlias = (
-    __WorkspaceChangeBeforeCapabilitiesField4ModifyField8WorkspaceVariant1Variant0ModelKnownFields
-    | JsonObject
-)  # permits additional JSON fields
-__WorkspaceChangeBeforeCapabilitiesField4ModifyField8WorkspaceVariant1Variant1ModelKnownFields = TypedDict(
-    "__WorkspaceChangeBeforeCapabilitiesField4ModifyField8WorkspaceVariant1Variant1ModelKnownFields",
-    {"merge": Required[Literal[True]]},
-    total=False,
-)
-_WorkspaceChangeBeforeCapabilitiesField4ModifyField8WorkspaceVariant1Variant1Model: TypeAlias = (
-    __WorkspaceChangeBeforeCapabilitiesField4ModifyField8WorkspaceVariant1Variant1ModelKnownFields
+_WorkspaceChangeBeforeCapabilitiesField4ModifyField8WorkspaceModel: TypeAlias = (
+    __WorkspaceChangeBeforeCapabilitiesField4ModifyField8WorkspaceModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
 __WorkspaceChangeBeforeCapabilitiesField4ModifyModelKnownFields = TypedDict(
     "__WorkspaceChangeBeforeCapabilitiesField4ModifyModelKnownFields",
     {
-        "content": NotRequired[JsonValue],
-        "input": NotRequired[JsonValue],
-        "instructions": NotRequired[JsonValue],
-        "output": NotRequired[JsonValue],
-        "prompt": NotRequired[JsonValue],
-        "request": NotRequired[JsonValue],
-        "response": NotRequired[JsonValue],
-        "summary": NotRequired[JsonValue],
-        "workspace": NotRequired[JsonValue],
+        "content": NotRequired[
+            _WorkspaceChangeBeforeCapabilitiesField4ModifyField0ContentModel
+        ],
+        "input": NotRequired[
+            _WorkspaceChangeBeforeCapabilitiesField4ModifyField1InputModel
+        ],
+        "instructions": NotRequired[
+            _WorkspaceChangeBeforeCapabilitiesField4ModifyField2InstructionsModel
+        ],
+        "output": NotRequired[
+            _WorkspaceChangeBeforeCapabilitiesField4ModifyField3OutputModel
+        ],
+        "prompt": NotRequired[
+            _WorkspaceChangeBeforeCapabilitiesField4ModifyField4PromptModel
+        ],
+        "request": NotRequired[
+            _WorkspaceChangeBeforeCapabilitiesField4ModifyField5RequestModel
+        ],
+        "response": NotRequired[
+            _WorkspaceChangeBeforeCapabilitiesField4ModifyField6ResponseModel
+        ],
+        "summary": NotRequired[
+            _WorkspaceChangeBeforeCapabilitiesField4ModifyField7SummaryModel
+        ],
+        "workspace": NotRequired[
+            _WorkspaceChangeBeforeCapabilitiesField4ModifyField8WorkspaceModel
+        ],
     },
     total=False,
 )
@@ -10917,7 +8123,7 @@ _WorkspaceChangeBeforeCapabilitiesField4ModifyModel: TypeAlias = (
 _WorkspaceChangeBeforeCapabilitiesKnownFields = TypedDict(
     "_WorkspaceChangeBeforeCapabilitiesKnownFields",
     {
-        "effects": Required[JsonValue],
+        "effects": Required[list[Union[OpenString, str]]],
         "elicitation": NotRequired[
             _WorkspaceChangeBeforeCapabilitiesField1ElicitationModel
         ],
@@ -10935,12 +8141,20 @@ WorkspaceChangeBeforeCapabilities: TypeAlias = (
 WorkspaceChangeBeforeEvent: TypeAlias = "TaskWorkspaceEventWorkspaceChangeBefore"
 
 _SCHEMAS: dict[str, _SchemaNode] = json.loads(
-    '{"Authentication":{"kind":"union","mode":"anyOf","variants":[{"kind":"intersection","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"tokenEnv"},{"required":false,"shape":{"kind":"string"},"wire_name":"tokenRef"},{"required":true,"shape":{"kind":"literal","value":"bearer"},"wire_name":"type"}]},{"kind":"union","mode":"oneOf","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[["tokenRef"]],"kind":"object","properties":[{"required":true,"shape":{"kind":"any"},"wire_name":"tokenEnv"}]},{"additional":{"kind":"allowed"},"forbidden_property_sets":[["tokenEnv"]],"kind":"object","properties":[{"required":true,"shape":{"kind":"any"},"wire_name":"tokenRef"}]}]}]},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"clientId"},{"required":false,"shape":{"kind":"string"},"wire_name":"clientSecretRef"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["authorization_code_pkce","client_credentials"]},"wire_name":"flow"},{"required":true,"shape":{"kind":"string"},"wire_name":"issuer"},{"required":true,"shape":{"kind":"string"},"wire_name":"resource"},{"required":false,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"scopes"},{"required":true,"shape":{"kind":"literal","value":"oauth"},"wire_name":"type"}]}]},"Backend":{"additional":{"kind":"allowed"},"forbidden_property_sets":[["contentReceiver"]],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"Authentication"},"wire_name":"authentication"},{"required":true,"shape":{"kind":"ref","name":"ReverseDnsName"},"wire_name":"id"},{"required":true,"shape":{"items":{"discriminator":"mode","kind":"union","mode":"oneOf","variants":[{"kind":"ref","name":"InterceptSubscription"},{"kind":"ref","name":"ObserveSubscription"}]},"kind":"array"},"wire_name":"subscriptions"},{"required":true,"shape":{"discriminator":"type","kind":"union","mode":"oneOf","variants":[{"kind":"ref","name":"StdioTransport"},{"kind":"ref","name":"HttpTransport"}]},"wire_name":"transport"}]},"Capabilities":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"items":{"kind":"union","mode":"anyOf","variants":[{"kind":"enum","open_strings":true,"values":["deny","allow","ask","modify","message","return","flow","inject"]},{"kind":"string"}]},"kind":"array"},"wire_name":"effects"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"form"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"url"}]},"wire_name":"elicitation"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"integer"},"wire_name":"continuationCount"},{"required":false,"shape":{"kind":"integer"},"wire_name":"maxContinuations"},{"required":true,"shape":{"items":{"kind":"enum","open_strings":true,"values":["stop","continue"]},"kind":"array"},"wire_name":"operations"},{"required":false,"shape":{"kind":"integer"},"wire_name":"remainingContinuations"}]},"wire_name":"flow"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":true},"wire_name":"append"},{"required":true,"shape":{"items":{"kind":"enum","open_strings":true,"values":["now","next_turn"]},"kind":"array"},"wire_name":"deliverAt"}]},"wire_name":"context"}]},"wire_name":"inject"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"intersection","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"boolean"},"wire_name":"merge"},{"required":true,"shape":{"kind":"boolean"},"wire_name":"replace"}]},{"kind":"union","mode":"anyOf","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":true},"wire_name":"replace"}]},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":true},"wire_name":"merge"}]}]}]},"wire_name":"content"},{"required":false,"shape":{"kind":"intersection","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"boolean"},"wire_name":"merge"},{"required":true,"shape":{"kind":"boolean"},"wire_name":"replace"}]},{"kind":"union","mode":"anyOf","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":true},"wire_name":"replace"}]},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":true},"wire_name":"merge"}]}]}]},"wire_name":"input"},{"required":false,"shape":{"kind":"intersection","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"boolean"},"wire_name":"merge"},{"required":true,"shape":{"kind":"boolean"},"wire_name":"replace"}]},{"kind":"union","mode":"anyOf","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":true},"wire_name":"replace"}]},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":true},"wire_name":"merge"}]}]}]},"wire_name":"instructions"},{"required":false,"shape":{"kind":"intersection","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"boolean"},"wire_name":"merge"},{"required":true,"shape":{"kind":"boolean"},"wire_name":"replace"}]},{"kind":"union","mode":"anyOf","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":true},"wire_name":"replace"}]},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":true},"wire_name":"merge"}]}]}]},"wire_name":"output"},{"required":false,"shape":{"kind":"intersection","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"boolean"},"wire_name":"merge"},{"required":true,"shape":{"kind":"boolean"},"wire_name":"replace"}]},{"kind":"union","mode":"anyOf","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":true},"wire_name":"replace"}]},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":true},"wire_name":"merge"}]}]}]},"wire_name":"prompt"},{"required":false,"shape":{"kind":"intersection","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"boolean"},"wire_name":"merge"},{"required":true,"shape":{"kind":"boolean"},"wire_name":"replace"}]},{"kind":"union","mode":"anyOf","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":true},"wire_name":"replace"}]},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":true},"wire_name":"merge"}]}]}]},"wire_name":"request"},{"required":false,"shape":{"kind":"intersection","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"boolean"},"wire_name":"merge"},{"required":true,"shape":{"kind":"boolean"},"wire_name":"replace"}]},{"kind":"union","mode":"anyOf","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":true},"wire_name":"replace"}]},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":true},"wire_name":"merge"}]}]}]},"wire_name":"response"},{"required":false,"shape":{"kind":"intersection","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"boolean"},"wire_name":"merge"},{"required":true,"shape":{"kind":"boolean"},"wire_name":"replace"}]},{"kind":"union","mode":"anyOf","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":true},"wire_name":"replace"}]},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":true},"wire_name":"merge"}]}]}]},"wire_name":"summary"},{"required":false,"shape":{"kind":"intersection","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"boolean"},"wire_name":"merge"},{"required":true,"shape":{"kind":"boolean"},"wire_name":"replace"}]},{"kind":"union","mode":"anyOf","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":true},"wire_name":"replace"}]},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":true},"wire_name":"merge"}]}]}]},"wire_name":"workspace"}]},"wire_name":"modify"}]},"CapabilitiesRequest":{"kind":"intersection","variants":[{"kind":"ref","name":"JsonRpcRequest"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":"hooks/capabilities"},"wire_name":"method"},{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"ref","name":"ProtocolVersion"},"wire_name":"protocolVersion"}]},"wire_name":"params"}]}]},"CapabilitiesResponse":{"kind":"intersection","variants":[{"kind":"ref","name":"JsonRpcSuccessResponse"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[["effects"]],"kind":"object","properties":[{"required":true,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[["identity"]],"kind":"object","properties":[{"required":true,"shape":{"items":{"kind":"enum","open_strings":true,"values":["bearer","oauth"]},"kind":"array"},"wire_name":"authentication"},{"required":true,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"contentCategories"},{"required":true,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"correlationIdentityFields"},{"required":true,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"Capabilities"},"wire_name":"capabilities"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["tool.before","tool.after","session.start","session.end","config.change.before","config.change.after","turn.start","turn.finish.before","turn.end","turn.progress","model.request.before","model.response.after","model.error","model.switch.before","model.switch.after","tool.permission.request","tool.permission.resolved","tool.progress","tool.batch.after","context.compact.before","context.compact.after","task.change.before","task.change.after","user.attention","user.elicitation.request","user.elicitation.result","user.message.inbound","user.message.outbound","workspace.change.before","workspace.change.after","file.changed","hook.failure"]},"wire_name":"event"},{"required":true,"shape":{"items":{"kind":"enum","open_strings":true,"values":["observe","intercept"]},"kind":"array"},"wire_name":"modes"}]},"kind":"array"},"wire_name":"events"},{"required":true,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"integer"},"wire_name":"maxContinuations"},{"required":false,"shape":{"kind":"integer"},"wire_name":"maxTimeoutMs"},{"required":false,"shape":{"kind":"integer"},"wire_name":"maxUploadBytes"},{"required":false,"shape":{"kind":"integer"},"wire_name":"minTimeoutMs"}]},"wire_name":"limits"},{"required":true,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"boolean"},"wire_name":"disableable"},{"required":true,"shape":{"items":{"kind":"enum","open_strings":true,"values":["user","project","managed"]},"kind":"array"},"wire_name":"scopes"}]},"wire_name":"managedPolicy"},{"required":true,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"toolPaths"},{"required":true,"shape":{"items":{"kind":"enum","open_strings":true,"values":["http","stdio","in_process"]},"kind":"array"},"wire_name":"transports"}]},"wire_name":"manifest"},{"required":true,"shape":{"kind":"ref","name":"ProtocolVersion"},"wire_name":"protocolVersion"}]},"wire_name":"result"}]}]},"CatalogueEvent":{"kind":"union","mode":"oneOf","variants":[{"kind":"ref","name":"ConfigChangeBeforeEvent"},{"kind":"ref","name":"ConfigChangeAfterEvent"},{"kind":"ref","name":"TurnStartEvent"},{"kind":"ref","name":"TurnFinishBeforeEvent"},{"kind":"ref","name":"TurnEndEvent"},{"kind":"ref","name":"TurnProgressEvent"},{"kind":"ref","name":"ModelRequestBeforeEvent"},{"kind":"ref","name":"ModelResponseAfterEvent"},{"kind":"ref","name":"ModelErrorEvent"},{"kind":"ref","name":"ModelSwitchBeforeEvent"},{"kind":"ref","name":"ModelSwitchAfterEvent"},{"kind":"ref","name":"ToolPermissionRequestEvent"},{"kind":"ref","name":"ToolPermissionResolvedEvent"},{"kind":"ref","name":"ToolProgressEvent"},{"kind":"ref","name":"ToolBatchAfterEvent"},{"kind":"ref","name":"ContextCompactBeforeEvent"},{"kind":"ref","name":"ContextCompactAfterEvent"},{"kind":"ref","name":"TaskChangeBeforeEvent"},{"kind":"ref","name":"TaskChangeAfterEvent"},{"kind":"ref","name":"UserAttentionEvent"},{"kind":"ref","name":"UserElicitationRequestEvent"},{"kind":"ref","name":"UserElicitationResultEvent"},{"kind":"ref","name":"UserMessageInboundEvent"},{"kind":"ref","name":"UserMessageOutboundEvent"},{"kind":"ref","name":"WorkspaceChangeBeforeEvent"},{"kind":"ref","name":"WorkspaceChangeAfterEvent"},{"kind":"ref","name":"FileChangedEvent"},{"kind":"ref","name":"HookFailureEvent"}]},"ConfigChangeAfterEvent":{"kind":"intersection","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"config.change.after"},"wire_name":"type"}]},{"kind":"ref","name":"InteractionEventConfigChangeAfter"}]},"ConfigChangeBeforeCapabilities":{"kind":"intersection","variants":[{"kind":"ref","name":"Capabilities"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["deny","message"]},"kind":"array"},"wire_name":"effects"}]}]},"ConfigChangeBeforeEvent":{"kind":"intersection","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"config.change.before"},"wire_name":"type"}]},{"kind":"ref","name":"InteractionEventConfigChangeBefore"}]},"ContentItem":{"kind":"union","mode":"oneOf","variants":[{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"ref","name":"ContentReference"},"wire_name":"body"},{"required":false,"shape":{"kind":"string"},"wire_name":"category"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":true,"shape":{"kind":"string"},"wire_name":"kind"},{"required":true,"shape":{"kind":"string"},"wire_name":"mediaType"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentItemId"},{"required":false,"shape":{"kind":"string"},"wire_name":"role"},{"required":true,"shape":{"kind":"literal","value":"body"},"wire_name":"selection"},{"required":false,"shape":{"kind":"string"},"wire_name":"sha256"},{"required":false,"shape":{"kind":"integer"},"wire_name":"size"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"category"},{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"wire_name":"gap"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":true,"shape":{"kind":"string"},"wire_name":"kind"},{"required":true,"shape":{"kind":"string"},"wire_name":"mediaType"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentItemId"},{"required":false,"shape":{"kind":"string"},"wire_name":"role"},{"required":true,"shape":{"kind":"literal","value":"body"},"wire_name":"selection"},{"required":false,"shape":{"kind":"string"},"wire_name":"sha256"},{"required":false,"shape":{"kind":"integer"},"wire_name":"size"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"category"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":true,"shape":{"kind":"string"},"wire_name":"kind"},{"required":true,"shape":{"kind":"string"},"wire_name":"mediaType"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentItemId"},{"required":false,"shape":{"kind":"string"},"wire_name":"role"},{"required":true,"shape":{"kind":"literal","value":"metadata"},"wire_name":"selection"},{"required":false,"shape":{"kind":"string"},"wire_name":"sha256"},{"required":false,"shape":{"kind":"integer"},"wire_name":"size"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"category"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":true,"shape":{"kind":"string"},"wire_name":"kind"},{"required":true,"shape":{"kind":"string"},"wire_name":"mediaType"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentItemId"},{"required":false,"shape":{"kind":"string"},"wire_name":"role"},{"required":true,"shape":{"kind":"literal","value":"omit"},"wire_name":"selection"},{"required":false,"shape":{"kind":"string"},"wire_name":"sha256"},{"required":false,"shape":{"kind":"integer"},"wire_name":"size"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]}]},"ContentReference":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"ref"},{"required":true,"shape":{"kind":"string"},"wire_name":"sha256"},{"required":true,"shape":{"kind":"integer"},"wire_name":"size"}]},"ContentSelection":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"enum","open_strings":true,"values":["body","metadata","omit"]},"wire_name":"audio"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["body","metadata","omit"]},"wire_name":"default"},{"required":false,"shape":{"kind":"enum","open_strings":true,"values":["body","metadata","omit"]},"wire_name":"files"},{"required":false,"shape":{"kind":"enum","open_strings":true,"values":["body","metadata","omit"]},"wire_name":"images"},{"required":false,"shape":{"kind":"enum","open_strings":true,"values":["body","metadata","omit"]},"wire_name":"reasoning"},{"required":false,"shape":{"kind":"enum","open_strings":true,"values":["body","metadata","omit"]},"wire_name":"text"},{"required":false,"shape":{"kind":"enum","open_strings":true,"values":["body","metadata","omit"]},"wire_name":"video"}]},"ContentUpload":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"Authentication"},"wire_name":"auth"},{"required":true,"shape":{"kind":"string"},"wire_name":"endpoint"},{"required":true,"shape":{"kind":"integer"},"wire_name":"maxBytes"},{"required":true,"shape":{"kind":"integer"},"wire_name":"timeoutMs"}]},"ContextCompactAfterCapabilities":{"kind":"intersection","variants":[{"kind":"ref","name":"Capabilities"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["inject","modify","message"]},"kind":"array"},"wire_name":"effects"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"modify"}]}]},"ContextCompactAfterEvent":{"kind":"ref","name":"ExecutionEventContextCompactAfter"},"ContextCompactBeforeCapabilities":{"kind":"intersection","variants":[{"kind":"ref","name":"Capabilities"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["deny","modify","return","inject","message"]},"kind":"array"},"wire_name":"effects"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"modify"}]}]},"ContextCompactBeforeEvent":{"kind":"ref","name":"ExecutionEventContextCompactBefore"},"DenyEffect":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"code"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"},{"required":true,"shape":{"kind":"literal","value":"deny"},"wire_name":"type"}]},"Effect":{"kind":"union","mode":"oneOf","variants":[{"kind":"ref","name":"DenyEffect"},{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":"allow"},"wire_name":"type"}]},{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":"ask"},"wire_name":"type"}]},{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["replace","merge"]},"wire_name":"operation"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["input","output","prompt","request","response","content","instructions","summary","workspace"]},"wire_name":"target"},{"required":true,"shape":{"kind":"literal","value":"modify"},"wire_name":"type"},{"required":true,"shape":{"kind":"any"},"wire_name":"value"}]},{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"text"},{"required":true,"shape":{"kind":"literal","value":"message"},"wire_name":"type"}]},{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":"return"},"wire_name":"type"},{"required":true,"shape":{"kind":"any"},"wire_name":"value"}]},{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":"stop"},"wire_name":"operation"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"},{"required":true,"shape":{"kind":"literal","value":"flow"},"wire_name":"type"}]},{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"instruction"},{"required":true,"shape":{"kind":"literal","value":"continue"},"wire_name":"operation"},{"required":true,"shape":{"kind":"literal","value":"flow"},"wire_name":"type"}]},{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["now","next_turn"]},"wire_name":"deliverAt"},{"required":true,"shape":{"kind":"literal","value":"append"},"wire_name":"operation"},{"required":true,"shape":{"kind":"literal","value":"context"},"wire_name":"target"},{"required":true,"shape":{"kind":"literal","value":"inject"},"wire_name":"type"},{"required":true,"shape":{"kind":"any"},"wire_name":"value"}]}]},"ExecutionEvent":{"discriminator":"type","kind":"union","mode":"oneOf","variants":[{"kind":"ref","name":"ExecutionEventTurnStart"},{"kind":"ref","name":"ExecutionEventTurnFinishBefore"},{"kind":"ref","name":"ExecutionEventTurnEnd"},{"kind":"ref","name":"ExecutionEventTurnProgress"},{"kind":"ref","name":"ExecutionEventModelRequestBefore"},{"kind":"ref","name":"ExecutionEventModelResponseAfter"},{"kind":"ref","name":"ExecutionEventModelError"},{"kind":"ref","name":"ExecutionEventModelSwitchBefore"},{"kind":"ref","name":"ExecutionEventModelSwitchAfter"},{"kind":"ref","name":"ExecutionEventToolPermissionRequest"},{"kind":"ref","name":"ExecutionEventToolPermissionResolved"},{"kind":"ref","name":"ExecutionEventToolProgress"},{"kind":"ref","name":"ExecutionEventToolBatchAfter"},{"kind":"ref","name":"ExecutionEventContextCompactBefore"},{"kind":"ref","name":"ExecutionEventContextCompactAfter"}]},"ExecutionEventAttempt":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":true,"shape":{"kind":"integer"},"wire_name":"number"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"ExecutionEventAttemptusage":{"kind":"intersection","variants":[{"kind":"ref","name":"ExecutionEventUsage"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"literal","value":"amount"},"wire_name":"kind"},{"required":false,"shape":{"kind":"enum","open_strings":true,"values":["provider","estimate"]},"wire_name":"provenance"},{"required":false,"shape":{"kind":"literal","value":"attempt"},"wire_name":"scope"}]}]},"ExecutionEventBatch":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"callIds"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"ExecutionEventContextCompactAfter":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"ref","name":"ExecutionEventExecution"},"wire_name":"execution"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"items":{"kind":"ref","name":"ModelVisibleItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":true,"shape":{"items":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"}]},"kind":"array"},"wire_name":"removed"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":true,"shape":{"kind":"ref","name":"ModelVisibleItem"},"wire_name":"summary"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":false,"shape":{"kind":"ref","name":"ExecutionEventTokencounts"},"wire_name":"tokenCounts"},{"required":false,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"context.compact.after"},"wire_name":"type"}]},"ExecutionEventContextCompactBefore":{"kind":"intersection","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"ref","name":"ContentItem"},"wire_name":"instructions"},{"required":true,"shape":{"items":{"kind":"ref","name":"ModelVisibleItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":false,"shape":{"kind":"ref","name":"ExecutionEventTokencounts"},"wire_name":"tokenCounts"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["auto","manual","hook"]},"wire_name":"trigger"},{"required":false,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"context.compact.before"},"wire_name":"type"}]},{"kind":"any"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"any"},"wire_name":"tokenCounts"}]}]},"ExecutionEventError":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"class"},{"required":false,"shape":{"kind":"string"},"wire_name":"code"},{"required":true,"shape":{"kind":"string"},"wire_name":"message"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"union","mode":"oneOf","variants":[{"kind":"string"},{"kind":"integer"}]},"wire_name":"status"}]},"ExecutionEventExecution":{"kind":"union","mode":"oneOf","variants":[{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":"executed"},"wire_name":"status"}]},{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":"supplied_result"},"wire_name":"reason"},{"required":true,"shape":{"kind":"literal","value":"skipped"},"wire_name":"status"}]},{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"detail"},{"required":true,"shape":{"kind":"literal","value":"policy"},"wire_name":"reason"},{"required":true,"shape":{"kind":"literal","value":"skipped"},"wire_name":"status"}]},{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"detail"},{"required":true,"shape":{"kind":"literal","value":"cancelled"},"wire_name":"reason"},{"required":true,"shape":{"kind":"literal","value":"skipped"},"wire_name":"status"}]},{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"detail"},{"required":true,"shape":{"kind":"literal","value":"timeout"},"wire_name":"reason"},{"required":true,"shape":{"kind":"literal","value":"skipped"},"wire_name":"status"}]},{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"detail"},{"required":true,"shape":{"kind":"literal","value":"other"},"wire_name":"reason"},{"required":true,"shape":{"kind":"literal","value":"skipped"},"wire_name":"status"}]}]},"ExecutionEventFilechange":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"ContentItem"},"wire_name":"after"},{"required":false,"shape":{"kind":"ref","name":"ContentItem"},"wire_name":"before"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["created","modified","deleted","moved"]},"wire_name":"change"},{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":false,"shape":{"kind":"string"},"wire_name":"previousPath"}]},"ExecutionEventMcp":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"discriminator":"transport","kind":"union","mode":"oneOf","variants":[{"kind":"intersection","variants":[{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"literal","value":"http"},"wire_name":"transport"},{"required":false,"shape":{"kind":"string"},"wire_name":"url"}]},{"kind":"union","mode":"anyOf","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"any"},"wire_name":"url"}]},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"any"},"wire_name":"gaps"}]}]}]},{"kind":"intersection","variants":[{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"literal","value":"sse"},"wire_name":"transport"},{"required":false,"shape":{"kind":"string"},"wire_name":"url"}]},{"kind":"union","mode":"anyOf","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"any"},"wire_name":"url"}]},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"any"},"wire_name":"gaps"}]}]}]},{"kind":"intersection","variants":[{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"args"},{"required":false,"shape":{"kind":"string"},"wire_name":"command"},{"required":false,"shape":{"kind":"string"},"wire_name":"cwd"},{"required":false,"shape":{"items":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"literal","value":"stdio"},"wire_name":"transport"}]},{"kind":"union","mode":"anyOf","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"any"},"wire_name":"command"}]},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"any"},"wire_name":"gaps"}]}]},{"kind":"union","mode":"anyOf","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"any"},"wire_name":"args"}]},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"any"},"wire_name":"gaps"}]}]},{"kind":"union","mode":"anyOf","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"any"},"wire_name":"cwd"}]},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"any"},"wire_name":"gaps"}]}]}]},{"kind":"intersection","variants":[{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"address"},{"required":false,"shape":{"kind":"string"},"wire_name":"addressForm"},{"required":false,"shape":{"items":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"transport"}]},{"kind":"union","mode":"anyOf","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"any"},"wire_name":"addressForm"}]},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"any"},"wire_name":"gaps"}]}]},{"kind":"union","mode":"anyOf","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"any"},"wire_name":"address"}]},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"any"},"wire_name":"gaps"}]}]}]}]},"wire_name":"connection"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["runtime","inferred"]},"wire_name":"provenance"},{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"string"},"wire_name":"name"}]},"wire_name":"server"},{"required":true,"shape":{"kind":"string"},"wire_name":"toolName"}]},"ExecutionEventModel":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":true,"shape":{"kind":"string"},"wire_name":"provider"}]},"ExecutionEventModelError":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"ref","name":"ExecutionEventAttempt"},"wire_name":"attempt"},{"required":true,"shape":{"kind":"ref","name":"ExecutionEventError"},"wire_name":"error"},{"required":true,"shape":{"kind":"intersection","variants":[{"kind":"ref","name":"ExecutionEventExecution"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"literal","value":"executed"},"wire_name":"status"}]}]},"wire_name":"execution"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"number"},"wire_name":"latencyMs"},{"required":true,"shape":{"kind":"ref","name":"ExecutionEventModel"},"wire_name":"model"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":false,"shape":{"kind":"string"},"wire_name":"recovery"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":false,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"model.error"},"wire_name":"type"},{"required":false,"shape":{"kind":"ref","name":"ExecutionEventAttemptusage"},"wire_name":"usage"}]},"ExecutionEventModelRequestBefore":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"ref","name":"ExecutionEventAttempt"},"wire_name":"attempt"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":true,"shape":{"items":{"kind":"ref","name":"ModelVisibleItem"},"kind":"array"},"wire_name":"items"},{"required":true,"shape":{"kind":"ref","name":"ExecutionEventModel"},"wire_name":"model"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":true,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"params"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":false,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"model.request.before"},"wire_name":"type"}]},"ExecutionEventModelResponseAfter":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"ref","name":"ExecutionEventAttempt"},"wire_name":"attempt"},{"required":true,"shape":{"kind":"ref","name":"ExecutionEventExecution"},"wire_name":"execution"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":true,"shape":{"kind":"string"},"wire_name":"finishReason"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":true,"shape":{"items":{"kind":"ref","name":"ModelVisibleItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"number"},"wire_name":"latencyMs"},{"required":true,"shape":{"kind":"ref","name":"ExecutionEventModel"},"wire_name":"model"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":false,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"model.response.after"},"wire_name":"type"},{"required":false,"shape":{"kind":"ref","name":"ExecutionEventAttemptusage"},"wire_name":"usage"}]},"ExecutionEventModelSwitchAfter":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"ref","name":"ExecutionEventModel"},"wire_name":"current"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":true,"shape":{"kind":"ref","name":"ExecutionEventModel"},"wire_name":"previous"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":false,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"model.switch.after"},"wire_name":"type"}]},"ExecutionEventModelSwitchBefore":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"ref","name":"ExecutionEventModel"},"wire_name":"current"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":false,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"currency"},{"required":false,"shape":{"kind":"number"},"wire_name":"inputPerMillionTokens"},{"required":false,"shape":{"kind":"number"},"wire_name":"outputPerMillionTokens"}]},"wire_name":"pricing"},{"required":true,"shape":{"kind":"ref","name":"ExecutionEventModel"},"wire_name":"proposed"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":false,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"model.switch.before"},"wire_name":"type"}]},"ExecutionEventTokencounts":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"integer"},"wire_name":"after"},{"required":false,"shape":{"kind":"integer"},"wire_name":"before"}]},"ExecutionEventTool":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"input"},{"required":false,"shape":{"kind":"string"},"wire_name":"kind"},{"required":false,"shape":{"kind":"ref","name":"ExecutionEventMcp"},"wire_name":"mcp"},{"required":true,"shape":{"kind":"string"},"wire_name":"name"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["native","mcp"]},"wire_name":"origin"}]},"ExecutionEventToolBatchAfter":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"batch"},{"required":true,"shape":{"items":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"ExecutionEventBatch"},"wire_name":"batch"},{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"call"},{"required":true,"shape":{"kind":"ref","name":"ExecutionEventExecution"},"wire_name":"execution"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["ok","error","denied","cancelled","timeout"]},"wire_name":"outcome"},{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"ref","name":"ExecutionEventTool"},"wire_name":"tool"}]},"kind":"array"},"wire_name":"calls"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":false,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"tool.batch.after"},"wire_name":"type"}]},"ExecutionEventToolPermissionRequest":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"ExecutionEventBatch"},"wire_name":"batch"},{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"call"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"boolean"},"wire_name":"sandboxBypass"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":true,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"kind":"array"},"wire_name":"suggestions"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":true,"shape":{"kind":"ref","name":"ExecutionEventTool"},"wire_name":"tool"},{"required":false,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"tool.permission.request"},"wire_name":"type"}]},"ExecutionEventToolPermissionResolved":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"ExecutionEventBatch"},"wire_name":"batch"},{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"call"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["user","policy","hook","auto","classifier"]},"wire_name":"decidedBy"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["allow","deny"]},"wire_name":"decision"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":true,"shape":{"kind":"ref","name":"ExecutionEventTool"},"wire_name":"tool"},{"required":false,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"tool.permission.resolved"},"wire_name":"type"}]},"ExecutionEventToolProgress":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"boolean"},"wire_name":"backgrounded"},{"required":false,"shape":{"kind":"ref","name":"ExecutionEventBatch"},"wire_name":"batch"},{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"call"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":true,"shape":{"kind":"ref","name":"ModelVisibleItem"},"wire_name":"partialOutput"},{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":true,"shape":{"kind":"ref","name":"ExecutionEventTool"},"wire_name":"tool"},{"required":false,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"tool.progress"},"wire_name":"type"}]},"ExecutionEventTurnEnd":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"integer"},"wire_name":"continuationCount"},{"required":false,"shape":{"kind":"ref","name":"ExecutionEventError"},"wire_name":"error"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":true,"shape":{"items":{"kind":"ref","name":"ModelVisibleItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"lastAssistantItem"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["completed","failed","cancelled","max_iterations"]},"wire_name":"outcome"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"turn.end"},"wire_name":"type"},{"required":false,"shape":{"kind":"ref","name":"ExecutionEventTurnusage"},"wire_name":"usage"}]},"ExecutionEventTurnFinishBefore":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"integer"},"wire_name":"continuationCount"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":true,"shape":{"items":{"kind":"ref","name":"ModelVisibleItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"lastAssistantItem"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["completed","failed","cancelled","max_iterations"]},"wire_name":"outcome"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"turn.finish.before"},"wire_name":"type"},{"required":false,"shape":{"kind":"ref","name":"ExecutionEventTurnusage"},"wire_name":"usage"}]},"ExecutionEventTurnProgress":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"ref","name":"ModelVisibleItem"},"wire_name":"delta"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":true,"shape":{"kind":"boolean"},"wire_name":"final"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"item"},{"required":false,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"turn.progress"},"wire_name":"type"}]},"ExecutionEventTurnStart":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"expandedFrom"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":true,"shape":{"items":{"kind":"ref","name":"ModelVisibleItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["user","continuation","hook","external"]},"wire_name":"trigger"},{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"turn.start"},"wire_name":"type"}]},"ExecutionEventTurnusage":{"kind":"intersection","variants":[{"kind":"ref","name":"ExecutionEventUsage"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"literal","value":"total"},"wire_name":"kind"},{"required":false,"shape":{"kind":"literal","value":"turn"},"wire_name":"scope"}]}]},"ExecutionEventUsage":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"integer"},"wire_name":"cacheReadTokens"},{"required":false,"shape":{"kind":"integer"},"wire_name":"cacheWriteTokens"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["complete","partial","unknown"]},"wire_name":"completeness"},{"required":false,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"number"},"wire_name":"amount"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["billed","reported","estimated"]},"wire_name":"basis"},{"required":true,"shape":{"kind":"string"},"wire_name":"currency"}]},"wire_name":"cost"},{"required":false,"shape":{"kind":"integer"},"wire_name":"inputTokens"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["amount","total"]},"wire_name":"kind"},{"required":false,"shape":{"kind":"integer"},"wire_name":"outputTokens"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["provider","estimate","mixed"]},"wire_name":"provenance"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["attempt","turn"]},"wire_name":"scope"}]},"Extensions":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"FileChangedEvent":{"kind":"ref","name":"TaskWorkspaceEventFileChanged"},"HookFailureEvent":{"kind":"intersection","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"hook.failure"},"wire_name":"type"}]},{"kind":"ref","name":"InteractionEventHookFailure"}]},"HttpTransport":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":"http"},"wire_name":"type"},{"required":true,"shape":{"kind":"string"},"wire_name":"url"}]},"InteractionEvent":{"discriminator":"type","kind":"union","mode":"oneOf","variants":[{"kind":"ref","name":"InteractionEventConfigChangeBefore"},{"kind":"ref","name":"InteractionEventConfigChangeAfter"},{"kind":"ref","name":"InteractionEventUserAttention"},{"kind":"ref","name":"InteractionEventUserElicitationRequest"},{"kind":"ref","name":"InteractionEventUserElicitationResult"},{"kind":"ref","name":"InteractionEventUserMessageInbound"},{"kind":"ref","name":"InteractionEventUserMessageOutbound"},{"kind":"ref","name":"InteractionEventHookFailure"}]},"InteractionEventConfigChangeAfter":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"kind":"array"},"wire_name":"mcpServers"},{"required":false,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"scope"},{"required":true,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"settings"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":true,"shape":{"kind":"string"},"wire_name":"summary"}]},"wire_name":"change"},{"required":true,"shape":{"kind":"literal","value":"config.change.after"},"wire_name":"type"}]},"InteractionEventConfigChangeBefore":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"scope"},{"required":true,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"settings"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":true,"shape":{"kind":"string"},"wire_name":"summary"}]},"wire_name":"change"},{"required":true,"shape":{"kind":"literal","value":"config.change.before"},"wire_name":"type"}]},"InteractionEventHookFailure":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"backendId"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["fail-open","fail-closed"]},"wire_name":"policy"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"wire_name":"failure"},{"required":true,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":true,"shape":{"kind":"literal","value":"hook.failure"},"wire_name":"type"}]},"InteractionEventUserAttention":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"kind"},{"required":true,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"message"},{"required":true,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"title"}]},"wire_name":"attention"},{"required":true,"shape":{"kind":"literal","value":"user.attention"},"wire_name":"type"}]},"InteractionEventUserElicitationRequest":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["form","url"]},"wire_name":"mode"},{"required":false,"shape":{"kind":"intersection","variants":[{"kind":"ref","name":"ContentItem"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"literal","value":"application/json"},"wire_name":"mediaType"}]}]},"wire_name":"request"},{"required":true,"shape":{"kind":"string"},"wire_name":"server"}]},"wire_name":"elicitation"},{"required":true,"shape":{"kind":"literal","value":"user.elicitation.request"},"wire_name":"type"}]},"InteractionEventUserElicitationResult":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["accept","decline","cancel"]},"wire_name":"action"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["form","url"]},"wire_name":"mode"},{"required":false,"shape":{"kind":"intersection","variants":[{"kind":"ref","name":"ContentItem"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"literal","value":"application/json"},"wire_name":"mediaType"}]}]},"wire_name":"result"},{"required":true,"shape":{"kind":"string"},"wire_name":"server"}]},"wire_name":"elicitation"},{"required":true,"shape":{"kind":"literal","value":"user.elicitation.result"},"wire_name":"type"}]},"InteractionEventUserMessageInbound":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"channel"},{"required":true,"shape":{"kind":"string"},"wire_name":"sender"},{"required":true,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"text"}]},"wire_name":"message"},{"required":true,"shape":{"kind":"literal","value":"user.message.inbound"},"wire_name":"type"}]},"InteractionEventUserMessageOutbound":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"channel"},{"required":true,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"payload"}]},"wire_name":"message"},{"required":true,"shape":{"kind":"literal","value":"user.message.outbound"},"wire_name":"type"}]},"InterceptDenyResponse":{"kind":"intersection","variants":[{"kind":"ref","name":"JsonRpcSuccessResponse"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"items":{"kind":"ref","name":"DenyEffect"},"kind":"array"},"wire_name":"effects"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":true,"shape":{"kind":"ref","name":"ProtocolVersion"},"wire_name":"protocolVersion"}]},"wire_name":"result"}]}]},"InterceptNoEffectResponse":{"kind":"intersection","variants":[{"kind":"ref","name":"JsonRpcSuccessResponse"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"items":{"kind":"any"},"kind":"array"},"wire_name":"effects"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":true,"shape":{"kind":"ref","name":"ProtocolVersion"},"wire_name":"protocolVersion"}]},"wire_name":"result"}]}]},"InterceptRequest":{"kind":"intersection","variants":[{"kind":"ref","name":"JsonRpcRequest"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":"hooks/intercept"},"wire_name":"method"},{"required":true,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"intersection","variants":[{"kind":"ref","name":"Capabilities"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"any"},"wire_name":"flow"}]}]},"wire_name":"capabilities"},{"required":true,"shape":{"kind":"union","mode":"oneOf","variants":[{"kind":"ref","name":"ToolBeforeEvent"},{"kind":"ref","name":"ToolAfterEvent"},{"kind":"ref","name":"SessionStartEvent"},{"kind":"ref","name":"ConfigChangeBeforeEvent"},{"kind":"ref","name":"TurnStartEvent"},{"kind":"ref","name":"TurnFinishBeforeEvent"},{"kind":"ref","name":"ModelRequestBeforeEvent"},{"kind":"ref","name":"ModelSwitchBeforeEvent"},{"kind":"ref","name":"ToolPermissionRequestEvent"},{"kind":"ref","name":"ToolBatchAfterEvent"},{"kind":"ref","name":"ContextCompactBeforeEvent"},{"kind":"ref","name":"ContextCompactAfterEvent"},{"kind":"ref","name":"TaskChangeBeforeEvent"},{"kind":"ref","name":"UserElicitationRequestEvent"},{"kind":"ref","name":"UserElicitationResultEvent"},{"kind":"ref","name":"UserMessageInboundEvent"},{"kind":"ref","name":"UserMessageOutboundEvent"},{"kind":"ref","name":"WorkspaceChangeBeforeEvent"},{"kind":"ref","name":"ModelResponseAfterEvent"}]},"wire_name":"event"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":true,"shape":{"kind":"ref","name":"ProtocolVersion"},"wire_name":"protocolVersion"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"union","mode":"anyOf","variants":[{"kind":"null"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"provenance"},{"required":true,"shape":{"kind":"any"},"wire_name":"value"}]}]},"wire_name":"candidate"},{"required":false,"shape":{"kind":"enum","open_strings":true,"values":["none","stop","continue"]},"wire_name":"flow"},{"required":false,"shape":{"items":{"kind":"any"},"kind":"array"},"wire_name":"injections"},{"required":false,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"instructions"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["none","allow","ask","deny"]},"wire_name":"permission"}]},"wire_name":"state"}]},"wire_name":"params"}]}]},"InterceptResponse":{"kind":"intersection","variants":[{"kind":"ref","name":"JsonRpcSuccessResponse"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[["manifest"]],"kind":"object","properties":[{"required":true,"shape":{"items":{"kind":"ref","name":"Effect"},"kind":"array"},"wire_name":"effects"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":true,"shape":{"kind":"ref","name":"ProtocolVersion"},"wire_name":"protocolVersion"}]},"wire_name":"result"}]}]},"InterceptSubscription":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"ref","name":"ContentSelection"},"wire_name":"content"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"disableable"},{"required":true,"shape":{"items":{"kind":"union","mode":"anyOf","variants":[{"kind":"enum","open_strings":true,"values":["tool.before","tool.after","session.start","config.change.before","turn.start","turn.finish.before","model.request.before","model.switch.before","tool.permission.request","tool.batch.after","context.compact.before","context.compact.after","task.change.before","user.elicitation.request","user.elicitation.result","user.message.inbound","user.message.outbound","workspace.change.before","model.response.after"]},{"kind":"string"}]},"kind":"array"},"wire_name":"events"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["fail-open","fail-closed"]},"wire_name":"failurePolicy"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"paths"},{"required":false,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"toolKinds"}]},"wire_name":"filters"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"includeNative"},{"required":true,"shape":{"kind":"literal","value":"intercept"},"wire_name":"mode"},{"required":false,"shape":{"kind":"enum","open_strings":true,"values":["managed","project","user"]},"wire_name":"scope"},{"required":true,"shape":{"kind":"integer"},"wire_name":"timeoutMs"},{"required":false,"shape":{"kind":"ref","name":"ContentUpload"},"wire_name":"upload"}]},"JsonRpcErrorResponse":{"additional":{"kind":"allowed"},"forbidden_property_sets":[["result"]],"kind":"object","properties":[{"required":true,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"integer"},"wire_name":"code"},{"required":false,"shape":{"kind":"any"},"wire_name":"data"},{"required":true,"shape":{"kind":"string"},"wire_name":"message"}]},"wire_name":"error"},{"required":true,"shape":{"kind":"ref","name":"JsonRpcResponseId"},"wire_name":"id"},{"required":true,"shape":{"kind":"literal","value":"2.0"},"wire_name":"jsonrpc"}]},"JsonRpcId":{"kind":"union","mode":"anyOf","variants":[{"kind":"string"},{"kind":"integer"}]},"JsonRpcMessage":{"kind":"union","mode":"oneOf","variants":[{"kind":"ref","name":"JsonRpcRequest"},{"kind":"ref","name":"JsonRpcNotification"},{"kind":"ref","name":"JsonRpcSuccessResponse"},{"kind":"ref","name":"JsonRpcErrorResponse"}]},"JsonRpcNotification":{"additional":{"kind":"allowed"},"forbidden_property_sets":[["id"]],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":"2.0"},"wire_name":"jsonrpc"},{"required":true,"shape":{"kind":"string"},"wire_name":"method"},{"required":true,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"params"}]},"JsonRpcRequest":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"ref","name":"JsonRpcId"},"wire_name":"id"},{"required":true,"shape":{"kind":"literal","value":"2.0"},"wire_name":"jsonrpc"},{"required":true,"shape":{"kind":"string"},"wire_name":"method"},{"required":true,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"params"}]},"JsonRpcResponseId":{"kind":"union","mode":"anyOf","variants":[{"kind":"ref","name":"JsonRpcId"},{"kind":"null"}]},"JsonRpcSuccessResponse":{"additional":{"kind":"allowed"},"forbidden_property_sets":[["error"]],"kind":"object","properties":[{"required":true,"shape":{"kind":"ref","name":"JsonRpcResponseId"},"wire_name":"id"},{"required":true,"shape":{"kind":"literal","value":"2.0"},"wire_name":"jsonrpc"},{"required":true,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"result"}]},"McpElicitationBooleanSchema":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"boolean"},"wire_name":"default"},{"required":false,"shape":{"kind":"string"},"wire_name":"description"},{"required":false,"shape":{"kind":"string"},"wire_name":"title"},{"required":true,"shape":{"kind":"literal","value":"boolean"},"wire_name":"type"}]},"McpElicitationElicitRequestFormParams":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"McpElicitationProgressToken"},"wire_name":"progressToken"}]},"wire_name":"_meta"},{"required":true,"shape":{"kind":"string"},"wire_name":"message"},{"required":false,"shape":{"kind":"literal","value":"form"},"wire_name":"mode"},{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"$schema"},{"required":true,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"properties"},{"required":false,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"required"},{"required":true,"shape":{"kind":"literal","value":"object"},"wire_name":"type"}]},"wire_name":"requestedSchema"},{"required":false,"shape":{"kind":"ref","name":"McpElicitationTaskMetadata"},"wire_name":"task"}]},"McpElicitationElicitRequestParams":{"kind":"union","mode":"anyOf","variants":[{"kind":"ref","name":"McpElicitationElicitRequestURLParams"},{"kind":"ref","name":"McpElicitationElicitRequestFormParams"}]},"McpElicitationElicitRequestURLParams":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"McpElicitationProgressToken"},"wire_name":"progressToken"}]},"wire_name":"_meta"},{"required":true,"shape":{"kind":"string"},"wire_name":"elicitationId"},{"required":true,"shape":{"kind":"string"},"wire_name":"message"},{"required":true,"shape":{"kind":"literal","value":"url"},"wire_name":"mode"},{"required":false,"shape":{"kind":"ref","name":"McpElicitationTaskMetadata"},"wire_name":"task"},{"required":true,"shape":{"kind":"string"},"wire_name":"url"}]},"McpElicitationElicitResult":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"_meta"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["accept","cancel","decline"]},"wire_name":"action"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"content"}]},"McpElicitationLegacyTitledEnumSchema":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"default"},{"required":false,"shape":{"kind":"string"},"wire_name":"description"},{"required":true,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"enum"},{"required":false,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"enumNames"},{"required":false,"shape":{"kind":"string"},"wire_name":"title"},{"required":true,"shape":{"kind":"literal","value":"string"},"wire_name":"type"}]},"McpElicitationNumberSchema":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"number"},"wire_name":"default"},{"required":false,"shape":{"kind":"string"},"wire_name":"description"},{"required":false,"shape":{"kind":"number"},"wire_name":"maximum"},{"required":false,"shape":{"kind":"number"},"wire_name":"minimum"},{"required":false,"shape":{"kind":"string"},"wire_name":"title"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["integer","number"]},"wire_name":"type"}]},"McpElicitationPrimitiveSchemaDefinition":{"kind":"union","mode":"anyOf","variants":[{"kind":"ref","name":"McpElicitationStringSchema"},{"kind":"ref","name":"McpElicitationNumberSchema"},{"kind":"ref","name":"McpElicitationBooleanSchema"},{"kind":"ref","name":"McpElicitationUntitledSingleSelectEnumSchema"},{"kind":"ref","name":"McpElicitationTitledSingleSelectEnumSchema"},{"kind":"ref","name":"McpElicitationUntitledMultiSelectEnumSchema"},{"kind":"ref","name":"McpElicitationTitledMultiSelectEnumSchema"},{"kind":"ref","name":"McpElicitationLegacyTitledEnumSchema"}]},"McpElicitationProgressToken":{"kind":"union","mode":"anyOf","variants":[{"kind":"string"},{"kind":"number"}]},"McpElicitationRequest":{"kind":"ref","name":"McpElicitationElicitRequestParams"},"McpElicitationResult":{"kind":"ref","name":"McpElicitationElicitResult"},"McpElicitationStringSchema":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"default"},{"required":false,"shape":{"kind":"string"},"wire_name":"description"},{"required":false,"shape":{"kind":"enum","open_strings":true,"values":["date","date-time","email","uri"]},"wire_name":"format"},{"required":false,"shape":{"kind":"number"},"wire_name":"maxLength"},{"required":false,"shape":{"kind":"number"},"wire_name":"minLength"},{"required":false,"shape":{"kind":"string"},"wire_name":"title"},{"required":true,"shape":{"kind":"literal","value":"string"},"wire_name":"type"}]},"McpElicitationTaskMetadata":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"number"},"wire_name":"ttl"}]},"McpElicitationTitledMultiSelectEnumSchema":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"default"},{"required":false,"shape":{"kind":"string"},"wire_name":"description"},{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"items":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"const"},{"required":true,"shape":{"kind":"string"},"wire_name":"title"}]},"kind":"array"},"wire_name":"anyOf"}]},"wire_name":"items"},{"required":false,"shape":{"kind":"number"},"wire_name":"maxItems"},{"required":false,"shape":{"kind":"number"},"wire_name":"minItems"},{"required":false,"shape":{"kind":"string"},"wire_name":"title"},{"required":true,"shape":{"kind":"literal","value":"array"},"wire_name":"type"}]},"McpElicitationTitledSingleSelectEnumSchema":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"default"},{"required":false,"shape":{"kind":"string"},"wire_name":"description"},{"required":true,"shape":{"items":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"const"},{"required":true,"shape":{"kind":"string"},"wire_name":"title"}]},"kind":"array"},"wire_name":"oneOf"},{"required":false,"shape":{"kind":"string"},"wire_name":"title"},{"required":true,"shape":{"kind":"literal","value":"string"},"wire_name":"type"}]},"McpElicitationUntitledMultiSelectEnumSchema":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"default"},{"required":false,"shape":{"kind":"string"},"wire_name":"description"},{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"enum"},{"required":true,"shape":{"kind":"literal","value":"string"},"wire_name":"type"}]},"wire_name":"items"},{"required":false,"shape":{"kind":"number"},"wire_name":"maxItems"},{"required":false,"shape":{"kind":"number"},"wire_name":"minItems"},{"required":false,"shape":{"kind":"string"},"wire_name":"title"},{"required":true,"shape":{"kind":"literal","value":"array"},"wire_name":"type"}]},"McpElicitationUntitledSingleSelectEnumSchema":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"default"},{"required":false,"shape":{"kind":"string"},"wire_name":"description"},{"required":true,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"enum"},{"required":false,"shape":{"kind":"string"},"wire_name":"title"},{"required":true,"shape":{"kind":"literal","value":"string"},"wire_name":"type"}]},"ModelErrorEvent":{"kind":"ref","name":"ExecutionEventModelError"},"ModelRequestBeforeCapabilities":{"kind":"intersection","variants":[{"kind":"ref","name":"Capabilities"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["deny","modify","inject","return","flow","message"]},"kind":"array"},"wire_name":"effects"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["stop"]},"kind":"array"},"wire_name":"operations"}]},"wire_name":"flow"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"modify"}]}]},"ModelRequestBeforeEvent":{"kind":"ref","name":"ExecutionEventModelRequestBefore"},"ModelResponseAfterCapabilities":{"kind":"intersection","variants":[{"kind":"ref","name":"Capabilities"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["modify","flow","message"]},"kind":"array"},"wire_name":"effects"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["stop"]},"kind":"array"},"wire_name":"operations"}]},"wire_name":"flow"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"modify"}]}]},"ModelResponseAfterEvent":{"kind":"ref","name":"ExecutionEventModelResponseAfter"},"ModelSwitchAfterEvent":{"kind":"ref","name":"ExecutionEventModelSwitchAfter"},"ModelSwitchBeforeCapabilities":{"kind":"intersection","variants":[{"kind":"ref","name":"Capabilities"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["deny","flow","message"]},"kind":"array"},"wire_name":"effects"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["stop"]},"kind":"array"},"wire_name":"operations"}]},"wire_name":"flow"}]}]},"ModelSwitchBeforeEvent":{"kind":"ref","name":"ExecutionEventModelSwitchBefore"},"ModelVisibleItem":{"kind":"intersection","variants":[{"kind":"ref","name":"ContentItem"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"role"}]}]},"NativeEvent":{"kind":"any"},"ObserveNotification":{"kind":"intersection","variants":[{"kind":"ref","name":"JsonRpcNotification"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"literal","value":"hooks/observe"},"wire_name":"method"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"union","mode":"oneOf","variants":[{"kind":"ref","name":"ToolBeforeEvent"},{"kind":"ref","name":"ToolAfterEvent"},{"kind":"ref","name":"SessionStartEvent"},{"kind":"ref","name":"SessionEndEvent"},{"kind":"ref","name":"ConfigChangeBeforeEvent"},{"kind":"ref","name":"ConfigChangeAfterEvent"},{"kind":"ref","name":"TurnStartEvent"},{"kind":"ref","name":"TurnFinishBeforeEvent"},{"kind":"ref","name":"TurnEndEvent"},{"kind":"ref","name":"TurnProgressEvent"},{"kind":"ref","name":"ModelRequestBeforeEvent"},{"kind":"ref","name":"ModelResponseAfterEvent"},{"kind":"ref","name":"ModelErrorEvent"},{"kind":"ref","name":"ModelSwitchBeforeEvent"},{"kind":"ref","name":"ModelSwitchAfterEvent"},{"kind":"ref","name":"ToolPermissionRequestEvent"},{"kind":"ref","name":"ToolPermissionResolvedEvent"},{"kind":"ref","name":"ToolProgressEvent"},{"kind":"ref","name":"ToolBatchAfterEvent"},{"kind":"ref","name":"ContextCompactBeforeEvent"},{"kind":"ref","name":"ContextCompactAfterEvent"},{"kind":"ref","name":"TaskChangeBeforeEvent"},{"kind":"ref","name":"TaskChangeAfterEvent"},{"kind":"ref","name":"UserAttentionEvent"},{"kind":"ref","name":"UserElicitationRequestEvent"},{"kind":"ref","name":"UserElicitationResultEvent"},{"kind":"ref","name":"UserMessageInboundEvent"},{"kind":"ref","name":"UserMessageOutboundEvent"},{"kind":"ref","name":"WorkspaceChangeBeforeEvent"},{"kind":"ref","name":"WorkspaceChangeAfterEvent"},{"kind":"ref","name":"FileChangedEvent"},{"kind":"ref","name":"HookFailureEvent"}]},"wire_name":"event"},{"required":true,"shape":{"kind":"ref","name":"ProtocolVersion"},"wire_name":"protocolVersion"}]},"wire_name":"params"}]}]},"ObserveSubscription":{"additional":{"kind":"allowed"},"forbidden_property_sets":[["failurePolicy"],["timeoutMs"]],"kind":"object","properties":[{"required":true,"shape":{"kind":"ref","name":"ContentSelection"},"wire_name":"content"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"disableable"},{"required":true,"shape":{"items":{"kind":"union","mode":"anyOf","variants":[{"kind":"enum","open_strings":true,"values":["tool.before","tool.after","session.start","session.end","config.change.before","config.change.after","turn.start","turn.finish.before","turn.end","turn.progress","model.request.before","model.response.after","model.error","model.switch.before","model.switch.after","tool.permission.request","tool.permission.resolved","tool.progress","tool.batch.after","context.compact.before","context.compact.after","task.change.before","task.change.after","user.attention","user.elicitation.request","user.elicitation.result","user.message.inbound","user.message.outbound","workspace.change.before","workspace.change.after","file.changed","hook.failure"]},{"kind":"string"}]},"kind":"array"},"wire_name":"events"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"paths"},{"required":false,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"toolKinds"}]},"wire_name":"filters"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"includeNative"},{"required":true,"shape":{"kind":"literal","value":"observe"},"wire_name":"mode"},{"required":false,"shape":{"kind":"enum","open_strings":true,"values":["managed","project","user"]},"wire_name":"scope"},{"required":false,"shape":{"kind":"ref","name":"ContentUpload"},"wire_name":"upload"}]},"ProtocolVersion":{"kind":"literal","value":"draft"},"Registration":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"items":{"kind":"ref","name":"Backend"},"kind":"array"},"wire_name":"hooks"},{"required":true,"shape":{"kind":"ref","name":"ProtocolVersion"},"wire_name":"protocolVersion"}]},"RegistrationContentreceiver":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"Authentication"},"wire_name":"authentication"},{"required":true,"shape":{"kind":"integer"},"wire_name":"maxBytes"},{"required":true,"shape":{"kind":"integer"},"wire_name":"timeoutMs"},{"required":true,"shape":{"kind":"string"},"wire_name":"url"}]},"ReverseDnsName":{"kind":"string"},"Session":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"string"},"wire_name":"type"}]},"wire_name":"agent"},{"required":false,"shape":{"kind":"string"},"wire_name":"cwd"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"string"},"wire_name":"model"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":false,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"workspaceRoots"}]},"SessionEndEvent":{"additional":{"kind":"allowed"},"forbidden_property_sets":[["tool"]],"kind":"object","properties":[{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"counters"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["completed","cancelled","error","unknown"]},"wire_name":"outcome"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"},{"required":true,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"session.end"},"wire_name":"type"}]},"SessionStartCapabilities":{"kind":"intersection","variants":[{"kind":"ref","name":"Capabilities"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["inject","message"]},"kind":"array"},"wire_name":"effects"}]}]},"SessionStartEvent":{"additional":{"kind":"allowed"},"forbidden_property_sets":[["outcome"],["tool"]],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"name"},{"required":true,"shape":{"kind":"string"},"wire_name":"version"}]},"wire_name":"harness"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":true,"shape":{"items":{"kind":"ref","name":"ModelVisibleItem"},"kind":"array"},"wire_name":"items"},{"required":true,"shape":{"kind":"ref","name":"StaticCapabilityManifest"},"wire_name":"manifest"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":true,"shape":{"kind":"string"},"wire_name":"permissionMode"},{"required":false,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"resumedFrom"},{"required":true,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["startup","resume","clear","compact","fork"]},"wire_name":"trigger"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"session.start"},"wire_name":"type"}]},"StaticCapabilityManifest":{"additional":{"kind":"allowed"},"forbidden_property_sets":[["identity"]],"kind":"object","properties":[{"required":true,"shape":{"items":{"kind":"enum","open_strings":true,"values":["bearer","oauth"]},"kind":"array"},"wire_name":"authentication"},{"required":true,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"contentCategories"},{"required":true,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"correlationIdentityFields"},{"required":true,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"Capabilities"},"wire_name":"capabilities"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["tool.before","tool.after","session.start","session.end","config.change.before","config.change.after","turn.start","turn.finish.before","turn.end","turn.progress","model.request.before","model.response.after","model.error","model.switch.before","model.switch.after","tool.permission.request","tool.permission.resolved","tool.progress","tool.batch.after","context.compact.before","context.compact.after","task.change.before","task.change.after","user.attention","user.elicitation.request","user.elicitation.result","user.message.inbound","user.message.outbound","workspace.change.before","workspace.change.after","file.changed","hook.failure"]},"wire_name":"event"},{"required":true,"shape":{"items":{"kind":"enum","open_strings":true,"values":["observe","intercept"]},"kind":"array"},"wire_name":"modes"}]},"kind":"array"},"wire_name":"events"},{"required":true,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"integer"},"wire_name":"maxContinuations"},{"required":false,"shape":{"kind":"integer"},"wire_name":"maxTimeoutMs"},{"required":false,"shape":{"kind":"integer"},"wire_name":"maxUploadBytes"},{"required":false,"shape":{"kind":"integer"},"wire_name":"minTimeoutMs"}]},"wire_name":"limits"},{"required":true,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"boolean"},"wire_name":"disableable"},{"required":true,"shape":{"items":{"kind":"enum","open_strings":true,"values":["user","project","managed"]},"kind":"array"},"wire_name":"scopes"}]},"wire_name":"managedPolicy"},{"required":true,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"toolPaths"},{"required":true,"shape":{"items":{"kind":"enum","open_strings":true,"values":["http","stdio","in_process"]},"kind":"array"},"wire_name":"transports"}]},"StdioTransport":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"args"},{"required":true,"shape":{"kind":"string"},"wire_name":"command"},{"required":false,"shape":{"kind":"string"},"wire_name":"cwd"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["persistent","per_event"]},"wire_name":"lifecycle"},{"required":true,"shape":{"kind":"literal","value":"stdio"},"wire_name":"type"}]},"TaskChangeAfterEvent":{"kind":"ref","name":"TaskWorkspaceEventTaskChangeAfter"},"TaskChangeBeforeCapabilities":{"kind":"intersection","variants":[{"kind":"ref","name":"Capabilities"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["deny","message"]},"kind":"array"},"wire_name":"effects"}]}]},"TaskChangeBeforeEvent":{"kind":"ref","name":"TaskWorkspaceEventTaskChangeBefore"},"TaskWorkspaceEvent":{"discriminator":"type","kind":"union","mode":"oneOf","variants":[{"kind":"ref","name":"TaskWorkspaceEventTaskChangeBefore"},{"kind":"ref","name":"TaskWorkspaceEventTaskChangeAfter"},{"kind":"ref","name":"TaskWorkspaceEventWorkspaceChangeBefore"},{"kind":"ref","name":"TaskWorkspaceEventWorkspaceChangeAfter"},{"kind":"ref","name":"TaskWorkspaceEventFileChanged"}]},"TaskWorkspaceEventFileChanged":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"items":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"ContentReference"},"wire_name":"after"},{"required":true,"shape":{"kind":"boolean"},"wire_name":"agentCaused"},{"required":false,"shape":{"kind":"ref","name":"ContentReference"},"wire_name":"before"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["create","update","remove"]},"wire_name":"operation"},{"required":true,"shape":{"kind":"string"},"wire_name":"path"}]},"kind":"array"},"wire_name":"changes"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"file.changed"},"wire_name":"type"}]},"TaskWorkspaceEventTaskChangeAfter":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"change"},{"required":false,"shape":{"kind":"string"},"wire_name":"description"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["create","update","remove"]},"wire_name":"operation"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"prior"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"task"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"task.change.after"},"wire_name":"type"}]},"TaskWorkspaceEventTaskChangeBefore":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"change"},{"required":false,"shape":{"kind":"string"},"wire_name":"description"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["create","update","remove"]},"wire_name":"operation"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"prior"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"task"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"task.change.before"},"wire_name":"type"}]},"TaskWorkspaceEventWorkspaceChangeAfter":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"workspace.change.after"},"wire_name":"type"},{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"cwd"},{"required":false,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"workspaceRoots"}]},"wire_name":"change"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["cwd","roots","switch"]},"wire_name":"kind"},{"required":false,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"cwd"},{"required":false,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"workspaceRoots"}]},"wire_name":"prior"},{"required":false,"shape":{"kind":"string"},"wire_name":"reason"}]},"wire_name":"workspace"}]},"TaskWorkspaceEventWorkspaceChangeBefore":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"workspace.change.before"},"wire_name":"type"},{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"cwd"},{"required":false,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"workspaceRoots"}]},"wire_name":"change"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["cwd","roots","switch"]},"wire_name":"kind"},{"required":false,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"cwd"},{"required":false,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"workspaceRoots"}]},"wire_name":"prior"},{"required":false,"shape":{"kind":"string"},"wire_name":"reason"}]},"wire_name":"workspace"}]},"ToolAfterCapabilities":{"kind":"intersection","variants":[{"kind":"ref","name":"Capabilities"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["modify","inject","flow","message"]},"kind":"array"},"wire_name":"effects"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["stop","continue"]},"kind":"array"},"wire_name":"operations"}]},"wire_name":"flow"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"modify"}]}]},"ToolAfterEvent":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"ExecutionEventBatch"},"wire_name":"batch"},{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"call"},{"required":false,"shape":{"kind":"number"},"wire_name":"durationMs"},{"required":false,"shape":{"kind":"ref","name":"ExecutionEventError"},"wire_name":"error"},{"required":true,"shape":{"kind":"ref","name":"ExecutionEventExecution"},"wire_name":"execution"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"kind":"ref","name":"ExecutionEventFilechange"},"kind":"array"},"wire_name":"fileChanges"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":true,"shape":{"items":{"kind":"ref","name":"ModelVisibleItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["ok","error","denied","cancelled","timeout"]},"wire_name":"outcome"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":true,"shape":{"kind":"ref","name":"ExecutionEventTool"},"wire_name":"tool"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"tool.after"},"wire_name":"type"}]},"ToolBatchAfterCapabilities":{"kind":"intersection","variants":[{"kind":"ref","name":"Capabilities"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["flow","inject","message"]},"kind":"array"},"wire_name":"effects"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["stop"]},"kind":"array"},"wire_name":"operations"}]},"wire_name":"flow"}]}]},"ToolBatchAfterEvent":{"kind":"ref","name":"ExecutionEventToolBatchAfter"},"ToolBeforeCapabilities":{"kind":"intersection","variants":[{"kind":"ref","name":"Capabilities"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["deny","allow","ask","modify","inject","flow","return","message"]},"kind":"array"},"wire_name":"effects"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["stop"]},"kind":"array"},"wire_name":"operations"}]},"wire_name":"flow"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"modify"}]}]},"ToolBeforeEvent":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"ExecutionEventBatch"},"wire_name":"batch"},{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"call"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":true,"shape":{"kind":"ref","name":"ExecutionEventTool"},"wire_name":"tool"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"tool.before"},"wire_name":"type"}]},"ToolPermissionRequestCapabilities":{"kind":"intersection","variants":[{"kind":"ref","name":"Capabilities"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["allow","deny","modify","flow","message"]},"kind":"array"},"wire_name":"effects"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["stop"]},"kind":"array"},"wire_name":"operations"}]},"wire_name":"flow"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"modify"}]}]},"ToolPermissionRequestEvent":{"kind":"ref","name":"ExecutionEventToolPermissionRequest"},"ToolPermissionResolvedEvent":{"kind":"ref","name":"ExecutionEventToolPermissionResolved"},"ToolProgressEvent":{"kind":"ref","name":"ExecutionEventToolProgress"},"TurnEndEvent":{"kind":"ref","name":"ExecutionEventTurnEnd"},"TurnFinishBeforeCapabilities":{"kind":"intersection","variants":[{"kind":"ref","name":"Capabilities"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["modify","flow","message"]},"kind":"array"},"wire_name":"effects"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["stop","continue"]},"kind":"array"},"wire_name":"operations"}]},"wire_name":"flow"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"modify"}]}]},"TurnFinishBeforeEvent":{"kind":"ref","name":"ExecutionEventTurnFinishBefore"},"TurnProgressEvent":{"kind":"ref","name":"ExecutionEventTurnProgress"},"TurnStartCapabilities":{"kind":"intersection","variants":[{"kind":"ref","name":"Capabilities"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["deny","modify","inject","flow","message"]},"kind":"array"},"wire_name":"effects"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["stop"]},"kind":"array"},"wire_name":"operations"}]},"wire_name":"flow"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"modify"}]}]},"TurnStartEvent":{"kind":"ref","name":"ExecutionEventTurnStart"},"UserAttentionEvent":{"kind":"intersection","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"user.attention"},"wire_name":"type"}]},{"kind":"ref","name":"InteractionEventUserAttention"}]},"UserElicitationRequestCapabilities":{"kind":"intersection","variants":[{"kind":"ref","name":"Capabilities"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["deny","return","message"]},"kind":"array"},"wire_name":"effects"}]}]},"UserElicitationRequestEvent":{"kind":"intersection","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"user.elicitation.request"},"wire_name":"type"}]},{"kind":"ref","name":"InteractionEventUserElicitationRequest"}]},"UserElicitationResultCapabilities":{"kind":"intersection","variants":[{"kind":"ref","name":"Capabilities"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["modify","message"]},"kind":"array"},"wire_name":"effects"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"modify"}]}]},"UserElicitationResultEvent":{"kind":"intersection","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"user.elicitation.result"},"wire_name":"type"}]},{"kind":"ref","name":"InteractionEventUserElicitationResult"}]},"UserMessageInboundCapabilities":{"kind":"intersection","variants":[{"kind":"ref","name":"Capabilities"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["deny","modify","message"]},"kind":"array"},"wire_name":"effects"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"modify"}]}]},"UserMessageInboundEvent":{"kind":"intersection","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"user.message.inbound"},"wire_name":"type"}]},{"kind":"ref","name":"InteractionEventUserMessageInbound"}]},"UserMessageOutboundCapabilities":{"kind":"intersection","variants":[{"kind":"ref","name":"Capabilities"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["deny","modify","message"]},"kind":"array"},"wire_name":"effects"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"modify"}]}]},"UserMessageOutboundEvent":{"kind":"intersection","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"user.message.outbound"},"wire_name":"type"}]},{"kind":"ref","name":"InteractionEventUserMessageOutbound"}]},"WireMessage":{"kind":"union","mode":"oneOf","variants":[{"kind":"ref","name":"InterceptRequest"},{"kind":"ref","name":"InterceptResponse"},{"kind":"ref","name":"JsonRpcErrorResponse"},{"kind":"ref","name":"ObserveNotification"},{"kind":"ref","name":"CapabilitiesRequest"},{"kind":"ref","name":"CapabilitiesResponse"}]},"WorkspaceChangeAfterEvent":{"kind":"ref","name":"TaskWorkspaceEventWorkspaceChangeAfter"},"WorkspaceChangeBeforeCapabilities":{"kind":"intersection","variants":[{"kind":"ref","name":"Capabilities"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["deny","modify","message"]},"kind":"array"},"wire_name":"effects"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"modify"}]}]},"WorkspaceChangeBeforeEvent":{"kind":"ref","name":"TaskWorkspaceEventWorkspaceChangeBefore"}}',
+    '{"Authentication":{"kind":"union","mode":"anyOf","variants":[{"kind":"intersection","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"tokenEnv"},{"required":false,"shape":{"kind":"string"},"wire_name":"tokenRef"},{"required":true,"shape":{"kind":"literal","value":"bearer"},"wire_name":"type"}]},{"kind":"union","mode":"oneOf","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[["tokenRef"]],"kind":"object","properties":[{"required":true,"shape":{"kind":"any"},"wire_name":"tokenEnv"}]},{"additional":{"kind":"allowed"},"forbidden_property_sets":[["tokenEnv"]],"kind":"object","properties":[{"required":true,"shape":{"kind":"any"},"wire_name":"tokenRef"}]}]}]},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"clientId"},{"required":false,"shape":{"kind":"string"},"wire_name":"clientSecretRef"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["authorization_code_pkce","client_credentials"]},"wire_name":"flow"},{"required":true,"shape":{"kind":"string"},"wire_name":"issuer"},{"required":true,"shape":{"kind":"string"},"wire_name":"resource"},{"required":false,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"scopes"},{"required":true,"shape":{"kind":"literal","value":"oauth"},"wire_name":"type"}]}]},"Backend":{"additional":{"kind":"allowed"},"forbidden_property_sets":[["contentReceiver"]],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"Authentication"},"wire_name":"authentication"},{"required":true,"shape":{"kind":"ref","name":"ReverseDnsName"},"wire_name":"id"},{"required":true,"shape":{"items":{"discriminator":"mode","kind":"union","mode":"oneOf","variants":[{"kind":"ref","name":"InterceptSubscription"},{"kind":"ref","name":"ObserveSubscription"}]},"kind":"array"},"wire_name":"subscriptions"},{"required":true,"shape":{"discriminator":"type","kind":"union","mode":"oneOf","variants":[{"kind":"ref","name":"StdioTransport"},{"kind":"ref","name":"HttpTransport"}]},"wire_name":"transport"}]},"Capabilities":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"items":{"kind":"union","mode":"anyOf","variants":[{"kind":"enum","open_strings":true,"values":["deny","allow","ask","modify","message","return","flow","inject"]},{"kind":"string"}]},"kind":"array"},"wire_name":"effects"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"form"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"url"}]},"wire_name":"elicitation"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"integer"},"wire_name":"continuationCount"},{"required":false,"shape":{"kind":"integer"},"wire_name":"maxContinuations"},{"required":true,"shape":{"items":{"kind":"enum","open_strings":true,"values":["stop","continue"]},"kind":"array"},"wire_name":"operations"},{"required":false,"shape":{"kind":"integer"},"wire_name":"remainingContinuations"}]},"wire_name":"flow"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":true},"wire_name":"append"},{"required":true,"shape":{"items":{"kind":"enum","open_strings":true,"values":["now","next_turn"]},"kind":"array"},"wire_name":"deliverAt"}]},"wire_name":"context"}]},"wire_name":"inject"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"intersection","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"boolean"},"wire_name":"merge"},{"required":true,"shape":{"kind":"boolean"},"wire_name":"replace"}]},{"kind":"union","mode":"anyOf","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":true},"wire_name":"replace"}]},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":true},"wire_name":"merge"}]}]}]},"wire_name":"content"},{"required":false,"shape":{"kind":"intersection","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"boolean"},"wire_name":"merge"},{"required":true,"shape":{"kind":"boolean"},"wire_name":"replace"}]},{"kind":"union","mode":"anyOf","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":true},"wire_name":"replace"}]},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":true},"wire_name":"merge"}]}]}]},"wire_name":"input"},{"required":false,"shape":{"kind":"intersection","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"boolean"},"wire_name":"merge"},{"required":true,"shape":{"kind":"boolean"},"wire_name":"replace"}]},{"kind":"union","mode":"anyOf","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":true},"wire_name":"replace"}]},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":true},"wire_name":"merge"}]}]}]},"wire_name":"instructions"},{"required":false,"shape":{"kind":"intersection","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"boolean"},"wire_name":"merge"},{"required":true,"shape":{"kind":"boolean"},"wire_name":"replace"}]},{"kind":"union","mode":"anyOf","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":true},"wire_name":"replace"}]},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":true},"wire_name":"merge"}]}]}]},"wire_name":"output"},{"required":false,"shape":{"kind":"intersection","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"boolean"},"wire_name":"merge"},{"required":true,"shape":{"kind":"boolean"},"wire_name":"replace"}]},{"kind":"union","mode":"anyOf","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":true},"wire_name":"replace"}]},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":true},"wire_name":"merge"}]}]}]},"wire_name":"prompt"},{"required":false,"shape":{"kind":"intersection","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"boolean"},"wire_name":"merge"},{"required":true,"shape":{"kind":"boolean"},"wire_name":"replace"}]},{"kind":"union","mode":"anyOf","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":true},"wire_name":"replace"}]},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":true},"wire_name":"merge"}]}]}]},"wire_name":"request"},{"required":false,"shape":{"kind":"intersection","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"boolean"},"wire_name":"merge"},{"required":true,"shape":{"kind":"boolean"},"wire_name":"replace"}]},{"kind":"union","mode":"anyOf","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":true},"wire_name":"replace"}]},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":true},"wire_name":"merge"}]}]}]},"wire_name":"response"},{"required":false,"shape":{"kind":"intersection","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"boolean"},"wire_name":"merge"},{"required":true,"shape":{"kind":"boolean"},"wire_name":"replace"}]},{"kind":"union","mode":"anyOf","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":true},"wire_name":"replace"}]},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":true},"wire_name":"merge"}]}]}]},"wire_name":"summary"},{"required":false,"shape":{"kind":"intersection","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"boolean"},"wire_name":"merge"},{"required":true,"shape":{"kind":"boolean"},"wire_name":"replace"}]},{"kind":"union","mode":"anyOf","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":true},"wire_name":"replace"}]},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":true},"wire_name":"merge"}]}]}]},"wire_name":"workspace"}]},"wire_name":"modify"}]},"CapabilitiesRequest":{"kind":"intersection","variants":[{"kind":"ref","name":"JsonRpcRequest"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":"hooks/capabilities"},"wire_name":"method"},{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"ref","name":"ProtocolVersion"},"wire_name":"protocolVersion"}]},"wire_name":"params"}]}]},"CapabilitiesResponse":{"kind":"intersection","variants":[{"kind":"ref","name":"JsonRpcSuccessResponse"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[["effects"]],"kind":"object","properties":[{"required":true,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[["identity"]],"kind":"object","properties":[{"required":true,"shape":{"items":{"kind":"enum","open_strings":true,"values":["bearer","oauth"]},"kind":"array"},"wire_name":"authentication"},{"required":true,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"contentCategories"},{"required":true,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"correlationIdentityFields"},{"required":true,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"Capabilities"},"wire_name":"capabilities"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["tool.before","tool.after","session.start","session.end","config.change.before","config.change.after","turn.start","turn.finish.before","turn.end","turn.progress","model.request.before","model.response.after","model.error","model.switch.before","model.switch.after","tool.permission.request","tool.permission.resolved","tool.progress","tool.batch.after","context.compact.before","context.compact.after","task.change.before","task.change.after","user.attention","user.elicitation.request","user.elicitation.result","user.message.inbound","user.message.outbound","workspace.change.before","workspace.change.after","file.changed","hook.failure"]},"wire_name":"event"},{"required":true,"shape":{"items":{"kind":"enum","open_strings":true,"values":["observe","intercept"]},"kind":"array"},"wire_name":"modes"}]},"kind":"array"},"wire_name":"events"},{"required":true,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"integer"},"wire_name":"maxContinuations"},{"required":false,"shape":{"kind":"integer"},"wire_name":"maxTimeoutMs"},{"required":false,"shape":{"kind":"integer"},"wire_name":"maxUploadBytes"},{"required":false,"shape":{"kind":"integer"},"wire_name":"minTimeoutMs"}]},"wire_name":"limits"},{"required":true,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"boolean"},"wire_name":"disableable"},{"required":true,"shape":{"items":{"kind":"enum","open_strings":true,"values":["user","project","managed"]},"kind":"array"},"wire_name":"scopes"}]},"wire_name":"managedPolicy"},{"required":true,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"toolPaths"},{"required":true,"shape":{"items":{"kind":"enum","open_strings":true,"values":["http","stdio","in_process"]},"kind":"array"},"wire_name":"transports"}]},"wire_name":"manifest"},{"required":true,"shape":{"kind":"ref","name":"ProtocolVersion"},"wire_name":"protocolVersion"}]},"wire_name":"result"}]}]},"CatalogueEvent":{"discriminator":"type","kind":"union","mode":"oneOf","variants":[{"kind":"ref","name":"ConfigChangeBeforeEvent"},{"kind":"ref","name":"ConfigChangeAfterEvent"},{"kind":"ref","name":"TurnStartEvent"},{"kind":"ref","name":"TurnFinishBeforeEvent"},{"kind":"ref","name":"TurnEndEvent"},{"kind":"ref","name":"TurnProgressEvent"},{"kind":"ref","name":"ModelRequestBeforeEvent"},{"kind":"ref","name":"ModelResponseAfterEvent"},{"kind":"ref","name":"ModelErrorEvent"},{"kind":"ref","name":"ModelSwitchBeforeEvent"},{"kind":"ref","name":"ModelSwitchAfterEvent"},{"kind":"ref","name":"ToolPermissionRequestEvent"},{"kind":"ref","name":"ToolPermissionResolvedEvent"},{"kind":"ref","name":"ToolProgressEvent"},{"kind":"ref","name":"ToolBatchAfterEvent"},{"kind":"ref","name":"ContextCompactBeforeEvent"},{"kind":"ref","name":"ContextCompactAfterEvent"},{"kind":"ref","name":"TaskChangeBeforeEvent"},{"kind":"ref","name":"TaskChangeAfterEvent"},{"kind":"ref","name":"UserAttentionEvent"},{"kind":"ref","name":"UserElicitationRequestEvent"},{"kind":"ref","name":"UserElicitationResultEvent"},{"kind":"ref","name":"UserMessageInboundEvent"},{"kind":"ref","name":"UserMessageOutboundEvent"},{"kind":"ref","name":"WorkspaceChangeBeforeEvent"},{"kind":"ref","name":"WorkspaceChangeAfterEvent"},{"kind":"ref","name":"FileChangedEvent"},{"kind":"ref","name":"HookFailureEvent"}]},"ConfigChangeAfterEvent":{"kind":"intersection","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"config.change.after"},"wire_name":"type"}]},{"kind":"ref","name":"InteractionEventConfigChangeAfter"}]},"ConfigChangeBeforeCapabilities":{"kind":"intersection","variants":[{"kind":"ref","name":"Capabilities"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["deny","message"]},"kind":"array"},"wire_name":"effects"}]}]},"ConfigChangeBeforeEvent":{"kind":"intersection","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"config.change.before"},"wire_name":"type"}]},{"kind":"ref","name":"InteractionEventConfigChangeBefore"}]},"ContentItem":{"kind":"union","mode":"oneOf","variants":[{"additional":{"kind":"forbidden"},"forbidden_property_sets":[["sha256"],["size"]],"kind":"object","properties":[{"required":true,"shape":{"kind":"ref","name":"ContentReference"},"wire_name":"body"},{"required":false,"shape":{"kind":"string"},"wire_name":"category"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":true,"shape":{"kind":"string"},"wire_name":"kind"},{"required":true,"shape":{"kind":"string"},"wire_name":"mediaType"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentItemId"},{"required":false,"shape":{"kind":"string"},"wire_name":"role"},{"required":true,"shape":{"kind":"literal","value":"body"},"wire_name":"selection"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"category"},{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"wire_name":"gap"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":true,"shape":{"kind":"string"},"wire_name":"kind"},{"required":true,"shape":{"kind":"string"},"wire_name":"mediaType"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentItemId"},{"required":false,"shape":{"kind":"string"},"wire_name":"role"},{"required":true,"shape":{"kind":"literal","value":"body"},"wire_name":"selection"},{"required":false,"shape":{"kind":"string"},"wire_name":"sha256"},{"required":false,"shape":{"kind":"integer"},"wire_name":"size"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"category"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":true,"shape":{"kind":"string"},"wire_name":"kind"},{"required":true,"shape":{"kind":"string"},"wire_name":"mediaType"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentItemId"},{"required":false,"shape":{"kind":"string"},"wire_name":"role"},{"required":true,"shape":{"kind":"literal","value":"metadata"},"wire_name":"selection"},{"required":false,"shape":{"kind":"string"},"wire_name":"sha256"},{"required":false,"shape":{"kind":"integer"},"wire_name":"size"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"category"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":true,"shape":{"kind":"string"},"wire_name":"kind"},{"required":true,"shape":{"kind":"string"},"wire_name":"mediaType"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentItemId"},{"required":false,"shape":{"kind":"string"},"wire_name":"role"},{"required":true,"shape":{"kind":"literal","value":"omit"},"wire_name":"selection"},{"required":false,"shape":{"kind":"string"},"wire_name":"sha256"},{"required":false,"shape":{"kind":"integer"},"wire_name":"size"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]}]},"ContentReference":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[["sha256"],["size"]],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"ref"}]},"ContentSelection":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"enum","open_strings":true,"values":["body","metadata","omit"]},"wire_name":"audio"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["body","metadata","omit"]},"wire_name":"default"},{"required":false,"shape":{"kind":"enum","open_strings":true,"values":["body","metadata","omit"]},"wire_name":"files"},{"required":false,"shape":{"kind":"enum","open_strings":true,"values":["body","metadata","omit"]},"wire_name":"images"},{"required":false,"shape":{"kind":"enum","open_strings":true,"values":["body","metadata","omit"]},"wire_name":"reasoning"},{"required":false,"shape":{"kind":"enum","open_strings":true,"values":["body","metadata","omit"]},"wire_name":"text"},{"required":false,"shape":{"kind":"enum","open_strings":true,"values":["body","metadata","omit"]},"wire_name":"video"}]},"ContentUpload":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"Authentication"},"wire_name":"auth"},{"required":true,"shape":{"kind":"string"},"wire_name":"endpoint"},{"required":true,"shape":{"kind":"integer"},"wire_name":"maxBytes"},{"required":true,"shape":{"kind":"integer"},"wire_name":"timeoutMs"}]},"ContentUploadReceipt":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"ref"},{"required":true,"shape":{"kind":"string"},"wire_name":"sha256"},{"required":true,"shape":{"kind":"integer"},"wire_name":"size"}]},"ContextCompactAfterCapabilities":{"kind":"intersection","variants":[{"kind":"ref","name":"Capabilities"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["inject","modify","message"]},"kind":"array"},"wire_name":"effects"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"modify"}]}]},"ContextCompactAfterEvent":{"kind":"ref","name":"ExecutionEventContextCompactAfter"},"ContextCompactBeforeCapabilities":{"kind":"intersection","variants":[{"kind":"ref","name":"Capabilities"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["deny","modify","return","inject","message"]},"kind":"array"},"wire_name":"effects"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"modify"}]}]},"ContextCompactBeforeEvent":{"kind":"ref","name":"ExecutionEventContextCompactBefore"},"DenyEffect":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"code"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"},{"required":true,"shape":{"kind":"literal","value":"deny"},"wire_name":"type"}]},"Effect":{"kind":"union","mode":"oneOf","variants":[{"kind":"ref","name":"DenyEffect"},{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":"allow"},"wire_name":"type"}]},{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":"ask"},"wire_name":"type"}]},{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["replace","merge"]},"wire_name":"operation"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["input","output","prompt","request","response","content","instructions","summary","workspace"]},"wire_name":"target"},{"required":true,"shape":{"kind":"literal","value":"modify"},"wire_name":"type"},{"required":true,"shape":{"kind":"any"},"wire_name":"value"}]},{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"text"},{"required":true,"shape":{"kind":"literal","value":"message"},"wire_name":"type"}]},{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":"return"},"wire_name":"type"},{"required":true,"shape":{"kind":"any"},"wire_name":"value"}]},{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":"stop"},"wire_name":"operation"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"},{"required":true,"shape":{"kind":"literal","value":"flow"},"wire_name":"type"}]},{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"instruction"},{"required":true,"shape":{"kind":"literal","value":"continue"},"wire_name":"operation"},{"required":true,"shape":{"kind":"literal","value":"flow"},"wire_name":"type"}]},{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["now","next_turn"]},"wire_name":"deliverAt"},{"required":true,"shape":{"kind":"literal","value":"append"},"wire_name":"operation"},{"required":true,"shape":{"kind":"literal","value":"context"},"wire_name":"target"},{"required":true,"shape":{"kind":"literal","value":"inject"},"wire_name":"type"},{"required":true,"shape":{"kind":"any"},"wire_name":"value"}]}]},"Event":{"discriminator":"type","kind":"union","mode":"oneOf","variants":[{"kind":"ref","name":"ToolBeforeEvent"},{"kind":"ref","name":"ToolAfterEvent"},{"kind":"ref","name":"SessionStartEvent"},{"kind":"ref","name":"SessionEndEvent"},{"kind":"ref","name":"ConfigChangeBeforeEvent"},{"kind":"ref","name":"ConfigChangeAfterEvent"},{"kind":"ref","name":"TurnStartEvent"},{"kind":"ref","name":"TurnFinishBeforeEvent"},{"kind":"ref","name":"TurnEndEvent"},{"kind":"ref","name":"TurnProgressEvent"},{"kind":"ref","name":"ModelRequestBeforeEvent"},{"kind":"ref","name":"ModelResponseAfterEvent"},{"kind":"ref","name":"ModelErrorEvent"},{"kind":"ref","name":"ModelSwitchBeforeEvent"},{"kind":"ref","name":"ModelSwitchAfterEvent"},{"kind":"ref","name":"ToolPermissionRequestEvent"},{"kind":"ref","name":"ToolPermissionResolvedEvent"},{"kind":"ref","name":"ToolProgressEvent"},{"kind":"ref","name":"ToolBatchAfterEvent"},{"kind":"ref","name":"ContextCompactBeforeEvent"},{"kind":"ref","name":"ContextCompactAfterEvent"},{"kind":"ref","name":"TaskChangeBeforeEvent"},{"kind":"ref","name":"TaskChangeAfterEvent"},{"kind":"ref","name":"UserAttentionEvent"},{"kind":"ref","name":"UserElicitationRequestEvent"},{"kind":"ref","name":"UserElicitationResultEvent"},{"kind":"ref","name":"UserMessageInboundEvent"},{"kind":"ref","name":"UserMessageOutboundEvent"},{"kind":"ref","name":"WorkspaceChangeBeforeEvent"},{"kind":"ref","name":"WorkspaceChangeAfterEvent"},{"kind":"ref","name":"FileChangedEvent"},{"kind":"ref","name":"HookFailureEvent"}]},"ExecutionEvent":{"discriminator":"type","kind":"union","mode":"oneOf","variants":[{"kind":"ref","name":"ExecutionEventTurnStart"},{"kind":"ref","name":"ExecutionEventTurnFinishBefore"},{"kind":"ref","name":"ExecutionEventTurnEnd"},{"kind":"ref","name":"ExecutionEventTurnProgress"},{"kind":"ref","name":"ExecutionEventModelRequestBefore"},{"kind":"ref","name":"ExecutionEventModelResponseAfter"},{"kind":"ref","name":"ExecutionEventModelError"},{"kind":"ref","name":"ExecutionEventModelSwitchBefore"},{"kind":"ref","name":"ExecutionEventModelSwitchAfter"},{"kind":"ref","name":"ExecutionEventToolPermissionRequest"},{"kind":"ref","name":"ExecutionEventToolPermissionResolved"},{"kind":"ref","name":"ExecutionEventToolProgress"},{"kind":"ref","name":"ExecutionEventToolBatchAfter"},{"kind":"ref","name":"ExecutionEventContextCompactBefore"},{"kind":"ref","name":"ExecutionEventContextCompactAfter"}]},"ExecutionEventAttempt":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":true,"shape":{"kind":"integer"},"wire_name":"number"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"ExecutionEventAttemptusage":{"kind":"intersection","variants":[{"kind":"ref","name":"ExecutionEventUsage"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"literal","value":"amount"},"wire_name":"kind"},{"required":false,"shape":{"kind":"enum","open_strings":true,"values":["provider","estimate"]},"wire_name":"provenance"},{"required":false,"shape":{"kind":"literal","value":"attempt"},"wire_name":"scope"}]}]},"ExecutionEventBatch":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"callIds"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"ExecutionEventContextCompactAfter":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"ref","name":"ExecutionEventExecution"},"wire_name":"execution"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"items":{"kind":"ref","name":"ModelVisibleItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":true,"shape":{"items":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"}]},"kind":"array"},"wire_name":"removed"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":true,"shape":{"kind":"ref","name":"ModelVisibleItem"},"wire_name":"summary"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":false,"shape":{"kind":"ref","name":"ExecutionEventTokencounts"},"wire_name":"tokenCounts"},{"required":false,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"context.compact.after"},"wire_name":"type"}]},"ExecutionEventContextCompactBefore":{"kind":"intersection","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"ref","name":"ContentItem"},"wire_name":"instructions"},{"required":true,"shape":{"items":{"kind":"ref","name":"ModelVisibleItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":false,"shape":{"kind":"ref","name":"ExecutionEventTokencounts"},"wire_name":"tokenCounts"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["auto","manual","hook"]},"wire_name":"trigger"},{"required":false,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"context.compact.before"},"wire_name":"type"}]},{"kind":"any"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"any"},"wire_name":"tokenCounts"}]}]},"ExecutionEventError":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"class"},{"required":false,"shape":{"kind":"string"},"wire_name":"code"},{"required":true,"shape":{"kind":"string"},"wire_name":"message"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"union","mode":"oneOf","variants":[{"kind":"string"},{"kind":"integer"}]},"wire_name":"status"}]},"ExecutionEventExecution":{"kind":"union","mode":"oneOf","variants":[{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":"executed"},"wire_name":"status"}]},{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":"supplied_result"},"wire_name":"reason"},{"required":true,"shape":{"kind":"literal","value":"skipped"},"wire_name":"status"}]},{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"detail"},{"required":true,"shape":{"kind":"literal","value":"policy"},"wire_name":"reason"},{"required":true,"shape":{"kind":"literal","value":"skipped"},"wire_name":"status"}]},{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"detail"},{"required":true,"shape":{"kind":"literal","value":"cancelled"},"wire_name":"reason"},{"required":true,"shape":{"kind":"literal","value":"skipped"},"wire_name":"status"}]},{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"detail"},{"required":true,"shape":{"kind":"literal","value":"timeout"},"wire_name":"reason"},{"required":true,"shape":{"kind":"literal","value":"skipped"},"wire_name":"status"}]},{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"detail"},{"required":true,"shape":{"kind":"literal","value":"other"},"wire_name":"reason"},{"required":true,"shape":{"kind":"literal","value":"skipped"},"wire_name":"status"}]}]},"ExecutionEventFilechange":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"ContentItem"},"wire_name":"after"},{"required":false,"shape":{"kind":"ref","name":"ContentItem"},"wire_name":"before"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["created","modified","deleted","moved"]},"wire_name":"change"},{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":false,"shape":{"kind":"string"},"wire_name":"previousPath"}]},"ExecutionEventMcp":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"discriminator":"transport","kind":"union","mode":"oneOf","variants":[{"kind":"intersection","variants":[{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"literal","value":"http"},"wire_name":"transport"},{"required":false,"shape":{"kind":"string"},"wire_name":"url"}]},{"kind":"union","mode":"anyOf","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"any"},"wire_name":"url"}]},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"any"},"wire_name":"gaps"}]}]}]},{"kind":"intersection","variants":[{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"literal","value":"sse"},"wire_name":"transport"},{"required":false,"shape":{"kind":"string"},"wire_name":"url"}]},{"kind":"union","mode":"anyOf","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"any"},"wire_name":"url"}]},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"any"},"wire_name":"gaps"}]}]}]},{"kind":"intersection","variants":[{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"args"},{"required":false,"shape":{"kind":"string"},"wire_name":"command"},{"required":false,"shape":{"kind":"string"},"wire_name":"cwd"},{"required":false,"shape":{"items":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"literal","value":"stdio"},"wire_name":"transport"}]},{"kind":"union","mode":"anyOf","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"any"},"wire_name":"command"}]},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"any"},"wire_name":"gaps"}]}]},{"kind":"union","mode":"anyOf","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"any"},"wire_name":"args"}]},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"any"},"wire_name":"gaps"}]}]},{"kind":"union","mode":"anyOf","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"any"},"wire_name":"cwd"}]},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"any"},"wire_name":"gaps"}]}]}]},{"kind":"intersection","variants":[{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"address"},{"required":false,"shape":{"kind":"string"},"wire_name":"addressForm"},{"required":false,"shape":{"items":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"transport"}]},{"kind":"union","mode":"anyOf","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"any"},"wire_name":"addressForm"}]},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"any"},"wire_name":"gaps"}]}]},{"kind":"union","mode":"anyOf","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"any"},"wire_name":"address"}]},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"any"},"wire_name":"gaps"}]}]}]}]},"wire_name":"connection"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["runtime","inferred"]},"wire_name":"provenance"},{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"string"},"wire_name":"name"}]},"wire_name":"server"},{"required":true,"shape":{"kind":"string"},"wire_name":"toolName"}]},"ExecutionEventModel":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":true,"shape":{"kind":"string"},"wire_name":"provider"}]},"ExecutionEventModelError":{"additional":{"kind":"allowed"},"forbidden_property_sets":[["finishReason"]],"kind":"object","properties":[{"required":true,"shape":{"kind":"ref","name":"ExecutionEventAttempt"},"wire_name":"attempt"},{"required":true,"shape":{"kind":"ref","name":"ExecutionEventError"},"wire_name":"error"},{"required":true,"shape":{"kind":"intersection","variants":[{"kind":"ref","name":"ExecutionEventExecution"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"literal","value":"executed"},"wire_name":"status"}]}]},"wire_name":"execution"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"number"},"wire_name":"latencyMs"},{"required":true,"shape":{"kind":"ref","name":"ExecutionEventModel"},"wire_name":"model"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":false,"shape":{"kind":"string"},"wire_name":"recovery"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":false,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"model.error"},"wire_name":"type"},{"required":false,"shape":{"kind":"ref","name":"ExecutionEventAttemptusage"},"wire_name":"usage"}]},"ExecutionEventModelRequestBefore":{"additional":{"kind":"allowed"},"forbidden_property_sets":[["error"],["execution"],["finishReason"],["latencyMs"],["usage"]],"kind":"object","properties":[{"required":true,"shape":{"kind":"ref","name":"ExecutionEventAttempt"},"wire_name":"attempt"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":true,"shape":{"items":{"kind":"ref","name":"ModelVisibleItem"},"kind":"array"},"wire_name":"items"},{"required":true,"shape":{"kind":"ref","name":"ExecutionEventModel"},"wire_name":"model"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":true,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"params"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":false,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"model.request.before"},"wire_name":"type"}]},"ExecutionEventModelResponseAfter":{"additional":{"kind":"allowed"},"forbidden_property_sets":[["error"]],"kind":"object","properties":[{"required":true,"shape":{"kind":"ref","name":"ExecutionEventAttempt"},"wire_name":"attempt"},{"required":true,"shape":{"kind":"ref","name":"ExecutionEventExecution"},"wire_name":"execution"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":true,"shape":{"kind":"string"},"wire_name":"finishReason"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":true,"shape":{"items":{"kind":"ref","name":"ModelVisibleItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"number"},"wire_name":"latencyMs"},{"required":true,"shape":{"kind":"ref","name":"ExecutionEventModel"},"wire_name":"model"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":false,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"model.response.after"},"wire_name":"type"},{"required":false,"shape":{"kind":"ref","name":"ExecutionEventAttemptusage"},"wire_name":"usage"}]},"ExecutionEventModelSwitchAfter":{"additional":{"kind":"allowed"},"forbidden_property_sets":[["proposed"]],"kind":"object","properties":[{"required":true,"shape":{"kind":"ref","name":"ExecutionEventModel"},"wire_name":"current"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":true,"shape":{"kind":"ref","name":"ExecutionEventModel"},"wire_name":"previous"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":false,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"model.switch.after"},"wire_name":"type"}]},"ExecutionEventModelSwitchBefore":{"additional":{"kind":"allowed"},"forbidden_property_sets":[["previous"]],"kind":"object","properties":[{"required":true,"shape":{"kind":"ref","name":"ExecutionEventModel"},"wire_name":"current"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":false,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"currency"},{"required":false,"shape":{"kind":"number"},"wire_name":"inputPerMillionTokens"},{"required":false,"shape":{"kind":"number"},"wire_name":"outputPerMillionTokens"}]},"wire_name":"pricing"},{"required":true,"shape":{"kind":"ref","name":"ExecutionEventModel"},"wire_name":"proposed"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":false,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"model.switch.before"},"wire_name":"type"}]},"ExecutionEventTokencounts":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"integer"},"wire_name":"after"},{"required":false,"shape":{"kind":"integer"},"wire_name":"before"}]},"ExecutionEventTool":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"input"},{"required":false,"shape":{"kind":"string"},"wire_name":"kind"},{"required":false,"shape":{"kind":"ref","name":"ExecutionEventMcp"},"wire_name":"mcp"},{"required":true,"shape":{"kind":"string"},"wire_name":"name"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["native","mcp"]},"wire_name":"origin"}]},"ExecutionEventToolBatchAfter":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"batch"},{"required":true,"shape":{"items":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"ExecutionEventBatch"},"wire_name":"batch"},{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"call"},{"required":true,"shape":{"kind":"ref","name":"ExecutionEventExecution"},"wire_name":"execution"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["ok","error","denied","cancelled","timeout"]},"wire_name":"outcome"},{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"ref","name":"ExecutionEventTool"},"wire_name":"tool"}]},"kind":"array"},"wire_name":"calls"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":false,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"tool.batch.after"},"wire_name":"type"}]},"ExecutionEventToolPermissionRequest":{"additional":{"kind":"allowed"},"forbidden_property_sets":[["decidedBy"],["decision"],["execution"],["outcome"]],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"ExecutionEventBatch"},"wire_name":"batch"},{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"call"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"boolean"},"wire_name":"sandboxBypass"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":true,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"kind":"array"},"wire_name":"suggestions"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":true,"shape":{"kind":"ref","name":"ExecutionEventTool"},"wire_name":"tool"},{"required":false,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"tool.permission.request"},"wire_name":"type"}]},"ExecutionEventToolPermissionResolved":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"ExecutionEventBatch"},"wire_name":"batch"},{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"call"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["user","policy","hook","auto","classifier"]},"wire_name":"decidedBy"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["allow","deny"]},"wire_name":"decision"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":true,"shape":{"kind":"ref","name":"ExecutionEventTool"},"wire_name":"tool"},{"required":false,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"tool.permission.resolved"},"wire_name":"type"}]},"ExecutionEventToolProgress":{"additional":{"kind":"allowed"},"forbidden_property_sets":[["execution"],["outcome"]],"kind":"object","properties":[{"required":true,"shape":{"kind":"boolean"},"wire_name":"backgrounded"},{"required":false,"shape":{"kind":"ref","name":"ExecutionEventBatch"},"wire_name":"batch"},{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"call"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":true,"shape":{"kind":"ref","name":"ModelVisibleItem"},"wire_name":"partialOutput"},{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":true,"shape":{"kind":"ref","name":"ExecutionEventTool"},"wire_name":"tool"},{"required":false,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"tool.progress"},"wire_name":"type"}]},"ExecutionEventTurnEnd":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"integer"},"wire_name":"continuationCount"},{"required":false,"shape":{"kind":"ref","name":"ExecutionEventError"},"wire_name":"error"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":true,"shape":{"items":{"kind":"ref","name":"ModelVisibleItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"lastAssistantItem"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["completed","failed","cancelled","max_iterations"]},"wire_name":"outcome"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"turn.end"},"wire_name":"type"},{"required":false,"shape":{"kind":"ref","name":"ExecutionEventTurnusage"},"wire_name":"usage"}]},"ExecutionEventTurnFinishBefore":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"integer"},"wire_name":"continuationCount"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":true,"shape":{"items":{"kind":"ref","name":"ModelVisibleItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"lastAssistantItem"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["completed","failed","cancelled","max_iterations"]},"wire_name":"outcome"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"turn.finish.before"},"wire_name":"type"},{"required":false,"shape":{"kind":"ref","name":"ExecutionEventTurnusage"},"wire_name":"usage"}]},"ExecutionEventTurnProgress":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"ref","name":"ModelVisibleItem"},"wire_name":"delta"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":true,"shape":{"kind":"boolean"},"wire_name":"final"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"item"},{"required":false,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"turn.progress"},"wire_name":"type"}]},"ExecutionEventTurnStart":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"expandedFrom"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":true,"shape":{"items":{"kind":"ref","name":"ModelVisibleItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["user","continuation","hook","external"]},"wire_name":"trigger"},{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"turn.start"},"wire_name":"type"}]},"ExecutionEventTurnusage":{"kind":"intersection","variants":[{"kind":"ref","name":"ExecutionEventUsage"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"literal","value":"total"},"wire_name":"kind"},{"required":false,"shape":{"kind":"literal","value":"turn"},"wire_name":"scope"}]}]},"ExecutionEventUsage":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"integer"},"wire_name":"cacheReadTokens"},{"required":false,"shape":{"kind":"integer"},"wire_name":"cacheWriteTokens"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["complete","partial","unknown"]},"wire_name":"completeness"},{"required":false,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"number"},"wire_name":"amount"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["billed","reported","estimated"]},"wire_name":"basis"},{"required":true,"shape":{"kind":"string"},"wire_name":"currency"}]},"wire_name":"cost"},{"required":false,"shape":{"kind":"integer"},"wire_name":"inputTokens"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["amount","total"]},"wire_name":"kind"},{"required":false,"shape":{"kind":"integer"},"wire_name":"outputTokens"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["provider","estimate","mixed"]},"wire_name":"provenance"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["attempt","turn"]},"wire_name":"scope"}]},"Extensions":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"FileChangedEvent":{"kind":"ref","name":"TaskWorkspaceEventFileChanged"},"HookFailureEvent":{"kind":"intersection","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"hook.failure"},"wire_name":"type"}]},{"kind":"ref","name":"InteractionEventHookFailure"}]},"HttpTransport":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":"http"},"wire_name":"type"},{"required":true,"shape":{"kind":"string"},"wire_name":"url"}]},"InteractionEvent":{"discriminator":"type","kind":"union","mode":"oneOf","variants":[{"kind":"ref","name":"InteractionEventConfigChangeBefore"},{"kind":"ref","name":"InteractionEventConfigChangeAfter"},{"kind":"ref","name":"InteractionEventUserAttention"},{"kind":"ref","name":"InteractionEventUserElicitationRequest"},{"kind":"ref","name":"InteractionEventUserElicitationResult"},{"kind":"ref","name":"InteractionEventUserMessageInbound"},{"kind":"ref","name":"InteractionEventUserMessageOutbound"},{"kind":"ref","name":"InteractionEventHookFailure"}]},"InteractionEventConfigChangeAfter":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"kind":"array"},"wire_name":"mcpServers"},{"required":false,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"scope"},{"required":true,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"settings"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":true,"shape":{"kind":"string"},"wire_name":"summary"}]},"wire_name":"change"},{"required":true,"shape":{"kind":"literal","value":"config.change.after"},"wire_name":"type"}]},"InteractionEventConfigChangeBefore":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"scope"},{"required":true,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"settings"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":true,"shape":{"kind":"string"},"wire_name":"summary"}]},"wire_name":"change"},{"required":true,"shape":{"kind":"literal","value":"config.change.before"},"wire_name":"type"}]},"InteractionEventHookFailure":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"backendId"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["fail-open","fail-closed"]},"wire_name":"policy"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"wire_name":"failure"},{"required":true,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":true,"shape":{"kind":"literal","value":"hook.failure"},"wire_name":"type"}]},"InteractionEventUserAttention":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"kind"},{"required":true,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"message"},{"required":true,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"title"}]},"wire_name":"attention"},{"required":true,"shape":{"kind":"literal","value":"user.attention"},"wire_name":"type"}]},"InteractionEventUserElicitationRequest":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["form","url"]},"wire_name":"mode"},{"required":false,"shape":{"kind":"intersection","variants":[{"kind":"ref","name":"ContentItem"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"literal","value":"application/json"},"wire_name":"mediaType"}]}]},"wire_name":"request"},{"required":true,"shape":{"kind":"string"},"wire_name":"server"}]},"wire_name":"elicitation"},{"required":true,"shape":{"kind":"literal","value":"user.elicitation.request"},"wire_name":"type"}]},"InteractionEventUserElicitationResult":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["accept","decline","cancel"]},"wire_name":"action"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["form","url"]},"wire_name":"mode"},{"required":false,"shape":{"kind":"intersection","variants":[{"kind":"ref","name":"ContentItem"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"literal","value":"application/json"},"wire_name":"mediaType"}]}]},"wire_name":"result"},{"required":true,"shape":{"kind":"string"},"wire_name":"server"}]},"wire_name":"elicitation"},{"required":true,"shape":{"kind":"literal","value":"user.elicitation.result"},"wire_name":"type"}]},"InteractionEventUserMessageInbound":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"channel"},{"required":true,"shape":{"kind":"string"},"wire_name":"sender"},{"required":true,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"text"}]},"wire_name":"message"},{"required":true,"shape":{"kind":"literal","value":"user.message.inbound"},"wire_name":"type"}]},"InteractionEventUserMessageOutbound":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"channel"},{"required":true,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"payload"}]},"wire_name":"message"},{"required":true,"shape":{"kind":"literal","value":"user.message.outbound"},"wire_name":"type"}]},"InterceptDenyResponse":{"kind":"intersection","variants":[{"kind":"ref","name":"JsonRpcSuccessResponse"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"items":{"kind":"ref","name":"DenyEffect"},"kind":"array"},"wire_name":"effects"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":true,"shape":{"kind":"ref","name":"ProtocolVersion"},"wire_name":"protocolVersion"}]},"wire_name":"result"}]}]},"InterceptNoEffectResponse":{"kind":"intersection","variants":[{"kind":"ref","name":"JsonRpcSuccessResponse"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"items":{"kind":"any"},"kind":"array"},"wire_name":"effects"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":true,"shape":{"kind":"ref","name":"ProtocolVersion"},"wire_name":"protocolVersion"}]},"wire_name":"result"}]}]},"InterceptRequest":{"kind":"intersection","variants":[{"kind":"ref","name":"JsonRpcRequest"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":"hooks/intercept"},"wire_name":"method"},{"required":true,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"intersection","variants":[{"kind":"ref","name":"Capabilities"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"any"},"wire_name":"flow"}]}]},"wire_name":"capabilities"},{"required":true,"shape":{"kind":"intersection","variants":[{"kind":"ref","name":"Event"},{"discriminator":"type","kind":"union","mode":"oneOf","variants":[{"kind":"ref","name":"ToolBeforeEvent"},{"kind":"ref","name":"ToolAfterEvent"},{"kind":"ref","name":"SessionStartEvent"},{"kind":"ref","name":"ConfigChangeBeforeEvent"},{"kind":"ref","name":"TurnStartEvent"},{"kind":"ref","name":"TurnFinishBeforeEvent"},{"kind":"ref","name":"ModelRequestBeforeEvent"},{"kind":"ref","name":"ModelSwitchBeforeEvent"},{"kind":"ref","name":"ToolPermissionRequestEvent"},{"kind":"ref","name":"ToolBatchAfterEvent"},{"kind":"ref","name":"ContextCompactBeforeEvent"},{"kind":"ref","name":"ContextCompactAfterEvent"},{"kind":"ref","name":"TaskChangeBeforeEvent"},{"kind":"ref","name":"UserElicitationRequestEvent"},{"kind":"ref","name":"UserElicitationResultEvent"},{"kind":"ref","name":"UserMessageInboundEvent"},{"kind":"ref","name":"UserMessageOutboundEvent"},{"kind":"ref","name":"WorkspaceChangeBeforeEvent"},{"kind":"ref","name":"ModelResponseAfterEvent"},{"kind":"intersection","variants":[{"kind":"ref","name":"SessionEndEvent"},{"kind":"never"}]},{"kind":"intersection","variants":[{"kind":"ref","name":"ConfigChangeAfterEvent"},{"kind":"never"}]},{"kind":"intersection","variants":[{"kind":"ref","name":"TurnEndEvent"},{"kind":"never"}]},{"kind":"intersection","variants":[{"kind":"ref","name":"TurnProgressEvent"},{"kind":"never"}]},{"kind":"intersection","variants":[{"kind":"ref","name":"ModelErrorEvent"},{"kind":"never"}]},{"kind":"intersection","variants":[{"kind":"ref","name":"ModelSwitchAfterEvent"},{"kind":"never"}]},{"kind":"intersection","variants":[{"kind":"ref","name":"ToolPermissionResolvedEvent"},{"kind":"never"}]},{"kind":"intersection","variants":[{"kind":"ref","name":"ToolProgressEvent"},{"kind":"never"}]},{"kind":"intersection","variants":[{"kind":"ref","name":"TaskChangeAfterEvent"},{"kind":"never"}]},{"kind":"intersection","variants":[{"kind":"ref","name":"UserAttentionEvent"},{"kind":"never"}]},{"kind":"intersection","variants":[{"kind":"ref","name":"WorkspaceChangeAfterEvent"},{"kind":"never"}]},{"kind":"intersection","variants":[{"kind":"ref","name":"FileChangedEvent"},{"kind":"never"}]},{"kind":"intersection","variants":[{"kind":"ref","name":"HookFailureEvent"},{"kind":"never"}]}]}]},"wire_name":"event"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":true,"shape":{"kind":"ref","name":"ProtocolVersion"},"wire_name":"protocolVersion"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"union","mode":"anyOf","variants":[{"kind":"null"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"provenance"},{"required":true,"shape":{"kind":"any"},"wire_name":"value"}]}]},"wire_name":"candidate"},{"required":false,"shape":{"kind":"enum","open_strings":true,"values":["none","stop","continue"]},"wire_name":"flow"},{"required":false,"shape":{"items":{"kind":"any"},"kind":"array"},"wire_name":"injections"},{"required":false,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"instructions"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["none","allow","ask","deny"]},"wire_name":"permission"}]},"wire_name":"state"}]},"wire_name":"params"}]}]},"InterceptResponse":{"kind":"intersection","variants":[{"kind":"ref","name":"JsonRpcSuccessResponse"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[["manifest"]],"kind":"object","properties":[{"required":true,"shape":{"items":{"kind":"ref","name":"Effect"},"kind":"array"},"wire_name":"effects"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":true,"shape":{"kind":"ref","name":"ProtocolVersion"},"wire_name":"protocolVersion"}]},"wire_name":"result"}]}]},"InterceptSubscription":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"ref","name":"ContentSelection"},"wire_name":"content"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"disableable"},{"required":true,"shape":{"items":{"kind":"union","mode":"anyOf","variants":[{"kind":"enum","open_strings":true,"values":["tool.before","tool.after","session.start","config.change.before","turn.start","turn.finish.before","model.request.before","model.switch.before","tool.permission.request","tool.batch.after","context.compact.before","context.compact.after","task.change.before","user.elicitation.request","user.elicitation.result","user.message.inbound","user.message.outbound","workspace.change.before","model.response.after"]},{"kind":"string"}]},"kind":"array"},"wire_name":"events"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["fail-open","fail-closed"]},"wire_name":"failurePolicy"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"paths"},{"required":false,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"toolKinds"}]},"wire_name":"filters"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"includeNative"},{"required":true,"shape":{"kind":"literal","value":"intercept"},"wire_name":"mode"},{"required":false,"shape":{"kind":"enum","open_strings":true,"values":["managed","project","user"]},"wire_name":"scope"},{"required":true,"shape":{"kind":"integer"},"wire_name":"timeoutMs"},{"required":false,"shape":{"kind":"ref","name":"ContentUpload"},"wire_name":"upload"}]},"JsonRpcErrorResponse":{"additional":{"kind":"allowed"},"forbidden_property_sets":[["result"]],"kind":"object","properties":[{"required":true,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"integer"},"wire_name":"code"},{"required":false,"shape":{"kind":"any"},"wire_name":"data"},{"required":true,"shape":{"kind":"string"},"wire_name":"message"}]},"wire_name":"error"},{"required":true,"shape":{"kind":"ref","name":"JsonRpcResponseId"},"wire_name":"id"},{"required":true,"shape":{"kind":"literal","value":"2.0"},"wire_name":"jsonrpc"}]},"JsonRpcId":{"kind":"union","mode":"anyOf","variants":[{"kind":"string"},{"kind":"integer"}]},"JsonRpcMessage":{"kind":"union","mode":"oneOf","variants":[{"kind":"ref","name":"JsonRpcRequest"},{"kind":"ref","name":"JsonRpcNotification"},{"kind":"ref","name":"JsonRpcSuccessResponse"},{"kind":"ref","name":"JsonRpcErrorResponse"}]},"JsonRpcNotification":{"additional":{"kind":"allowed"},"forbidden_property_sets":[["id"]],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":"2.0"},"wire_name":"jsonrpc"},{"required":true,"shape":{"kind":"string"},"wire_name":"method"},{"required":true,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"params"}]},"JsonRpcRequest":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"ref","name":"JsonRpcId"},"wire_name":"id"},{"required":true,"shape":{"kind":"literal","value":"2.0"},"wire_name":"jsonrpc"},{"required":true,"shape":{"kind":"string"},"wire_name":"method"},{"required":true,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"params"}]},"JsonRpcResponseId":{"kind":"union","mode":"anyOf","variants":[{"kind":"ref","name":"JsonRpcId"},{"kind":"null"}]},"JsonRpcSuccessResponse":{"additional":{"kind":"allowed"},"forbidden_property_sets":[["error"]],"kind":"object","properties":[{"required":true,"shape":{"kind":"ref","name":"JsonRpcResponseId"},"wire_name":"id"},{"required":true,"shape":{"kind":"literal","value":"2.0"},"wire_name":"jsonrpc"},{"required":true,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"result"}]},"McpElicitationBooleanSchema":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"boolean"},"wire_name":"default"},{"required":false,"shape":{"kind":"string"},"wire_name":"description"},{"required":false,"shape":{"kind":"string"},"wire_name":"title"},{"required":true,"shape":{"kind":"literal","value":"boolean"},"wire_name":"type"}]},"McpElicitationElicitRequestFormParams":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"McpElicitationProgressToken"},"wire_name":"progressToken"}]},"wire_name":"_meta"},{"required":true,"shape":{"kind":"string"},"wire_name":"message"},{"required":false,"shape":{"kind":"literal","value":"form"},"wire_name":"mode"},{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"$schema"},{"required":true,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"properties"},{"required":false,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"required"},{"required":true,"shape":{"kind":"literal","value":"object"},"wire_name":"type"}]},"wire_name":"requestedSchema"},{"required":false,"shape":{"kind":"ref","name":"McpElicitationTaskMetadata"},"wire_name":"task"}]},"McpElicitationElicitRequestParams":{"kind":"union","mode":"anyOf","variants":[{"kind":"ref","name":"McpElicitationElicitRequestURLParams"},{"kind":"ref","name":"McpElicitationElicitRequestFormParams"}]},"McpElicitationElicitRequestURLParams":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"McpElicitationProgressToken"},"wire_name":"progressToken"}]},"wire_name":"_meta"},{"required":true,"shape":{"kind":"string"},"wire_name":"elicitationId"},{"required":true,"shape":{"kind":"string"},"wire_name":"message"},{"required":true,"shape":{"kind":"literal","value":"url"},"wire_name":"mode"},{"required":false,"shape":{"kind":"ref","name":"McpElicitationTaskMetadata"},"wire_name":"task"},{"required":true,"shape":{"kind":"string"},"wire_name":"url"}]},"McpElicitationElicitResult":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"_meta"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["accept","cancel","decline"]},"wire_name":"action"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"content"}]},"McpElicitationLegacyTitledEnumSchema":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"default"},{"required":false,"shape":{"kind":"string"},"wire_name":"description"},{"required":true,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"enum"},{"required":false,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"enumNames"},{"required":false,"shape":{"kind":"string"},"wire_name":"title"},{"required":true,"shape":{"kind":"literal","value":"string"},"wire_name":"type"}]},"McpElicitationNumberSchema":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"number"},"wire_name":"default"},{"required":false,"shape":{"kind":"string"},"wire_name":"description"},{"required":false,"shape":{"kind":"number"},"wire_name":"maximum"},{"required":false,"shape":{"kind":"number"},"wire_name":"minimum"},{"required":false,"shape":{"kind":"string"},"wire_name":"title"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["integer","number"]},"wire_name":"type"}]},"McpElicitationPrimitiveSchemaDefinition":{"kind":"union","mode":"anyOf","variants":[{"kind":"ref","name":"McpElicitationStringSchema"},{"kind":"ref","name":"McpElicitationNumberSchema"},{"kind":"ref","name":"McpElicitationBooleanSchema"},{"kind":"ref","name":"McpElicitationUntitledSingleSelectEnumSchema"},{"kind":"ref","name":"McpElicitationTitledSingleSelectEnumSchema"},{"kind":"ref","name":"McpElicitationUntitledMultiSelectEnumSchema"},{"kind":"ref","name":"McpElicitationTitledMultiSelectEnumSchema"},{"kind":"ref","name":"McpElicitationLegacyTitledEnumSchema"}]},"McpElicitationProgressToken":{"kind":"union","mode":"anyOf","variants":[{"kind":"string"},{"kind":"number"}]},"McpElicitationRequest":{"kind":"ref","name":"McpElicitationElicitRequestParams"},"McpElicitationResult":{"kind":"ref","name":"McpElicitationElicitResult"},"McpElicitationStringSchema":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"default"},{"required":false,"shape":{"kind":"string"},"wire_name":"description"},{"required":false,"shape":{"kind":"enum","open_strings":true,"values":["date","date-time","email","uri"]},"wire_name":"format"},{"required":false,"shape":{"kind":"number"},"wire_name":"maxLength"},{"required":false,"shape":{"kind":"number"},"wire_name":"minLength"},{"required":false,"shape":{"kind":"string"},"wire_name":"title"},{"required":true,"shape":{"kind":"literal","value":"string"},"wire_name":"type"}]},"McpElicitationTaskMetadata":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"number"},"wire_name":"ttl"}]},"McpElicitationTitledMultiSelectEnumSchema":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"default"},{"required":false,"shape":{"kind":"string"},"wire_name":"description"},{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"items":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"const"},{"required":true,"shape":{"kind":"string"},"wire_name":"title"}]},"kind":"array"},"wire_name":"anyOf"}]},"wire_name":"items"},{"required":false,"shape":{"kind":"number"},"wire_name":"maxItems"},{"required":false,"shape":{"kind":"number"},"wire_name":"minItems"},{"required":false,"shape":{"kind":"string"},"wire_name":"title"},{"required":true,"shape":{"kind":"literal","value":"array"},"wire_name":"type"}]},"McpElicitationTitledSingleSelectEnumSchema":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"default"},{"required":false,"shape":{"kind":"string"},"wire_name":"description"},{"required":true,"shape":{"items":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"const"},{"required":true,"shape":{"kind":"string"},"wire_name":"title"}]},"kind":"array"},"wire_name":"oneOf"},{"required":false,"shape":{"kind":"string"},"wire_name":"title"},{"required":true,"shape":{"kind":"literal","value":"string"},"wire_name":"type"}]},"McpElicitationUntitledMultiSelectEnumSchema":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"default"},{"required":false,"shape":{"kind":"string"},"wire_name":"description"},{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"enum"},{"required":true,"shape":{"kind":"literal","value":"string"},"wire_name":"type"}]},"wire_name":"items"},{"required":false,"shape":{"kind":"number"},"wire_name":"maxItems"},{"required":false,"shape":{"kind":"number"},"wire_name":"minItems"},{"required":false,"shape":{"kind":"string"},"wire_name":"title"},{"required":true,"shape":{"kind":"literal","value":"array"},"wire_name":"type"}]},"McpElicitationUntitledSingleSelectEnumSchema":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"default"},{"required":false,"shape":{"kind":"string"},"wire_name":"description"},{"required":true,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"enum"},{"required":false,"shape":{"kind":"string"},"wire_name":"title"},{"required":true,"shape":{"kind":"literal","value":"string"},"wire_name":"type"}]},"ModelErrorEvent":{"kind":"ref","name":"ExecutionEventModelError"},"ModelRequestBeforeCapabilities":{"kind":"intersection","variants":[{"kind":"ref","name":"Capabilities"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["deny","modify","inject","return","flow","message"]},"kind":"array"},"wire_name":"effects"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["stop"]},"kind":"array"},"wire_name":"operations"}]},"wire_name":"flow"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"modify"}]}]},"ModelRequestBeforeEvent":{"kind":"ref","name":"ExecutionEventModelRequestBefore"},"ModelResponseAfterCapabilities":{"kind":"intersection","variants":[{"kind":"ref","name":"Capabilities"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["modify","flow","message"]},"kind":"array"},"wire_name":"effects"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["stop"]},"kind":"array"},"wire_name":"operations"}]},"wire_name":"flow"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"modify"}]}]},"ModelResponseAfterEvent":{"kind":"ref","name":"ExecutionEventModelResponseAfter"},"ModelSwitchAfterEvent":{"kind":"ref","name":"ExecutionEventModelSwitchAfter"},"ModelSwitchBeforeCapabilities":{"kind":"intersection","variants":[{"kind":"ref","name":"Capabilities"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["deny","flow","message"]},"kind":"array"},"wire_name":"effects"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["stop"]},"kind":"array"},"wire_name":"operations"}]},"wire_name":"flow"}]}]},"ModelSwitchBeforeEvent":{"kind":"ref","name":"ExecutionEventModelSwitchBefore"},"ModelVisibleItem":{"kind":"intersection","variants":[{"kind":"ref","name":"ContentItem"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"role"}]}]},"NativeEvent":{"kind":"any"},"ObserveNotification":{"kind":"intersection","variants":[{"kind":"ref","name":"JsonRpcNotification"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"literal","value":"hooks/observe"},"wire_name":"method"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"ref","name":"Event"},"wire_name":"event"},{"required":true,"shape":{"kind":"ref","name":"ProtocolVersion"},"wire_name":"protocolVersion"}]},"wire_name":"params"}]}]},"ObserveSubscription":{"additional":{"kind":"allowed"},"forbidden_property_sets":[["failurePolicy"],["timeoutMs"]],"kind":"object","properties":[{"required":true,"shape":{"kind":"ref","name":"ContentSelection"},"wire_name":"content"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"disableable"},{"required":true,"shape":{"items":{"kind":"union","mode":"anyOf","variants":[{"kind":"enum","open_strings":true,"values":["tool.before","tool.after","session.start","session.end","config.change.before","config.change.after","turn.start","turn.finish.before","turn.end","turn.progress","model.request.before","model.response.after","model.error","model.switch.before","model.switch.after","tool.permission.request","tool.permission.resolved","tool.progress","tool.batch.after","context.compact.before","context.compact.after","task.change.before","task.change.after","user.attention","user.elicitation.request","user.elicitation.result","user.message.inbound","user.message.outbound","workspace.change.before","workspace.change.after","file.changed","hook.failure"]},{"kind":"string"}]},"kind":"array"},"wire_name":"events"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"paths"},{"required":false,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"toolKinds"}]},"wire_name":"filters"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"includeNative"},{"required":true,"shape":{"kind":"literal","value":"observe"},"wire_name":"mode"},{"required":false,"shape":{"kind":"enum","open_strings":true,"values":["managed","project","user"]},"wire_name":"scope"},{"required":false,"shape":{"kind":"ref","name":"ContentUpload"},"wire_name":"upload"}]},"ProtocolVersion":{"kind":"literal","value":"draft"},"Registration":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"items":{"kind":"ref","name":"Backend"},"kind":"array"},"wire_name":"hooks"},{"required":true,"shape":{"kind":"ref","name":"ProtocolVersion"},"wire_name":"protocolVersion"}]},"RegistrationContentreceiver":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"Authentication"},"wire_name":"authentication"},{"required":true,"shape":{"kind":"integer"},"wire_name":"maxBytes"},{"required":true,"shape":{"kind":"integer"},"wire_name":"timeoutMs"},{"required":true,"shape":{"kind":"string"},"wire_name":"url"}]},"ReverseDnsName":{"kind":"string"},"Session":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"string"},"wire_name":"type"}]},"wire_name":"agent"},{"required":false,"shape":{"kind":"string"},"wire_name":"cwd"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"string"},"wire_name":"model"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":false,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"workspaceRoots"}]},"SessionEndEvent":{"additional":{"kind":"allowed"},"forbidden_property_sets":[["tool"]],"kind":"object","properties":[{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"counters"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["completed","cancelled","error","unknown"]},"wire_name":"outcome"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"},{"required":true,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"session.end"},"wire_name":"type"}]},"SessionStartCapabilities":{"kind":"intersection","variants":[{"kind":"ref","name":"Capabilities"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["inject","message"]},"kind":"array"},"wire_name":"effects"}]}]},"SessionStartEvent":{"additional":{"kind":"allowed"},"forbidden_property_sets":[["outcome"],["tool"]],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"name"},{"required":true,"shape":{"kind":"string"},"wire_name":"version"}]},"wire_name":"harness"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":true,"shape":{"items":{"kind":"ref","name":"ModelVisibleItem"},"kind":"array"},"wire_name":"items"},{"required":true,"shape":{"kind":"ref","name":"StaticCapabilityManifest"},"wire_name":"manifest"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":true,"shape":{"kind":"string"},"wire_name":"permissionMode"},{"required":false,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"resumedFrom"},{"required":true,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["startup","resume","clear","compact","fork"]},"wire_name":"trigger"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"session.start"},"wire_name":"type"}]},"StaticCapabilityManifest":{"additional":{"kind":"allowed"},"forbidden_property_sets":[["identity"]],"kind":"object","properties":[{"required":true,"shape":{"items":{"kind":"enum","open_strings":true,"values":["bearer","oauth"]},"kind":"array"},"wire_name":"authentication"},{"required":true,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"contentCategories"},{"required":true,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"correlationIdentityFields"},{"required":true,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"Capabilities"},"wire_name":"capabilities"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["tool.before","tool.after","session.start","session.end","config.change.before","config.change.after","turn.start","turn.finish.before","turn.end","turn.progress","model.request.before","model.response.after","model.error","model.switch.before","model.switch.after","tool.permission.request","tool.permission.resolved","tool.progress","tool.batch.after","context.compact.before","context.compact.after","task.change.before","task.change.after","user.attention","user.elicitation.request","user.elicitation.result","user.message.inbound","user.message.outbound","workspace.change.before","workspace.change.after","file.changed","hook.failure"]},"wire_name":"event"},{"required":true,"shape":{"items":{"kind":"enum","open_strings":true,"values":["observe","intercept"]},"kind":"array"},"wire_name":"modes"}]},"kind":"array"},"wire_name":"events"},{"required":true,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"integer"},"wire_name":"maxContinuations"},{"required":false,"shape":{"kind":"integer"},"wire_name":"maxTimeoutMs"},{"required":false,"shape":{"kind":"integer"},"wire_name":"maxUploadBytes"},{"required":false,"shape":{"kind":"integer"},"wire_name":"minTimeoutMs"}]},"wire_name":"limits"},{"required":true,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"boolean"},"wire_name":"disableable"},{"required":true,"shape":{"items":{"kind":"enum","open_strings":true,"values":["user","project","managed"]},"kind":"array"},"wire_name":"scopes"}]},"wire_name":"managedPolicy"},{"required":true,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"toolPaths"},{"required":true,"shape":{"items":{"kind":"enum","open_strings":true,"values":["http","stdio","in_process"]},"kind":"array"},"wire_name":"transports"}]},"StdioTransport":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"args"},{"required":true,"shape":{"kind":"string"},"wire_name":"command"},{"required":false,"shape":{"kind":"string"},"wire_name":"cwd"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["persistent","per_event"]},"wire_name":"lifecycle"},{"required":true,"shape":{"kind":"literal","value":"stdio"},"wire_name":"type"}]},"TaskChangeAfterEvent":{"kind":"ref","name":"TaskWorkspaceEventTaskChangeAfter"},"TaskChangeBeforeCapabilities":{"kind":"intersection","variants":[{"kind":"ref","name":"Capabilities"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["deny","message"]},"kind":"array"},"wire_name":"effects"}]}]},"TaskChangeBeforeEvent":{"kind":"ref","name":"TaskWorkspaceEventTaskChangeBefore"},"TaskWorkspaceEvent":{"discriminator":"type","kind":"union","mode":"oneOf","variants":[{"kind":"ref","name":"TaskWorkspaceEventTaskChangeBefore"},{"kind":"ref","name":"TaskWorkspaceEventTaskChangeAfter"},{"kind":"ref","name":"TaskWorkspaceEventWorkspaceChangeBefore"},{"kind":"ref","name":"TaskWorkspaceEventWorkspaceChangeAfter"},{"kind":"ref","name":"TaskWorkspaceEventFileChanged"}]},"TaskWorkspaceEventFileChanged":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"items":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"ContentReference"},"wire_name":"after"},{"required":true,"shape":{"kind":"boolean"},"wire_name":"agentCaused"},{"required":false,"shape":{"kind":"ref","name":"ContentReference"},"wire_name":"before"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["create","update","remove"]},"wire_name":"operation"},{"required":true,"shape":{"kind":"string"},"wire_name":"path"}]},"kind":"array"},"wire_name":"changes"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"file.changed"},"wire_name":"type"}]},"TaskWorkspaceEventTaskChangeAfter":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"change"},{"required":false,"shape":{"kind":"string"},"wire_name":"description"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["create","update","remove"]},"wire_name":"operation"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"prior"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"task"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"task.change.after"},"wire_name":"type"}]},"TaskWorkspaceEventTaskChangeBefore":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"change"},{"required":false,"shape":{"kind":"string"},"wire_name":"description"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["create","update","remove"]},"wire_name":"operation"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"prior"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"task"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"task.change.before"},"wire_name":"type"}]},"TaskWorkspaceEventWorkspaceChangeAfter":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"workspace.change.after"},"wire_name":"type"},{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"cwd"},{"required":false,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"workspaceRoots"}]},"wire_name":"change"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["cwd","roots","switch"]},"wire_name":"kind"},{"required":false,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"cwd"},{"required":false,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"workspaceRoots"}]},"wire_name":"prior"},{"required":false,"shape":{"kind":"string"},"wire_name":"reason"}]},"wire_name":"workspace"}]},"TaskWorkspaceEventWorkspaceChangeBefore":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"workspace.change.before"},"wire_name":"type"},{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"cwd"},{"required":false,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"workspaceRoots"}]},"wire_name":"change"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["cwd","roots","switch"]},"wire_name":"kind"},{"required":false,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"cwd"},{"required":false,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"workspaceRoots"}]},"wire_name":"prior"},{"required":false,"shape":{"kind":"string"},"wire_name":"reason"}]},"wire_name":"workspace"}]},"ToolAfterCapabilities":{"kind":"intersection","variants":[{"kind":"ref","name":"Capabilities"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["modify","inject","flow","message"]},"kind":"array"},"wire_name":"effects"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["stop","continue"]},"kind":"array"},"wire_name":"operations"}]},"wire_name":"flow"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"modify"}]}]},"ToolAfterEvent":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"ExecutionEventBatch"},"wire_name":"batch"},{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"call"},{"required":false,"shape":{"kind":"number"},"wire_name":"durationMs"},{"required":false,"shape":{"kind":"ref","name":"ExecutionEventError"},"wire_name":"error"},{"required":true,"shape":{"kind":"ref","name":"ExecutionEventExecution"},"wire_name":"execution"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"kind":"ref","name":"ExecutionEventFilechange"},"kind":"array"},"wire_name":"fileChanges"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":true,"shape":{"items":{"kind":"ref","name":"ModelVisibleItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["ok","error","denied","cancelled","timeout"]},"wire_name":"outcome"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":true,"shape":{"kind":"ref","name":"ExecutionEventTool"},"wire_name":"tool"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"tool.after"},"wire_name":"type"}]},"ToolBatchAfterCapabilities":{"kind":"intersection","variants":[{"kind":"ref","name":"Capabilities"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["flow","inject","message"]},"kind":"array"},"wire_name":"effects"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["stop"]},"kind":"array"},"wire_name":"operations"}]},"wire_name":"flow"}]}]},"ToolBatchAfterEvent":{"kind":"ref","name":"ExecutionEventToolBatchAfter"},"ToolBeforeCapabilities":{"kind":"intersection","variants":[{"kind":"ref","name":"Capabilities"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["deny","allow","ask","modify","inject","flow","return","message"]},"kind":"array"},"wire_name":"effects"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["stop"]},"kind":"array"},"wire_name":"operations"}]},"wire_name":"flow"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"modify"}]}]},"ToolBeforeEvent":{"additional":{"kind":"allowed"},"forbidden_property_sets":[["durationMs"],["execution"],["fileChanges"],["outcome"]],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"ExecutionEventBatch"},"wire_name":"batch"},{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"call"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":true,"shape":{"kind":"ref","name":"ExecutionEventTool"},"wire_name":"tool"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"tool.before"},"wire_name":"type"}]},"ToolPermissionRequestCapabilities":{"kind":"intersection","variants":[{"kind":"ref","name":"Capabilities"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["allow","deny","modify","flow","message"]},"kind":"array"},"wire_name":"effects"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["stop"]},"kind":"array"},"wire_name":"operations"}]},"wire_name":"flow"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"modify"}]}]},"ToolPermissionRequestEvent":{"kind":"ref","name":"ExecutionEventToolPermissionRequest"},"ToolPermissionResolvedEvent":{"kind":"ref","name":"ExecutionEventToolPermissionResolved"},"ToolProgressEvent":{"kind":"ref","name":"ExecutionEventToolProgress"},"TurnEndEvent":{"kind":"ref","name":"ExecutionEventTurnEnd"},"TurnFinishBeforeCapabilities":{"kind":"intersection","variants":[{"kind":"ref","name":"Capabilities"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["modify","flow","message"]},"kind":"array"},"wire_name":"effects"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["stop","continue"]},"kind":"array"},"wire_name":"operations"}]},"wire_name":"flow"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"modify"}]}]},"TurnFinishBeforeEvent":{"kind":"ref","name":"ExecutionEventTurnFinishBefore"},"TurnProgressEvent":{"kind":"ref","name":"ExecutionEventTurnProgress"},"TurnStartCapabilities":{"kind":"intersection","variants":[{"kind":"ref","name":"Capabilities"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["deny","modify","inject","flow","message"]},"kind":"array"},"wire_name":"effects"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["stop"]},"kind":"array"},"wire_name":"operations"}]},"wire_name":"flow"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"modify"}]}]},"TurnStartEvent":{"kind":"ref","name":"ExecutionEventTurnStart"},"UserAttentionEvent":{"kind":"intersection","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"user.attention"},"wire_name":"type"}]},{"kind":"ref","name":"InteractionEventUserAttention"}]},"UserElicitationRequestCapabilities":{"kind":"intersection","variants":[{"kind":"ref","name":"Capabilities"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["deny","return","message"]},"kind":"array"},"wire_name":"effects"}]}]},"UserElicitationRequestEvent":{"kind":"intersection","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"user.elicitation.request"},"wire_name":"type"}]},{"kind":"ref","name":"InteractionEventUserElicitationRequest"}]},"UserElicitationResultCapabilities":{"kind":"intersection","variants":[{"kind":"ref","name":"Capabilities"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["modify","message"]},"kind":"array"},"wire_name":"effects"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"modify"}]}]},"UserElicitationResultEvent":{"kind":"intersection","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"user.elicitation.result"},"wire_name":"type"}]},{"kind":"ref","name":"InteractionEventUserElicitationResult"}]},"UserMessageInboundCapabilities":{"kind":"intersection","variants":[{"kind":"ref","name":"Capabilities"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["deny","modify","message"]},"kind":"array"},"wire_name":"effects"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"modify"}]}]},"UserMessageInboundEvent":{"kind":"intersection","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"user.message.inbound"},"wire_name":"type"}]},{"kind":"ref","name":"InteractionEventUserMessageInbound"}]},"UserMessageOutboundCapabilities":{"kind":"intersection","variants":[{"kind":"ref","name":"Capabilities"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["deny","modify","message"]},"kind":"array"},"wire_name":"effects"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"modify"}]}]},"UserMessageOutboundEvent":{"kind":"intersection","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"user.message.outbound"},"wire_name":"type"}]},{"kind":"ref","name":"InteractionEventUserMessageOutbound"}]},"WireMessage":{"kind":"union","mode":"oneOf","variants":[{"kind":"ref","name":"InterceptRequest"},{"kind":"ref","name":"InterceptResponse"},{"kind":"ref","name":"JsonRpcErrorResponse"},{"kind":"ref","name":"ObserveNotification"},{"kind":"ref","name":"CapabilitiesRequest"},{"kind":"ref","name":"CapabilitiesResponse"}]},"WorkspaceChangeAfterEvent":{"kind":"ref","name":"TaskWorkspaceEventWorkspaceChangeAfter"},"WorkspaceChangeBeforeCapabilities":{"kind":"intersection","variants":[{"kind":"ref","name":"Capabilities"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["deny","modify","message"]},"kind":"array"},"wire_name":"effects"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"modify"}]}]},"WorkspaceChangeBeforeEvent":{"kind":"ref","name":"TaskWorkspaceEventWorkspaceChangeBefore"}}',
     parse_float=Decimal,
 )
 
 
 def _parse_root(name: str, input: str | JsonValue) -> ParseResult[JsonValue]:
+    return _parse_descriptor(_SCHEMAS[name], input)
+
+
+def _parse_descriptor(
+    schema: _SchemaNode,
+    input: str | JsonValue,
+    cache: dict[tuple[str, str], tuple[ParseDiagnostic, ...]] | None = None,
+) -> ParseResult[JsonValue]:
     try:
         raw = _to_safe_json(
             json.loads(
@@ -10964,15 +8178,47 @@ def _parse_root(name: str, input: str | JsonValue) -> ParseResult[JsonValue]:
             ),
         }
     diagnostics: list[ParseDiagnostic] = []
-    _check_node(_SCHEMAS[name], raw, "", diagnostics)
+    _check_node(schema, raw, "", diagnostics, cache)
     frozen = tuple(diagnostics)
     if any(item["severity"] == "error" for item in diagnostics):
         return {"ok": False, "raw": raw, "diagnostics": frozen}
     return {"ok": True, "value": raw, "raw": raw, "diagnostics": frozen}
 
 
+_SCHEMA_KEYS: dict[int, tuple[_SchemaNode, str]] = {}
+
+
+def _schema_key(schema: _SchemaNode) -> str:
+    identity = id(schema)
+    if identity not in _SCHEMA_KEYS:
+        _SCHEMA_KEYS[identity] = (schema, _encode_json_value(cast(JsonValue, schema)))
+    return _SCHEMA_KEYS[identity][1]
+
+
 def _check_node(
-    schema: _SchemaNode, value: JsonValue, path: str, diagnostics: list[ParseDiagnostic]
+    schema: _SchemaNode,
+    value: JsonValue,
+    path: str,
+    diagnostics: list[ParseDiagnostic],
+    cache: dict[tuple[str, str], tuple[ParseDiagnostic, ...]] | None = None,
+) -> None:
+    if cache is None:
+        _check_node_impl(schema, value, path, diagnostics, cache)
+        return
+    key = (_schema_key(schema), path)
+    if key not in cache:
+        checked: list[ParseDiagnostic] = []
+        _check_node_impl(schema, value, path, checked, cache)
+        cache[key] = tuple(checked)
+    diagnostics.extend(cache[key])
+
+
+def _check_node_impl(
+    schema: _SchemaNode,
+    value: JsonValue,
+    path: str,
+    diagnostics: list[ParseDiagnostic],
+    cache: dict[tuple[str, str], tuple[ParseDiagnostic, ...]] | None,
 ) -> None:
     kind = schema["kind"]
     if kind == "any":
@@ -11031,7 +8277,7 @@ def _check_node(
             _error(diagnostics, path, "invalid_type", "Expected array")
             return
         for index, item in enumerate(value):
-            _check_node(schema["items"], item, f"{path}/{index}", diagnostics)
+            _check_node(schema["items"], item, f"{path}/{index}", diagnostics, cache)
     elif kind == "object":
         if not isinstance(value, dict):
             _error(diagnostics, path, "invalid_type", "Expected object")
@@ -11060,18 +8306,23 @@ def _check_node(
                     value[wire_name],
                     _join_path(path, wire_name),
                     diagnostics,
+                    cache,
                 )
     elif kind == "intersection":
         for variant in schema["variants"]:
-            _check_node(variant, value, path, diagnostics)
+            _check_node(variant, value, path, diagnostics, cache)
     elif kind == "ref":
-        _check_node(_SCHEMAS[schema["name"]], value, path, diagnostics)
+        _check_node(_SCHEMAS[schema["name"]], value, path, diagnostics, cache)
     elif kind == "union":
-        _check_union(schema, value, path, diagnostics)
+        _check_union(schema, value, path, diagnostics, cache)
 
 
 def _check_union(
-    schema: _SchemaNode, value: JsonValue, path: str, diagnostics: list[ParseDiagnostic]
+    schema: _SchemaNode,
+    value: JsonValue,
+    path: str,
+    diagnostics: list[ParseDiagnostic],
+    cache: dict[tuple[str, str], tuple[ParseDiagnostic, ...]] | None,
 ) -> None:
     discriminator = schema.get("discriminator")
     if discriminator is not None:
@@ -11103,7 +8354,7 @@ def _check_union(
             )
             return
         branch_diagnostics: list[ParseDiagnostic] = []
-        _check_node(branch, value, path, branch_diagnostics)
+        _check_node(branch, value, path, branch_diagnostics, cache)
         diagnostics.extend(branch_diagnostics)
         if any(item["severity"] == "error" for item in branch_diagnostics):
             diagnostics.append(
@@ -11119,7 +8370,7 @@ def _check_union(
     attempts: list[list[ParseDiagnostic]] = []
     for variant in schema["variants"]:
         attempt: list[ParseDiagnostic] = []
-        _check_node(variant, value, path, attempt)
+        _check_node(variant, value, path, attempt, cache)
         attempts.append(attempt)
     matches = [
         attempt
@@ -11380,6 +8631,21 @@ def encode_content_upload(value: ContentUpload) -> str:
 content_upload_schema_revision: Final[str] = SCHEMA_REVISION
 
 
+def parse_content_upload_receipt(
+    input: str | JsonValue,
+) -> ParseResult[ContentUploadReceipt]:
+    return cast(
+        ParseResult[ContentUploadReceipt], _parse_root("ContentUploadReceipt", input)
+    )
+
+
+def encode_content_upload_receipt(value: ContentUploadReceipt) -> str:
+    return _encode_json(cast(JsonValue, value))
+
+
+content_upload_receipt_schema_revision: Final[str] = SCHEMA_REVISION
+
+
 def parse_deny_effect(input: str | JsonValue) -> ParseResult[DenyEffect]:
     return cast(ParseResult[DenyEffect], _parse_root("DenyEffect", input))
 
@@ -11400,6 +8666,17 @@ def encode_effect(value: Effect) -> str:
 
 
 effect_schema_revision: Final[str] = SCHEMA_REVISION
+
+
+def parse_event(input: str | JsonValue) -> ParseResult[Event]:
+    return cast(ParseResult[Event], _parse_root("Event", input))
+
+
+def encode_event(value: Event) -> str:
+    return _encode_json(cast(JsonValue, value))
+
+
+event_schema_revision: Final[str] = SCHEMA_REVISION
 
 
 def parse_execution_event(input: str | JsonValue) -> ParseResult[ExecutionEvent]:

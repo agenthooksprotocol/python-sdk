@@ -774,7 +774,7 @@ class UploadContractTests(unittest.TestCase):
                     "role": "assistant",
                     "mediaType": "application/octet-stream",
                     "selection": "body",
-                    "body": descriptor,
+                    "body": {"ref": descriptor["ref"]},
                 }
             ],
         )
@@ -876,8 +876,12 @@ class UploadContractTests(unittest.TestCase):
         original = self.selected_request(descriptor)
         returned = {**descriptor, "ref": "different-receiver-ref"}
         rewritten = replace_references(original, {descriptor["ref"]: returned})
-        self.assertEqual(rewritten["params"]["event"]["items"][0]["body"], returned)
-        self.assertEqual(original["params"]["event"]["items"][0]["body"], descriptor)
+        self.assertEqual(
+            rewritten["params"]["event"]["items"][0]["body"], {"ref": returned["ref"]}
+        )
+        self.assertEqual(
+            original["params"]["event"]["items"][0]["body"], {"ref": descriptor["ref"]}
+        )
 
     def test_unknown_configuration_accepted_recognized_fields_validated(self):
         validate_adapter_config({**self.config, "future": True})
@@ -1076,6 +1080,14 @@ class UploadContractTests(unittest.TestCase):
                         with self.assertRaises(HTTPError) as caught:
                             upload_blob(upload, b"abc", Validator())
                     self.assertEqual(caught.exception.code, 401)
+                    if name == "elicitation.py":
+                        # Rejection happens before reading the upload. A bounded
+                        # response must not require EOF on that closing socket.
+                        self.assertEqual(
+                            caught.exception.headers["Content-Length"], "0"
+                        )
+                        self.assertEqual(caught.exception.read(), b"")
+                    caught.exception.close()
                 finally:
                     child.terminate()
                     child.communicate(timeout=5)

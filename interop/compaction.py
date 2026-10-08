@@ -52,7 +52,7 @@ def settle(snapshot, row):
             "mediaType": "text/plain",
             "role": "system" if boundary == "before" else "assistant",
             "selection": "body",
-            "body": await upload(text.encode("utf-8")),
+            "body": {"ref": (await upload(text.encode("utf-8")))["ref"]},
         }
         if boundary == "before":
             event.update(trigger="manual", items=[])

@@ -8,21 +8,19 @@ from ._models.effect import EffectAllow as EffectAllow
 from ._models.effect import EffectAsk as EffectAsk
 from ._models.effect import EffectFlowContinue as EffectFlowContinue
 from ._models.effect import EffectFlowStop as EffectFlowStop
-from ._models.effect import EffectInjectAppend as EffectInjectAppend
+from ._models.effect import EffectInjectAppendContext as EffectInjectAppendContext
 from ._models.effect import EffectMessage as EffectMessage
 from ._models.effect import EffectModify as EffectModify
 from ._models.effect import EffectReturn as EffectReturn
-from ._models.effect import EffectVariant1 as EffectVariant1
 from ._models.effect import Extensions as Extensions
 from ._models.effect import FlowContinue as FlowContinue
 from ._models.effect import FlowStop as FlowStop
-from ._models.effect import InjectAppend as InjectAppend
+from ._models.effect import InjectAppendContext as InjectAppendContext
 from ._models.effect import Message as Message
 from ._models.effect import Modify as Modify
 from ._models.effect import Operation as Operation
 from ._models.effect import Return as Return
 from ._models.effect import Target as Target
-from ._models.effect import Variant1 as Variant1
 
 from typing import Any
 from ._models import _UNSET
@@ -122,15 +120,15 @@ def flow_stop(
     return FlowStop(reason=reason)
 
 
-def inject_append(
+def inject_append_context(
     *,
     deliver_at: str,
     value: Any,
-) -> InjectAppend:
-    return InjectAppend(deliver_at=deliver_at, value=value)
+) -> InjectAppendContext:
+    return InjectAppendContext(deliver_at=deliver_at, value=value)
 
 
-inject_context_append = inject_append
+inject_context_append = inject_append_context
 
 
 def message(
@@ -140,21 +138,13 @@ def message(
     return Message(text=text)
 
 
-def return_2(
+def return_(
     *,
     value: Any,
 ) -> Return:
     return Return(value=value)
 
 
-def variant1(
-    *,
-    code: str = _UNSET,
-    extensions: dict[str, Any] = _UNSET,
-    reason: str,
-) -> Variant1:
-    return Variant1(code=code, extensions=extensions, reason=reason)
-
-
-deny = variant1
 deny = Deny
+
+from ._grants import EffectName as EffectName

@@ -27,7 +27,7 @@ class Store:
             "kind": "content",
             "mediaType": media,
             "selection": "body",
-            "body": reference,
+            "body": {"ref": reference["ref"]},
         }
         if role is not None:
             item["role"] = role
@@ -498,7 +498,29 @@ class PublicContentTests(unittest.TestCase):
 
         self.run_async(run)
 
-    def test_corrupt_resolved_bytes_and_reused_upload_reference_fail_closed(self):
+    def test_resolver_identity_is_derived_from_actual_bytes(self):
+        from agenthooksprotocol._content import PreparedContent
+        from agenthooksprotocol.runtime import ProtocolError, Validator
+
+        async def run():
+            store = Store()
+            item = store.add("original", "text/plain")
+            context = ContentContext(
+                resolve=store.resolve,
+                upload=store.upload,
+                bindings={"instructions": ("instructions",)},
+                principal="hook",
+            )
+            prepared = PreparedContent(context, {}, Validator())
+            self.assertEqual(await prepared._read(item), b"original")
+            self.assertEqual(store.reads, [{"ref": item["body"]["ref"]}])
+            store.bodies[item["body"]["ref"]] = b"changed"
+            with self.assertRaises(ProtocolError):
+                await PreparedContent(context, {}, Validator())._read(item)
+
+        self.run_async(run)
+
+    def test_unavailable_bytes_and_reused_upload_reference_fail_closed(self):
         async def run():
             for failure in ("corrupt", "reused", "metadata"):
                 store = Store()
@@ -510,7 +532,8 @@ class PublicContentTests(unittest.TestCase):
                 }
 
                 async def corrupt(reference):
-                    return b"wrong"
+                    # A trusted resolver must reject unavailable/corrupt storage.
+                    raise ValueError("Stored content unavailable")
 
                 async def reused(data):
                     return {

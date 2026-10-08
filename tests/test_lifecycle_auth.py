@@ -1,6 +1,7 @@
 """Real lifecycle HTTP authentication and independent binary-upload coverage."""
 
 import base64
+from copy import deepcopy
 import json
 import os
 from pathlib import Path
@@ -82,7 +83,7 @@ class LifecycleAuthTests(unittest.TestCase):
                     "kind": "text",
                     "mediaType": "application/octet-stream",
                     "selection": "body",
-                    "body": blob,
+                    "body": {"ref": blob["ref"]},
                 }
                 fixture = {
                     "scenarios": [
@@ -197,6 +198,72 @@ class LifecycleAuthTests(unittest.TestCase):
             if issuer:
                 issuer.shutdown()
                 issuer.server_close()
+
+    def test_http_rejects_raw_reference_metadata_before_notification_dispatch(self):
+        with tempfile.TemporaryDirectory() as directory:
+            scenario = Path(directory) / "scenarios.json"
+            scenario.write_text(json.dumps({"scenarios": []}))
+            server = Server(
+                {
+                    "transport": "http",
+                    "scenarioFile": str(scenario),
+                    "auth": {"mode": "none", "scope": "body"},
+                    "uploadAuth": {"token": "upload-token", "scope": "body"},
+                }
+            )
+            try:
+                endpoint = server.listener(False)
+                upload_endpoint = server.listener(False, upload_only=True) + "/content"
+                with patch.dict(os.environ, {"TEST_UPLOAD_TOKEN": "upload-token"}):
+                    status, receipt = upload(
+                        {
+                            "endpoint": upload_endpoint,
+                            "auth": {"type": "bearer", "tokenEnv": "TEST_UPLOAD_TOKEN"},
+                        },
+                        b"abc",
+                        loopback=True,
+                    )
+                self.assertEqual(status, 201)
+                req = request()
+                req["params"]["event"]["items"] = [
+                    {
+                        "id": "content",
+                        "kind": "text",
+                        "mediaType": "text/plain",
+                        "selection": "body",
+                        "body": {"ref": receipt["ref"]},
+                    }
+                ]
+                note = {
+                    "jsonrpc": "2.0",
+                    "method": "hooks/observe",
+                    "params": {
+                        "protocolVersion": "draft",
+                        "event": deepcopy(req["params"]["event"]),
+                    },
+                }
+                self.assertEqual(http(endpoint + "/observe", note)[0], 204)
+                admitted = len(server.entries)
+                for path, envelope in (("/observe", note), ("/intercept", req)):
+                    for key in ("size", "sha256"):
+                        for metadata in (receipt[key], None):
+                            for nested in (True, False):
+                                invalid = deepcopy(envelope)
+                                item = invalid["params"]["event"]["items"][0]
+                                target = item["body"] if nested else item
+                                target[key] = metadata
+                                with self.subTest(
+                                    path=path, key=key, value=metadata, nested=nested
+                                ):
+                                    self.assertEqual(
+                                        http(endpoint + path, invalid)[0], 400
+                                    )
+                                    self.assertEqual(len(server.entries), admitted)
+            finally:
+                server.stop()
+                for listener in server.listeners:
+                    listener.shutdown()
+                    listener.server_close()
 
     def test_none(self):
         self.exercise("none")

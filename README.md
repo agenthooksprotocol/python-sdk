@@ -216,3 +216,19 @@ builders are construction helpers, not wire decode entrypoints; their final wire
 objects are validated at the existing dispatch/parse boundary. Direct dictionary
 mutation, standard-library `json.loads`, TypedDict annotations, and type assertions
 are not SDK validation entrypoints. Re-parse after manually mutating a mapping.
+
+
+Wire constructors also privately hydrate nested mappings: for example,
+`capability.Capabilities(effects=["modify"], modify={}).modify.input` returns
+`None`, not an attribute error. Already typed child models retain their identity;
+plain nested mappings become typed models after the constructor's single cached
+validation pass. Family queries include all generated per-occurrence capability
+models, such as `capability.ToolBeforeCapabilities`.
+
+Constructor aliases cannot silently overwrite wire keys. Supplying both
+`tool_name=` and `toolName=` raises `TypeError`, even if the values agree. For
+optional/defaulted fields, a lone wire spelling (for example `addressForm=` or
+`protocolVersion=`) is used and validated rather than replaced by a default.
+Required constructor parameters still use their documented Python spelling;
+use `from_dict` to decode complete wire-keyed objects. In `from_dict`, distinct
+keys such as `toolName` and `tool_name` remain distinct wire/extension keys.

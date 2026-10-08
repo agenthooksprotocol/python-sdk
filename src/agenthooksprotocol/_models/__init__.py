@@ -34,9 +34,15 @@ class _ModelValidationError(ValueError):
 
 class _WireModel(dict[str, Any]):
     def _validate(self) -> None:
-        result = _wire._parse_descriptor(_DESCRIPTORS[type(self).__name__], self)
+        cache: dict[Any, Any] = {}
+        result = _wire._parse_descriptor(_DESCRIPTORS[type(self).__name__], self, cache)
         if not result["ok"]:
             raise _ModelValidationError(result)
+        # Hydrate plain nested mappings after the one validation pass. Keep
+        # already typed child instances, preserving established constructor identity.
+        hydrated = type(self)._hydrate_validated(self, "", cache)
+        dict.clear(self)
+        dict.update(self, hydrated)
 
     @classmethod
     def from_dict(cls, value: dict[str, Any]) -> Self:
@@ -129,10 +135,15 @@ def _hydrate(annotation: Any, value: Any, path: str, cache: dict[Any, Any]) -> A
     origin = get_origin(annotation)
     if origin is list and isinstance(value, list):
         item_type = get_args(annotation)[0]
-        return [
+        hydrated = [
             _hydrate(item_type, child, f"{path}/{index}", cache)
             for index, child in enumerate(value)
         ]
+        return (
+            value
+            if all(left is right for left, right in zip(value, hydrated))
+            else hydrated
+        )
     if origin in (Union, UnionType):
         # Prefer specific object models over an open mapping/Any fallback. The
         # shared validator's memoized branch decisions avoid rechecking subtrees.
@@ -147,7 +158,11 @@ def _hydrate(annotation: Any, value: Any, path: str, cache: dict[Any, Any]) -> A
                     _DESCRIPTORS[arm.__name__], value, path, diagnostics, cache
                 )
                 if not any(item["severity"] == "error" for item in diagnostics):
-                    return arm._hydrate_validated(value, path, cache)
+                    return (
+                        value
+                        if isinstance(value, arm)
+                        else arm._hydrate_validated(value, path, cache)
+                    )
         for arm in get_args(annotation):
             if get_origin(arm) is list and _matches(arm, value, path, cache):
                 return _hydrate(arm, value, path, cache)
@@ -157,7 +172,11 @@ def _hydrate(annotation: Any, value: Any, path: str, cache: dict[Any, Any]) -> A
         and issubclass(annotation, _WireModel)
         and isinstance(value, dict)
     ):
-        return annotation._hydrate_validated(value, path, cache)
+        return (
+            value
+            if isinstance(value, annotation)
+            else annotation._hydrate_validated(value, path, cache)
+        )
     return value
 
 
@@ -178,6 +197,18 @@ class AuthenticationBearer(_WireModel):
         type: Literal["bearer"] = _UNSET,
         **extra: Any,
     ) -> None:
+        if "tokenEnv" in extra:
+            if token_env is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for tokenEnv via token_env and wire key"
+                )
+            token_env = extra.pop("tokenEnv")
+        if "tokenRef" in extra:
+            if token_ref is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for tokenRef via token_ref and wire key"
+                )
+            token_ref = extra.pop("tokenRef")
         super().__init__(extra)
         if token_env is not _UNSET:
             self["tokenEnv"] = token_env
@@ -214,6 +245,16 @@ class AuthenticationOauth(_WireModel):
         type: Literal["oauth"] = _UNSET,
         **extra: Any,
     ) -> None:
+        if "clientId" in extra:
+            raise TypeError(
+                "Duplicate assignment for clientId via client_id and wire key"
+            )
+        if "clientSecretRef" in extra:
+            if client_secret_ref is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for clientSecretRef via client_secret_ref and wire key"
+                )
+            client_secret_ref = extra.pop("clientSecretRef")
         super().__init__(extra)
         self["clientId"] = client_id
         if client_secret_ref is not _UNSET:
@@ -412,6 +453,24 @@ class CapabilitiesFlow(_WireModel):
         remaining_continuations: int = _UNSET,
         **extra: Any,
     ) -> None:
+        if "continuationCount" in extra:
+            if continuation_count is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for continuationCount via continuation_count and wire key"
+                )
+            continuation_count = extra.pop("continuationCount")
+        if "maxContinuations" in extra:
+            if max_continuations is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for maxContinuations via max_continuations and wire key"
+                )
+            max_continuations = extra.pop("maxContinuations")
+        if "remainingContinuations" in extra:
+            if remaining_continuations is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for remainingContinuations via remaining_continuations and wire key"
+                )
+            remaining_continuations = extra.pop("remainingContinuations")
         super().__init__(extra)
         if continuation_count is not _UNSET:
             self["continuationCount"] = continuation_count
@@ -463,6 +522,10 @@ class CapabilitiesInjectContext(_WireModel):
     def __init__(
         self, *, append: Literal[True] = _UNSET, deliver_at: list[str], **extra: Any
     ) -> None:
+        if "deliverAt" in extra:
+            raise TypeError(
+                "Duplicate assignment for deliverAt via deliver_at and wire key"
+            )
         super().__init__(extra)
         self["append"] = json.loads("true") if append is _UNSET else append
         self["deliverAt"] = deliver_at
@@ -763,6 +826,12 @@ class CapabilitiesRequestParams(_WireModel):
     def __init__(
         self, *, protocol_version: Literal["draft"] = _UNSET, **extra: Any
     ) -> None:
+        if "protocolVersion" in extra:
+            if protocol_version is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for protocolVersion via protocol_version and wire key"
+                )
+            protocol_version = extra.pop("protocolVersion")
         super().__init__(extra)
         self["protocolVersion"] = (
             json.loads('"draft"') if protocol_version is _UNSET else protocol_version
@@ -814,6 +883,12 @@ class CapabilitiesResponseResult(_WireModel):
         protocol_version: Literal["draft"] = _UNSET,
         **extra: Any,
     ) -> None:
+        if "protocolVersion" in extra:
+            if protocol_version is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for protocolVersion via protocol_version and wire key"
+                )
+            protocol_version = extra.pop("protocolVersion")
         super().__init__(extra)
         self["manifest"] = manifest
         self["protocolVersion"] = (
@@ -847,6 +922,22 @@ class CapabilitiesResponseResultManifest(_WireModel):
         transports: list[str],
         **extra: Any,
     ) -> None:
+        if "contentCategories" in extra:
+            raise TypeError(
+                "Duplicate assignment for contentCategories via content_categories and wire key"
+            )
+        if "correlationIdentityFields" in extra:
+            raise TypeError(
+                "Duplicate assignment for correlationIdentityFields via correlation_identity_fields and wire key"
+            )
+        if "managedPolicy" in extra:
+            raise TypeError(
+                "Duplicate assignment for managedPolicy via managed_policy and wire key"
+            )
+        if "toolPaths" in extra:
+            raise TypeError(
+                "Duplicate assignment for toolPaths via tool_paths and wire key"
+            )
         super().__init__(extra)
         self["authentication"] = authentication
         self["contentCategories"] = content_categories
@@ -1002,6 +1093,30 @@ class CapabilitiesResponseResultManifestLimits(_WireModel):
         min_timeout_ms: int = _UNSET,
         **extra: Any,
     ) -> None:
+        if "maxContinuations" in extra:
+            if max_continuations is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for maxContinuations via max_continuations and wire key"
+                )
+            max_continuations = extra.pop("maxContinuations")
+        if "maxTimeoutMs" in extra:
+            if max_timeout_ms is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for maxTimeoutMs via max_timeout_ms and wire key"
+                )
+            max_timeout_ms = extra.pop("maxTimeoutMs")
+        if "maxUploadBytes" in extra:
+            if max_upload_bytes is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for maxUploadBytes via max_upload_bytes and wire key"
+                )
+            max_upload_bytes = extra.pop("maxUploadBytes")
+        if "minTimeoutMs" in extra:
+            if min_timeout_ms is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for minTimeoutMs via min_timeout_ms and wire key"
+                )
+            min_timeout_ms = extra.pop("minTimeoutMs")
         super().__init__(extra)
         if max_continuations is not _UNSET:
             self["maxContinuations"] = max_continuations
@@ -1083,6 +1198,12 @@ class ConfigChangeAfterEvent(_WireModel):
         change: ConfigChangeAfterEventChange,
         **extra: Any,
     ) -> None:
+        if "parentEventId" in extra:
+            if parent_event_id is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
+                )
+            parent_event_id = extra.pop("parentEventId")
         super().__init__(extra)
         if extensions is not _UNSET:
             self["extensions"] = extensions
@@ -1188,6 +1309,12 @@ class ConfigChangeAfterInput(dict[str, Any]):
         change: ConfigChangeAfterInputChange,
         **extra: Any,
     ) -> None:
+        if "parentEventId" in extra:
+            if parent_event_id is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
+                )
+            parent_event_id = extra.pop("parentEventId")
         super().__init__(extra)
         if extensions is not _UNSET:
             self["extensions"] = extensions
@@ -1297,6 +1424,12 @@ class ConfigChangeAfterEventChange(_WireModel):
         summary: str,
         **extra: Any,
     ) -> None:
+        if "mcpServers" in extra:
+            if mcp_servers is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for mcpServers via mcp_servers and wire key"
+                )
+            mcp_servers = extra.pop("mcpServers")
         super().__init__(extra)
         if mcp_servers is not _UNSET:
             self["mcpServers"] = mcp_servers
@@ -1392,6 +1525,12 @@ class ConfigChangeAfterInputChange(_WireModel):
         summary: str,
         **extra: Any,
     ) -> None:
+        if "mcpServers" in extra:
+            if mcp_servers is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for mcpServers via mcp_servers and wire key"
+                )
+            mcp_servers = extra.pop("mcpServers")
         super().__init__(extra)
         if mcp_servers is not _UNSET:
             self["mcpServers"] = mcp_servers
@@ -1498,6 +1637,10 @@ class ConfigChangeBeforeCapabilities(_WireModel):
             self["modify"] = modify
         self._validate()
 
+    def supports(self, effect: str) -> bool:
+        """Advertised family membership only, never authorization or grant checks."""
+        return effect in self.get("effects", ())
+
     @property
     def effects(self) -> list[str]:
         return self["effects"]
@@ -1584,6 +1727,24 @@ class ConfigChangeBeforeCapabilitiesFlow(_WireModel):
         remaining_continuations: int = _UNSET,
         **extra: Any,
     ) -> None:
+        if "continuationCount" in extra:
+            if continuation_count is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for continuationCount via continuation_count and wire key"
+                )
+            continuation_count = extra.pop("continuationCount")
+        if "maxContinuations" in extra:
+            if max_continuations is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for maxContinuations via max_continuations and wire key"
+                )
+            max_continuations = extra.pop("maxContinuations")
+        if "remainingContinuations" in extra:
+            if remaining_continuations is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for remainingContinuations via remaining_continuations and wire key"
+                )
+            remaining_continuations = extra.pop("remainingContinuations")
         super().__init__(extra)
         if continuation_count is not _UNSET:
             self["continuationCount"] = continuation_count
@@ -1637,6 +1798,10 @@ class ConfigChangeBeforeCapabilitiesInjectContext(_WireModel):
     def __init__(
         self, *, append: Literal[True] = _UNSET, deliver_at: list[str], **extra: Any
     ) -> None:
+        if "deliverAt" in extra:
+            raise TypeError(
+                "Duplicate assignment for deliverAt via deliver_at and wire key"
+            )
         super().__init__(extra)
         self["append"] = json.loads("true") if append is _UNSET else append
         self["deliverAt"] = deliver_at
@@ -1916,6 +2081,12 @@ class ConfigChangeBeforeEvent(_WireModel):
         change: ConfigChangeBeforeEventChange,
         **extra: Any,
     ) -> None:
+        if "parentEventId" in extra:
+            if parent_event_id is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
+                )
+            parent_event_id = extra.pop("parentEventId")
         super().__init__(extra)
         if extensions is not _UNSET:
             self["extensions"] = extensions
@@ -2021,6 +2192,12 @@ class ConfigChangeBeforeInput(dict[str, Any]):
         change: ConfigChangeBeforeInputChange,
         **extra: Any,
     ) -> None:
+        if "parentEventId" in extra:
+            if parent_event_id is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
+                )
+            parent_event_id = extra.pop("parentEventId")
         super().__init__(extra)
         if extensions is not _UNSET:
             self["extensions"] = extensions
@@ -2293,6 +2470,16 @@ class ContentItemBody(_WireModel):
         synthesized: bool = _UNSET,
         **extra: Any,
     ) -> None:
+        if "mediaType" in extra:
+            raise TypeError(
+                "Duplicate assignment for mediaType via media_type and wire key"
+            )
+        if "parentItemId" in extra:
+            if parent_item_id is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for parentItemId via parent_item_id and wire key"
+                )
+            parent_item_id = extra.pop("parentItemId")
         super().__init__(extra)
         self["body"] = body
         if category is not _UNSET:
@@ -2365,6 +2552,16 @@ class ContentItemBodyGap(_WireModel):
         synthesized: bool = _UNSET,
         **extra: Any,
     ) -> None:
+        if "mediaType" in extra:
+            raise TypeError(
+                "Duplicate assignment for mediaType via media_type and wire key"
+            )
+        if "parentItemId" in extra:
+            if parent_item_id is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for parentItemId via parent_item_id and wire key"
+                )
+            parent_item_id = extra.pop("parentItemId")
         super().__init__(extra)
         if category is not _UNSET:
             self["category"] = category
@@ -2467,6 +2664,16 @@ class ContentItemMetadata(_WireModel):
         synthesized: bool = _UNSET,
         **extra: Any,
     ) -> None:
+        if "mediaType" in extra:
+            raise TypeError(
+                "Duplicate assignment for mediaType via media_type and wire key"
+            )
+        if "parentItemId" in extra:
+            if parent_item_id is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for parentItemId via parent_item_id and wire key"
+                )
+            parent_item_id = extra.pop("parentItemId")
         super().__init__(extra)
         if category is not _UNSET:
             self["category"] = category
@@ -2547,6 +2754,16 @@ class ContentItemOmit(_WireModel):
         synthesized: bool = _UNSET,
         **extra: Any,
     ) -> None:
+        if "mediaType" in extra:
+            raise TypeError(
+                "Duplicate assignment for mediaType via media_type and wire key"
+            )
+        if "parentItemId" in extra:
+            if parent_item_id is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for parentItemId via parent_item_id and wire key"
+                )
+            parent_item_id = extra.pop("parentItemId")
         super().__init__(extra)
         if category is not _UNSET:
             self["category"] = category
@@ -2734,6 +2951,14 @@ class ContentUpload(_WireModel):
         timeout_ms: int,
         **extra: Any,
     ) -> None:
+        if "maxBytes" in extra:
+            raise TypeError(
+                "Duplicate assignment for maxBytes via max_bytes and wire key"
+            )
+        if "timeoutMs" in extra:
+            raise TypeError(
+                "Duplicate assignment for timeoutMs via timeout_ms and wire key"
+            )
         super().__init__(extra)
         if auth is not _UNSET:
             self["auth"] = auth
@@ -2806,6 +3031,10 @@ class ContextCompactAfterCapabilities(_WireModel):
         if modify is not _UNSET:
             self["modify"] = modify
         self._validate()
+
+    def supports(self, effect: str) -> bool:
+        """Advertised family membership only, never authorization or grant checks."""
+        return effect in self.get("effects", ())
 
     @property
     def effects(self) -> list[str]:
@@ -2893,6 +3122,24 @@ class ContextCompactAfterCapabilitiesFlow(_WireModel):
         remaining_continuations: int = _UNSET,
         **extra: Any,
     ) -> None:
+        if "continuationCount" in extra:
+            if continuation_count is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for continuationCount via continuation_count and wire key"
+                )
+            continuation_count = extra.pop("continuationCount")
+        if "maxContinuations" in extra:
+            if max_continuations is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for maxContinuations via max_continuations and wire key"
+                )
+            max_continuations = extra.pop("maxContinuations")
+        if "remainingContinuations" in extra:
+            if remaining_continuations is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for remainingContinuations via remaining_continuations and wire key"
+                )
+            remaining_continuations = extra.pop("remainingContinuations")
         super().__init__(extra)
         if continuation_count is not _UNSET:
             self["continuationCount"] = continuation_count
@@ -2946,6 +3193,10 @@ class ContextCompactAfterCapabilitiesInjectContext(_WireModel):
     def __init__(
         self, *, append: Literal[True] = _UNSET, deliver_at: list[str], **extra: Any
     ) -> None:
+        if "deliverAt" in extra:
+            raise TypeError(
+                "Duplicate assignment for deliverAt via deliver_at and wire key"
+            )
         super().__init__(extra)
         self["append"] = json.loads("true") if append is _UNSET else append
         self["deliverAt"] = deliver_at
@@ -3237,6 +3488,18 @@ class ContextCompactAfterInput(dict[str, Any]):
         turn: ContextCompactAfterInputTurn = _UNSET,
         **extra: Any,
     ) -> None:
+        if "parentEventId" in extra:
+            if parent_event_id is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
+                )
+            parent_event_id = extra.pop("parentEventId")
+        if "tokenCounts" in extra:
+            if token_counts is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for tokenCounts via token_counts and wire key"
+                )
+            token_counts = extra.pop("tokenCounts")
         super().__init__(extra)
         self["execution"] = execution
         if extensions is not _UNSET:
@@ -3452,6 +3715,10 @@ class ContextCompactBeforeCapabilities(_WireModel):
             self["modify"] = modify
         self._validate()
 
+    def supports(self, effect: str) -> bool:
+        """Advertised family membership only, never authorization or grant checks."""
+        return effect in self.get("effects", ())
+
     @property
     def effects(self) -> list[str]:
         return self["effects"]
@@ -3538,6 +3805,24 @@ class ContextCompactBeforeCapabilitiesFlow(_WireModel):
         remaining_continuations: int = _UNSET,
         **extra: Any,
     ) -> None:
+        if "continuationCount" in extra:
+            if continuation_count is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for continuationCount via continuation_count and wire key"
+                )
+            continuation_count = extra.pop("continuationCount")
+        if "maxContinuations" in extra:
+            if max_continuations is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for maxContinuations via max_continuations and wire key"
+                )
+            max_continuations = extra.pop("maxContinuations")
+        if "remainingContinuations" in extra:
+            if remaining_continuations is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for remainingContinuations via remaining_continuations and wire key"
+                )
+            remaining_continuations = extra.pop("remainingContinuations")
         super().__init__(extra)
         if continuation_count is not _UNSET:
             self["continuationCount"] = continuation_count
@@ -3591,6 +3876,10 @@ class ContextCompactBeforeCapabilitiesInjectContext(_WireModel):
     def __init__(
         self, *, append: Literal[True] = _UNSET, deliver_at: list[str], **extra: Any
     ) -> None:
+        if "deliverAt" in extra:
+            raise TypeError(
+                "Duplicate assignment for deliverAt via deliver_at and wire key"
+            )
         super().__init__(extra)
         self["append"] = json.loads("true") if append is _UNSET else append
         self["deliverAt"] = deliver_at
@@ -3876,6 +4165,18 @@ class ContextCompactBeforeInput(dict[str, Any]):
         turn: ContextCompactBeforeInputTurn = _UNSET,
         **extra: Any,
     ) -> None:
+        if "parentEventId" in extra:
+            if parent_event_id is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
+                )
+            parent_event_id = extra.pop("parentEventId")
+        if "tokenCounts" in extra:
+            if token_counts is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for tokenCounts via token_counts and wire key"
+                )
+            token_counts = extra.pop("tokenCounts")
         super().__init__(extra)
         if extensions is not _UNSET:
             self["extensions"] = extensions
@@ -4183,6 +4484,10 @@ class EffectInjectAppendContext(_WireModel):
         value: Any,
         **extra: Any,
     ) -> None:
+        if "deliverAt" in extra:
+            raise TypeError(
+                "Duplicate assignment for deliverAt via deliver_at and wire key"
+            )
         super().__init__(extra)
         self["deliverAt"] = deliver_at
         self["operation"] = json.loads('"append"') if operation is _UNSET else operation
@@ -4353,6 +4658,30 @@ class ExecutionEventAttemptusage(_WireModel):
         scope: str,
         **extra: Any,
     ) -> None:
+        if "cacheReadTokens" in extra:
+            if cache_read_tokens is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for cacheReadTokens via cache_read_tokens and wire key"
+                )
+            cache_read_tokens = extra.pop("cacheReadTokens")
+        if "cacheWriteTokens" in extra:
+            if cache_write_tokens is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for cacheWriteTokens via cache_write_tokens and wire key"
+                )
+            cache_write_tokens = extra.pop("cacheWriteTokens")
+        if "inputTokens" in extra:
+            if input_tokens is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for inputTokens via input_tokens and wire key"
+                )
+            input_tokens = extra.pop("inputTokens")
+        if "outputTokens" in extra:
+            if output_tokens is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for outputTokens via output_tokens and wire key"
+                )
+            output_tokens = extra.pop("outputTokens")
         super().__init__(extra)
         if cache_read_tokens is not _UNSET:
             self["cacheReadTokens"] = cache_read_tokens
@@ -4450,6 +4779,10 @@ class ExecutionEventBatch(_WireModel):
     def __init__(
         self, *, call_ids: list[str], id: str, synthesized: bool = _UNSET, **extra: Any
     ) -> None:
+        if "callIds" in extra:
+            raise TypeError(
+                "Duplicate assignment for callIds via call_ids and wire key"
+            )
         super().__init__(extra)
         self["callIds"] = call_ids
         self["id"] = id
@@ -4507,6 +4840,18 @@ class ExecutionEventContextCompactAfter(_WireModel):
         type: Literal["context.compact.after"] = _UNSET,
         **extra: Any,
     ) -> None:
+        if "parentEventId" in extra:
+            if parent_event_id is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
+                )
+            parent_event_id = extra.pop("parentEventId")
+        if "tokenCounts" in extra:
+            if token_counts is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for tokenCounts via token_counts and wire key"
+                )
+            token_counts = extra.pop("tokenCounts")
         super().__init__(extra)
         self["execution"] = execution
         if extensions is not _UNSET:
@@ -4707,6 +5052,18 @@ class ExecutionEventContextCompactBefore(_WireModel):
         type: Literal["context.compact.before"] = _UNSET,
         **extra: Any,
     ) -> None:
+        if "parentEventId" in extra:
+            if parent_event_id is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
+                )
+            parent_event_id = extra.pop("parentEventId")
+        if "tokenCounts" in extra:
+            if token_counts is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for tokenCounts via token_counts and wire key"
+                )
+            token_counts = extra.pop("tokenCounts")
         super().__init__(extra)
         if extensions is not _UNSET:
             self["extensions"] = extensions
@@ -4868,6 +5225,8 @@ class ExecutionEventError(_WireModel):
         status: int | str = _UNSET,
         **extra: Any,
     ) -> None:
+        if "class" in extra:
+            raise TypeError("Duplicate assignment for class via class_ and wire key")
         super().__init__(extra)
         self["class"] = class_
         if code is not _UNSET:
@@ -5080,6 +5439,12 @@ class ExecutionEventFilechange(_WireModel):
         previous_path: str = _UNSET,
         **extra: Any,
     ) -> None:
+        if "previousPath" in extra:
+            if previous_path is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for previousPath via previous_path and wire key"
+                )
+            previous_path = extra.pop("previousPath")
         super().__init__(extra)
         if after is not _UNSET:
             self["after"] = after
@@ -5150,6 +5515,10 @@ class ExecutionEventMcp(_WireModel):
         tool_name: str,
         **extra: Any,
     ) -> None:
+        if "toolName" in extra:
+            raise TypeError(
+                "Duplicate assignment for toolName via tool_name and wire key"
+            )
         super().__init__(extra)
         self["connection"] = connection
         self["provenance"] = provenance
@@ -5193,6 +5562,12 @@ class ExecutionEventMcpConnectionCustomTransport(_WireModel):
         transport: str,
         **extra: Any,
     ) -> None:
+        if "addressForm" in extra:
+            if address_form is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for addressForm via address_form and wire key"
+                )
+            address_form = extra.pop("addressForm")
         super().__init__(extra)
         if address is not _UNSET:
             self["address"] = address
@@ -5478,6 +5853,18 @@ class ExecutionEventModelError(_WireModel):
         usage: ExecutionEventAttemptusage = _UNSET,
         **extra: Any,
     ) -> None:
+        if "latencyMs" in extra:
+            if latency_ms is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for latencyMs via latency_ms and wire key"
+                )
+            latency_ms = extra.pop("latencyMs")
+        if "parentEventId" in extra:
+            if parent_event_id is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
+                )
+            parent_event_id = extra.pop("parentEventId")
         super().__init__(extra)
         self["attempt"] = attempt
         self["error"] = error
@@ -5830,6 +6217,12 @@ class ExecutionEventModelRequestBefore(_WireModel):
         type: Literal["model.request.before"] = _UNSET,
         **extra: Any,
     ) -> None:
+        if "parentEventId" in extra:
+            if parent_event_id is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
+                )
+            parent_event_id = extra.pop("parentEventId")
         super().__init__(extra)
         self["attempt"] = attempt
         if extensions is not _UNSET:
@@ -6004,6 +6397,22 @@ class ExecutionEventModelResponseAfter(_WireModel):
         usage: ExecutionEventAttemptusage = _UNSET,
         **extra: Any,
     ) -> None:
+        if "finishReason" in extra:
+            raise TypeError(
+                "Duplicate assignment for finishReason via finish_reason and wire key"
+            )
+        if "latencyMs" in extra:
+            if latency_ms is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for latencyMs via latency_ms and wire key"
+                )
+            latency_ms = extra.pop("latencyMs")
+        if "parentEventId" in extra:
+            if parent_event_id is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
+                )
+            parent_event_id = extra.pop("parentEventId")
         super().__init__(extra)
         self["attempt"] = attempt
         self["execution"] = execution
@@ -6185,6 +6594,12 @@ class ExecutionEventModelSwitchAfter(_WireModel):
         type: Literal["model.switch.after"] = _UNSET,
         **extra: Any,
     ) -> None:
+        if "parentEventId" in extra:
+            if parent_event_id is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
+                )
+            parent_event_id = extra.pop("parentEventId")
         super().__init__(extra)
         self["current"] = current
         if extensions is not _UNSET:
@@ -6342,6 +6757,12 @@ class ExecutionEventModelSwitchBefore(_WireModel):
         type: Literal["model.switch.before"] = _UNSET,
         **extra: Any,
     ) -> None:
+        if "parentEventId" in extra:
+            if parent_event_id is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
+                )
+            parent_event_id = extra.pop("parentEventId")
         super().__init__(extra)
         self["current"] = current
         if extensions is not _UNSET:
@@ -6471,6 +6892,18 @@ class ExecutionEventModelSwitchBeforePricing(_WireModel):
         output_per_million_tokens: float = _UNSET,
         **extra: Any,
     ) -> None:
+        if "inputPerMillionTokens" in extra:
+            if input_per_million_tokens is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for inputPerMillionTokens via input_per_million_tokens and wire key"
+                )
+            input_per_million_tokens = extra.pop("inputPerMillionTokens")
+        if "outputPerMillionTokens" in extra:
+            if output_per_million_tokens is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for outputPerMillionTokens via output_per_million_tokens and wire key"
+                )
+            output_per_million_tokens = extra.pop("outputPerMillionTokens")
         super().__init__(extra)
         self["currency"] = currency
         if input_per_million_tokens is not _UNSET:
@@ -6601,6 +7034,12 @@ class ExecutionEventToolBatchAfter(_WireModel):
         type: Literal["tool.batch.after"] = _UNSET,
         **extra: Any,
     ) -> None:
+        if "parentEventId" in extra:
+            if parent_event_id is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
+                )
+            parent_event_id = extra.pop("parentEventId")
         super().__init__(extra)
         self["batch"] = batch
         self["calls"] = calls
@@ -6877,6 +7316,16 @@ class ExecutionEventToolPermissionRequest(_WireModel):
         type: Literal["tool.permission.request"] = _UNSET,
         **extra: Any,
     ) -> None:
+        if "parentEventId" in extra:
+            if parent_event_id is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
+                )
+            parent_event_id = extra.pop("parentEventId")
+        if "sandboxBypass" in extra:
+            raise TypeError(
+                "Duplicate assignment for sandboxBypass via sandbox_bypass and wire key"
+            )
         super().__init__(extra)
         if batch is not _UNSET:
             self["batch"] = batch
@@ -7081,6 +7530,16 @@ class ExecutionEventToolPermissionResolved(_WireModel):
         type: Literal["tool.permission.resolved"] = _UNSET,
         **extra: Any,
     ) -> None:
+        if "decidedBy" in extra:
+            raise TypeError(
+                "Duplicate assignment for decidedBy via decided_by and wire key"
+            )
+        if "parentEventId" in extra:
+            if parent_event_id is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
+                )
+            parent_event_id = extra.pop("parentEventId")
         super().__init__(extra)
         if batch is not _UNSET:
             self["batch"] = batch
@@ -7293,6 +7752,16 @@ class ExecutionEventToolProgress(_WireModel):
         type: Literal["tool.progress"] = _UNSET,
         **extra: Any,
     ) -> None:
+        if "parentEventId" in extra:
+            if parent_event_id is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
+                )
+            parent_event_id = extra.pop("parentEventId")
+        if "partialOutput" in extra:
+            raise TypeError(
+                "Duplicate assignment for partialOutput via partial_output and wire key"
+            )
         super().__init__(extra)
         self["backgrounded"] = backgrounded
         if batch is not _UNSET:
@@ -7496,6 +7965,22 @@ class ExecutionEventTurnEnd(_WireModel):
         usage: ExecutionEventTurnusage = _UNSET,
         **extra: Any,
     ) -> None:
+        if "continuationCount" in extra:
+            raise TypeError(
+                "Duplicate assignment for continuationCount via continuation_count and wire key"
+            )
+        if "lastAssistantItem" in extra:
+            if last_assistant_item is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for lastAssistantItem via last_assistant_item and wire key"
+                )
+            last_assistant_item = extra.pop("lastAssistantItem")
+        if "parentEventId" in extra:
+            if parent_event_id is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
+                )
+            parent_event_id = extra.pop("parentEventId")
         super().__init__(extra)
         self["continuationCount"] = continuation_count
         if error is not _UNSET:
@@ -7693,6 +8178,22 @@ class ExecutionEventTurnFinishBefore(_WireModel):
         usage: ExecutionEventTurnusage = _UNSET,
         **extra: Any,
     ) -> None:
+        if "continuationCount" in extra:
+            raise TypeError(
+                "Duplicate assignment for continuationCount via continuation_count and wire key"
+            )
+        if "lastAssistantItem" in extra:
+            if last_assistant_item is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for lastAssistantItem via last_assistant_item and wire key"
+                )
+            last_assistant_item = extra.pop("lastAssistantItem")
+        if "parentEventId" in extra:
+            if parent_event_id is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
+                )
+            parent_event_id = extra.pop("parentEventId")
         super().__init__(extra)
         self["continuationCount"] = continuation_count
         if extensions is not _UNSET:
@@ -7885,6 +8386,12 @@ class ExecutionEventTurnProgress(_WireModel):
         type: Literal["turn.progress"] = _UNSET,
         **extra: Any,
     ) -> None:
+        if "parentEventId" in extra:
+            if parent_event_id is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
+                )
+            parent_event_id = extra.pop("parentEventId")
         super().__init__(extra)
         self["delta"] = delta
         if extensions is not _UNSET:
@@ -8068,6 +8575,18 @@ class ExecutionEventTurnStart(_WireModel):
         type: Literal["turn.start"] = _UNSET,
         **extra: Any,
     ) -> None:
+        if "expandedFrom" in extra:
+            if expanded_from is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for expandedFrom via expanded_from and wire key"
+                )
+            expanded_from = extra.pop("expandedFrom")
+        if "parentEventId" in extra:
+            if parent_event_id is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
+                )
+            parent_event_id = extra.pop("parentEventId")
         super().__init__(extra)
         if expanded_from is not _UNSET:
             self["expandedFrom"] = expanded_from
@@ -8217,6 +8736,30 @@ class ExecutionEventTurnusage(_WireModel):
         scope: str,
         **extra: Any,
     ) -> None:
+        if "cacheReadTokens" in extra:
+            if cache_read_tokens is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for cacheReadTokens via cache_read_tokens and wire key"
+                )
+            cache_read_tokens = extra.pop("cacheReadTokens")
+        if "cacheWriteTokens" in extra:
+            if cache_write_tokens is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for cacheWriteTokens via cache_write_tokens and wire key"
+                )
+            cache_write_tokens = extra.pop("cacheWriteTokens")
+        if "inputTokens" in extra:
+            if input_tokens is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for inputTokens via input_tokens and wire key"
+                )
+            input_tokens = extra.pop("inputTokens")
+        if "outputTokens" in extra:
+            if output_tokens is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for outputTokens via output_tokens and wire key"
+                )
+            output_tokens = extra.pop("outputTokens")
         super().__init__(extra)
         if cache_read_tokens is not _UNSET:
             self["cacheReadTokens"] = cache_read_tokens
@@ -8331,6 +8874,30 @@ class ExecutionEventUsage(_WireModel):
         scope: str,
         **extra: Any,
     ) -> None:
+        if "cacheReadTokens" in extra:
+            if cache_read_tokens is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for cacheReadTokens via cache_read_tokens and wire key"
+                )
+            cache_read_tokens = extra.pop("cacheReadTokens")
+        if "cacheWriteTokens" in extra:
+            if cache_write_tokens is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for cacheWriteTokens via cache_write_tokens and wire key"
+                )
+            cache_write_tokens = extra.pop("cacheWriteTokens")
+        if "inputTokens" in extra:
+            if input_tokens is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for inputTokens via input_tokens and wire key"
+                )
+            input_tokens = extra.pop("inputTokens")
+        if "outputTokens" in extra:
+            if output_tokens is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for outputTokens via output_tokens and wire key"
+                )
+            output_tokens = extra.pop("outputTokens")
         super().__init__(extra)
         if cache_read_tokens is not _UNSET:
             self["cacheReadTokens"] = cache_read_tokens
@@ -8467,6 +9034,12 @@ class FileChangedInput(dict[str, Any]):
         turn: FileChangedInputTurn = _UNSET,
         **extra: Any,
     ) -> None:
+        if "parentEventId" in extra:
+            if parent_event_id is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
+                )
+            parent_event_id = extra.pop("parentEventId")
         super().__init__(extra)
         self["changes"] = changes
         if extensions is not _UNSET:
@@ -8575,6 +9148,10 @@ class FileChangedInputChangesItem(_WireModel):
         path: str,
         **extra: Any,
     ) -> None:
+        if "agentCaused" in extra:
+            raise TypeError(
+                "Duplicate assignment for agentCaused via agent_caused and wire key"
+            )
         super().__init__(extra)
         if after is not _UNSET:
             self["after"] = after
@@ -8672,6 +9249,10 @@ class HookFailureEvent(_WireModel):
         parent_event_id: str,
         **extra: Any,
     ) -> None:
+        if "parentEventId" in extra:
+            raise TypeError(
+                "Duplicate assignment for parentEventId via parent_event_id and wire key"
+            )
         super().__init__(extra)
         if extensions is not _UNSET:
             self["extensions"] = extensions
@@ -8776,6 +9357,10 @@ class HookFailureInput(dict[str, Any]):
         parent_event_id: str,
         **extra: Any,
     ) -> None:
+        if "parentEventId" in extra:
+            raise TypeError(
+                "Duplicate assignment for parentEventId via parent_event_id and wire key"
+            )
         super().__init__(extra)
         if extensions is not _UNSET:
             self["extensions"] = extensions
@@ -8876,6 +9461,10 @@ class HookFailureEventFailure(_WireModel):
     def __init__(
         self, *, backend_id: str, policy: str, reason: str, **extra: Any
     ) -> None:
+        if "backendId" in extra:
+            raise TypeError(
+                "Duplicate assignment for backendId via backend_id and wire key"
+            )
         super().__init__(extra)
         self["backendId"] = backend_id
         self["policy"] = policy
@@ -8943,6 +9532,10 @@ class HookFailureInputFailure(_WireModel):
     def __init__(
         self, *, backend_id: str, policy: str, reason: str, **extra: Any
     ) -> None:
+        if "backendId" in extra:
+            raise TypeError(
+                "Duplicate assignment for backendId via backend_id and wire key"
+            )
         super().__init__(extra)
         self["backendId"] = backend_id
         self["policy"] = policy
@@ -9062,6 +9655,12 @@ class InteractionEventConfigChangeAfterChange(_WireModel):
         summary: str,
         **extra: Any,
     ) -> None:
+        if "mcpServers" in extra:
+            if mcp_servers is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for mcpServers via mcp_servers and wire key"
+                )
+            mcp_servers = extra.pop("mcpServers")
         super().__init__(extra)
         if mcp_servers is not _UNSET:
             self["mcpServers"] = mcp_servers
@@ -9184,6 +9783,10 @@ class InteractionEventHookFailure(_WireModel):
         type: Literal["hook.failure"] = _UNSET,
         **extra: Any,
     ) -> None:
+        if "parentEventId" in extra:
+            raise TypeError(
+                "Duplicate assignment for parentEventId via parent_event_id and wire key"
+            )
         super().__init__(extra)
         self["failure"] = failure
         self["parentEventId"] = parent_event_id
@@ -9209,6 +9812,10 @@ class InteractionEventHookFailureFailure(_WireModel):
     def __init__(
         self, *, backend_id: str, policy: str, reason: str, **extra: Any
     ) -> None:
+        if "backendId" in extra:
+            raise TypeError(
+                "Duplicate assignment for backendId via backend_id and wire key"
+            )
         super().__init__(extra)
         self["backendId"] = backend_id
         self["policy"] = policy
@@ -9389,6 +9996,18 @@ class InteractionEventUserElicitationRequestElicitationRequestBody(_WireModel):
         synthesized: bool = _UNSET,
         **extra: Any,
     ) -> None:
+        if "mediaType" in extra:
+            if media_type is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for mediaType via media_type and wire key"
+                )
+            media_type = extra.pop("mediaType")
+        if "parentItemId" in extra:
+            if parent_item_id is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for parentItemId via parent_item_id and wire key"
+                )
+            parent_item_id = extra.pop("parentItemId")
         super().__init__(extra)
         self["body"] = body
         if category is not _UNSET:
@@ -9463,6 +10082,18 @@ class InteractionEventUserElicitationRequestElicitationRequestBodyGap(_WireModel
         synthesized: bool = _UNSET,
         **extra: Any,
     ) -> None:
+        if "mediaType" in extra:
+            if media_type is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for mediaType via media_type and wire key"
+                )
+            media_type = extra.pop("mediaType")
+        if "parentItemId" in extra:
+            if parent_item_id is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for parentItemId via parent_item_id and wire key"
+                )
+            parent_item_id = extra.pop("parentItemId")
         super().__init__(extra)
         if category is not _UNSET:
             self["category"] = category
@@ -9567,6 +10198,18 @@ class InteractionEventUserElicitationRequestElicitationRequestMetadata(_WireMode
         synthesized: bool = _UNSET,
         **extra: Any,
     ) -> None:
+        if "mediaType" in extra:
+            if media_type is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for mediaType via media_type and wire key"
+                )
+            media_type = extra.pop("mediaType")
+        if "parentItemId" in extra:
+            if parent_item_id is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for parentItemId via parent_item_id and wire key"
+                )
+            parent_item_id = extra.pop("parentItemId")
         super().__init__(extra)
         if category is not _UNSET:
             self["category"] = category
@@ -9649,6 +10292,18 @@ class InteractionEventUserElicitationRequestElicitationRequestOmit(_WireModel):
         synthesized: bool = _UNSET,
         **extra: Any,
     ) -> None:
+        if "mediaType" in extra:
+            if media_type is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for mediaType via media_type and wire key"
+                )
+            media_type = extra.pop("mediaType")
+        if "parentItemId" in extra:
+            if parent_item_id is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for parentItemId via parent_item_id and wire key"
+                )
+            parent_item_id = extra.pop("parentItemId")
         super().__init__(extra)
         if category is not _UNSET:
             self["category"] = category
@@ -9813,6 +10468,18 @@ class InteractionEventUserElicitationResultElicitationResultBody(_WireModel):
         synthesized: bool = _UNSET,
         **extra: Any,
     ) -> None:
+        if "mediaType" in extra:
+            if media_type is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for mediaType via media_type and wire key"
+                )
+            media_type = extra.pop("mediaType")
+        if "parentItemId" in extra:
+            if parent_item_id is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for parentItemId via parent_item_id and wire key"
+                )
+            parent_item_id = extra.pop("parentItemId")
         super().__init__(extra)
         self["body"] = body
         if category is not _UNSET:
@@ -9887,6 +10554,18 @@ class InteractionEventUserElicitationResultElicitationResultBodyGap(_WireModel):
         synthesized: bool = _UNSET,
         **extra: Any,
     ) -> None:
+        if "mediaType" in extra:
+            if media_type is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for mediaType via media_type and wire key"
+                )
+            media_type = extra.pop("mediaType")
+        if "parentItemId" in extra:
+            if parent_item_id is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for parentItemId via parent_item_id and wire key"
+                )
+            parent_item_id = extra.pop("parentItemId")
         super().__init__(extra)
         if category is not _UNSET:
             self["category"] = category
@@ -9991,6 +10670,18 @@ class InteractionEventUserElicitationResultElicitationResultMetadata(_WireModel)
         synthesized: bool = _UNSET,
         **extra: Any,
     ) -> None:
+        if "mediaType" in extra:
+            if media_type is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for mediaType via media_type and wire key"
+                )
+            media_type = extra.pop("mediaType")
+        if "parentItemId" in extra:
+            if parent_item_id is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for parentItemId via parent_item_id and wire key"
+                )
+            parent_item_id = extra.pop("parentItemId")
         super().__init__(extra)
         if category is not _UNSET:
             self["category"] = category
@@ -10073,6 +10764,18 @@ class InteractionEventUserElicitationResultElicitationResultOmit(_WireModel):
         synthesized: bool = _UNSET,
         **extra: Any,
     ) -> None:
+        if "mediaType" in extra:
+            if media_type is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for mediaType via media_type and wire key"
+                )
+            media_type = extra.pop("mediaType")
+        if "parentItemId" in extra:
+            if parent_item_id is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for parentItemId via parent_item_id and wire key"
+                )
+            parent_item_id = extra.pop("parentItemId")
         super().__init__(extra)
         if category is not _UNSET:
             self["category"] = category
@@ -10290,6 +10993,12 @@ class InterceptDenyResponseResult(_WireModel):
         protocol_version: Literal["draft"] = _UNSET,
         **extra: Any,
     ) -> None:
+        if "protocolVersion" in extra:
+            if protocol_version is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for protocolVersion via protocol_version and wire key"
+                )
+            protocol_version = extra.pop("protocolVersion")
         super().__init__(extra)
         self["effects"] = effects
         if extensions is not _UNSET:
@@ -10353,6 +11062,12 @@ class InterceptNoEffectResponseResult(_WireModel):
         protocol_version: Literal["draft"] = _UNSET,
         **extra: Any,
     ) -> None:
+        if "protocolVersion" in extra:
+            if protocol_version is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for protocolVersion via protocol_version and wire key"
+                )
+            protocol_version = extra.pop("protocolVersion")
         super().__init__(extra)
         self["effects"] = effects
         if extensions is not _UNSET:
@@ -10424,6 +11139,12 @@ class InterceptRequestParams(_WireModel):
         state: InterceptRequestParamsState = _UNSET,
         **extra: Any,
     ) -> None:
+        if "protocolVersion" in extra:
+            if protocol_version is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for protocolVersion via protocol_version and wire key"
+                )
+            protocol_version = extra.pop("protocolVersion")
         super().__init__(extra)
         self["capabilities"] = capabilities
         self["event"] = event
@@ -10572,6 +11293,24 @@ class InterceptRequestParamsCapabilitiesFlow(_WireModel):
         remaining_continuations: int = _UNSET,
         **extra: Any,
     ) -> None:
+        if "continuationCount" in extra:
+            if continuation_count is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for continuationCount via continuation_count and wire key"
+                )
+            continuation_count = extra.pop("continuationCount")
+        if "maxContinuations" in extra:
+            if max_continuations is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for maxContinuations via max_continuations and wire key"
+                )
+            max_continuations = extra.pop("maxContinuations")
+        if "remainingContinuations" in extra:
+            if remaining_continuations is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for remainingContinuations via remaining_continuations and wire key"
+                )
+            remaining_continuations = extra.pop("remainingContinuations")
         super().__init__(extra)
         if continuation_count is not _UNSET:
             self["continuationCount"] = continuation_count
@@ -10625,6 +11364,10 @@ class InterceptRequestParamsCapabilitiesInjectContext(_WireModel):
     def __init__(
         self, *, append: Literal[True] = _UNSET, deliver_at: list[str], **extra: Any
     ) -> None:
+        if "deliverAt" in extra:
+            raise TypeError(
+                "Duplicate assignment for deliverAt via deliver_at and wire key"
+            )
         super().__init__(extra)
         self["append"] = json.loads("true") if append is _UNSET else append
         self["deliverAt"] = deliver_at
@@ -11021,6 +11764,12 @@ class InterceptResponseResult(_WireModel):
         protocol_version: Literal["draft"] = _UNSET,
         **extra: Any,
     ) -> None:
+        if "protocolVersion" in extra:
+            if protocol_version is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for protocolVersion via protocol_version and wire key"
+                )
+            protocol_version = extra.pop("protocolVersion")
         super().__init__(extra)
         self["effects"] = effects
         if extensions is not _UNSET:
@@ -11073,6 +11822,20 @@ class InterceptSubscription(_WireModel):
         upload: ContentUpload = _UNSET,
         **extra: Any,
     ) -> None:
+        if "failurePolicy" in extra:
+            raise TypeError(
+                "Duplicate assignment for failurePolicy via failure_policy and wire key"
+            )
+        if "includeNative" in extra:
+            if include_native is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for includeNative via include_native and wire key"
+                )
+            include_native = extra.pop("includeNative")
+        if "timeoutMs" in extra:
+            raise TypeError(
+                "Duplicate assignment for timeoutMs via timeout_ms and wire key"
+            )
         super().__init__(extra)
         self["content"] = content
         if disableable is not _UNSET:
@@ -11166,6 +11929,12 @@ class InterceptSubscriptionFilters(_WireModel):
     def __init__(
         self, *, paths: list[str] = _UNSET, tool_kinds: list[str] = _UNSET, **extra: Any
     ) -> None:
+        if "toolKinds" in extra:
+            if tool_kinds is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for toolKinds via tool_kinds and wire key"
+                )
+            tool_kinds = extra.pop("toolKinds")
         super().__init__(extra)
         if paths is not _UNSET:
             self["paths"] = paths
@@ -11416,6 +12185,10 @@ class McpElicitationElicitRequestFormParams(_WireModel):
         task: McpElicitationTaskMetadata = _UNSET,
         **extra: Any,
     ) -> None:
+        if "requestedSchema" in extra:
+            raise TypeError(
+                "Duplicate assignment for requestedSchema via requested_schema and wire key"
+            )
         super().__init__(extra)
         if _meta is not _UNSET:
             self["_meta"] = _meta
@@ -11451,6 +12224,12 @@ class McpElicitationElicitRequestFormParamsMeta(_WireModel):
     """Keyword-only wire object; wire constructors validate the original descriptor. Optional attributes return None when absent; mapping-method names use a trailing underscore."""
 
     def __init__(self, *, progress_token: float | str = _UNSET, **extra: Any) -> None:
+        if "progressToken" in extra:
+            if progress_token is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for progressToken via progress_token and wire key"
+                )
+            progress_token = extra.pop("progressToken")
         super().__init__(extra)
         if progress_token is not _UNSET:
             self["progressToken"] = progress_token
@@ -11473,6 +12252,12 @@ class McpElicitationElicitRequestFormParamsRequestedSchema(_WireModel):
         type: Literal["object"] = _UNSET,
         **extra: Any,
     ) -> None:
+        if "$schema" in extra:
+            if _schema is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for $schema via _schema and wire key"
+                )
+            _schema = extra.pop("$schema")
         super().__init__(extra)
         if _schema is not _UNSET:
             self["$schema"] = _schema
@@ -11521,6 +12306,10 @@ class McpElicitationElicitRequestURLParams(_WireModel):
         url: str,
         **extra: Any,
     ) -> None:
+        if "elicitationId" in extra:
+            raise TypeError(
+                "Duplicate assignment for elicitationId via elicitation_id and wire key"
+            )
         super().__init__(extra)
         if _meta is not _UNSET:
             self["_meta"] = _meta
@@ -11561,6 +12350,12 @@ class McpElicitationElicitRequestURLParamsMeta(_WireModel):
     """Keyword-only wire object; wire constructors validate the original descriptor. Optional attributes return None when absent; mapping-method names use a trailing underscore."""
 
     def __init__(self, *, progress_token: float | str = _UNSET, **extra: Any) -> None:
+        if "progressToken" in extra:
+            if progress_token is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for progressToken via progress_token and wire key"
+                )
+            progress_token = extra.pop("progressToken")
         super().__init__(extra)
         if progress_token is not _UNSET:
             self["progressToken"] = progress_token
@@ -11639,6 +12434,12 @@ class McpElicitationLegacyTitledEnumSchema(_WireModel):
         type: Literal["string"] = _UNSET,
         **extra: Any,
     ) -> None:
+        if "enumNames" in extra:
+            if enum_names is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for enumNames via enum_names and wire key"
+                )
+            enum_names = extra.pop("enumNames")
         super().__init__(extra)
         if default is not _UNSET:
             self["default"] = default
@@ -11750,6 +12551,18 @@ class McpElicitationStringSchema(_WireModel):
         type: Literal["string"] = _UNSET,
         **extra: Any,
     ) -> None:
+        if "maxLength" in extra:
+            if max_length is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for maxLength via max_length and wire key"
+                )
+            max_length = extra.pop("maxLength")
+        if "minLength" in extra:
+            if min_length is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for minLength via min_length and wire key"
+                )
+            min_length = extra.pop("minLength")
         super().__init__(extra)
         if default is not _UNSET:
             self["default"] = default
@@ -11831,6 +12644,18 @@ class McpElicitationTitledMultiSelectEnumSchema(_WireModel):
         type: Literal["array"] = _UNSET,
         **extra: Any,
     ) -> None:
+        if "maxItems" in extra:
+            if max_items is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for maxItems via max_items and wire key"
+                )
+            max_items = extra.pop("maxItems")
+        if "minItems" in extra:
+            if min_items is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for minItems via min_items and wire key"
+                )
+            min_items = extra.pop("minItems")
         super().__init__(extra)
         if default is not _UNSET:
             self["default"] = default
@@ -11884,6 +12709,8 @@ class McpElicitationTitledMultiSelectEnumSchemaItems(_WireModel):
         any_of: list[McpElicitationTitledMultiSelectEnumSchemaItemsAnyOfItem],
         **extra: Any,
     ) -> None:
+        if "anyOf" in extra:
+            raise TypeError("Duplicate assignment for anyOf via any_of and wire key")
         super().__init__(extra)
         self["anyOf"] = any_of
         self._validate()
@@ -11924,6 +12751,8 @@ class McpElicitationTitledSingleSelectEnumSchema(_WireModel):
         type: Literal["string"] = _UNSET,
         **extra: Any,
     ) -> None:
+        if "oneOf" in extra:
+            raise TypeError("Duplicate assignment for oneOf via one_of and wire key")
         super().__init__(extra)
         if default is not _UNSET:
             self["default"] = default
@@ -11989,6 +12818,18 @@ class McpElicitationUntitledMultiSelectEnumSchema(_WireModel):
         type: Literal["array"] = _UNSET,
         **extra: Any,
     ) -> None:
+        if "maxItems" in extra:
+            if max_items is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for maxItems via max_items and wire key"
+                )
+            max_items = extra.pop("maxItems")
+        if "minItems" in extra:
+            if min_items is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for minItems via min_items and wire key"
+                )
+            min_items = extra.pop("minItems")
         super().__init__(extra)
         if default is not _UNSET:
             self["default"] = default
@@ -12130,6 +12971,18 @@ class ModelErrorInput(dict[str, Any]):
         usage: ExecutionEventAttemptusage = _UNSET,
         **extra: Any,
     ) -> None:
+        if "latencyMs" in extra:
+            if latency_ms is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for latencyMs via latency_ms and wire key"
+                )
+            latency_ms = extra.pop("latencyMs")
+        if "parentEventId" in extra:
+            if parent_event_id is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
+                )
+            parent_event_id = extra.pop("parentEventId")
         super().__init__(extra)
         self["attempt"] = attempt
         self["error"] = error
@@ -12490,6 +13343,10 @@ class ModelRequestBeforeCapabilities(_WireModel):
             self["modify"] = modify
         self._validate()
 
+    def supports(self, effect: str) -> bool:
+        """Advertised family membership only, never authorization or grant checks."""
+        return effect in self.get("effects", ())
+
     @property
     def effects(self) -> list[str]:
         return self["effects"]
@@ -12576,6 +13433,24 @@ class ModelRequestBeforeCapabilitiesFlow(_WireModel):
         remaining_continuations: int = _UNSET,
         **extra: Any,
     ) -> None:
+        if "continuationCount" in extra:
+            if continuation_count is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for continuationCount via continuation_count and wire key"
+                )
+            continuation_count = extra.pop("continuationCount")
+        if "maxContinuations" in extra:
+            if max_continuations is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for maxContinuations via max_continuations and wire key"
+                )
+            max_continuations = extra.pop("maxContinuations")
+        if "remainingContinuations" in extra:
+            if remaining_continuations is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for remainingContinuations via remaining_continuations and wire key"
+                )
+            remaining_continuations = extra.pop("remainingContinuations")
         super().__init__(extra)
         if continuation_count is not _UNSET:
             self["continuationCount"] = continuation_count
@@ -12629,6 +13504,10 @@ class ModelRequestBeforeCapabilitiesInjectContext(_WireModel):
     def __init__(
         self, *, append: Literal[True] = _UNSET, deliver_at: list[str], **extra: Any
     ) -> None:
+        if "deliverAt" in extra:
+            raise TypeError(
+                "Duplicate assignment for deliverAt via deliver_at and wire key"
+            )
         super().__init__(extra)
         self["append"] = json.loads("true") if append is _UNSET else append
         self["deliverAt"] = deliver_at
@@ -12911,6 +13790,12 @@ class ModelRequestBeforeInput(dict[str, Any]):
         turn: ModelRequestBeforeInputTurn = _UNSET,
         **extra: Any,
     ) -> None:
+        if "parentEventId" in extra:
+            if parent_event_id is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
+                )
+            parent_event_id = extra.pop("parentEventId")
         super().__init__(extra)
         self["attempt"] = attempt
         if extensions is not _UNSET:
@@ -13085,6 +13970,10 @@ class ModelResponseAfterCapabilities(_WireModel):
             self["modify"] = modify
         self._validate()
 
+    def supports(self, effect: str) -> bool:
+        """Advertised family membership only, never authorization or grant checks."""
+        return effect in self.get("effects", ())
+
     @property
     def effects(self) -> list[str]:
         return self["effects"]
@@ -13171,6 +14060,24 @@ class ModelResponseAfterCapabilitiesFlow(_WireModel):
         remaining_continuations: int = _UNSET,
         **extra: Any,
     ) -> None:
+        if "continuationCount" in extra:
+            if continuation_count is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for continuationCount via continuation_count and wire key"
+                )
+            continuation_count = extra.pop("continuationCount")
+        if "maxContinuations" in extra:
+            if max_continuations is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for maxContinuations via max_continuations and wire key"
+                )
+            max_continuations = extra.pop("maxContinuations")
+        if "remainingContinuations" in extra:
+            if remaining_continuations is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for remainingContinuations via remaining_continuations and wire key"
+                )
+            remaining_continuations = extra.pop("remainingContinuations")
         super().__init__(extra)
         if continuation_count is not _UNSET:
             self["continuationCount"] = continuation_count
@@ -13224,6 +14131,10 @@ class ModelResponseAfterCapabilitiesInjectContext(_WireModel):
     def __init__(
         self, *, append: Literal[True] = _UNSET, deliver_at: list[str], **extra: Any
     ) -> None:
+        if "deliverAt" in extra:
+            raise TypeError(
+                "Duplicate assignment for deliverAt via deliver_at and wire key"
+            )
         super().__init__(extra)
         self["append"] = json.loads("true") if append is _UNSET else append
         self["deliverAt"] = deliver_at
@@ -13514,6 +14425,22 @@ class ModelResponseAfterInput(dict[str, Any]):
         usage: ExecutionEventAttemptusage = _UNSET,
         **extra: Any,
     ) -> None:
+        if "finishReason" in extra:
+            raise TypeError(
+                "Duplicate assignment for finishReason via finish_reason and wire key"
+            )
+        if "latencyMs" in extra:
+            if latency_ms is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for latencyMs via latency_ms and wire key"
+                )
+            latency_ms = extra.pop("latencyMs")
+        if "parentEventId" in extra:
+            if parent_event_id is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
+                )
+            parent_event_id = extra.pop("parentEventId")
         super().__init__(extra)
         self["attempt"] = attempt
         self["execution"] = execution
@@ -13704,6 +14631,12 @@ class ModelSwitchAfterInput(dict[str, Any]):
         turn: ModelSwitchAfterInputTurn = _UNSET,
         **extra: Any,
     ) -> None:
+        if "parentEventId" in extra:
+            if parent_event_id is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
+                )
+            parent_event_id = extra.pop("parentEventId")
         super().__init__(extra)
         self["current"] = current
         if extensions is not _UNSET:
@@ -13871,6 +14804,10 @@ class ModelSwitchBeforeCapabilities(_WireModel):
             self["modify"] = modify
         self._validate()
 
+    def supports(self, effect: str) -> bool:
+        """Advertised family membership only, never authorization or grant checks."""
+        return effect in self.get("effects", ())
+
     @property
     def effects(self) -> list[str]:
         return self["effects"]
@@ -13957,6 +14894,24 @@ class ModelSwitchBeforeCapabilitiesFlow(_WireModel):
         remaining_continuations: int = _UNSET,
         **extra: Any,
     ) -> None:
+        if "continuationCount" in extra:
+            if continuation_count is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for continuationCount via continuation_count and wire key"
+                )
+            continuation_count = extra.pop("continuationCount")
+        if "maxContinuations" in extra:
+            if max_continuations is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for maxContinuations via max_continuations and wire key"
+                )
+            max_continuations = extra.pop("maxContinuations")
+        if "remainingContinuations" in extra:
+            if remaining_continuations is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for remainingContinuations via remaining_continuations and wire key"
+                )
+            remaining_continuations = extra.pop("remainingContinuations")
         super().__init__(extra)
         if continuation_count is not _UNSET:
             self["continuationCount"] = continuation_count
@@ -14010,6 +14965,10 @@ class ModelSwitchBeforeCapabilitiesInjectContext(_WireModel):
     def __init__(
         self, *, append: Literal[True] = _UNSET, deliver_at: list[str], **extra: Any
     ) -> None:
+        if "deliverAt" in extra:
+            raise TypeError(
+                "Duplicate assignment for deliverAt via deliver_at and wire key"
+            )
         super().__init__(extra)
         self["append"] = json.loads("true") if append is _UNSET else append
         self["deliverAt"] = deliver_at
@@ -14290,6 +15249,12 @@ class ModelSwitchBeforeInput(dict[str, Any]):
         turn: ModelSwitchBeforeInputTurn = _UNSET,
         **extra: Any,
     ) -> None:
+        if "parentEventId" in extra:
+            if parent_event_id is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
+                )
+            parent_event_id = extra.pop("parentEventId")
         super().__init__(extra)
         self["current"] = current
         if extensions is not _UNSET:
@@ -14430,6 +15395,18 @@ class ModelSwitchBeforeInputPricing(_WireModel):
         output_per_million_tokens: float = _UNSET,
         **extra: Any,
     ) -> None:
+        if "inputPerMillionTokens" in extra:
+            if input_per_million_tokens is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for inputPerMillionTokens via input_per_million_tokens and wire key"
+                )
+            input_per_million_tokens = extra.pop("inputPerMillionTokens")
+        if "outputPerMillionTokens" in extra:
+            if output_per_million_tokens is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for outputPerMillionTokens via output_per_million_tokens and wire key"
+                )
+            output_per_million_tokens = extra.pop("outputPerMillionTokens")
         super().__init__(extra)
         self["currency"] = currency
         if input_per_million_tokens is not _UNSET:
@@ -14487,6 +15464,16 @@ class ModelVisibleItemBody(_WireModel):
         synthesized: bool = _UNSET,
         **extra: Any,
     ) -> None:
+        if "mediaType" in extra:
+            raise TypeError(
+                "Duplicate assignment for mediaType via media_type and wire key"
+            )
+        if "parentItemId" in extra:
+            if parent_item_id is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for parentItemId via parent_item_id and wire key"
+                )
+            parent_item_id = extra.pop("parentItemId")
         super().__init__(extra)
         self["body"] = body
         if category is not _UNSET:
@@ -14558,6 +15545,16 @@ class ModelVisibleItemBodyGap(_WireModel):
         synthesized: bool = _UNSET,
         **extra: Any,
     ) -> None:
+        if "mediaType" in extra:
+            raise TypeError(
+                "Duplicate assignment for mediaType via media_type and wire key"
+            )
+        if "parentItemId" in extra:
+            if parent_item_id is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for parentItemId via parent_item_id and wire key"
+                )
+            parent_item_id = extra.pop("parentItemId")
         super().__init__(extra)
         if category is not _UNSET:
             self["category"] = category
@@ -14659,6 +15656,16 @@ class ModelVisibleItemMetadata(_WireModel):
         synthesized: bool = _UNSET,
         **extra: Any,
     ) -> None:
+        if "mediaType" in extra:
+            raise TypeError(
+                "Duplicate assignment for mediaType via media_type and wire key"
+            )
+        if "parentItemId" in extra:
+            if parent_item_id is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for parentItemId via parent_item_id and wire key"
+                )
+            parent_item_id = extra.pop("parentItemId")
         super().__init__(extra)
         if category is not _UNSET:
             self["category"] = category
@@ -14738,6 +15745,16 @@ class ModelVisibleItemOmit(_WireModel):
         synthesized: bool = _UNSET,
         **extra: Any,
     ) -> None:
+        if "mediaType" in extra:
+            raise TypeError(
+                "Duplicate assignment for mediaType via media_type and wire key"
+            )
+        if "parentItemId" in extra:
+            if parent_item_id is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for parentItemId via parent_item_id and wire key"
+                )
+            parent_item_id = extra.pop("parentItemId")
         super().__init__(extra)
         if category is not _UNSET:
             self["category"] = category
@@ -14833,6 +15850,12 @@ class ObserveNotificationParams(_WireModel):
     def __init__(
         self, *, event: Event, protocol_version: Literal["draft"] = _UNSET, **extra: Any
     ) -> None:
+        if "protocolVersion" in extra:
+            if protocol_version is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for protocolVersion via protocol_version and wire key"
+                )
+            protocol_version = extra.pop("protocolVersion")
         super().__init__(extra)
         self["event"] = event
         self["protocolVersion"] = (
@@ -14865,6 +15888,12 @@ class ObserveSubscription(_WireModel):
         upload: ContentUpload = _UNSET,
         **extra: Any,
     ) -> None:
+        if "includeNative" in extra:
+            if include_native is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for includeNative via include_native and wire key"
+                )
+            include_native = extra.pop("includeNative")
         super().__init__(extra)
         self["content"] = content
         if disableable is not _UNSET:
@@ -14956,6 +15985,12 @@ class ObserveSubscriptionFilters(_WireModel):
     def __init__(
         self, *, paths: list[str] = _UNSET, tool_kinds: list[str] = _UNSET, **extra: Any
     ) -> None:
+        if "toolKinds" in extra:
+            if tool_kinds is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for toolKinds via tool_kinds and wire key"
+                )
+            tool_kinds = extra.pop("toolKinds")
         super().__init__(extra)
         if paths is not _UNSET:
             self["paths"] = paths
@@ -14988,6 +16023,12 @@ class Registration(_WireModel):
         protocol_version: Literal["draft"] = _UNSET,
         **extra: Any,
     ) -> None:
+        if "protocolVersion" in extra:
+            if protocol_version is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for protocolVersion via protocol_version and wire key"
+                )
+            protocol_version = extra.pop("protocolVersion")
         super().__init__(extra)
         self["hooks"] = hooks
         self["protocolVersion"] = (
@@ -15016,6 +16057,14 @@ class RegistrationContentreceiver(_WireModel):
         url: str,
         **extra: Any,
     ) -> None:
+        if "maxBytes" in extra:
+            raise TypeError(
+                "Duplicate assignment for maxBytes via max_bytes and wire key"
+            )
+        if "timeoutMs" in extra:
+            raise TypeError(
+                "Duplicate assignment for timeoutMs via timeout_ms and wire key"
+            )
         super().__init__(extra)
         if authentication is not _UNSET:
             self["authentication"] = authentication
@@ -15055,6 +16104,12 @@ class Session(_WireModel):
         workspace_roots: list[str] = _UNSET,
         **extra: Any,
     ) -> None:
+        if "workspaceRoots" in extra:
+            if workspace_roots is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for workspaceRoots via workspace_roots and wire key"
+                )
+            workspace_roots = extra.pop("workspaceRoots")
         super().__init__(extra)
         if agent is not _UNSET:
             self["agent"] = agent
@@ -15138,6 +16193,12 @@ class SessionEndEvent(_WireModel):
         type: Literal["session.end"] = _UNSET,
         **extra: Any,
     ) -> None:
+        if "parentEventId" in extra:
+            if parent_event_id is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
+                )
+            parent_event_id = extra.pop("parentEventId")
         super().__init__(extra)
         if counters is not _UNSET:
             self["counters"] = counters
@@ -15255,6 +16316,12 @@ class SessionEndInput(dict[str, Any]):
         turn: SessionEndInputTurn = _UNSET,
         **extra: Any,
     ) -> None:
+        if "parentEventId" in extra:
+            if parent_event_id is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
+                )
+            parent_event_id = extra.pop("parentEventId")
         super().__init__(extra)
         if counters is not _UNSET:
             self["counters"] = counters
@@ -15489,6 +16556,10 @@ class SessionStartCapabilities(_WireModel):
             self["modify"] = modify
         self._validate()
 
+    def supports(self, effect: str) -> bool:
+        """Advertised family membership only, never authorization or grant checks."""
+        return effect in self.get("effects", ())
+
     @property
     def effects(self) -> list[str]:
         return self["effects"]
@@ -15575,6 +16646,24 @@ class SessionStartCapabilitiesFlow(_WireModel):
         remaining_continuations: int = _UNSET,
         **extra: Any,
     ) -> None:
+        if "continuationCount" in extra:
+            if continuation_count is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for continuationCount via continuation_count and wire key"
+                )
+            continuation_count = extra.pop("continuationCount")
+        if "maxContinuations" in extra:
+            if max_continuations is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for maxContinuations via max_continuations and wire key"
+                )
+            max_continuations = extra.pop("maxContinuations")
+        if "remainingContinuations" in extra:
+            if remaining_continuations is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for remainingContinuations via remaining_continuations and wire key"
+                )
+            remaining_continuations = extra.pop("remainingContinuations")
         super().__init__(extra)
         if continuation_count is not _UNSET:
             self["continuationCount"] = continuation_count
@@ -15628,6 +16717,10 @@ class SessionStartCapabilitiesInjectContext(_WireModel):
     def __init__(
         self, *, append: Literal[True] = _UNSET, deliver_at: list[str], **extra: Any
     ) -> None:
+        if "deliverAt" in extra:
+            raise TypeError(
+                "Duplicate assignment for deliverAt via deliver_at and wire key"
+            )
         super().__init__(extra)
         self["append"] = json.loads("true") if append is _UNSET else append
         self["deliverAt"] = deliver_at
@@ -15914,6 +17007,22 @@ class SessionStartEvent(_WireModel):
         type: Literal["session.start"] = _UNSET,
         **extra: Any,
     ) -> None:
+        if "parentEventId" in extra:
+            if parent_event_id is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
+                )
+            parent_event_id = extra.pop("parentEventId")
+        if "permissionMode" in extra:
+            raise TypeError(
+                "Duplicate assignment for permissionMode via permission_mode and wire key"
+            )
+        if "resumedFrom" in extra:
+            if resumed_from is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for resumedFrom via resumed_from and wire key"
+                )
+            resumed_from = extra.pop("resumedFrom")
         super().__init__(extra)
         if extensions is not _UNSET:
             self["extensions"] = extensions
@@ -16044,6 +17153,22 @@ class SessionStartInput(dict[str, Any]):
         turn: SessionStartInputTurn = _UNSET,
         **extra: Any,
     ) -> None:
+        if "parentEventId" in extra:
+            if parent_event_id is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
+                )
+            parent_event_id = extra.pop("parentEventId")
+        if "permissionMode" in extra:
+            raise TypeError(
+                "Duplicate assignment for permissionMode via permission_mode and wire key"
+            )
+        if "resumedFrom" in extra:
+            if resumed_from is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for resumedFrom via resumed_from and wire key"
+                )
+            resumed_from = extra.pop("resumedFrom")
         super().__init__(extra)
         if extensions is not _UNSET:
             self["extensions"] = extensions
@@ -16334,6 +17459,22 @@ class StaticCapabilityManifest(_WireModel):
         transports: list[str],
         **extra: Any,
     ) -> None:
+        if "contentCategories" in extra:
+            raise TypeError(
+                "Duplicate assignment for contentCategories via content_categories and wire key"
+            )
+        if "correlationIdentityFields" in extra:
+            raise TypeError(
+                "Duplicate assignment for correlationIdentityFields via correlation_identity_fields and wire key"
+            )
+        if "managedPolicy" in extra:
+            raise TypeError(
+                "Duplicate assignment for managedPolicy via managed_policy and wire key"
+            )
+        if "toolPaths" in extra:
+            raise TypeError(
+                "Duplicate assignment for toolPaths via tool_paths and wire key"
+            )
         super().__init__(extra)
         self["authentication"] = authentication
         self["contentCategories"] = content_categories
@@ -16489,6 +17630,30 @@ class StaticCapabilityManifestLimits(_WireModel):
         min_timeout_ms: int = _UNSET,
         **extra: Any,
     ) -> None:
+        if "maxContinuations" in extra:
+            if max_continuations is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for maxContinuations via max_continuations and wire key"
+                )
+            max_continuations = extra.pop("maxContinuations")
+        if "maxTimeoutMs" in extra:
+            if max_timeout_ms is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for maxTimeoutMs via max_timeout_ms and wire key"
+                )
+            max_timeout_ms = extra.pop("maxTimeoutMs")
+        if "maxUploadBytes" in extra:
+            if max_upload_bytes is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for maxUploadBytes via max_upload_bytes and wire key"
+                )
+            max_upload_bytes = extra.pop("maxUploadBytes")
+        if "minTimeoutMs" in extra:
+            if min_timeout_ms is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for minTimeoutMs via min_timeout_ms and wire key"
+                )
+            min_timeout_ms = extra.pop("minTimeoutMs")
         super().__init__(extra)
         if max_continuations is not _UNSET:
             self["maxContinuations"] = max_continuations
@@ -16617,6 +17782,12 @@ class TaskChangeAfterInput(dict[str, Any]):
         turn: TaskChangeAfterInputTurn = _UNSET,
         **extra: Any,
     ) -> None:
+        if "parentEventId" in extra:
+            if parent_event_id is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
+                )
+            parent_event_id = extra.pop("parentEventId")
         super().__init__(extra)
         if extensions is not _UNSET:
             self["extensions"] = extensions
@@ -16847,6 +18018,10 @@ class TaskChangeBeforeCapabilities(_WireModel):
             self["modify"] = modify
         self._validate()
 
+    def supports(self, effect: str) -> bool:
+        """Advertised family membership only, never authorization or grant checks."""
+        return effect in self.get("effects", ())
+
     @property
     def effects(self) -> list[str]:
         return self["effects"]
@@ -16933,6 +18108,24 @@ class TaskChangeBeforeCapabilitiesFlow(_WireModel):
         remaining_continuations: int = _UNSET,
         **extra: Any,
     ) -> None:
+        if "continuationCount" in extra:
+            if continuation_count is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for continuationCount via continuation_count and wire key"
+                )
+            continuation_count = extra.pop("continuationCount")
+        if "maxContinuations" in extra:
+            if max_continuations is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for maxContinuations via max_continuations and wire key"
+                )
+            max_continuations = extra.pop("maxContinuations")
+        if "remainingContinuations" in extra:
+            if remaining_continuations is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for remainingContinuations via remaining_continuations and wire key"
+                )
+            remaining_continuations = extra.pop("remainingContinuations")
         super().__init__(extra)
         if continuation_count is not _UNSET:
             self["continuationCount"] = continuation_count
@@ -16986,6 +18179,10 @@ class TaskChangeBeforeCapabilitiesInjectContext(_WireModel):
     def __init__(
         self, *, append: Literal[True] = _UNSET, deliver_at: list[str], **extra: Any
     ) -> None:
+        if "deliverAt" in extra:
+            raise TypeError(
+                "Duplicate assignment for deliverAt via deliver_at and wire key"
+            )
         super().__init__(extra)
         self["append"] = json.loads("true") if append is _UNSET else append
         self["deliverAt"] = deliver_at
@@ -17263,6 +18460,12 @@ class TaskChangeBeforeInput(dict[str, Any]):
         turn: TaskChangeBeforeInputTurn = _UNSET,
         **extra: Any,
     ) -> None:
+        if "parentEventId" in extra:
+            if parent_event_id is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
+                )
+            parent_event_id = extra.pop("parentEventId")
         super().__init__(extra)
         if extensions is not _UNSET:
             self["extensions"] = extensions
@@ -17491,6 +18694,12 @@ class TaskWorkspaceEventFileChanged(_WireModel):
         type: Literal["file.changed"] = _UNSET,
         **extra: Any,
     ) -> None:
+        if "parentEventId" in extra:
+            if parent_event_id is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
+                )
+            parent_event_id = extra.pop("parentEventId")
         super().__init__(extra)
         self["changes"] = changes
         if extensions is not _UNSET:
@@ -17588,6 +18797,10 @@ class TaskWorkspaceEventFileChangedChangesItem(_WireModel):
         path: str,
         **extra: Any,
     ) -> None:
+        if "agentCaused" in extra:
+            raise TypeError(
+                "Duplicate assignment for agentCaused via agent_caused and wire key"
+            )
         super().__init__(extra)
         if after is not _UNSET:
             self["after"] = after
@@ -17685,6 +18898,12 @@ class TaskWorkspaceEventTaskChangeAfter(_WireModel):
         type: Literal["task.change.after"] = _UNSET,
         **extra: Any,
     ) -> None:
+        if "parentEventId" in extra:
+            if parent_event_id is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
+                )
+            parent_event_id = extra.pop("parentEventId")
         super().__init__(extra)
         if extensions is not _UNSET:
             self["extensions"] = extensions
@@ -17902,6 +19121,12 @@ class TaskWorkspaceEventTaskChangeBefore(_WireModel):
         type: Literal["task.change.before"] = _UNSET,
         **extra: Any,
     ) -> None:
+        if "parentEventId" in extra:
+            if parent_event_id is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
+                )
+            parent_event_id = extra.pop("parentEventId")
         super().__init__(extra)
         if extensions is not _UNSET:
             self["extensions"] = extensions
@@ -18119,6 +19344,12 @@ class TaskWorkspaceEventWorkspaceChangeAfter(_WireModel):
         workspace: TaskWorkspaceEventWorkspaceChangeAfterWorkspace,
         **extra: Any,
     ) -> None:
+        if "parentEventId" in extra:
+            if parent_event_id is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
+                )
+            parent_event_id = extra.pop("parentEventId")
         super().__init__(extra)
         if extensions is not _UNSET:
             self["extensions"] = extensions
@@ -18286,6 +19517,12 @@ class TaskWorkspaceEventWorkspaceChangeAfterWorkspaceChange(_WireModel):
     def __init__(
         self, *, cwd: str = _UNSET, workspace_roots: list[str] = _UNSET, **extra: Any
     ) -> None:
+        if "workspaceRoots" in extra:
+            if workspace_roots is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for workspaceRoots via workspace_roots and wire key"
+                )
+            workspace_roots = extra.pop("workspaceRoots")
         super().__init__(extra)
         if cwd is not _UNSET:
             self["cwd"] = cwd
@@ -18314,6 +19551,12 @@ class TaskWorkspaceEventWorkspaceChangeAfterWorkspacePrior(_WireModel):
     def __init__(
         self, *, cwd: str = _UNSET, workspace_roots: list[str] = _UNSET, **extra: Any
     ) -> None:
+        if "workspaceRoots" in extra:
+            if workspace_roots is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for workspaceRoots via workspace_roots and wire key"
+                )
+            workspace_roots = extra.pop("workspaceRoots")
         super().__init__(extra)
         if cwd is not _UNSET:
             self["cwd"] = cwd
@@ -18353,6 +19596,12 @@ class TaskWorkspaceEventWorkspaceChangeBefore(_WireModel):
         workspace: TaskWorkspaceEventWorkspaceChangeBeforeWorkspace,
         **extra: Any,
     ) -> None:
+        if "parentEventId" in extra:
+            if parent_event_id is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
+                )
+            parent_event_id = extra.pop("parentEventId")
         super().__init__(extra)
         if extensions is not _UNSET:
             self["extensions"] = extensions
@@ -18520,6 +19769,12 @@ class TaskWorkspaceEventWorkspaceChangeBeforeWorkspaceChange(_WireModel):
     def __init__(
         self, *, cwd: str = _UNSET, workspace_roots: list[str] = _UNSET, **extra: Any
     ) -> None:
+        if "workspaceRoots" in extra:
+            if workspace_roots is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for workspaceRoots via workspace_roots and wire key"
+                )
+            workspace_roots = extra.pop("workspaceRoots")
         super().__init__(extra)
         if cwd is not _UNSET:
             self["cwd"] = cwd
@@ -18548,6 +19803,12 @@ class TaskWorkspaceEventWorkspaceChangeBeforeWorkspacePrior(_WireModel):
     def __init__(
         self, *, cwd: str = _UNSET, workspace_roots: list[str] = _UNSET, **extra: Any
     ) -> None:
+        if "workspaceRoots" in extra:
+            if workspace_roots is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for workspaceRoots via workspace_roots and wire key"
+                )
+            workspace_roots = extra.pop("workspaceRoots")
         super().__init__(extra)
         if cwd is not _UNSET:
             self["cwd"] = cwd
@@ -18588,6 +19849,10 @@ class ToolAfterCapabilities(_WireModel):
         if modify is not _UNSET:
             self["modify"] = modify
         self._validate()
+
+    def supports(self, effect: str) -> bool:
+        """Advertised family membership only, never authorization or grant checks."""
+        return effect in self.get("effects", ())
 
     @property
     def effects(self) -> list[str]:
@@ -18675,6 +19940,24 @@ class ToolAfterCapabilitiesFlow(_WireModel):
         remaining_continuations: int = _UNSET,
         **extra: Any,
     ) -> None:
+        if "continuationCount" in extra:
+            if continuation_count is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for continuationCount via continuation_count and wire key"
+                )
+            continuation_count = extra.pop("continuationCount")
+        if "maxContinuations" in extra:
+            if max_continuations is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for maxContinuations via max_continuations and wire key"
+                )
+            max_continuations = extra.pop("maxContinuations")
+        if "remainingContinuations" in extra:
+            if remaining_continuations is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for remainingContinuations via remaining_continuations and wire key"
+                )
+            remaining_continuations = extra.pop("remainingContinuations")
         super().__init__(extra)
         if continuation_count is not _UNSET:
             self["continuationCount"] = continuation_count
@@ -18728,6 +20011,10 @@ class ToolAfterCapabilitiesInjectContext(_WireModel):
     def __init__(
         self, *, append: Literal[True] = _UNSET, deliver_at: list[str], **extra: Any
     ) -> None:
+        if "deliverAt" in extra:
+            raise TypeError(
+                "Duplicate assignment for deliverAt via deliver_at and wire key"
+            )
         super().__init__(extra)
         self["append"] = json.loads("true") if append is _UNSET else append
         self["deliverAt"] = deliver_at
@@ -19023,6 +20310,24 @@ class ToolAfterEvent(_WireModel):
         type: Literal["tool.after"] = _UNSET,
         **extra: Any,
     ) -> None:
+        if "durationMs" in extra:
+            if duration_ms is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for durationMs via duration_ms and wire key"
+                )
+            duration_ms = extra.pop("durationMs")
+        if "fileChanges" in extra:
+            if file_changes is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for fileChanges via file_changes and wire key"
+                )
+            file_changes = extra.pop("fileChanges")
+        if "parentEventId" in extra:
+            if parent_event_id is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
+                )
+            parent_event_id = extra.pop("parentEventId")
         super().__init__(extra)
         if batch is not _UNSET:
             self["batch"] = batch
@@ -19201,6 +20506,44 @@ class ToolAfterInput(dict[str, Any]):
         turn: ToolAfterInputTurn = _UNSET,
         **extra: Any,
     ) -> None:
+        if "callId" in extra:
+            raise TypeError("Duplicate assignment for callId via call_id and wire key")
+        if "callSynthesized" in extra:
+            if call_synthesized is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for callSynthesized via call_synthesized and wire key"
+                )
+            call_synthesized = extra.pop("callSynthesized")
+        if "durationMs" in extra:
+            if duration_ms is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for durationMs via duration_ms and wire key"
+                )
+            duration_ms = extra.pop("durationMs")
+        if "fileChanges" in extra:
+            if file_changes is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for fileChanges via file_changes and wire key"
+                )
+            file_changes = extra.pop("fileChanges")
+        if "parentEventId" in extra:
+            if parent_event_id is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
+                )
+            parent_event_id = extra.pop("parentEventId")
+        if "toolKind" in extra:
+            if tool_kind is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for toolKind via tool_kind and wire key"
+                )
+            tool_kind = extra.pop("toolKind")
+        if "toolMcp" in extra:
+            if tool_mcp is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for toolMcp via tool_mcp and wire key"
+                )
+            tool_mcp = extra.pop("toolMcp")
         super().__init__(extra)
         if batch is not _UNSET:
             self["batch"] = batch
@@ -19582,6 +20925,10 @@ class ToolBatchAfterCapabilities(_WireModel):
             self["modify"] = modify
         self._validate()
 
+    def supports(self, effect: str) -> bool:
+        """Advertised family membership only, never authorization or grant checks."""
+        return effect in self.get("effects", ())
+
     @property
     def effects(self) -> list[str]:
         return self["effects"]
@@ -19668,6 +21015,24 @@ class ToolBatchAfterCapabilitiesFlow(_WireModel):
         remaining_continuations: int = _UNSET,
         **extra: Any,
     ) -> None:
+        if "continuationCount" in extra:
+            if continuation_count is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for continuationCount via continuation_count and wire key"
+                )
+            continuation_count = extra.pop("continuationCount")
+        if "maxContinuations" in extra:
+            if max_continuations is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for maxContinuations via max_continuations and wire key"
+                )
+            max_continuations = extra.pop("maxContinuations")
+        if "remainingContinuations" in extra:
+            if remaining_continuations is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for remainingContinuations via remaining_continuations and wire key"
+                )
+            remaining_continuations = extra.pop("remainingContinuations")
         super().__init__(extra)
         if continuation_count is not _UNSET:
             self["continuationCount"] = continuation_count
@@ -19721,6 +21086,10 @@ class ToolBatchAfterCapabilitiesInjectContext(_WireModel):
     def __init__(
         self, *, append: Literal[True] = _UNSET, deliver_at: list[str], **extra: Any
     ) -> None:
+        if "deliverAt" in extra:
+            raise TypeError(
+                "Duplicate assignment for deliverAt via deliver_at and wire key"
+            )
         super().__init__(extra)
         self["append"] = json.loads("true") if append is _UNSET else append
         self["deliverAt"] = deliver_at
@@ -19999,6 +21368,12 @@ class ToolBatchAfterInput(dict[str, Any]):
         turn: ToolBatchAfterInputTurn = _UNSET,
         **extra: Any,
     ) -> None:
+        if "parentEventId" in extra:
+            if parent_event_id is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
+                )
+            parent_event_id = extra.pop("parentEventId")
         super().__init__(extra)
         self["batch"] = batch
         self["calls"] = calls
@@ -20270,6 +21645,10 @@ class ToolBeforeCapabilities(_WireModel):
             self["modify"] = modify
         self._validate()
 
+    def supports(self, effect: str) -> bool:
+        """Advertised family membership only, never authorization or grant checks."""
+        return effect in self.get("effects", ())
+
     @property
     def effects(self) -> list[str]:
         return self["effects"]
@@ -20356,6 +21735,24 @@ class ToolBeforeCapabilitiesFlow(_WireModel):
         remaining_continuations: int = _UNSET,
         **extra: Any,
     ) -> None:
+        if "continuationCount" in extra:
+            if continuation_count is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for continuationCount via continuation_count and wire key"
+                )
+            continuation_count = extra.pop("continuationCount")
+        if "maxContinuations" in extra:
+            if max_continuations is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for maxContinuations via max_continuations and wire key"
+                )
+            max_continuations = extra.pop("maxContinuations")
+        if "remainingContinuations" in extra:
+            if remaining_continuations is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for remainingContinuations via remaining_continuations and wire key"
+                )
+            remaining_continuations = extra.pop("remainingContinuations")
         super().__init__(extra)
         if continuation_count is not _UNSET:
             self["continuationCount"] = continuation_count
@@ -20409,6 +21806,10 @@ class ToolBeforeCapabilitiesInjectContext(_WireModel):
     def __init__(
         self, *, append: Literal[True] = _UNSET, deliver_at: list[str], **extra: Any
     ) -> None:
+        if "deliverAt" in extra:
+            raise TypeError(
+                "Duplicate assignment for deliverAt via deliver_at and wire key"
+            )
         super().__init__(extra)
         self["append"] = json.loads("true") if append is _UNSET else append
         self["deliverAt"] = deliver_at
@@ -20691,6 +22092,12 @@ class ToolBeforeEvent(_WireModel):
         type: Literal["tool.before"] = _UNSET,
         **extra: Any,
     ) -> None:
+        if "parentEventId" in extra:
+            if parent_event_id is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
+                )
+            parent_event_id = extra.pop("parentEventId")
         super().__init__(extra)
         if batch is not _UNSET:
             self["batch"] = batch
@@ -20820,6 +22227,32 @@ class ToolBeforeInput(dict[str, Any]):
         turn: ToolBeforeInputTurn = _UNSET,
         **extra: Any,
     ) -> None:
+        if "callId" in extra:
+            raise TypeError("Duplicate assignment for callId via call_id and wire key")
+        if "callSynthesized" in extra:
+            if call_synthesized is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for callSynthesized via call_synthesized and wire key"
+                )
+            call_synthesized = extra.pop("callSynthesized")
+        if "parentEventId" in extra:
+            if parent_event_id is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
+                )
+            parent_event_id = extra.pop("parentEventId")
+        if "toolKind" in extra:
+            if tool_kind is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for toolKind via tool_kind and wire key"
+                )
+            tool_kind = extra.pop("toolKind")
+        if "toolMcp" in extra:
+            if tool_mcp is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for toolMcp via tool_mcp and wire key"
+                )
+            tool_mcp = extra.pop("toolMcp")
         super().__init__(extra)
         if batch is not _UNSET:
             self["batch"] = batch
@@ -21125,6 +22558,10 @@ class ToolPermissionRequestCapabilities(_WireModel):
             self["modify"] = modify
         self._validate()
 
+    def supports(self, effect: str) -> bool:
+        """Advertised family membership only, never authorization or grant checks."""
+        return effect in self.get("effects", ())
+
     @property
     def effects(self) -> list[str]:
         return self["effects"]
@@ -21211,6 +22648,24 @@ class ToolPermissionRequestCapabilitiesFlow(_WireModel):
         remaining_continuations: int = _UNSET,
         **extra: Any,
     ) -> None:
+        if "continuationCount" in extra:
+            if continuation_count is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for continuationCount via continuation_count and wire key"
+                )
+            continuation_count = extra.pop("continuationCount")
+        if "maxContinuations" in extra:
+            if max_continuations is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for maxContinuations via max_continuations and wire key"
+                )
+            max_continuations = extra.pop("maxContinuations")
+        if "remainingContinuations" in extra:
+            if remaining_continuations is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for remainingContinuations via remaining_continuations and wire key"
+                )
+            remaining_continuations = extra.pop("remainingContinuations")
         super().__init__(extra)
         if continuation_count is not _UNSET:
             self["continuationCount"] = continuation_count
@@ -21264,6 +22719,10 @@ class ToolPermissionRequestCapabilitiesInjectContext(_WireModel):
     def __init__(
         self, *, append: Literal[True] = _UNSET, deliver_at: list[str], **extra: Any
     ) -> None:
+        if "deliverAt" in extra:
+            raise TypeError(
+                "Duplicate assignment for deliverAt via deliver_at and wire key"
+            )
         super().__init__(extra)
         self["append"] = json.loads("true") if append is _UNSET else append
         self["deliverAt"] = deliver_at
@@ -21553,6 +23012,36 @@ class ToolPermissionRequestInput(dict[str, Any]):
         turn: ToolPermissionRequestInputTurn = _UNSET,
         **extra: Any,
     ) -> None:
+        if "callId" in extra:
+            raise TypeError("Duplicate assignment for callId via call_id and wire key")
+        if "callSynthesized" in extra:
+            if call_synthesized is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for callSynthesized via call_synthesized and wire key"
+                )
+            call_synthesized = extra.pop("callSynthesized")
+        if "parentEventId" in extra:
+            if parent_event_id is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
+                )
+            parent_event_id = extra.pop("parentEventId")
+        if "sandboxBypass" in extra:
+            raise TypeError(
+                "Duplicate assignment for sandboxBypass via sandbox_bypass and wire key"
+            )
+        if "toolKind" in extra:
+            if tool_kind is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for toolKind via tool_kind and wire key"
+                )
+            tool_kind = extra.pop("toolKind")
+        if "toolMcp" in extra:
+            if tool_mcp is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for toolMcp via tool_mcp and wire key"
+                )
+            tool_mcp = extra.pop("toolMcp")
         super().__init__(extra)
         if batch is not _UNSET:
             self["batch"] = batch
@@ -21826,6 +23315,36 @@ class ToolPermissionResolvedInput(dict[str, Any]):
         turn: ToolPermissionResolvedInputTurn = _UNSET,
         **extra: Any,
     ) -> None:
+        if "callId" in extra:
+            raise TypeError("Duplicate assignment for callId via call_id and wire key")
+        if "callSynthesized" in extra:
+            if call_synthesized is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for callSynthesized via call_synthesized and wire key"
+                )
+            call_synthesized = extra.pop("callSynthesized")
+        if "decidedBy" in extra:
+            raise TypeError(
+                "Duplicate assignment for decidedBy via decided_by and wire key"
+            )
+        if "parentEventId" in extra:
+            if parent_event_id is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
+                )
+            parent_event_id = extra.pop("parentEventId")
+        if "toolKind" in extra:
+            if tool_kind is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for toolKind via tool_kind and wire key"
+                )
+            tool_kind = extra.pop("toolKind")
+        if "toolMcp" in extra:
+            if tool_mcp is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for toolMcp via tool_mcp and wire key"
+                )
+            tool_mcp = extra.pop("toolMcp")
         super().__init__(extra)
         if batch is not _UNSET:
             self["batch"] = batch
@@ -22107,6 +23626,36 @@ class ToolProgressInput(dict[str, Any]):
         turn: ToolProgressInputTurn = _UNSET,
         **extra: Any,
     ) -> None:
+        if "callId" in extra:
+            raise TypeError("Duplicate assignment for callId via call_id and wire key")
+        if "callSynthesized" in extra:
+            if call_synthesized is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for callSynthesized via call_synthesized and wire key"
+                )
+            call_synthesized = extra.pop("callSynthesized")
+        if "parentEventId" in extra:
+            if parent_event_id is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
+                )
+            parent_event_id = extra.pop("parentEventId")
+        if "partialOutput" in extra:
+            raise TypeError(
+                "Duplicate assignment for partialOutput via partial_output and wire key"
+            )
+        if "toolKind" in extra:
+            if tool_kind is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for toolKind via tool_kind and wire key"
+                )
+            tool_kind = extra.pop("toolKind")
+        if "toolMcp" in extra:
+            if tool_mcp is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for toolMcp via tool_mcp and wire key"
+                )
+            tool_mcp = extra.pop("toolMcp")
         super().__init__(extra)
         self["backgrounded"] = backgrounded
         if batch is not _UNSET:
@@ -22386,6 +23935,22 @@ class TurnEndInput(dict[str, Any]):
         usage: ExecutionEventTurnusage = _UNSET,
         **extra: Any,
     ) -> None:
+        if "continuationCount" in extra:
+            raise TypeError(
+                "Duplicate assignment for continuationCount via continuation_count and wire key"
+            )
+        if "lastAssistantItem" in extra:
+            if last_assistant_item is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for lastAssistantItem via last_assistant_item and wire key"
+                )
+            last_assistant_item = extra.pop("lastAssistantItem")
+        if "parentEventId" in extra:
+            if parent_event_id is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
+                )
+            parent_event_id = extra.pop("parentEventId")
         super().__init__(extra)
         self["continuationCount"] = continuation_count
         if error is not _UNSET:
@@ -22590,6 +24155,10 @@ class TurnFinishBeforeCapabilities(_WireModel):
             self["modify"] = modify
         self._validate()
 
+    def supports(self, effect: str) -> bool:
+        """Advertised family membership only, never authorization or grant checks."""
+        return effect in self.get("effects", ())
+
     @property
     def effects(self) -> list[str]:
         return self["effects"]
@@ -22676,6 +24245,24 @@ class TurnFinishBeforeCapabilitiesFlow(_WireModel):
         remaining_continuations: int = _UNSET,
         **extra: Any,
     ) -> None:
+        if "continuationCount" in extra:
+            if continuation_count is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for continuationCount via continuation_count and wire key"
+                )
+            continuation_count = extra.pop("continuationCount")
+        if "maxContinuations" in extra:
+            if max_continuations is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for maxContinuations via max_continuations and wire key"
+                )
+            max_continuations = extra.pop("maxContinuations")
+        if "remainingContinuations" in extra:
+            if remaining_continuations is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for remainingContinuations via remaining_continuations and wire key"
+                )
+            remaining_continuations = extra.pop("remainingContinuations")
         super().__init__(extra)
         if continuation_count is not _UNSET:
             self["continuationCount"] = continuation_count
@@ -22729,6 +24316,10 @@ class TurnFinishBeforeCapabilitiesInjectContext(_WireModel):
     def __init__(
         self, *, append: Literal[True] = _UNSET, deliver_at: list[str], **extra: Any
     ) -> None:
+        if "deliverAt" in extra:
+            raise TypeError(
+                "Duplicate assignment for deliverAt via deliver_at and wire key"
+            )
         super().__init__(extra)
         self["append"] = json.loads("true") if append is _UNSET else append
         self["deliverAt"] = deliver_at
@@ -23012,6 +24603,22 @@ class TurnFinishBeforeInput(dict[str, Any]):
         usage: ExecutionEventTurnusage = _UNSET,
         **extra: Any,
     ) -> None:
+        if "continuationCount" in extra:
+            raise TypeError(
+                "Duplicate assignment for continuationCount via continuation_count and wire key"
+            )
+        if "lastAssistantItem" in extra:
+            if last_assistant_item is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for lastAssistantItem via last_assistant_item and wire key"
+                )
+            last_assistant_item = extra.pop("lastAssistantItem")
+        if "parentEventId" in extra:
+            if parent_event_id is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
+                )
+            parent_event_id = extra.pop("parentEventId")
         super().__init__(extra)
         self["continuationCount"] = continuation_count
         if extensions is not _UNSET:
@@ -23211,6 +24818,12 @@ class TurnProgressInput(dict[str, Any]):
         turn: TurnProgressInputTurn,
         **extra: Any,
     ) -> None:
+        if "parentEventId" in extra:
+            if parent_event_id is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
+                )
+            parent_event_id = extra.pop("parentEventId")
         super().__init__(extra)
         self["delta"] = delta
         if extensions is not _UNSET:
@@ -23411,6 +25024,10 @@ class TurnStartCapabilities(_WireModel):
             self["modify"] = modify
         self._validate()
 
+    def supports(self, effect: str) -> bool:
+        """Advertised family membership only, never authorization or grant checks."""
+        return effect in self.get("effects", ())
+
     @property
     def effects(self) -> list[str]:
         return self["effects"]
@@ -23497,6 +25114,24 @@ class TurnStartCapabilitiesFlow(_WireModel):
         remaining_continuations: int = _UNSET,
         **extra: Any,
     ) -> None:
+        if "continuationCount" in extra:
+            if continuation_count is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for continuationCount via continuation_count and wire key"
+                )
+            continuation_count = extra.pop("continuationCount")
+        if "maxContinuations" in extra:
+            if max_continuations is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for maxContinuations via max_continuations and wire key"
+                )
+            max_continuations = extra.pop("maxContinuations")
+        if "remainingContinuations" in extra:
+            if remaining_continuations is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for remainingContinuations via remaining_continuations and wire key"
+                )
+            remaining_continuations = extra.pop("remainingContinuations")
         super().__init__(extra)
         if continuation_count is not _UNSET:
             self["continuationCount"] = continuation_count
@@ -23550,6 +25185,10 @@ class TurnStartCapabilitiesInjectContext(_WireModel):
     def __init__(
         self, *, append: Literal[True] = _UNSET, deliver_at: list[str], **extra: Any
     ) -> None:
+        if "deliverAt" in extra:
+            raise TypeError(
+                "Duplicate assignment for deliverAt via deliver_at and wire key"
+            )
         super().__init__(extra)
         self["append"] = json.loads("true") if append is _UNSET else append
         self["deliverAt"] = deliver_at
@@ -23831,6 +25470,18 @@ class TurnStartInput(dict[str, Any]):
         turn: TurnStartInputTurn,
         **extra: Any,
     ) -> None:
+        if "expandedFrom" in extra:
+            if expanded_from is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for expandedFrom via expanded_from and wire key"
+                )
+            expanded_from = extra.pop("expandedFrom")
+        if "parentEventId" in extra:
+            if parent_event_id is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
+                )
+            parent_event_id = extra.pop("parentEventId")
         super().__init__(extra)
         if expanded_from is not _UNSET:
             self["expandedFrom"] = expanded_from
@@ -23997,6 +25648,12 @@ class UserAttentionEvent(_WireModel):
         attention: UserAttentionEventAttention,
         **extra: Any,
     ) -> None:
+        if "parentEventId" in extra:
+            if parent_event_id is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
+                )
+            parent_event_id = extra.pop("parentEventId")
         super().__init__(extra)
         if extensions is not _UNSET:
             self["extensions"] = extensions
@@ -24102,6 +25759,12 @@ class UserAttentionInput(dict[str, Any]):
         attention: UserAttentionInputAttention,
         **extra: Any,
     ) -> None:
+        if "parentEventId" in extra:
+            if parent_event_id is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
+                )
+            parent_event_id = extra.pop("parentEventId")
         super().__init__(extra)
         if extensions is not _UNSET:
             self["extensions"] = extensions
@@ -24404,6 +26067,10 @@ class UserElicitationRequestCapabilities(_WireModel):
             self["modify"] = modify
         self._validate()
 
+    def supports(self, effect: str) -> bool:
+        """Advertised family membership only, never authorization or grant checks."""
+        return effect in self.get("effects", ())
+
     @property
     def effects(self) -> list[str]:
         return self["effects"]
@@ -24490,6 +26157,24 @@ class UserElicitationRequestCapabilitiesFlow(_WireModel):
         remaining_continuations: int = _UNSET,
         **extra: Any,
     ) -> None:
+        if "continuationCount" in extra:
+            if continuation_count is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for continuationCount via continuation_count and wire key"
+                )
+            continuation_count = extra.pop("continuationCount")
+        if "maxContinuations" in extra:
+            if max_continuations is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for maxContinuations via max_continuations and wire key"
+                )
+            max_continuations = extra.pop("maxContinuations")
+        if "remainingContinuations" in extra:
+            if remaining_continuations is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for remainingContinuations via remaining_continuations and wire key"
+                )
+            remaining_continuations = extra.pop("remainingContinuations")
         super().__init__(extra)
         if continuation_count is not _UNSET:
             self["continuationCount"] = continuation_count
@@ -24543,6 +26228,10 @@ class UserElicitationRequestCapabilitiesInjectContext(_WireModel):
     def __init__(
         self, *, append: Literal[True] = _UNSET, deliver_at: list[str], **extra: Any
     ) -> None:
+        if "deliverAt" in extra:
+            raise TypeError(
+                "Duplicate assignment for deliverAt via deliver_at and wire key"
+            )
         super().__init__(extra)
         self["append"] = json.loads("true") if append is _UNSET else append
         self["deliverAt"] = deliver_at
@@ -24824,6 +26513,12 @@ class UserElicitationRequestEvent(_WireModel):
         elicitation: UserElicitationRequestEventElicitation,
         **extra: Any,
     ) -> None:
+        if "parentEventId" in extra:
+            if parent_event_id is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
+                )
+            parent_event_id = extra.pop("parentEventId")
         super().__init__(extra)
         if extensions is not _UNSET:
             self["extensions"] = extensions
@@ -24931,6 +26626,12 @@ class UserElicitationRequestInput(dict[str, Any]):
         elicitation: UserElicitationRequestInputElicitation,
         **extra: Any,
     ) -> None:
+        if "parentEventId" in extra:
+            if parent_event_id is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
+                )
+            parent_event_id = extra.pop("parentEventId")
         super().__init__(extra)
         if extensions is not _UNSET:
             self["extensions"] = extensions
@@ -25100,6 +26801,18 @@ class UserElicitationRequestEventElicitationRequestBody(_WireModel):
         synthesized: bool = _UNSET,
         **extra: Any,
     ) -> None:
+        if "mediaType" in extra:
+            if media_type is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for mediaType via media_type and wire key"
+                )
+            media_type = extra.pop("mediaType")
+        if "parentItemId" in extra:
+            if parent_item_id is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for parentItemId via parent_item_id and wire key"
+                )
+            parent_item_id = extra.pop("parentItemId")
         super().__init__(extra)
         self["body"] = body
         if category is not _UNSET:
@@ -25174,6 +26887,18 @@ class UserElicitationRequestEventElicitationRequestBodyGap(_WireModel):
         synthesized: bool = _UNSET,
         **extra: Any,
     ) -> None:
+        if "mediaType" in extra:
+            if media_type is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for mediaType via media_type and wire key"
+                )
+            media_type = extra.pop("mediaType")
+        if "parentItemId" in extra:
+            if parent_item_id is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for parentItemId via parent_item_id and wire key"
+                )
+            parent_item_id = extra.pop("parentItemId")
         super().__init__(extra)
         if category is not _UNSET:
             self["category"] = category
@@ -25278,6 +27003,18 @@ class UserElicitationRequestEventElicitationRequestMetadata(_WireModel):
         synthesized: bool = _UNSET,
         **extra: Any,
     ) -> None:
+        if "mediaType" in extra:
+            if media_type is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for mediaType via media_type and wire key"
+                )
+            media_type = extra.pop("mediaType")
+        if "parentItemId" in extra:
+            if parent_item_id is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for parentItemId via parent_item_id and wire key"
+                )
+            parent_item_id = extra.pop("parentItemId")
         super().__init__(extra)
         if category is not _UNSET:
             self["category"] = category
@@ -25360,6 +27097,18 @@ class UserElicitationRequestEventElicitationRequestOmit(_WireModel):
         synthesized: bool = _UNSET,
         **extra: Any,
     ) -> None:
+        if "mediaType" in extra:
+            if media_type is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for mediaType via media_type and wire key"
+                )
+            media_type = extra.pop("mediaType")
+        if "parentItemId" in extra:
+            if parent_item_id is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for parentItemId via parent_item_id and wire key"
+                )
+            parent_item_id = extra.pop("parentItemId")
         super().__init__(extra)
         if category is not _UNSET:
             self["category"] = category
@@ -25523,6 +27272,18 @@ class UserElicitationRequestInputElicitationRequestBody(_WireModel):
         synthesized: bool = _UNSET,
         **extra: Any,
     ) -> None:
+        if "mediaType" in extra:
+            if media_type is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for mediaType via media_type and wire key"
+                )
+            media_type = extra.pop("mediaType")
+        if "parentItemId" in extra:
+            if parent_item_id is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for parentItemId via parent_item_id and wire key"
+                )
+            parent_item_id = extra.pop("parentItemId")
         super().__init__(extra)
         self["body"] = body
         if category is not _UNSET:
@@ -25597,6 +27358,18 @@ class UserElicitationRequestInputElicitationRequestBodyGap(_WireModel):
         synthesized: bool = _UNSET,
         **extra: Any,
     ) -> None:
+        if "mediaType" in extra:
+            if media_type is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for mediaType via media_type and wire key"
+                )
+            media_type = extra.pop("mediaType")
+        if "parentItemId" in extra:
+            if parent_item_id is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for parentItemId via parent_item_id and wire key"
+                )
+            parent_item_id = extra.pop("parentItemId")
         super().__init__(extra)
         if category is not _UNSET:
             self["category"] = category
@@ -25701,6 +27474,18 @@ class UserElicitationRequestInputElicitationRequestMetadata(_WireModel):
         synthesized: bool = _UNSET,
         **extra: Any,
     ) -> None:
+        if "mediaType" in extra:
+            if media_type is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for mediaType via media_type and wire key"
+                )
+            media_type = extra.pop("mediaType")
+        if "parentItemId" in extra:
+            if parent_item_id is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for parentItemId via parent_item_id and wire key"
+                )
+            parent_item_id = extra.pop("parentItemId")
         super().__init__(extra)
         if category is not _UNSET:
             self["category"] = category
@@ -25783,6 +27568,18 @@ class UserElicitationRequestInputElicitationRequestOmit(_WireModel):
         synthesized: bool = _UNSET,
         **extra: Any,
     ) -> None:
+        if "mediaType" in extra:
+            if media_type is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for mediaType via media_type and wire key"
+                )
+            media_type = extra.pop("mediaType")
+        if "parentItemId" in extra:
+            if parent_item_id is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for parentItemId via parent_item_id and wire key"
+                )
+            parent_item_id = extra.pop("parentItemId")
         super().__init__(extra)
         if category is not _UNSET:
             self["category"] = category
@@ -25907,6 +27704,10 @@ class UserElicitationResultCapabilities(_WireModel):
             self["modify"] = modify
         self._validate()
 
+    def supports(self, effect: str) -> bool:
+        """Advertised family membership only, never authorization or grant checks."""
+        return effect in self.get("effects", ())
+
     @property
     def effects(self) -> list[str]:
         return self["effects"]
@@ -25993,6 +27794,24 @@ class UserElicitationResultCapabilitiesFlow(_WireModel):
         remaining_continuations: int = _UNSET,
         **extra: Any,
     ) -> None:
+        if "continuationCount" in extra:
+            if continuation_count is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for continuationCount via continuation_count and wire key"
+                )
+            continuation_count = extra.pop("continuationCount")
+        if "maxContinuations" in extra:
+            if max_continuations is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for maxContinuations via max_continuations and wire key"
+                )
+            max_continuations = extra.pop("maxContinuations")
+        if "remainingContinuations" in extra:
+            if remaining_continuations is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for remainingContinuations via remaining_continuations and wire key"
+                )
+            remaining_continuations = extra.pop("remainingContinuations")
         super().__init__(extra)
         if continuation_count is not _UNSET:
             self["continuationCount"] = continuation_count
@@ -26046,6 +27865,10 @@ class UserElicitationResultCapabilitiesInjectContext(_WireModel):
     def __init__(
         self, *, append: Literal[True] = _UNSET, deliver_at: list[str], **extra: Any
     ) -> None:
+        if "deliverAt" in extra:
+            raise TypeError(
+                "Duplicate assignment for deliverAt via deliver_at and wire key"
+            )
         super().__init__(extra)
         self["append"] = json.loads("true") if append is _UNSET else append
         self["deliverAt"] = deliver_at
@@ -26327,6 +28150,12 @@ class UserElicitationResultEvent(_WireModel):
         elicitation: UserElicitationResultEventElicitation,
         **extra: Any,
     ) -> None:
+        if "parentEventId" in extra:
+            if parent_event_id is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
+                )
+            parent_event_id = extra.pop("parentEventId")
         super().__init__(extra)
         if extensions is not _UNSET:
             self["extensions"] = extensions
@@ -26434,6 +28263,12 @@ class UserElicitationResultInput(dict[str, Any]):
         elicitation: UserElicitationResultInputElicitation,
         **extra: Any,
     ) -> None:
+        if "parentEventId" in extra:
+            if parent_event_id is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
+                )
+            parent_event_id = extra.pop("parentEventId")
         super().__init__(extra)
         if extensions is not _UNSET:
             self["extensions"] = extensions
@@ -26615,6 +28450,18 @@ class UserElicitationResultEventElicitationResultBody(_WireModel):
         synthesized: bool = _UNSET,
         **extra: Any,
     ) -> None:
+        if "mediaType" in extra:
+            if media_type is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for mediaType via media_type and wire key"
+                )
+            media_type = extra.pop("mediaType")
+        if "parentItemId" in extra:
+            if parent_item_id is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for parentItemId via parent_item_id and wire key"
+                )
+            parent_item_id = extra.pop("parentItemId")
         super().__init__(extra)
         self["body"] = body
         if category is not _UNSET:
@@ -26689,6 +28536,18 @@ class UserElicitationResultEventElicitationResultBodyGap(_WireModel):
         synthesized: bool = _UNSET,
         **extra: Any,
     ) -> None:
+        if "mediaType" in extra:
+            if media_type is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for mediaType via media_type and wire key"
+                )
+            media_type = extra.pop("mediaType")
+        if "parentItemId" in extra:
+            if parent_item_id is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for parentItemId via parent_item_id and wire key"
+                )
+            parent_item_id = extra.pop("parentItemId")
         super().__init__(extra)
         if category is not _UNSET:
             self["category"] = category
@@ -26793,6 +28652,18 @@ class UserElicitationResultEventElicitationResultMetadata(_WireModel):
         synthesized: bool = _UNSET,
         **extra: Any,
     ) -> None:
+        if "mediaType" in extra:
+            if media_type is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for mediaType via media_type and wire key"
+                )
+            media_type = extra.pop("mediaType")
+        if "parentItemId" in extra:
+            if parent_item_id is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for parentItemId via parent_item_id and wire key"
+                )
+            parent_item_id = extra.pop("parentItemId")
         super().__init__(extra)
         if category is not _UNSET:
             self["category"] = category
@@ -26875,6 +28746,18 @@ class UserElicitationResultEventElicitationResultOmit(_WireModel):
         synthesized: bool = _UNSET,
         **extra: Any,
     ) -> None:
+        if "mediaType" in extra:
+            if media_type is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for mediaType via media_type and wire key"
+                )
+            media_type = extra.pop("mediaType")
+        if "parentItemId" in extra:
+            if parent_item_id is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for parentItemId via parent_item_id and wire key"
+                )
+            parent_item_id = extra.pop("parentItemId")
         super().__init__(extra)
         if category is not _UNSET:
             self["category"] = category
@@ -27050,6 +28933,18 @@ class UserElicitationResultInputElicitationResultBody(_WireModel):
         synthesized: bool = _UNSET,
         **extra: Any,
     ) -> None:
+        if "mediaType" in extra:
+            if media_type is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for mediaType via media_type and wire key"
+                )
+            media_type = extra.pop("mediaType")
+        if "parentItemId" in extra:
+            if parent_item_id is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for parentItemId via parent_item_id and wire key"
+                )
+            parent_item_id = extra.pop("parentItemId")
         super().__init__(extra)
         self["body"] = body
         if category is not _UNSET:
@@ -27124,6 +29019,18 @@ class UserElicitationResultInputElicitationResultBodyGap(_WireModel):
         synthesized: bool = _UNSET,
         **extra: Any,
     ) -> None:
+        if "mediaType" in extra:
+            if media_type is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for mediaType via media_type and wire key"
+                )
+            media_type = extra.pop("mediaType")
+        if "parentItemId" in extra:
+            if parent_item_id is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for parentItemId via parent_item_id and wire key"
+                )
+            parent_item_id = extra.pop("parentItemId")
         super().__init__(extra)
         if category is not _UNSET:
             self["category"] = category
@@ -27228,6 +29135,18 @@ class UserElicitationResultInputElicitationResultMetadata(_WireModel):
         synthesized: bool = _UNSET,
         **extra: Any,
     ) -> None:
+        if "mediaType" in extra:
+            if media_type is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for mediaType via media_type and wire key"
+                )
+            media_type = extra.pop("mediaType")
+        if "parentItemId" in extra:
+            if parent_item_id is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for parentItemId via parent_item_id and wire key"
+                )
+            parent_item_id = extra.pop("parentItemId")
         super().__init__(extra)
         if category is not _UNSET:
             self["category"] = category
@@ -27310,6 +29229,18 @@ class UserElicitationResultInputElicitationResultOmit(_WireModel):
         synthesized: bool = _UNSET,
         **extra: Any,
     ) -> None:
+        if "mediaType" in extra:
+            if media_type is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for mediaType via media_type and wire key"
+                )
+            media_type = extra.pop("mediaType")
+        if "parentItemId" in extra:
+            if parent_item_id is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for parentItemId via parent_item_id and wire key"
+                )
+            parent_item_id = extra.pop("parentItemId")
         super().__init__(extra)
         if category is not _UNSET:
             self["category"] = category
@@ -27434,6 +29365,10 @@ class UserMessageInboundCapabilities(_WireModel):
             self["modify"] = modify
         self._validate()
 
+    def supports(self, effect: str) -> bool:
+        """Advertised family membership only, never authorization or grant checks."""
+        return effect in self.get("effects", ())
+
     @property
     def effects(self) -> list[str]:
         return self["effects"]
@@ -27520,6 +29455,24 @@ class UserMessageInboundCapabilitiesFlow(_WireModel):
         remaining_continuations: int = _UNSET,
         **extra: Any,
     ) -> None:
+        if "continuationCount" in extra:
+            if continuation_count is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for continuationCount via continuation_count and wire key"
+                )
+            continuation_count = extra.pop("continuationCount")
+        if "maxContinuations" in extra:
+            if max_continuations is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for maxContinuations via max_continuations and wire key"
+                )
+            max_continuations = extra.pop("maxContinuations")
+        if "remainingContinuations" in extra:
+            if remaining_continuations is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for remainingContinuations via remaining_continuations and wire key"
+                )
+            remaining_continuations = extra.pop("remainingContinuations")
         super().__init__(extra)
         if continuation_count is not _UNSET:
             self["continuationCount"] = continuation_count
@@ -27573,6 +29526,10 @@ class UserMessageInboundCapabilitiesInjectContext(_WireModel):
     def __init__(
         self, *, append: Literal[True] = _UNSET, deliver_at: list[str], **extra: Any
     ) -> None:
+        if "deliverAt" in extra:
+            raise TypeError(
+                "Duplicate assignment for deliverAt via deliver_at and wire key"
+            )
         super().__init__(extra)
         self["append"] = json.loads("true") if append is _UNSET else append
         self["deliverAt"] = deliver_at
@@ -27852,6 +29809,12 @@ class UserMessageInboundEvent(_WireModel):
         message: UserMessageInboundEventMessage,
         **extra: Any,
     ) -> None:
+        if "parentEventId" in extra:
+            if parent_event_id is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
+                )
+            parent_event_id = extra.pop("parentEventId")
         super().__init__(extra)
         if extensions is not _UNSET:
             self["extensions"] = extensions
@@ -27957,6 +29920,12 @@ class UserMessageInboundInput(dict[str, Any]):
         message: UserMessageInboundInputMessage,
         **extra: Any,
     ) -> None:
+        if "parentEventId" in extra:
+            if parent_event_id is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
+                )
+            parent_event_id = extra.pop("parentEventId")
         super().__init__(extra)
         if extensions is not _UNSET:
             self["extensions"] = extensions
@@ -28235,6 +30204,10 @@ class UserMessageOutboundCapabilities(_WireModel):
             self["modify"] = modify
         self._validate()
 
+    def supports(self, effect: str) -> bool:
+        """Advertised family membership only, never authorization or grant checks."""
+        return effect in self.get("effects", ())
+
     @property
     def effects(self) -> list[str]:
         return self["effects"]
@@ -28321,6 +30294,24 @@ class UserMessageOutboundCapabilitiesFlow(_WireModel):
         remaining_continuations: int = _UNSET,
         **extra: Any,
     ) -> None:
+        if "continuationCount" in extra:
+            if continuation_count is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for continuationCount via continuation_count and wire key"
+                )
+            continuation_count = extra.pop("continuationCount")
+        if "maxContinuations" in extra:
+            if max_continuations is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for maxContinuations via max_continuations and wire key"
+                )
+            max_continuations = extra.pop("maxContinuations")
+        if "remainingContinuations" in extra:
+            if remaining_continuations is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for remainingContinuations via remaining_continuations and wire key"
+                )
+            remaining_continuations = extra.pop("remainingContinuations")
         super().__init__(extra)
         if continuation_count is not _UNSET:
             self["continuationCount"] = continuation_count
@@ -28374,6 +30365,10 @@ class UserMessageOutboundCapabilitiesInjectContext(_WireModel):
     def __init__(
         self, *, append: Literal[True] = _UNSET, deliver_at: list[str], **extra: Any
     ) -> None:
+        if "deliverAt" in extra:
+            raise TypeError(
+                "Duplicate assignment for deliverAt via deliver_at and wire key"
+            )
         super().__init__(extra)
         self["append"] = json.loads("true") if append is _UNSET else append
         self["deliverAt"] = deliver_at
@@ -28653,6 +30648,12 @@ class UserMessageOutboundEvent(_WireModel):
         message: UserMessageOutboundEventMessage,
         **extra: Any,
     ) -> None:
+        if "parentEventId" in extra:
+            if parent_event_id is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
+                )
+            parent_event_id = extra.pop("parentEventId")
         super().__init__(extra)
         if extensions is not _UNSET:
             self["extensions"] = extensions
@@ -28758,6 +30759,12 @@ class UserMessageOutboundInput(dict[str, Any]):
         message: UserMessageOutboundInputMessage,
         **extra: Any,
     ) -> None:
+        if "parentEventId" in extra:
+            if parent_event_id is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
+                )
+            parent_event_id = extra.pop("parentEventId")
         super().__init__(extra)
         if extensions is not _UNSET:
             self["extensions"] = extensions
@@ -29020,6 +31027,12 @@ class WorkspaceChangeAfterInput(dict[str, Any]):
         workspace: WorkspaceChangeAfterInputWorkspace,
         **extra: Any,
     ) -> None:
+        if "parentEventId" in extra:
+            if parent_event_id is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
+                )
+            parent_event_id = extra.pop("parentEventId")
         super().__init__(extra)
         if extensions is not _UNSET:
             self["extensions"] = extensions
@@ -29196,6 +31209,12 @@ class WorkspaceChangeAfterInputWorkspaceChange(_WireModel):
     def __init__(
         self, *, cwd: str = _UNSET, workspace_roots: list[str] = _UNSET, **extra: Any
     ) -> None:
+        if "workspaceRoots" in extra:
+            if workspace_roots is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for workspaceRoots via workspace_roots and wire key"
+                )
+            workspace_roots = extra.pop("workspaceRoots")
         super().__init__(extra)
         if cwd is not _UNSET:
             self["cwd"] = cwd
@@ -29224,6 +31243,12 @@ class WorkspaceChangeAfterInputWorkspacePrior(_WireModel):
     def __init__(
         self, *, cwd: str = _UNSET, workspace_roots: list[str] = _UNSET, **extra: Any
     ) -> None:
+        if "workspaceRoots" in extra:
+            if workspace_roots is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for workspaceRoots via workspace_roots and wire key"
+                )
+            workspace_roots = extra.pop("workspaceRoots")
         super().__init__(extra)
         if cwd is not _UNSET:
             self["cwd"] = cwd
@@ -29264,6 +31289,10 @@ class WorkspaceChangeBeforeCapabilities(_WireModel):
         if modify is not _UNSET:
             self["modify"] = modify
         self._validate()
+
+    def supports(self, effect: str) -> bool:
+        """Advertised family membership only, never authorization or grant checks."""
+        return effect in self.get("effects", ())
 
     @property
     def effects(self) -> list[str]:
@@ -29351,6 +31380,24 @@ class WorkspaceChangeBeforeCapabilitiesFlow(_WireModel):
         remaining_continuations: int = _UNSET,
         **extra: Any,
     ) -> None:
+        if "continuationCount" in extra:
+            if continuation_count is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for continuationCount via continuation_count and wire key"
+                )
+            continuation_count = extra.pop("continuationCount")
+        if "maxContinuations" in extra:
+            if max_continuations is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for maxContinuations via max_continuations and wire key"
+                )
+            max_continuations = extra.pop("maxContinuations")
+        if "remainingContinuations" in extra:
+            if remaining_continuations is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for remainingContinuations via remaining_continuations and wire key"
+                )
+            remaining_continuations = extra.pop("remainingContinuations")
         super().__init__(extra)
         if continuation_count is not _UNSET:
             self["continuationCount"] = continuation_count
@@ -29404,6 +31451,10 @@ class WorkspaceChangeBeforeCapabilitiesInjectContext(_WireModel):
     def __init__(
         self, *, append: Literal[True] = _UNSET, deliver_at: list[str], **extra: Any
     ) -> None:
+        if "deliverAt" in extra:
+            raise TypeError(
+                "Duplicate assignment for deliverAt via deliver_at and wire key"
+            )
         super().__init__(extra)
         self["append"] = json.loads("true") if append is _UNSET else append
         self["deliverAt"] = deliver_at
@@ -29683,6 +31734,12 @@ class WorkspaceChangeBeforeInput(dict[str, Any]):
         workspace: WorkspaceChangeBeforeInputWorkspace,
         **extra: Any,
     ) -> None:
+        if "parentEventId" in extra:
+            if parent_event_id is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
+                )
+            parent_event_id = extra.pop("parentEventId")
         super().__init__(extra)
         if extensions is not _UNSET:
             self["extensions"] = extensions
@@ -29859,6 +31916,12 @@ class WorkspaceChangeBeforeInputWorkspaceChange(_WireModel):
     def __init__(
         self, *, cwd: str = _UNSET, workspace_roots: list[str] = _UNSET, **extra: Any
     ) -> None:
+        if "workspaceRoots" in extra:
+            if workspace_roots is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for workspaceRoots via workspace_roots and wire key"
+                )
+            workspace_roots = extra.pop("workspaceRoots")
         super().__init__(extra)
         if cwd is not _UNSET:
             self["cwd"] = cwd
@@ -29887,6 +31950,12 @@ class WorkspaceChangeBeforeInputWorkspacePrior(_WireModel):
     def __init__(
         self, *, cwd: str = _UNSET, workspace_roots: list[str] = _UNSET, **extra: Any
     ) -> None:
+        if "workspaceRoots" in extra:
+            if workspace_roots is not _UNSET:
+                raise TypeError(
+                    "Duplicate assignment for workspaceRoots via workspace_roots and wire key"
+                )
+            workspace_roots = extra.pop("workspaceRoots")
         super().__init__(extra)
         if cwd is not _UNSET:
             self["cwd"] = cwd

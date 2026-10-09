@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.2.0](https://github.com/agenthooksprotocol/python-sdk/compare/v0.1.1...v0.2.0) (2026-10-09)
+
+
+### Features
+
+* add invocation-owned attachments and retained result reads ([#13](https://github.com/agenthooksprotocol/python-sdk/issues/13)) ([8da3319](https://github.com/agenthooksprotocol/python-sdk/commit/8da3319be2b9af9cc0ac343fd65ecbf48ced8b8c))
+
+
+### Documentation
+
+* keep README focused on current API usage ([#15](https://github.com/agenthooksprotocol/python-sdk/issues/15)) ([fe1982c](https://github.com/agenthooksprotocol/python-sdk/commit/fe1982c5786e69239c027501aeb072a0a92a5fc6))
+
 ## [0.1.1](https://github.com/agenthooksprotocol/python-sdk/compare/v0.1.0...v0.1.1) (2026-10-09)
 
 

@@ -512,7 +512,7 @@ class PublicContentTests(unittest.TestCase):
                 principal="hook",
             )
             prepared = PreparedContent(context, {}, Validator())
-            self.assertEqual(await prepared._read(item), b"original")
+            self.assertEqual(await (await prepared._read(item)).snapshot(), b"original")
             self.assertEqual(store.reads, [{"ref": item["body"]["ref"]}])
             store.bodies[item["body"]["ref"]] = b"changed"
             with self.assertRaises(ProtocolError):

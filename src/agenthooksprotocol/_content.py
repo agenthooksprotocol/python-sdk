@@ -20,6 +20,7 @@ from typing import Any, TYPE_CHECKING
 from .runtime import OperationCancelledError, ProtocolError, json_equal
 
 if TYPE_CHECKING:
+    from .attachment import Attachment
     from .generated import ContentUploadReceipt
 
 Reference = dict[str, Any]
@@ -119,19 +120,21 @@ class ContentContext:
     request binds ``request``; result binds ``content`` and supplies an immutable
     ``original_request`` wire snapshot. Compaction binds ``instructions`` or
     ``summary``. ``principal`` is trusted transport identity, never event data.
-    Resolvers accept ref-only references and enforce authorized immutable storage.
-    Uploaders return ContentUploadReceipt confirmations, checked against sent bytes.
+    Attachments map effect targets to immutable owners. Resolvers are optional
+    adapters for external references; preparation never retains a ref-to-bytes
+    store. Uploaders return receipts checked against the owner's actual bytes.
     A fresh prepared context is made per invocation, safe for concurrent calls.
     """
 
     def __init__(
         self,
         *,
-        resolve: Resolver,
+        resolve: Resolver | None = None,
         upload: Uploader,
         bindings: Mapping[str, tuple[str | int, ...]],
         principal: str,
         original_request: dict[str, Any] | None = None,
+        attachments: Mapping[str, Attachment] | None = None,
     ) -> None:
         if not principal or not isinstance(principal, str):
             raise ProtocolError("Authenticated content principal is required")
@@ -148,6 +151,7 @@ class ContentContext:
         self.bindings = {key: tuple(path) for key, path in bindings.items()}
         self.principal = principal
         self.original_request = deepcopy(original_request)
+        self.attachments = dict(attachments or {})
         self._identities: dict[str, tuple[int, str]] = {}
 
     async def prepare(self, request: dict[str, Any], validator: Any) -> PreparedContent:
@@ -167,37 +171,50 @@ class PreparedContent:
         self.context = context
         self.request = deepcopy(request)
         self.validator = validator
-        self.raw: dict[str, bytes] = {}
         self.items: dict[str, dict[str, Any]] = {}
-        self.selected: dict[str, bytes] = {}
+        self.selected: dict[str, Attachment] = {}
+        self.effective: dict[str, Attachment] = {}
+        self.original = None
+        self._owned: set[Attachment] = set()
         self.targets = set(context.bindings) - {"request"}
 
     def retire(self) -> None:
         """Release invocation bytes without touching caller-owned storage."""
-        self.raw.clear()
+        for owner in self._owned:
+            owner._retire_eager()
+        self._owned.clear()
         self.selected.clear()
+        self.effective.clear()
+        self.original = None
         self.context = None
 
-    async def _read(self, item: dict[str, Any]) -> bytes | None:
+    async def _read(self, item: dict[str, Any], owner=None):
+        from .attachment import Attachment
+
         self.validator.validate("content-item", item)
         if item["selection"] != "body":
             return None
         if "body" not in item:
             raise ProtocolError("Selected content body is unavailable")
         reference = item["body"]
-        data = await self.context.resolve(deepcopy(reference))
-        if not isinstance(data, bytes):
-            raise ProtocolError("Content resolver must return bytes")
+        if owner is None:
+            if self.context.resolve is None:
+                raise ProtocolError(
+                    "Selected content requires an attachment owner or resolver"
+                )
+            data = await self.context.resolve(deepcopy(reference))
+            if not isinstance(data, bytes):
+                raise ProtocolError("Content resolver must return bytes")
+            owner = Attachment.from_bytes(data)
+            self._owned.add(owner)
+            owner._claimed = True
+        data = await owner.snapshot()
         identity = (len(data), hashlib.sha256(data).hexdigest())
         known = self.context._identities.get(reference["ref"])
         if known is not None and known != identity:
             raise ProtocolError("Immutable content reference changed")
         self.context._identities[reference["ref"]] = identity
-        old = self.raw.get(reference["ref"])
-        if old is not None and old != data:
-            raise ProtocolError("Immutable content reference changed")
-        self.raw[reference["ref"]] = data
-        return data
+        return owner
 
     async def load(self) -> None:
         event = self.request["params"]["event"]
@@ -223,22 +240,50 @@ class PreparedContent:
             # The original snapshot is not a way to override current selection.
             item = at(event, self.context.bindings["content"])
             if item.get("selection") == "body":
-                await self._read(original["params"]["event"]["elicitation"]["request"])
+                original_item = original["params"]["event"]["elicitation"]["request"]
+                original_owner = await self._read(
+                    original_item, self.context.attachments.get("request")
+                )
+                if original_owner is not None:
+                    self.original = (original_item, original_owner)
         for target, path in self.context.bindings.items():
             try:
                 item = at(event, path)
             except (KeyError, IndexError, TypeError) as exc:
                 raise ProtocolError("Bound content descriptor is absent") from exc
             self.items[target] = deepcopy(item)
-            data = await self._read(item)
-            if data is not None:
-                self.selected[target] = data
+            owner = await self._read(item, self.context.attachments.get(target))
+            if owner is not None:
+                self.selected[target] = owner
+        self.effective = dict(self.selected)
 
     def _resolve(self, reference: dict[str, Any]) -> bytes:
-        try:
-            return self.raw[reference["ref"]]
-        except KeyError as exc:
-            raise ProtocolError("Content was not selected and resolved") from exc
+        # Protocol validators are synchronous. Preparation materializes selected
+        # owners; this lookup borrows their snapshots, never a reference store.
+        for target, owner in self.selected.items():
+            if self.items[target].get("body") == reference:
+                return owner._snapshot
+        if self.original is not None and self.original[0].get("body") == reference:
+            return self.original[1]._snapshot
+        raise ProtocolError("Content was not selected and resolved")
+
+    def contents(self, event):
+        from .attachment import AttachmentContents
+        from ._boundaries import CONTENT_SOURCE_SLOTS
+
+        slots = {
+            path: name
+            for name, (kind, path) in CONTENT_SOURCE_SLOTS.items()
+            if kind == event["type"]
+        }
+        bindings = {
+            slots.get(self.context.bindings.get(target), target): owner
+            for target, owner in self.effective.items()
+        }
+        for owner in bindings.values():
+            owner._claimed = True
+            self._owned.discard(owner)
+        return AttachmentContents(bindings)
 
     def stage(
         self, request: dict[str, Any], effects: list[dict[str, Any]]
@@ -272,16 +317,13 @@ class PreparedContent:
                     body_effects,
                 )
                 answer = binding["result"]
-                encoded = json.dumps(
-                    answer, allow_nan=False, ensure_ascii=False, separators=(",", ":")
-                ).encode()
                 target = "candidate" if result is None else "content"
                 values[target] = deepcopy(answer)
                 changed = result is not None and not json_equal(
-                    json.loads(self.selected["content"]), answer
+                    json.loads(self.selected["content"]._snapshot), answer
                 )
                 if result is None or changed:
-                    updates.append({"target": target, "data": encoded})
+                    updates.append({"target": target, "value": answer})
                 values["provenance"] = binding["provenance"]
                 values["externalCompletion"] = False
             elif self.selected:
@@ -309,10 +351,10 @@ class PreparedContent:
             validate_text_effects(
                 boundary, effects, request["params"]["capabilities"], self.validator
             )
-            for target, raw in self.selected.items():
+            for target, owner in self.selected.items():
                 if not self.items[target]["mediaType"].startswith("text/"):
                     raise ProtocolError("Compaction requires selected UTF-8 text")
-                values[target] = raw.decode("utf-8", errors="strict")
+                values[target] = owner._snapshot.decode("utf-8", errors="strict")
             for effect in effects:
                 if effect["type"] == "modify":
                     target = effect["target"]
@@ -328,9 +370,10 @@ class PreparedContent:
                         )
                     values["candidate"] = effect["value"]
             for target, value in values.items():
-                data = value.encode("utf-8")
-                if target == "candidate" or data != self.selected[target]:
-                    updates.append({"target": target, "data": data})
+                if target == "candidate" or value != self.selected[
+                    target
+                ]._snapshot.decode("utf-8"):
+                    updates.append({"target": target, "value": value})
                     changed = changed or target != "candidate"
         return {"changed": changed, "updates": updates, "values": values}
 
@@ -338,9 +381,30 @@ class PreparedContent:
         state = deepcopy(state)
         updates = state.pop("_content_updates", [])
         references = {}
-        used = set(self.raw)
+        from .attachment import Attachment
+
+        used = {item["body"]["ref"] for item in self.items.values() if "body" in item}
+        if self.original is not None:
+            used.add(self.original[0]["body"]["ref"])
+        effective = dict(self.selected)
         for update in updates:
-            data = update["data"]
+            value = update["value"]
+            data = (
+                json.dumps(
+                    value, allow_nan=False, ensure_ascii=False, separators=(",", ":")
+                ).encode()
+                if self.request["params"]["event"]["type"].startswith(
+                    "user.elicitation."
+                )
+                else value.encode("utf-8")
+            )
+            original_owner = self.selected.get(update["target"]) or next(
+                iter(self.selected.values())
+            )
+            owner = Attachment.from_bytes(data, max_bytes=original_owner.max_bytes)
+            self._owned.add(owner)
+            owner._claimed = True
+            data = await owner.snapshot()
             reference = await self.context.upload(data)
             self.validator.validate("content-upload-receipt", reference)
             if (
@@ -360,6 +424,7 @@ class PreparedContent:
                 reference["sha256"],
             )
             target = update["target"]
+            effective[target] = owner
             references[target] = {"ref": reference["ref"]}
             if target == "candidate" and state.get("candidate") is not None:
                 state["candidate"].setdefault("provenance", {}).update(
@@ -386,6 +451,7 @@ class PreparedContent:
         check = deepcopy(self.request)
         check["params"]["event"] = state["event"]
         self.validator.validate("intercept-request", check)
+        self.effective = effective
         return state
 
 
@@ -406,6 +472,15 @@ class OwnedContentSource:
         expected_size: int | None = None,
         expected_sha256: str | None = None,
     ) -> None:
+        if not callable(getattr(stream, "aclose", None)) or not (
+            callable(getattr(stream, "read", None))
+            or callable(getattr(stream, "receive", None))
+        ):
+            raise TypeError("source requires async read/receive and aclose")
+        self.stream = stream
+        self._initialize(max_bytes, timeout, expected_size, expected_sha256)
+
+    def _initialize(self, max_bytes, timeout, expected_size=None, expected_sha256=None):
         if (
             isinstance(max_bytes, bool)
             or not isinstance(max_bytes, int)
@@ -431,12 +506,6 @@ class OwnedContentSource:
             or re.fullmatch(r"[0-9a-f]{64}", expected_sha256) is None
         ):
             raise ValueError("expected_sha256 must be a lowercase SHA-256 digest")
-        if not callable(getattr(stream, "aclose", None)) or not (
-            callable(getattr(stream, "read", None))
-            or callable(getattr(stream, "receive", None))
-        ):
-            raise TypeError("source requires async read/receive and aclose")
-        self.stream = stream
         self.max_bytes = max_bytes
         self.timeout = timeout
         self.expected_size = expected_size
@@ -457,11 +526,33 @@ class OwnedContentSource:
         self._stream_closed = True
         try:
             with anyio.move_on_after(1, shield=True):
-                await self.stream.aclose()
+                await self._release_source()
         finally:
             # A closed reader can still retain its complete input buffer.
             self.stream = None
             self._close_done.set()
+
+    async def _release_source(self):
+        await self.stream.aclose()
+
+    async def _read_source(self):
+        chunks = bytearray()
+        reader = getattr(self.stream, "read", None) or self.stream.receive
+        while True:
+            amount = min(65536, self.max_bytes - len(chunks) + 1)
+            try:
+                part = await reader(amount)
+            except anyio.EndOfStream:
+                break
+            if not isinstance(part, bytes):
+                raise ProtocolError("Owned content source must yield bytes")
+            if not part:
+                break
+            if len(part) > amount or len(chunks) + len(part) > self.max_bytes:
+                raise ProtocolError("Owned content exceeds configured limit")
+            chunks.extend(part)
+            await anyio.lowlevel.checkpoint()
+        return bytes(chunks)
 
     async def snapshot(self) -> bytes:
         async with self._lock:
@@ -472,28 +563,11 @@ class OwnedContentSource:
             try:
                 with anyio.fail_after(self.timeout) as scope:
                     self._scope = scope
-                    chunks = bytearray()
-                    reader = getattr(self.stream, "read", None) or self.stream.receive
-                    while True:
-                        amount = min(65536, self.max_bytes - len(chunks) + 1)
-                        try:
-                            part = await reader(amount)
-                        except anyio.EndOfStream:
-                            break
-                        if not isinstance(part, bytes):
-                            raise ProtocolError("Owned content source must yield bytes")
-                        if not part:
-                            break
-                        if (
-                            len(part) > amount
-                            or len(chunks) + len(part) > self.max_bytes
-                        ):
-                            raise ProtocolError(
-                                "Owned content exceeds configured limit"
-                            )
-                        chunks.extend(part)
-                        await anyio.lowlevel.checkpoint()
-                    data = bytes(chunks)
+                    data = await self._read_source()
+                    if not isinstance(data, bytes):
+                        raise ProtocolError("Owned content source must produce bytes")
+                    if len(data) > self.max_bytes:
+                        raise ProtocolError("Owned content exceeds max_bytes")
                     if self.expected_size is not None and self.expected_size != len(
                         data
                     ):
@@ -594,6 +668,49 @@ class ContentSources:
         self._closed = False
         self._references: dict[str, tuple[int, str]] = {}
         self._close_done = anyio.Event()
+
+    def edit_context(self, event, backend, upload, context):
+        from .attachment import Attachment
+
+        targets = {
+            "context.compact.before": {"instructions": ("instructions",)},
+            "context.compact.after": {"summary": ("summary",)},
+            "user.elicitation.request": {"request": ("elicitation", "request")},
+            "user.elicitation.result": {"content": ("elicitation", "result")},
+        }.get(event["type"], {})
+        owners = {}
+        for slot, owner in self.bindings.items():
+            if not isinstance(owner, Attachment):
+                continue
+            for target, path in targets.items():
+                if self._slots[slot][1] == path:
+                    item = at(event, path)
+                    if event["type"].startswith("context.compact.") and not item[
+                        "mediaType"
+                    ].startswith("text/"):
+                        continue
+                    owners[target] = owner
+        if not owners:
+            return context
+
+        async def unavailable(_value):
+            raise ProtocolError("An explicit original request attachment is required")
+
+        # Wire references remain receiver receipts; edit preparation reads the
+        # exact same attachment that projection sent, not a local reference store.
+        prepared_context = ContentContext(
+            resolve=context.resolve if context is not None else unavailable,
+            upload=upload or self.uploads.get(backend) or unavailable,
+            bindings=targets,
+            principal=backend,
+            original_request=context.original_request if context is not None else None,
+            attachments={
+                **(context.attachments if context is not None else {}),
+                **owners,
+            },
+        )
+        prepared_context._identities = self._references
+        return prepared_context
 
     async def project(
         self,

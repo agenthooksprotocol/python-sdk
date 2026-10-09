@@ -232,3 +232,58 @@ optional/defaulted fields, a lone wire spelling (for example `addressForm=` or
 Required constructor parameters still use their documented Python spelling;
 use `from_dict` to decode complete wire-keyed objects. In `from_dict`, distinct
 keys such as `toolName` and `tool_name` remain distinct wire/extension keys.
+
+### Owned attachments
+
+Use `Attachment.from_bytes(data)` for immutable Python `bytes`, or
+`Attachment.lazy(async_loader, aclose=async_cleanup)` to defer reading. Bind it
+with the typed input's existing `bind_*_source` method on an item without an
+existing body reference; content IDs, media types,
+and other metadata remain on the content item. These methods do not change the
+wire protocol. See the runnable [file attachment example](examples/file_attachment.py).
+
+Dispatch transfers ownership once. Metadata-only and unmatched deliveries do not
+invoke the loader. Selected body deliveries share one immutable snapshot, with
+receiver-specific references. Successful results own the bytes **or still-unread
+loader**, independent of `Hooks` shutdown. Use `async with result:` or
+`await result.aclose()` and read with
+`await result.attachments.read("context.compact.before.items[0]")`. Cleanup runs
+for unopened sources too. Do not reuse an attachment across invocations; create a
+new attachment (which can share the same immutable `bytes`) instead.
+
+The default accepted size is 4 MiB and lazy loading timeout is 30 seconds;
+constructors accept `max_bytes` and lazy construction accepts `timeout`. Loaders
+must bound their own allocations. `Attachment(async_stream, ...)` also supports
+the existing bounded `read(size)`/`receive(max_bytes)` source contract. Cleanup
+uses the existing shielded, one-second stream-close bound. Cancellation and
+failure never retry a loader. Python mutable buffers are rejected, and reads
+return immutable bytes.
+
+No local backing store, staging scope, or result reference resolver is required.
+Remote body delivery still requires an authorized receiver uploader through the
+existing `uploads={backend_id: async_upload}` transport boundary; a local
+attachment cannot create a reference that an arbitrary remote receiver can read.
+Metadata-only delivery and result reads require no uploader. Existing
+`OwnedContentSource`, `ContentSources`, and `ContentContext` APIs remain supported.
+
+Attachments own their immutable bytes directly. A lazy loader's `bytes` object
+becomes the attachment snapshot without a stream adapter or second buffer;
+upload and result reads borrow that same object. Slot indexes and size/hash
+receipt records contain no separate byte backing. Receiver/server upload storage
+is a separate responsibility and is unchanged.
+
+Existing compaction text and elicitation JSON effects read selected attachment
+owners. An accepted replacement creates a new effective attachment; subsequent
+deliveries and the result use that owner. Original attachment size bounds also
+apply to replacements. Generated candidates are available through
+`await result.attachments.read("candidate")`. This does not introduce binary/file
+editing or change effect negotiation. Elicitation results still require their
+original request correlation context; `ContentContext.attachments` can provide
+the original request owner without a resolver. A resolver remains an optional
+adapter for externally supplied references, not a harness backing store.
+
+The private `PreparedContent.raw` reference-to-bytes map and raw-byte edit staging
+have been removed. Code that inspected preparation internals must use public
+result attachment reads instead. No public storage API is retained as a hidden
+attachment backend; existing stream sources themselves remain single owners.
+Results are invocation-local, not session archives.

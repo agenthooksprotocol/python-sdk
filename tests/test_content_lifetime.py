@@ -47,7 +47,8 @@ class ContentLifetimeTests(unittest.TestCase):
 
     def assert_retired(self, pending, prepared):
         self.assertIsNone(pending.prepared_content)
-        self.assertEqual(prepared.raw, {})
+        self.assertFalse(hasattr(prepared, "raw"))
+        self.assertEqual(prepared.effective, {})
         self.assertEqual(prepared.selected, {})
         self.assertIsNone(prepared.context)
 
@@ -187,7 +188,7 @@ class ContentLifetimeTests(unittest.TestCase):
                     group.start_soon(second.acquire)
                 first.cancel()
                 self.assertIsNone(first.prepared_content)
-                self.assertTrue(second.prepared_content.raw)
+                self.assertTrue(second.prepared_content.selected)
                 result = await second.accept_content()
                 self.assertIsNotNone(result)
                 self.assertGreaterEqual(len(store.bodies), 2)

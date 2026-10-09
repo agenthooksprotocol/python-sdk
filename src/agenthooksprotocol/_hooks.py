@@ -37,6 +37,8 @@ from .lifecycle import Lifecycle
 from .lineage import TaskLineage
 from ._boundaries import BoundaryMixin
 from ._content import ContentContext, ContentSources, merge_effective, project_content
+from .attachment import Attachment, AttachmentContents
+from ._content import at
 
 T = TypeVar("T")
 
@@ -60,22 +62,71 @@ def _owned_operation(method):
                     bindings, uploads=kwargs.get("uploads")
                 )
         sources = kwargs.get("sources")
+        owned = (
+            {
+                slot: source
+                for slot, source in sources.bindings.items()
+                if isinstance(source, Attachment)
+            }
+            if sources is not None
+            else {}
+        )
+        if any(source._claimed or source._closed for source in owned.values()):
+            raise ProtocolError("Attachment already transferred or closed")
+        for source in owned.values():
+            source._claimed = True
+        published = False
         entered = False
         try:
             async with self._operation():
                 entered = True
                 try:
+                    if owned and kwargs.get("content") is not None:
+                        raise ProtocolError(
+                            "Owned attachments do not support content edit contexts"
+                        )
+                    if owned:
+                        payload = args[1] if len(args) > 1 else kwargs.get("input")
+                        for slot in owned:
+                            item = at(payload, sources._slots[slot][1])
+                            if "body" in item:
+                                raise ProtocolError(
+                                    "Owned attachments require items without existing body references"
+                                )
                     result = await method(self, *args, **kwargs)
-                finally:
+                    if owned:
+                        metadata = {
+                            slot: deepcopy(at(result.event, sources._slots[slot][1]))
+                            for slot in owned
+                        }
+                        if any(
+                            "body" in item
+                            and item["body"]["ref"] not in sources._references
+                            for item in metadata.values()
+                        ):
+                            raise ProtocolError(
+                                "Effective content no longer represents the owned attachment"
+                            )
+                        result.attachments = AttachmentContents(owned, metadata)
+                        sources.bindings = {
+                            slot: source
+                            for slot, source in sources.bindings.items()
+                            if slot not in owned
+                        }
                     if sources is not None:
                         with anyio.CancelScope(shield=True):
                             await sources.aclose()
-                # A deadline/close may have arrived during shielded cleanup.
-                # Never publish permission without observing that interruption.
-                await anyio.lowlevel.checkpoint()
-                return result
+                    await anyio.lowlevel.checkpoint()
+                    published = True
+                    return result
+                finally:
+                    # Join cleanup before the operation signals completion to close().
+                    with anyio.CancelScope(shield=True):
+                        if sources is not None:
+                            await sources.aclose()
+                        if not published and owned:
+                            await AttachmentContents(owned).aclose()
         finally:
-            # Rejected calls still release transferred, unused streams.
             if not entered and sources is not None:
                 with anyio.CancelScope(shield=True):
                     await sources.aclose()
@@ -91,6 +142,19 @@ class HookResult:
     state: dict[str, Any]
     accepted_responses: list[dict[str, Any]] = field(default_factory=list)
     diagnostics: list[Diagnostic] = field(default_factory=list)
+
+    attachments: AttachmentContents = field(
+        default_factory=lambda: AttachmentContents({})
+    )
+
+    async def aclose(self) -> None:
+        await self.attachments.aclose()
+
+    async def __aenter__(self) -> HookResult:
+        return self
+
+    async def __aexit__(self, *_exc: Any) -> None:
+        await self.aclose()
 
     @property
     def input(self) -> JsonValue:

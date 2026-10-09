@@ -14,6 +14,10 @@ if TYPE_CHECKING:
 from ._content import ContentContext as ContentContext
 from ._content import ContentSources as ContentSources
 from ._content import OwnedContentSource as OwnedContentSource
+from .attachment import (
+    Attachment as Attachment,
+    AttachmentContents as AttachmentContents,
+)
 from .runtime import ProtocolError
 
 import hashlib

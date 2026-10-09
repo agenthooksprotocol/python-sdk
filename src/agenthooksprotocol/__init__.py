@@ -15,6 +15,10 @@ from . import (
     tool,
     transport,
 )
+from .attachment import (
+    Attachment as Attachment,
+    AttachmentContents as AttachmentContents,
+)
 from ._content import ContentContext as ContentContext
 from ._models import *  # noqa: F403
 from ._models import __all__ as _model_names
@@ -36,6 +40,8 @@ from .runtime import (
 )
 
 __all__ = list(_model_names) + [
+    "Attachment",
+    "AttachmentContents",
     "ContentContext",
     "OwnedContentSource",
     "ContentSources",

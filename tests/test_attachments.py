@@ -52,6 +52,75 @@ class AttachmentTests(unittest.TestCase):
 
         self.run_async(run)
 
+    def test_rejected_reuse_closes_only_fresh_mixed_sources(self):
+        from agenthooksprotocol import ContentSources, OwnedContentSource
+        from test_owned_content_hooks import Stream
+
+        async def run():
+            for explicit in (False, True):
+                calls = []
+
+                async def original_load():
+                    calls.append("original load")
+                    return b"hello"
+
+                async def original_close():
+                    calls.append("original close")
+
+                async def fresh_load():
+                    self.fail("rejected lazy attachment must remain unread")
+
+                async def fresh_close():
+                    calls.append("fresh close")
+
+                original = Attachment.lazy(original_load, aclose=original_close)
+                first = ContextCompactBeforeInput(**payload()).bind_instructions_source(
+                    original
+                )
+                hooks, _ = harness(["metadata"])
+                async with hooks:
+                    result = await hooks.context_compact_before(first)
+                    fresh = Attachment.lazy(fresh_load, aclose=fresh_close)
+                    stream = Stream()
+                    ordinary = OwnedContentSource(stream)
+                    value = payload()
+                    item = dict(value["instructions"], role="user")
+                    value["items"] = [dict(item, id=str(index)) for index in range(3)]
+                    bindings = {
+                        INSTRUCTIONS: original,
+                        "context.compact.before.items[0]": fresh,
+                        "context.compact.before.items[1]": ordinary,
+                        # Aliased fresh resources must still be closed exactly once.
+                        "context.compact.before.items[2]": fresh,
+                    }
+                    with self.assertRaisesRegex(ProtocolError, "already transferred"):
+                        if explicit:
+                            await hooks.context_compact_before(
+                                value, sources=ContentSources(bindings)
+                            )
+                        else:
+                            bound = ContextCompactBeforeInput(
+                                **value
+                            ).bind_instructions_source(original)
+                            bound = bound.bind_items_source(fresh, index=0)
+                            bound = bound.bind_items_source(ordinary, index=1)
+                            bound = bound.bind_items_source(fresh, index=2)
+                            await hooks.context_compact_before(bound)
+                    self.assertEqual(calls, ["fresh close"])
+                    self.assertEqual((stream.reads, stream.closes), (0, 1))
+                    self.assertTrue(fresh._closed)
+                    self.assertTrue(ordinary._closed)
+                    self.assertFalse(original._closed)
+                async with result:
+                    self.assertEqual(
+                        await result.attachments.read(INSTRUCTIONS), b"hello"
+                    )
+                self.assertEqual(
+                    calls, ["fresh close", "original load", "original close"]
+                )
+
+        self.run_async(run)
+
     def test_multiple_consumers_share_original_and_eager_bytes(self):
         async def run():
             for eager in (True, False):

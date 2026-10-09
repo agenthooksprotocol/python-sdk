@@ -71,8 +71,22 @@ def _owned_operation(method):
             if sources is not None
             else {}
         )
-        if any(source._claimed or source._closed for source in owned.values()):
-            raise ProtocolError("Attachment already transferred or closed")
+        foreign = {
+            source for source in owned.values() if source._claimed or source._closed
+        }
+        if foreign:
+            # A rejected mixed submission still transfers its fresh resources.
+            # Never close or mutate resources held by an earlier invocation.
+            sources = ContentSources(
+                {
+                    slot: source
+                    for slot, source in sources.bindings.items()
+                    if source not in foreign
+                }
+            )
+            owned = {
+                slot: source for slot, source in owned.items() if source not in foreign
+            }
         for source in owned.values():
             source._claimed = True
         published = False
@@ -81,6 +95,8 @@ def _owned_operation(method):
             async with self._operation():
                 entered = True
                 try:
+                    if foreign:
+                        raise ProtocolError("Attachment already transferred or closed")
                     if owned and kwargs.get("content") is not None:
                         raise ProtocolError(
                             "Owned attachments do not support content edit contexts"

@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.1](https://github.com/agenthooksprotocol/python-sdk/compare/v0.1.0...v0.1.1) (2026-10-09)
+
+
+### Bug Fixes
+
+* generate semantic typed Python model APIs ([#10](https://github.com/agenthooksprotocol/python-sdk/issues/10)) ([f9d9626](https://github.com/agenthooksprotocol/python-sdk/commit/f9d962657c95f6882f9a4a4cabf75e362cc68b84))
+
 ## 0.1.0 (2026-10-07)
 
 

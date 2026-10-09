@@ -4,10 +4,10 @@ A typed, asynchronous SDK for the [Agent Hooks Protocol](https://github.com/agen
 
 ## Install
 
-The distribution name is `agenthooksprotocol`. To install a pinned Git commit:
+Install the published `agenthooksprotocol` package from [PyPI](https://pypi.org/project/agenthooksprotocol/):
 
 ```sh
-python -m pip install 'agenthooksprotocol[http] @ git+https://github.com/agenthooksprotocol/python-sdk.git@<commit-sha>'
+python -m pip install 'agenthooksprotocol[http]'
 ```
 
 HTTPX is an opt-in dependency (`[http]`). Pydantic is an independent opt-in integration (`[pydantic]`); neither a web framework nor Pydantic is needed for the core SDK or stdio.
@@ -229,6 +229,8 @@ use `from_dict` to decode complete wire-keyed objects. In `from_dict`, distinct
 keys such as `toolName` and `tool_name` remain distinct wire/extension keys.
 
 ### Owned attachments
+
+The owned attachment APIs in this section are not included in the published 0.1.1 package.
 
 Use `Attachment.from_bytes(data)` for immutable Python `bytes`, or
 `Attachment.lazy(async_loader, aclose=async_cleanup)` to defer reading. Bind it

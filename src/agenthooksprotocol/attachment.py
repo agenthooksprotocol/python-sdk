@@ -10,36 +10,6 @@ from ._content import OwnedContentSource
 from .runtime import ProtocolError
 
 
-class _LazyBytes:
-    def __init__(
-        self,
-        load: Callable[[], Awaitable[bytes]],
-        close: Callable[[], Awaitable[None]] | None,
-    ) -> None:
-        self.load = load
-        self.close = close
-        self.data: bytes | None = None
-        self.offset = 0
-
-    async def read(self, size: int) -> bytes:
-        if self.data is None:
-            self.data = await self.load()
-            if not isinstance(self.data, bytes):
-                raise TypeError("Attachment loader must return immutable bytes")
-        part = self.data[self.offset : self.offset + size]
-        self.offset += len(part)
-        return part
-
-    async def aclose(self) -> None:
-        try:
-            if self.close is not None:
-                await self.close()
-        finally:
-            self.data = None
-            self.load = None  # type: ignore[assignment]
-            self.close = None
-
-
 class Attachment(OwnedContentSource):
     """Bind with an input's existing bind_*_source method.
 
@@ -55,14 +25,24 @@ class Attachment(OwnedContentSource):
         if not isinstance(data, bytes):
             raise TypeError("Attachment requires immutable bytes")
 
-        async def load() -> bytes:
-            return data
-
-        result = cls.lazy(load, max_bytes=max_bytes)
+        result = cls.__new__(cls)
+        result.stream = None
+        result._initialize(max_bytes, 30.0)
         if len(data) > max_bytes:
             raise ValueError("Attachment exceeds max_bytes")
         result._snapshot = data
         return result
+
+    def _retire_eager(self) -> None:
+        """Release untransferred eager edit bytes during synchronous retirement.
+
+        Only internally created from_bytes owners use this path: there is no
+        unopened stream or cleanup callback to await.
+        """
+        if self.stream is not None or getattr(self, "_load", None) is not None:
+            raise RuntimeError("Asynchronous sources require aclose")
+        self._closed = True
+        self._snapshot = None
 
     @classmethod
     def lazy(
@@ -80,7 +60,31 @@ class Attachment(OwnedContentSource):
         """
         if not callable(load) or (aclose is not None and not callable(aclose)):
             raise TypeError("Attachment callbacks must be callable")
-        return cls(_LazyBytes(load, aclose), max_bytes=max_bytes, timeout=timeout)
+        result = cls.__new__(cls)
+        result.stream = None
+        result._initialize(max_bytes, timeout)
+        result._load = load
+        result._cleanup = aclose
+        return result
+
+    async def _read_source(self) -> bytes:
+        if self.stream is not None:
+            return await super()._read_source()
+        # The loader's immutable result becomes the attachment snapshot itself.
+        # No stream adapter, staging buffer, or second byte owner is involved.
+        return await self._load()
+
+    async def _release_source(self) -> None:
+        if self.stream is not None:
+            await super()._release_source()
+            return
+        cleanup = getattr(self, "_cleanup", None)
+        try:
+            if cleanup is not None:
+                await cleanup()
+        finally:
+            self._load = None
+            self._cleanup = None
 
 
 class AttachmentContents:

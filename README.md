@@ -266,8 +266,24 @@ attachment cannot create a reference that an arbitrary remote receiver can read.
 Metadata-only delivery and result reads require no uploader. Existing
 `OwnedContentSource`, `ContentSources`, and `ContentContext` APIs remain supported.
 
-Attachments are immutable originals, not binary edit effects. Do not combine
-owned attachments with a `ContentContext` edit pipeline: it is rejected rather
-than returning original bytes as if they were edited content. Existing generic
-text/JSON edit negotiation and its explicit resolver/uploader contract are
-unchanged. Results are invocation-local, not session archives.
+Attachments own their immutable bytes directly. A lazy loader's `bytes` object
+becomes the attachment snapshot without a stream adapter or second buffer;
+upload and result reads borrow that same object. Slot indexes and size/hash
+receipt records contain no separate byte backing. Receiver/server upload storage
+is a separate responsibility and is unchanged.
+
+Existing compaction text and elicitation JSON effects read selected attachment
+owners. An accepted replacement creates a new effective attachment; subsequent
+deliveries and the result use that owner. Original attachment size bounds also
+apply to replacements. Generated candidates are available through
+`await result.attachments.read("candidate")`. This does not introduce binary/file
+editing or change effect negotiation. Elicitation results still require their
+original request correlation context; `ContentContext.attachments` can provide
+the original request owner without a resolver. A resolver remains an optional
+adapter for externally supplied references, not a harness backing store.
+
+The private `PreparedContent.raw` reference-to-bytes map and raw-byte edit staging
+have been removed. Code that inspected preparation internals must use public
+result attachment reads instead. No public storage API is retained as a hidden
+attachment backend; existing stream sources themselves remain single owners.
+Results are invocation-local, not session archives.

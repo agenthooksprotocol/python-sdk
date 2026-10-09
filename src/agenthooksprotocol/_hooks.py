@@ -38,7 +38,7 @@ from .lineage import TaskLineage
 from ._boundaries import BoundaryMixin
 from ._content import ContentContext, ContentSources, merge_effective, project_content
 from .attachment import Attachment, AttachmentContents
-from ._content import at
+from ._content import at, put
 
 T = TypeVar("T")
 
@@ -91,16 +91,13 @@ def _owned_operation(method):
             source._claimed = True
         published = False
         entered = False
+        result = None
         try:
             async with self._operation():
                 entered = True
                 try:
                     if foreign:
                         raise ProtocolError("Attachment already transferred or closed")
-                    if owned and kwargs.get("content") is not None:
-                        raise ProtocolError(
-                            "Owned attachments do not support content edit contexts"
-                        )
                     if owned:
                         payload = args[1] if len(args) > 1 else kwargs.get("input")
                         for slot in owned:
@@ -111,9 +108,14 @@ def _owned_operation(method):
                                 )
                     result = await method(self, *args, **kwargs)
                     if owned:
+                        effective = {
+                            slot: source
+                            for slot, source in sources.bindings.items()
+                            if isinstance(source, Attachment)
+                        }
                         metadata = {
                             slot: deepcopy(at(result.event, sources._slots[slot][1]))
-                            for slot in owned
+                            for slot in effective
                         }
                         if any(
                             "body" in item
@@ -123,11 +125,12 @@ def _owned_operation(method):
                             raise ProtocolError(
                                 "Effective content no longer represents the owned attachment"
                             )
-                        result.attachments = AttachmentContents(owned, metadata)
+                        result.attachments._bindings.update(effective)
+                        result.attachments._metadata.update(metadata)
                         sources.bindings = {
                             slot: source
                             for slot, source in sources.bindings.items()
-                            if slot not in owned
+                            if slot not in effective
                         }
                     if sources is not None:
                         with anyio.CancelScope(shield=True):
@@ -142,6 +145,8 @@ def _owned_operation(method):
                             await sources.aclose()
                         if not published and owned:
                             await AttachmentContents(owned).aclose()
+                        if not published and isinstance(result, HookResult):
+                            await result.aclose()
         finally:
             if not entered and sources is not None:
                 with anyio.CancelScope(shield=True):
@@ -388,6 +393,8 @@ class PendingInvocation:
         self.result = HookResult(
             event, state, [] if fallback else [deepcopy(self.response)]
         )
+        if self.prepared_content is not None and not fallback:
+            self.result.attachments = self.prepared_content.contents(event)
         return self.result
 
     def cancel(self) -> bool:
@@ -882,17 +889,65 @@ class Hooks(BoundaryMixin):
                             result.event, subscription, backend["id"], sources, uploads
                         )
                         stage = "delivery"
+                        delivery_content = (
+                            sources.edit_context(
+                                request["params"]["event"],
+                                backend["id"],
+                                uploads.get(backend["id"])
+                                if uploads is not None
+                                else None,
+                                content,
+                            )
+                            if sources is not None
+                            else content
+                        )
                         accepted = await self.exchange(
-                            request, transport=transport, content=content
+                            request, transport=transport, content=delivery_content
                         )
                     if accepted is None:
                         raise OperationCancelledError(
                             "Invocation cancelled before acceptance"
                         )
+                    # Transfer effective owners, not references to a byte store.
+                    retired = set()
+                    replaced_paths = []
+                    for slot, owner in accepted.attachments._bindings.items():
+                        if sources is not None and slot in sources.bindings:
+                            previous_owner = sources.bindings[slot]
+                            sources.bindings[slot] = owner
+                            if previous_owner is not owner:
+                                retired.add(previous_owner)
+                                replaced_paths.append(sources._slots[slot][1])
+                            kind, path = sources._slots[slot]
+                            item = at(accepted.event, path)
+                            if "body" in item:
+                                import hashlib
+
+                                data = owner._snapshot
+                                sources._references[item["body"]["ref"]] = (
+                                    len(data),
+                                    hashlib.sha256(data).hexdigest(),
+                                )
+                        previous_result_owner = result.attachments._bindings.get(slot)
+                        if (
+                            previous_result_owner is not None
+                            and previous_result_owner is not owner
+                        ):
+                            retired.add(previous_result_owner)
+                        result.attachments._bindings[slot] = owner
+                    accepted.attachments._bindings.clear()
+                    retired.difference_update(result.attachments._bindings.values())
+                    if sources is not None:
+                        retired.difference_update(sources.bindings.values())
+                    with anyio.CancelScope(shield=True):
+                        for owner in retired:
+                            await owner.aclose()
                     previous = result.event
                     result.event = merge_effective(
                         previous, request["params"]["event"], accepted.event
                     )
+                    for path in replaced_paths:
+                        put(result.event, path, deepcopy(at(accepted.event, path)))
                     accepted.state["event"] = deepcopy(result.event)
                     result.accepted_responses.extend(accepted.accepted_responses)
                     messages = result.state.get("messages", []) + accepted.state.get(

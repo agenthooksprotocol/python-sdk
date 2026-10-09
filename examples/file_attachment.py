@@ -1,7 +1,7 @@
 """Keep a lazily read local file with a typed event result after Hooks closes.
 
 Run: uv run python examples/file_attachment.py path/to/report.pdf
-No receiver or external content store is needed for this standalone example.
+The attachment is the sole byte owner; no receiver or content store is needed.
 """
 
 from pathlib import Path

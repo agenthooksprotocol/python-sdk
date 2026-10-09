@@ -4,10 +4,10 @@ A typed, asynchronous SDK for the [Agent Hooks Protocol](https://github.com/agen
 
 ## Install
 
-The distribution name is `agenthooksprotocol`. Until the first PyPI release, install a pinned Git commit:
+Install the published `agenthooksprotocol` package from [PyPI](https://pypi.org/project/agenthooksprotocol/):
 
 ```sh
-python -m pip install 'agenthooksprotocol[http] @ git+https://github.com/agenthooksprotocol/python-sdk.git@<commit-sha>'
+python -m pip install 'agenthooksprotocol[http]'
 ```
 
 HTTPX is an opt-in dependency (`[http]`). Pydantic is an independent opt-in integration (`[pydantic]`); neither a web framework nor Pydantic is needed for the core SDK or stdio.
@@ -36,7 +36,7 @@ async def review(existing_arguments):
         return result  # Host validation and authorization still precede execution.
 ```
 
-Generated `Input` objects are distinct from canonical wire events. They flatten only protocol-owned wrappers, never application arguments, and `to_wire()` performs the shared mapping. `path` and `origin` remain separate required facts. Optional host IDs, timestamps, parent IDs, and other facts are retained; `event_id=` overrides an input ID. The SDK supplies type/source and the configured session manifest. Low-level `dispatch` still accepts canonical dictionaries.
+Generated `Input` objects are distinct from canonical wire events. They flatten only protocol-owned wrappers, never application arguments, and `to_wire()` performs the shared mapping. `path` and `origin` remain separate required facts. Optional host IDs, timestamps, parent IDs, and other facts are retained; `event_id=` overrides an input ID. The SDK supplies type/source and the configured session manifest. Low-level `dispatch` accepts canonical dictionaries.
 
 Capability builders are immutable: reusing a base declaration does not widen it. `intercept()` deliberately advertises **both intercept and observe**; `observe()` is observation-only. `modify_input(replace=True)` supplies both the effect grant and operation block. Empty operations and observation effect grants are rejected; boundary compatibility is validated before delivery. Form and URL elicitation grants are explicit (`elicitation_form()` / `elicitation_url()`). Raw manifests retain their exact modes; omission never implies permission. Per-call `capabilities=` only narrows configured grants.
 
@@ -89,7 +89,7 @@ The default `auth.EnvironmentAuthProvider` resolves bearer `tokenEnv` or optiona
 
 ## Static host manifest
 
-Configure `Hooks(config, *, source, manifest=full_manifest, transport=None, auth_provider=None)` with a complete canonical static manifest, **or** use the existing `capabilities=event_declarations` option. These options are mutually exclusive. The full manifest supplies the same event/mode/effect authority used for admission; it is not backend discovery. `hooks.manifest` returns a detached snapshot.
+Configure `Hooks(config, *, source, manifest=full_manifest, transport=None, auth_provider=None)` with a complete canonical static manifest, **or** use `capabilities=event_declarations`. These options are mutually exclusive. The full manifest supplies the same event/mode/effect authority used for admission; it is not backend discovery. `hooks.manifest` returns a detached snapshot.
 
 The event-map shorthand advertises only explicitly declared events and modes. Its derived manifest records a gap for every omitted canonical event and for host-level facilities that the map cannot establish (transports, authentication, tool paths, content categories, limits, and managed policy). Empty lists do not mean universal support. Use a full manifest to declare those facilities accurately; explicit full manifests are preserved rather than augmented with assumed support.
 
@@ -122,7 +122,7 @@ Pass `content=context` to the named boundary. An elicitation result needs the or
 
 `OwnedContentSource(stream, max_bytes=..., timeout=...)` wraps an async native `read(size)`/`receive(size)` stream with `aclose()`. Construction does not read. Size/hash expectations are optional and verified, not trusted. Generated inputs expose named `bind_<slot>_source(source)` methods; repeated content slots additionally require `index=`. For example, `input.bind_items_source(source, index=0)` binds an existing metadata item without putting the stream into wire JSON.
 
-Pass the bound input to a named hook method with `uploads={backend_id: authorized_upload_callback}`. Each callback receives immutable bytes and returns a receiver-allocated canonical upload receipt; it can use `auth.AuthenticatedHTTPTransport.upload(..., authentication=upload_binding)`. Metadata, omit, and unmatched receivers consume no bytes and require no uploader. Selected body delivery snapshots once within limits, hashes actual raw bytes, uploads independently for each authorized destination, and verifies receipts before event delivery. Missing receiver authorization fails before reading. Source bindings derive from shared generated metadata; advanced `ContentSources` and existing canonical references/resolvers remain available.
+Pass the bound input to a named hook method with `uploads={backend_id: authorized_upload_callback}`. Each callback receives immutable bytes and returns a receiver-allocated canonical upload receipt; it can use `auth.AuthenticatedHTTPTransport.upload(..., authentication=upload_binding)`. Metadata, omit, and unmatched receivers consume no bytes and require no uploader. Selected body delivery snapshots once within limits, hashes actual raw bytes, uploads independently for each authorized destination, and verifies receipts before event delivery. Missing receiver authorization fails before reading. Use `ContentSources` to supply explicit source bindings, or `ContentContext` to resolve canonical references.
 
 Ownership transfers to the source wrapper, then to the hook operation when passed. Streams close on success, failure, cancellation, and unused selection; snapshots release when the call finishes. Closed wrappers also release their reader, so retaining a source or result does not retain the reader’s input buffer. Sources are single-operation values, not concurrently reusable. Call `aclose()` or use an async context manager for a source that never reaches a hook call. Cleanup is shielded and bounded separately from the operation budget.
 
@@ -152,14 +152,12 @@ compositions. MCP connection `gaps` parameters accept lists of typed gap models,
 and HTTP, SSE, stdio, and custom connection objects expose typed location and gap
 attributes. `ModelVisibleItem` has composed content constructors with typed roles.
 
-Facade objects remain mappings and additionally provide read-only attributes.
+Facade objects are mappings with read-only attributes.
 Optional attributes return `None` when absent; mapping membership still records
 presence. Attributes conflicting with mapping methods use a trailing underscore
-(such as `items_`), so `dict.items()` keeps working. Wire parsers continue to
-return lossless mappings, not hydrated facade instances.
+(such as `items_`), so `dict.items()` keeps working. Wire parsers return lossless mappings, not hydrated facade instances.
 
-Migration: use generated nested models instead of arbitrary mappings for typed
-constructor arguments. Wire constructors, dictionary decoding, and runtime parsing
+Use generated nested models for typed constructor arguments. Wire constructors, dictionary decoding, and runtime parsing
 check location/evidence alternatives and other structural schema constraints. Application
 JSON, native payloads, and extension values remain intentionally dynamic.
 
@@ -186,7 +184,7 @@ support. The result is **not authorization**: it does not check target, operatio
 mode, contextual restrictions, or permission. `EffectName` contains schema-derived
 known identifiers; custom family identifiers remain ordinary strings.
 
-Wire-model keyword constructors and `Model.from_dict(mapping)` now validate with
+Wire-model keyword constructors and `Model.from_dict(mapping)` validate with
 the same structural descriptor engine as generated `parse_*` functions. The
 original composition is retained, including required members, explicit nulls,
 literals, closed enums, forbidden combinations, and union ambiguity. This is the
@@ -207,16 +205,13 @@ non-finite numbers and non-JSON values are rejected. Parsing raw JSON through
 `parse_*` retains decimal precision; decoding it first with standard-library
 `json.loads` cannot recover precision already lost to a float.
 
-**Migration:** constructors previously allowed structurally invalid mappings;
-those calls now fail immediately. Provide valid enum/literal values and all
-required wire members to `from_dict`. A null candidate, a candidate with
+Provide valid enum/literal values and all required wire members to `from_dict`. A null candidate, a candidate with
 `{"value": null}`, and a candidate with `{"value": 0}` remain distinct; omitting a
 required candidate is an error. Generated input projections and capability grant
 builders are construction helpers, not wire decode entrypoints; their final wire
-objects are validated at the existing dispatch/parse boundary. Direct dictionary
+objects are validated at the dispatch/parse boundary. Direct dictionary
 mutation, standard-library `json.loads`, TypedDict annotations, and type assertions
 are not SDK validation entrypoints. Re-parse after manually mutating a mapping.
-
 
 Wire constructors also privately hydrate nested mappings: for example,
 `capability.Capabilities(effects=["modify"], modify={}).modify.input` returns
@@ -229,18 +224,19 @@ Constructor aliases cannot silently overwrite wire keys. Supplying both
 `tool_name=` and `toolName=` raises `TypeError`, even if the values agree. For
 optional/defaulted fields, a lone wire spelling (for example `addressForm=` or
 `protocolVersion=`) is used and validated rather than replaced by a default.
-Required constructor parameters still use their documented Python spelling;
+Required constructor parameters use their documented Python spelling;
 use `from_dict` to decode complete wire-keyed objects. In `from_dict`, distinct
 keys such as `toolName` and `tool_name` remain distinct wire/extension keys.
 
 ### Owned attachments
 
+The owned attachment APIs in this section are not included in the published 0.1.1 package.
+
 Use `Attachment.from_bytes(data)` for immutable Python `bytes`, or
 `Attachment.lazy(async_loader, aclose=async_cleanup)` to defer reading. Bind it
-with the typed input's existing `bind_*_source` method on an item without an
-existing body reference; content IDs, media types,
-and other metadata remain on the content item. These methods do not change the
-wire protocol. See the runnable [file attachment example](examples/file_attachment.py).
+with the typed input's `bind_*_source` method on an item without a body reference.
+Content IDs, media types, and other metadata belong on the content item. See the
+runnable [file attachment example](examples/file_attachment.py).
 
 Dispatch transfers ownership once. Metadata-only and unmatched deliveries do not
 invoke the loader. Selected body deliveries share one immutable snapshot, with
@@ -254,36 +250,28 @@ new attachment (which can share the same immutable `bytes`) instead.
 The default accepted size is 4 MiB and lazy loading timeout is 30 seconds;
 constructors accept `max_bytes` and lazy construction accepts `timeout`. Loaders
 must bound their own allocations. `Attachment(async_stream, ...)` also supports
-the existing bounded `read(size)`/`receive(max_bytes)` source contract. Cleanup
-uses the existing shielded, one-second stream-close bound. Cancellation and
-failure never retry a loader. Python mutable buffers are rejected, and reads
+the bounded `read(size)`/`receive(max_bytes)` source contract. Stream cleanup
+is shielded and bounded to one second. Cancellation and failure never retry a
+loader. Python mutable buffers are rejected, and reads
 return immutable bytes.
 
-No local backing store, staging scope, or result reference resolver is required.
-Remote body delivery still requires an authorized receiver uploader through the
-existing `uploads={backend_id: async_upload}` transport boundary; a local
-attachment cannot create a reference that an arbitrary remote receiver can read.
-Metadata-only delivery and result reads require no uploader. Existing
-`OwnedContentSource`, `ContentSources`, and `ContentContext` APIs remain supported.
+Remote body delivery requires an authorized receiver uploader through
+`uploads={backend_id: async_upload}`. The uploader supplies a reference that the
+receiver can read.
+Metadata-only delivery and result reads require no uploader.
 
 Attachments own their immutable bytes directly. A lazy loader's `bytes` object
-becomes the attachment snapshot without a stream adapter or second buffer;
-upload and result reads borrow that same object. Slot indexes and size/hash
-receipt records contain no separate byte backing. Receiver/server upload storage
-is a separate responsibility and is unchanged.
+becomes the attachment snapshot; upload and result reads borrow that same object.
+Receiver applications manage upload storage.
 
-Existing compaction text and elicitation JSON effects read selected attachment
+Compaction text and elicitation JSON effects read selected attachment
 owners. An accepted replacement creates a new effective attachment; subsequent
 deliveries and the result use that owner. Original attachment size bounds also
 apply to replacements. Generated candidates are available through
-`await result.attachments.read("candidate")`. This does not introduce binary/file
-editing or change effect negotiation. Elicitation results still require their
-original request correlation context; `ContentContext.attachments` can provide
-the original request owner without a resolver. A resolver remains an optional
-adapter for externally supplied references, not a harness backing store.
+`await result.attachments.read("candidate")`. Binary/file editing is not supported.
+Elicitation results require their original request correlation context;
+`ContentContext.attachments` can provide the original request owner without a
+resolver. A resolver is an optional
+adapter for externally supplied references.
 
-The private `PreparedContent.raw` reference-to-bytes map and raw-byte edit staging
-have been removed. Code that inspected preparation internals must use public
-result attachment reads instead. No public storage API is retained as a hidden
-attachment backend; existing stream sources themselves remain single owners.
 Results are invocation-local, not session archives.

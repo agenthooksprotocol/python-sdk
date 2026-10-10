@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/agenthooksprotocol/python-sdk/compare/v0.2.0...v0.3.0) (2026-10-10)
+
+
+### Features
+
+* support inline messages and coordinated attachment uploads ([#16](https://github.com/agenthooksprotocol/python-sdk/issues/16)) ([df75656](https://github.com/agenthooksprotocol/python-sdk/commit/df75656fd4f4f966efa4a9a1d0718f581c8fe9df))
+
 ## [0.2.0](https://github.com/agenthooksprotocol/python-sdk/compare/v0.1.1...v0.2.0) (2026-10-09)
 
 

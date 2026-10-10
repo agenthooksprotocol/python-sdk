@@ -619,7 +619,7 @@ class TransportTests(unittest.TestCase):
         self.assertEqual(outcome[0]["id"], request()["id"])
 
     def canonical_scenarios(self):
-        source = ROOT / "canonical-inline-messages/interop/scenarios.json"
+        source = ROOT / "agent-hooks-protocol/interop/scenarios.json"
         corpus = json.loads(source.read_text())
         for scenario in corpus["scenarios"]:
             result = scenario.get("response", {}).get("result")
@@ -1029,7 +1029,7 @@ class UploadContractTests(unittest.TestCase):
         schema = str(
             Path(
                 os.environ.get(
-                    "AHP_SCHEMA_DIR", ROOT / "canonical-inline-messages/schema/draft"
+                    "AHP_SCHEMA_DIR", ROOT / "agent-hooks-protocol/schema/draft"
                 )
             )
         )

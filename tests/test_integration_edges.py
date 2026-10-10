@@ -78,7 +78,7 @@ class IntegrationEdgeTests(unittest.TestCase):
             os.environ.get(
                 "AHP_SCHEMA_DIR",
                 Path(__file__).resolve().parents[2]
-                / "canonical-inline-messages/schema/draft",
+                / "agent-hooks-protocol/schema/draft",
             )
         )
         schemas = {

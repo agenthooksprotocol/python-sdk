@@ -12,7 +12,6 @@ from agenthooksprotocol.runtime import Validator
 from agenthooksprotocol.interop import (
     open_local,
     loads,
-    validate_descriptor,
     validate_upload_framing,
 )
 
@@ -30,18 +29,6 @@ def receive(request, sub, config, store, validator):
         validator.validate("intercept-request", request)
         if request["id"] != request["params"]["event"]["id"]:
             raise ValueError("correlation")
-        bodies = {}
-
-        # Content authorization is the fixture host's responsibility, before
-        # invoking the public backend dispatcher. A rejected scope has no receipt.
-        event = request["params"]["event"]
-        items = list(event.get("items", [])) + [
-            event[k] for k in ("instructions", "summary") if k in event
-        ]
-        for item in items:
-            ref = item["body"]
-            raw = location(store, sub, ref["ref"]).read_bytes()
-            bodies[item["id"]] = raw.decode("utf-8")
 
         async def intercept(message):
             event = message["params"]["event"]
@@ -53,7 +40,16 @@ def receive(request, sub, config, store, validator):
                         "type": "modify",
                         "target": action["target"],
                         "operation": "replace",
-                        "value": bodies[item["id"]] + action["suffix"],
+                        "value": [
+                            {
+                                "id": action["target"] + ":appended",
+                                "kind": "text",
+                                "mediaType": "text/plain",
+                                "selection": "body",
+                                "text": "".join(part["text"] for part in item)
+                                + action["suffix"],
+                            }
+                        ],
                     }
                 ]
             else:
@@ -71,7 +67,6 @@ def receive(request, sub, config, store, validator):
                         "subscription": sub,
                         "request": request,
                         "response": response,
-                        "bodies": bodies,
                     }
                 )
                 + "\n"
@@ -95,54 +90,31 @@ def exchange(plan, sub, name, snapshot, validator, trace):
         "type": "context.compact." + snapshot["boundary"],
     }
 
-    bodies = {}
-
-    def upload(raw):
-        headers = {
-            "Authorization": "Bearer " + credential["uploadToken"],
-            "Content-Type": "application/octet-stream",
-            "AHP-Content-SHA256": digest(raw),
-        }
-        with open_local(
-            Request(plan["endpoint"] + "/upload", raw, headers)
-        ) as response:
-            descriptor = validate_descriptor(response, raw, validator)
-        bodies[descriptor["ref"]] = raw
-        return descriptor
-
-    def item(item_id, kind, text, role):
-        descriptor = upload(text.encode("utf-8"))
-        return {
-            "id": item_id,
-            "kind": kind,
-            "mediaType": "text/plain",
-            "role": role,
-            "selection": "body",
-            "body": {"ref": descriptor["ref"]},
-        }
-
     if snapshot["boundary"] == "before":
         event.update(
             trigger="manual",
-            items=[item(name + ":context", "user", "conversation", "user")],
-            instructions=item(
-                name + ":instructions",
-                "instructions",
-                snapshot["instructions"],
-                "system",
-            ),
+            items=[
+                {
+                    "id": name + ":context",
+                    "role": "user",
+                    "parts": [
+                        {
+                            "id": name + ":context:text",
+                            "kind": "text",
+                            "mediaType": "text/plain",
+                            "selection": "body",
+                            "text": "conversation",
+                        }
+                    ],
+                }
+            ],
+            instructions=snapshot["instructions"],
         )
     else:
-        summary = snapshot["summary"]
         candidate = snapshot["candidate"]
         event.update(
             parentEventId=name + ":before",
-            summary=item(
-                summary["id"],
-                "summary",
-                snapshot["bodies"][summary["ref"]],
-                "assistant",
-            ),
+            summary=snapshot["summary"],
             removed=[{"id": name + ":context"}],
             execution={"status": "executed"}
             if candidate is None
@@ -158,7 +130,7 @@ def exchange(plan, sub, name, snapshot, validator, trace):
             "capabilities": snapshot["capabilities"],
             "state": {
                 "permission": "none",
-                "candidate": {"value": snapshot["candidate"]["body"]}
+                "candidate": {"value": snapshot["candidate"]["value"]}
                 if snapshot["candidate"]
                 else None,
             },
@@ -192,26 +164,12 @@ def exchange(plan, sub, name, snapshot, validator, trace):
     validator.validate("intercept-response", response)
     if response["id"] != request["id"]:
         raise ValueError("correlation")
-    from agenthooksprotocol import ContentContext
     from agenthooksprotocol.interop import fixture_hooks
 
-    async def resolve(reference):
-        return bodies[reference["ref"]]
-
-    async def upload_content(data):
-        return await anyio.to_thread.run_sync(upload, data)
-
     async def settle():
-        target = "instructions" if snapshot["boundary"] == "before" else "summary"
-        context = ContentContext(
-            resolve=resolve,
-            upload=upload_content,
-            bindings={target: (target,)},
-            principal=sub,
-        )
-        invocation = fixture_hooks(request).begin(request, content=context)
+        invocation = fixture_hooks(request).begin(request)
         invocation.receive(response)
-        return await invocation.accept_content()
+        return invocation.accept()
 
     return anyio.run(settle)
 
@@ -245,7 +203,8 @@ def main():
             )
             downstream = []
             if result["applied"]:
-                downstream.append(result["bodies"][result["summary"]["ref"]])
+                # The fixture delivery trace remains plain text; settled state is inline.
+                downstream.append("".join(part["text"] for part in result["summary"]))
             out.append(
                 {
                     "name": row["name"],

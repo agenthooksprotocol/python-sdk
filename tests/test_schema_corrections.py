@@ -24,7 +24,21 @@ class CorrectedSchemaTests(unittest.TestCase):
                 "target": "context",
                 "operation": "append",
                 "deliverAt": "now",
-                "value": "context",
+                "value": [
+                    {
+                        "id": "context",
+                        "role": "user",
+                        "parts": [
+                            {
+                                "id": "text",
+                                "kind": "text",
+                                "mediaType": "text/plain",
+                                "selection": "body",
+                                "text": "context",
+                            }
+                        ],
+                    }
+                ],
             },
         ]
         for effect in effects:
@@ -78,10 +92,16 @@ class CorrectedSchemaTests(unittest.TestCase):
         req = self.model_request()
         item = {
             "id": "output",
-            "kind": "message",
-            "mediaType": "text/plain",
-            "selection": "metadata",
             "role": "assistant",
+            "parts": [
+                {
+                    "id": "output-text",
+                    "kind": "text",
+                    "mediaType": "text/plain",
+                    "selection": "body",
+                    "text": "output",
+                }
+            ],
         }
         reply = response(
             [
@@ -140,13 +160,22 @@ class CorrectedSchemaTests(unittest.TestCase):
         req = self.model_request()
         child = {
             "id": "child",
-            "kind": "reasoning",
-            "mediaType": "text/plain",
-            "selection": "metadata",
-            "parentItemId": "owner",
+            "parts": [
+                {
+                    "id": "reasoning",
+                    "kind": "text",
+                    "mediaType": "text/plain",
+                    "selection": "body",
+                    "category": "reasoning",
+                    "text": "reasoning",
+                }
+            ],
         }
         req["params"]["event"]["items"] = [child]
         with self.assertRaises(ProtocolError):
             self.validator.validate("intercept-request", req)
         child["role"] = "assistant"
         self.validator.validate("intercept-request", req)
+        child["parts"][0]["role"] = "assistant"
+        with self.assertRaises(ProtocolError):
+            self.validator.validate("intercept-request", req)

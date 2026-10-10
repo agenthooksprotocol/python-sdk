@@ -103,30 +103,63 @@ Observation is one-way. It does not acquire effect authority and never waits for
 
 The attachment receiver verifies byte length and digest through EOF before committing caller-provided immutable storage. Receiver-allocated references are published only after authorization and successful storage commit. Applications choose storage durability and retention.
 
-## Body-bound boundaries
+## Inline messages and specialized boundaries
 
-Use `ContentContext` for MCP elicitation and compaction bodies. Its asynchronous `resolve(reference)` and `upload(bytes)` functions are trusted storage/transport adapters, not application-schema callbacks. `upload` must return a verified `ContentUploadReceipt` (`ref`, `size`, `sha256`) after storage commit. The SDK checks receipt length and digest against the actual uploaded bytes. `resolve` receives only `{ "ref": ... }` and must resolve immutable bytes within its authorized storage scope; event metadata is not an integrity authority. The SDK detects changes to previously resolved bytes.
+Model-visible inputs contain canonical messages with a `role` and ordered
+`parts`. Supported roles are `system`, `developer`, `user`, `assistant`, and
+`tool`. A text part has `kind="text"`, `mediaType="text/plain"`, and inline
+`text`. Serialized JSON is ordinary text. An attachment part has
+`kind="attachment"`, a non-text/non-JSON media type, and an immutable binary
+body. Construction supplies missing message/part IDs and marks them
+`synthesized=True`; explicit IDs remain stable.
 
-Bindings are explicit paths within the canonical event:
+```python
+from agenthooksprotocol import Attachment
 
-| Boundary | Binding |
-| --- | --- |
-| `user_elicitation_request` | `{"request": ("elicitation", "request")}` |
-| `user_elicitation_result` | `{"content": ("elicitation", "result")}` plus `original_request` |
-| `context_compact_before` | `{"instructions": ("instructions",)}` |
-| `context_compact_after` | `{"summary": ("summary",)}` |
+input = {
+    "trigger": "manual",
+    "items": [{"role": "user", "parts": [
+        {"kind": "text", "text": "Review this report."},
+        {"kind": "attachment", "mediaType": "application/pdf",
+         "body": Attachment.from_bytes(pdf_bytes)},
+    ]}],
+}
+result = await hooks.context_compact_before(input, uploads=authorized_uploads)
+async with result:
+    data = await result.attachments.read("context.compact.before.items_parts[0][1]")
+```
 
-Pass `content=context` to the named boundary. An elicitation result needs the original canonical request snapshot; the SDK does not fabricate correlation, form/URL support, or MCP defaults. Metadata and omitted selections do not read body bytes. Changed bodies receive new immutable references, and a changed compaction input invalidates an earlier supplied summary.
+Named hook methods also accept canonical dictionaries with the same direct
+attachment bodies. The runtime collects sources and creates receiver-specific
+references internally. Construction and metadata/omit projection do not read
+or upload attachments. Only schema-owned slots are projected; native payloads,
+extensions, and application arguments are opaque. Selection is a ceiling for
+each receiver's view: metadata/omit views contain no inline text or attachment
+references. Independent receivers apply their own content selections.
 
-### Lazy owned sources
+Compaction `instructions` and `summary` are canonical text-part lists.
+Replacement substitutes the list; merge appends in order. Model-visible message
+list targets (`prompt`, `request`, `response`, and tool `output`) have the same
+list operations. Tool output edits operate on `tool.after.items`; application
+structures are serialized as text parts. Standalone `content` edits require the
+boundary context: `user.message.outbound` uses a message list, and accepted form
+answers at `user.elicitation.result` use an MCP answer object. Object targets such as tool input and workspace changes use shallow object merge. A response settles
+atomically, and each serial receiver sees the committed state. Changed
+compaction instructions invalidate an earlier supplied summary.
 
-`OwnedContentSource(stream, max_bytes=..., timeout=...)` wraps an async native `read(size)`/`receive(size)` stream with `aclose()`. Construction does not read. Size/hash expectations are optional and verified, not trusted. Generated inputs expose named `bind_<slot>_source(source)` methods; repeated content slots additionally require `index=`. For example, `input.bind_items_source(source, index=0)` binds an existing metadata item without putting the stream into wire JSON.
+MCP elicitation `request` and `result` contain selected text parts whose `text`
+is the serialized complete MCP JSON payload. The SDK validates parsed payloads,
+mode grants, form answers, and correlation without inserting defaults. Result
+edits require `original_request=` with the original canonical intercept request
+snapshot; answer-object merge is shallow. Elicitation request bodies are immutable
+to modification effects. No text/JSON upload callback is needed. Metadata and omit selections
+cannot authorize body-dependent effects.
 
-Pass the bound input to a named hook method with `uploads={backend_id: authorized_upload_callback}`. Each callback receives immutable bytes and returns a receiver-allocated canonical upload receipt; it can use `auth.AuthenticatedHTTPTransport.upload(..., authentication=upload_binding)`. Metadata, omit, and unmatched receivers consume no bytes and require no uploader. Selected body delivery snapshots once within limits, hashes actual raw bytes, uploads independently for each authorized destination, and verifies receipts before event delivery. Missing receiver authorization fails before reading. Use `ContentSources` to supply explicit source bindings, or `ContentContext` to resolve canonical references.
-
-Ownership transfers to the source wrapper, then to the hook operation when passed. Streams close on success, failure, cancellation, and unused selection; snapshots release when the call finishes. Closed wrappers also release their reader, so retaining a source or result does not retain the reader’s input buffer. Sources are single-operation values, not concurrently reusable. Call `aclose()` or use an async context manager for a source that never reaches a hook call. Cleanup is shielded and bounded separately from the operation budget.
-
-For custom transport integrations, `begin(canonical_request)` returns a `PendingInvocation` with separate acquisition, cancellation, and acceptance. `exchange(canonical_request)` uses the same settlement engine. Content-aware pending invocations use `await accept_content()`; this keeps upload completion and cancellation inside the publication boundary. The ordinary named-method path does this automatically. Pending invocations retain selected bytes only until acceptance, cancellation, acquisition/finalization failure, or harness close. Failed finalization may be retried and resolves fresh bytes. Harness tracking is weak: dropping a pending invocation does not keep its prepared payload alive. Terminal handles also detach their resolver/uploader context, so retained handles do not retain the caller’s backing store. Returned references continue to resolve in caller-owned storage; cleanup never clears that persistent store.
+For custom transports, `begin(canonical_request)` separates acquisition,
+cancellation, and acceptance; `exchange(canonical_request)` uses the same
+settlement engine. Elicitation correlation can be supplied through
+`ContentContext(original_request=..., bindings={"content": ("elicitation", "result")},
+principal=authenticated_identity)` and `await pending.accept_content()`.
 
 ## Generated models and provenance
 
@@ -150,7 +183,7 @@ Integration tests also use a matching sibling `../agent-hooks-protocol` checkout
 Generated facade constructors retain nested model types through schema
 compositions. MCP connection `gaps` parameters accept lists of typed gap models,
 and HTTP, SSE, stdio, and custom connection objects expose typed location and gap
-attributes. `ModelVisibleItem` has composed content constructors with typed roles.
+attributes. `ModelVisibleItem` is a canonical message with a typed role and ordered parts.
 
 Facade objects are mappings with read-only attributes.
 Optional attributes return `None` when absent; mapping membership still records
@@ -230,48 +263,55 @@ keys such as `toolName` and `tool_name` remain distinct wire/extension keys.
 
 ### Owned attachments
 
-The owned attachment APIs in this section are not included in the published 0.1.1 package.
-
 Use `Attachment.from_bytes(data)` for immutable Python `bytes`, or
-`Attachment.lazy(async_loader, aclose=async_cleanup)` to defer reading. Bind it
-with the typed input's `bind_*_source` method on an item without a body reference.
-Content IDs, media types, and other metadata belong on the content item. See the
-runnable [file attachment example](examples/file_attachment.py).
+`Attachment.lazy(async_loader, aclose=async_cleanup)` to defer reading. Put
+`attachment` directly in an attachment part's `body`. Named `Hooks` methods
+accept both dictionary inputs and typed event inputs with the same owner.
+Metadata belongs on the part. See the runnable
+[file attachment example](examples/file_attachment.py).
 
-Dispatch transfers ownership once. Metadata-only and unmatched deliveries do not
-invoke the loader. Selected body deliveries share one immutable snapshot, with
-receiver-specific references. Successful results own the bytes **or still-unread
-loader**, independent of `Hooks` shutdown. Use `async with result:` or
-`await result.aclose()` and read with
-`await result.attachments.read("context.compact.before.items[0]")`. Cleanup runs
-for unopened sources too. Do not reuse an attachment across invocations; create a
-new attachment (which can share the same immutable `bytes`) instead.
+Dispatch transfers ownership once. Successful results retain the exact owner,
+including an unread loader, independently of `Hooks` shutdown. Callers close
+returned content owners with `async with result:` or `await result.aclose()`.
+Cleanup runs for unopened sources too. Create a new attachment for each
+invocation; eager attachments can share the same immutable `bytes` object.
 
-The default accepted size is 4 MiB and lazy loading timeout is 30 seconds;
-constructors accept `max_bytes` and lazy construction accepts `timeout`. Loaders
-must bound their own allocations. `Attachment(async_stream, ...)` also supports
-the bounded `read(size)`/`receive(max_bytes)` source contract. Stream cleanup
-is shielded and bounded to one second. Cancellation and failure never retry a
-loader. Python mutable buffers are rejected, and reads
-return immutable bytes.
+The default accepted size is 4 MiB and lazy loading timeout is 30 seconds.
+Constructors accept `max_bytes`; lazy construction accepts `timeout`. Loaders
+must bound their own allocations. `Attachment(async_stream, ...)` supports
+bounded `read(size)`/`receive(max_bytes)` streams. Stream cleanup is shielded and
+bounded to one second. Cancellation and failure never retry a loader. Mutable
+buffers are rejected, and reads return immutable bytes.
 
-Remote body delivery requires an authorized receiver uploader through
-`uploads={backend_id: async_upload}`. The uploader supplies a reference that the
-receiver can read.
-Metadata-only delivery and result reads require no uploader.
+Selected remote binary delivery requires an authorized uploader through
+`uploads={backend_id: async_upload}`. Each uploader receives the exact owner's
+immutable bytes and returns a committed receipt with `ref`, `size`, and `sha256`.
+The SDK validates the receipt against the actual bytes before sending the event.
+Upload callbacks remain caller-authorized and scoped to their backend; event
+credentials do not authorize uploads to another destination.
 
-Attachments own their immutable bytes directly. A lazy loader's `bytes` object
-becomes the attachment snapshot; upload and result reads borrow that same object.
-Receiver applications manage upload storage.
+`Hooks(..., max_concurrent_uploads=8)` bounds concurrent binary uploads.
+The value must be a positive integer. Before serial interception
+begins, the SDK prepares uploads for body-selected attachment slots in all
+matched subscriptions, including observers. One attachment owner is read once
+for multiple subscribers. Metadata, omit, and unmatched selections do not read
+or upload its bytes. Result reads and metadata-only delivery require no uploader.
 
-Compaction text and elicitation JSON effects read selected attachment
-owners. An accepted replacement creates a new effective attachment; subsequent
-deliveries and the result use that owner. Original attachment size bounds also
-apply to replacements. Generated candidates are available through
-`await result.attachments.read("candidate")`. Binary/file editing is not supported.
-Elicitation results require their original request correlation context;
-`ContentContext.attachments` can provide the original request owner without a
-resolver. A resolver is an optional
-adapter for externally supplied references.
+Only confirmed receipts are cached, for the exact attachment owner and backend
+ID/subscription index. An uncalled interceptor receives a settled observation
+with its cached reference after denial or stop. Upload failures are handled by
+the affected subscription's failure policy when its delivery is reached; they
+do not prevent independent destinations from preparing their uploads. An upload
+can commit even if an earlier interceptor later removes the attachment or halts
+the chain. Receiver applications manage separate storage durability and retention.
+Cancellation cancels and joins pending upload work and closes invocation-owned
+sources. Overlapping reads join one materialization and receive the same immutable
+bytes or terminal error. Cancelling one reader leaves materialization active for
+other readers; the last cancelled reader or owner closure cancels and joins it.
+The attachment owns its single pending materialization independently of readers.
+A cancelled reader returns and releases its upload permit while another reader
+continues. The last reader or owner closure joins cleanup; completed workers are
+not retained.
 
+Attachments are the sole byte owners. Binary/file editing is not supported.
 Results are invocation-local, not session archives.

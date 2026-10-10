@@ -243,7 +243,9 @@ class UnificationTests(unittest.TestCase):
                     state.Candidate(value=object())
                 # Post-construction dictionary mutation is deliberately not an
                 # SDK decode entrypoint; dispatch must still guard delivery.
-                initial = state.initial(Permission.ALLOW, candidate=state.Candidate(value=None))
+                initial = state.initial(
+                    Permission.ALLOW, candidate=state.Candidate(value=None)
+                )
                 initial["candidate"]["value"] = object()
                 with self.assertRaises(ProtocolError):
                     await hooks.tool_before(facts(), initial_state=initial)
@@ -344,19 +346,22 @@ class UnificationTests(unittest.TestCase):
     def test_content_stage_preserves_transport_cause(self):
         async def run():
             from agenthooksprotocol.auth import TransportFailure
-            from agenthooksprotocol.content import ContentSources, OwnedContentSource
-            from test_owned_content_hooks import harness, payload, INSTRUCTIONS, Stream
+            from agenthooksprotocol.content import Attachment, OwnedAttachment
+            from test_owned_content_hooks import harness, payload, Stream
 
             hooks, transports = harness(["body"])
             stream = Stream()
+            value = payload()
+            part = value["items"][0]["parts"][0]
+            part.pop("size")
+            part.update(selection="body", body=OwnedAttachment(Attachment(stream)))
 
             async def upload(data):
                 raise TransportFailure("SECRET")
 
             async with hooks:
                 result = await hooks.context_compact_before(
-                    payload(),
-                    sources=ContentSources({INSTRUCTIONS: OwnedContentSource(stream)}),
+                    value,
                     uploads={name: upload for name in transports},
                 )
             self.assertEqual(result.diagnostics[0]["stage"], "content")

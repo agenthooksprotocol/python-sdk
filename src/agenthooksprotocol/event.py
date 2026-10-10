@@ -5,8 +5,6 @@ from ._models.event import CallsItemCall as CallsItemCall
 from ._models.event import CallsItemOutcome as CallsItemOutcome
 from ._models.event import CallsItemTool as CallsItemTool
 from ._models.event import ChangesItem as ChangesItem
-from ._models.event import ChangesItemAfter as ChangesItemAfter
-from ._models.event import ChangesItemBefore as ChangesItemBefore
 from ._models.event import ChangesItemOperation as ChangesItemOperation
 from ._models.event import ConfigChangeAfter as ConfigChangeAfter
 from ._models.event import ConfigChangeAfterEvent as ConfigChangeAfterEvent
@@ -22,6 +20,7 @@ from ._models.event import ContextCompactBeforeEvent as ContextCompactBeforeEven
 from ._models.event import ContextCompactBeforeInput as ContextCompactBeforeInput
 from ._models.event import DecidedBy as DecidedBy
 from ._models.event import Decision as Decision
+from ._models.event import Delta as Delta
 from ._models.event import Event as Event
 from ._models.event import ExecutionExecuted as ExecutionExecuted
 from ._models.event import ExecutionSkippedCancelled as ExecutionSkippedCancelled
@@ -55,6 +54,7 @@ from ._models.event import ModelSwitchBefore as ModelSwitchBefore
 from ._models.event import ModelSwitchBeforeEvent as ModelSwitchBeforeEvent
 from ._models.event import ModelSwitchBeforeInput as ModelSwitchBeforeInput
 from ._models.event import Params as Params
+from ._models.event import PartialOutput as PartialOutput
 from ._models.event import Path as Path
 from ._models.event import Previous as Previous
 from ._models.event import Pricing as Pricing

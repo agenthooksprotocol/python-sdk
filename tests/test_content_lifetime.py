@@ -1,4 +1,4 @@
-"""Retained public results and pending handles do not own retired content."""
+"""Binary attachment ownership retires independently of retained call handles."""
 
 import gc
 import hashlib
@@ -7,11 +7,10 @@ import weakref
 
 import anyio
 
-from agenthooksprotocol._content import ContentContext
-from agenthooksprotocol.content import ContentSources, OwnedContentSource
+from agenthooksprotocol import Attachment, OperationCancelledError
 from agenthooksprotocol.runtime import ProtocolError
+from test_attachments import inline_input
 from test_owned_content_hooks import INSTRUCTIONS, Stream, harness, payload
-from test_public_content import Replies, Store, hooks_for, modify, wire
 
 
 class ContentLifetimeTests(unittest.TestCase):
@@ -20,248 +19,325 @@ class ContentLifetimeTests(unittest.TestCase):
             with self.subTest(backend=backend):
                 anyio.run(fn, backend=backend)
 
-    def pending_fixture(self, *, upload=None, transport=None):
-        store = Store()
-        caps = {
-            "effects": ["modify"],
-            "modify": {"instructions": {"replace": True, "merge": False}},
-        }
-        context = ContentContext(
-            resolve=store.resolve,
-            upload=upload or store.upload,
-            bindings={"instructions": ("instructions",)},
-            principal="hook",
-        )
-        hooks = hooks_for(
-            "context.compact.before", caps,
-            transport or Replies([modify("instructions", "new")], []),
-        )
+    def input(self, owner):
+        value = payload()
+        value["items"][0]["parts"][0].pop("id")
+        return inline_input(owner, value)
 
-        def begin(ident):
-            return hooks.begin(wire("context.compact.before", ident, {
-                "trigger": "manual", "items": [],
-                "instructions": store.add("old", "text/plain"),
-            }, caps), content=context)
+    def fixture(self, *, selection="body", upload=None, transport=None):
+        hooks, transports = harness([selection])
+        handles = []
+        receiver = next(iter(transports.values()))
+        original = receiver.request
 
-        return store, hooks, begin
+        async def request(value):
+            handles.extend(p for p in hooks._pending if p not in handles)
+            return await (transport(value) if transport else original(value))
 
-    def assert_retired(self, pending, prepared):
-        self.assertIsNone(pending.prepared_content)
-        self.assertFalse(hasattr(prepared, "raw"))
-        self.assertEqual(prepared.effective, {})
-        self.assertEqual(prepared.selected, {})
-        self.assertIsNone(prepared.context)
+        receiver.request = request
+
+        async def store(data):
+            return {
+                "ref": "urn:blob:hello",
+                "size": len(data),
+                "sha256": hashlib.sha256(data).hexdigest(),
+            }
+
+        async def call(owner):
+            return await hooks.context_compact_before(
+                self.input(owner),
+                uploads={name: upload or store for name in transports},
+            )
+
+        return hooks, handles, call
+
+    def assert_retired(self, hooks, handles, owner):
+        self.assertTrue(owner._closed)
+        self.assertIsNone(owner._snapshot)
+        self.assertIsNone(owner.stream)
+        self.assertEqual(hooks._operations, [])
+        for pending in handles:
+            self.assertIsNone(pending.prepared_content)
+            self.assertIsNone(pending.content)
 
     def test_accept_releases_original_without_invalidating_replacement(self):
         async def run():
-            store, hooks, begin = self.pending_fixture()
+            hooks, handles, call = self.fixture()
+            owner = Attachment.from_bytes(b"hello")
             async with hooks:
-                pending = begin("accepted")
-                await pending.acquire()
-                prepared = pending.prepared_content
-                result = await pending.accept_content()
-                self.assert_retired(pending, prepared)
-                self.assertEqual(result.state["content"]["instructions"], "new")
-                reference = result.event["instructions"]["body"]
-                self.assertEqual(await store.resolve(reference), b"new")
-                self.assertEqual(len(store.bodies), 2)
-                reads = len(store.reads)
-                self.assertIsNone(await pending.accept_content())
-                self.assertEqual(len(store.reads), reads)
+                result = await call(owner)
                 self.assertEqual(hooks._operations, [])
+                self.assertTrue(all(p.prepared_content is None for p in handles))
+                self.assertIs(result.attachments._bindings[INSTRUCTIONS], owner)
+                # A retired invocation cannot invalidate its result-owned bytes.
+                for pending in handles:
+                    self.assertIsNone(await pending.accept_content())
+                self.assertEqual(await result.attachments.read(INSTRUCTIONS), b"hello")
+            self.assertFalse(owner._closed)
+            await result.aclose()
+            self.assert_retired(hooks, handles, owner)
 
         self.run_async(run)
 
     def test_acquisition_failure_timeout_and_cancellation_retire_bytes(self):
         async def run():
             for mode in ("failure", "timeout", "cancel"):
-                captured = []
 
-                class FailingTransport:
-                    async def request(self, request):
-                        captured.append(pending.prepared_content)
-                        if mode == "cancel":
-                            pending.cancel()
-                            await anyio.lowlevel.checkpoint()
-                        if mode == "timeout":
-                            raise TimeoutError("delivery timed out")
-                        raise ValueError("delivery failed")
-
-                store, hooks, begin = self.pending_fixture(transport=FailingTransport())
-                async with hooks:
-                    pending = begin(mode)
+                async def fail(request):
                     if mode == "cancel":
-                        self.assertIsNone(await pending.acquire())
+                        for pending in handles:
+                            pending.cancel()
+                        await anyio.lowlevel.checkpoint()
+                    if mode == "timeout":
+                        raise TimeoutError("delivery timed out")
+                    raise ValueError("delivery failed")
+
+                hooks, handles, call = self.fixture(transport=fail)
+                owner = Attachment.from_bytes(b"hello")
+                async with hooks:
+                    try:
+                        result = await call(owner)
+                    except OperationCancelledError:
+                        self.assertEqual(mode, "cancel")
                     else:
-                        with self.assertRaises((ValueError, TimeoutError)):
-                            await pending.acquire()
-                    self.assert_retired(pending, captured[0])
-                    self.assertEqual(len(store.bodies), 1)
-                    self.assertEqual(hooks._operations, [])
+                        self.assertEqual(result.decision, "deny")
+                        await result.aclose()
+                self.assert_retired(hooks, handles, owner)
 
         self.run_async(run)
 
     def test_idle_cancel_fallback_and_close_release_prepared_bytes(self):
         async def run():
             for terminal in ("cancel", "fallback", "close"):
-                store, hooks, begin = self.pending_fixture()
+                started = anyio.Event()
+
+                async def block(request):
+                    started.set()
+                    await anyio.sleep_forever()
+
+                hooks, handles, call = self.fixture(transport=block)
+                owner = Attachment.from_bytes(b"hello")
+
+                async def dispatch():
+                    try:
+                        result = await call(owner)
+                    except OperationCancelledError:
+                        return
+                    await result.aclose()
+
                 async with hooks:
-                    pending = begin(terminal)
-                    await pending.acquire()
-                    prepared = pending.prepared_content
-                    if terminal == "cancel":
-                        pending.cancel()
-                    elif terminal == "fallback":
-                        await pending.accept_content(fallback=True)
-                    else:
-                        await hooks.aclose()
-                    self.assert_retired(pending, prepared)
-                    self.assertEqual(len(store.bodies), 1)
-                    self.assertEqual(hooks._operations, [])
+                    async with anyio.create_task_group() as group:
+                        group.start_soon(dispatch)
+                        await started.wait()
+                        if terminal == "close":
+                            await hooks.aclose()
+                        elif terminal == "fallback":
+                            for pending in handles:
+                                pending.accept(fallback=True)
+                            group.cancel_scope.cancel()
+                        else:
+                            for pending in handles:
+                                pending.cancel()
+                self.assert_retired(hooks, handles, owner)
 
         self.run_async(run)
 
-    def test_retained_terminal_handles_do_not_retain_caller_store(self):
+    def test_retained_terminal_handles_do_not_retain_caller_reader(self):
         async def run():
             for terminal in ("accepted", "cancelled", "closed", "fallback"):
-                store, hooks, begin = self.pending_fixture()
-                reference = weakref.ref(store)
-                result = None
+                started = anyio.Event()
+
+                async def block(request):
+                    started.set()
+                    await anyio.sleep_forever()
+
+                stream = Stream()
+                reference = weakref.ref(stream)
+                owner = Attachment(stream)
+                del stream
+                hooks, handles, call = self.fixture(
+                    selection="metadata" if terminal == "accepted" else "body",
+                    transport=None if terminal == "accepted" else block,
+                )
+                retained = []
+
+                async def dispatch():
+                    try:
+                        retained.append(await call(owner))
+                    except OperationCancelledError:
+                        pass
+
                 async with hooks:
-                    pending = begin(terminal)
-                    await pending.acquire()
-                    prepared = pending.prepared_content
                     if terminal == "accepted":
-                        result = await pending.accept_content()
-                        returned_bytes = await store.resolve(
-                            result.event["instructions"]["body"]
-                        )
-                        self.assertEqual(returned_bytes, b"new")
-                    elif terminal == "cancelled":
-                        pending.cancel()
-                    elif terminal == "closed":
-                        await hooks.aclose()
+                        retained.append(await call(owner))
+                        returned = await retained[0].attachments.read(INSTRUCTIONS)
+                        self.assertEqual(returned, b"hello")
                     else:
-                        result = await pending.accept_content(fallback=True)
-                    self.assert_retired(pending, prepared)
-                    self.assertIsNone(pending.content)
-                    # Retirement did not destroy persistent receiver data.
-                    self.assertEqual(len(store.bodies), 2 if terminal == "accepted" else 1)
-                    del store, begin
-                    gc.collect()
-                    self.assertIsNone(reference(), terminal)
-                    if terminal != "closed":
-                        self.assertIsNone(await pending.accept_content())
-                        with self.assertRaisesRegex(RuntimeError, "Content-bound"):
-                            pending.accept()
-                # Keep the result, pending handle AND retired preparation alive.
+                        async with anyio.create_task_group() as group:
+                            group.start_soon(dispatch)
+                            await started.wait()
+                            if terminal == "cancelled":
+                                handles[0].cancel()
+                            elif terminal == "closed":
+                                await hooks.aclose()
+                            else:
+                                retained.append(handles[0].accept(fallback=True))
+                                group.cancel_scope.cancel()
+                gc.collect()
+                self.assertIsNone(reference())
+                self.assertIsNone(owner.stream)
+                self.assertTrue(all(p.content is None for p in handles))
                 if terminal == "accepted":
-                    self.assertEqual(result.state["content"]["instructions"], "new")
-                    self.assertEqual(returned_bytes, b"new")
-                    self.assertIs(pending.result, result)
+                    self.assertEqual(
+                        await retained[0].attachments.read(INSTRUCTIONS), returned
+                    )
+                for result in retained:
+                    if result is not None:
+                        await result.aclose()
+                self.assert_retired(hooks, handles, owner)
 
         self.run_async(run)
 
     def test_dropped_pending_is_not_retained_by_harness(self):
         async def run():
-            _, hooks, begin = self.pending_fixture()
+            hooks, handles, call = self.fixture()
+            owner = Attachment.from_bytes(b"hello")
             async with hooks:
-                pending = begin("dropped")
-                await pending.acquire()
-                handle = weakref.ref(pending)
-                prepared = weakref.ref(pending.prepared_content)
-                del pending
+                result = await call(owner)
+                references = [weakref.ref(p) for p in handles]
+                handles.clear()
                 gc.collect()
-                self.assertIsNone(handle())
-                self.assertIsNone(prepared())
+                self.assertTrue(all(ref() is None for ref in references))
                 self.assertEqual(len(hooks._pending), 0)
+                self.assertEqual(await result.attachments.read(INSTRUCTIONS), b"hello")
+            await result.aclose()
 
         self.run_async(run)
 
-    def test_one_pending_retirement_does_not_clear_another_or_shared_store(self):
+    def test_one_pending_retirement_does_not_clear_another_owner(self):
         async def run():
-            store, hooks, begin = self.pending_fixture()
+            first_started, second_started, release = (
+                anyio.Event(),
+                anyio.Event(),
+                anyio.Event(),
+            )
+            requests = []
+
+            async def block(request):
+                requests.append(request)
+                if len(requests) == 1:
+                    first_started.set()
+                    await anyio.sleep_forever()
+                second_started.set()
+                await release.wait()
+                return {
+                    "jsonrpc": "2.0",
+                    "id": request["id"],
+                    "result": {"protocolVersion": "draft", "effects": []},
+                }
+
+            hooks, handles, call = self.fixture(transport=block)
+            first, second = (
+                Attachment.from_bytes(b"hello"),
+                Attachment.from_bytes(b"hello"),
+            )
+            results = []
+
+            async def dispatch(owner):
+                try:
+                    results.append(await call(owner))
+                except OperationCancelledError:
+                    pass
+
             async with hooks:
-                first, second = begin("first"), begin("second")
                 async with anyio.create_task_group() as group:
-                    group.start_soon(first.acquire)
-                    group.start_soon(second.acquire)
-                first.cancel()
-                self.assertIsNone(first.prepared_content)
-                self.assertTrue(second.prepared_content.selected)
-                result = await second.accept_content()
-                self.assertIsNotNone(result)
-                self.assertGreaterEqual(len(store.bodies), 2)
+                    group.start_soon(dispatch, first)
+                    await first_started.wait()
+                    group.start_soon(dispatch, second)
+                    await second_started.wait()
+                    handles[0].cancel()
+                    self.assertFalse(second._closed)
+                    release.set()
+                self.assertTrue(first._closed)
+                self.assertEqual(len(results), 1)
+                self.assertEqual(
+                    await results[0].attachments.read(INSTRUCTIONS), b"hello"
+                )
                 self.assertEqual(hooks._operations, [])
+            await results[0].aclose()
+            self.assert_retired(hooks, handles, first)
+            self.assert_retired(hooks, handles, second)
 
         self.run_async(run)
 
     def test_finalization_failure_and_timeout_retire_bytes(self):
         async def run():
             for error in (ValueError("storage failure"), TimeoutError()):
+
                 async def fail(data):
                     raise error
 
-                store, hooks, begin = self.pending_fixture(upload=fail)
+                hooks, handles, call = self.fixture(upload=fail)
+                owner = Attachment.from_bytes(b"hello")
                 async with hooks:
-                    pending = begin("failed")
-                    await pending.acquire()
-                    prepared = pending.prepared_content
-                    with self.assertRaises(Exception):
-                        await pending.accept_content()
-                    self.assert_retired(pending, prepared)
-                    self.assertIsNone(pending.result)
-                    self.assertEqual(hooks._operations, [])
-                    # Nonterminal failures retain the adapter for a fresh retry.
-                    self.assertIsNotNone(pending.content)
-                    pending.content.upload = store.upload
-                    result = await pending.accept_content()
-                    self.assertEqual(result.state["content"]["instructions"], "new")
-                    self.assertIsNone(pending.content)
+                    result = await call(owner)
+                    self.assertEqual(result.decision, "deny")
+                    await result.aclose()
+                self.assert_retired(hooks, handles, owner)
+                # One-shot byte owners cannot be retried; a fresh owner can.
+                hooks, handles, call = self.fixture()
+                fresh = Attachment.from_bytes(b"hello")
+                async with hooks:
+                    result = await call(fresh)
+                    self.assertEqual(result.diagnostics, [])
+                async with result:
+                    self.assertEqual(
+                        await result.attachments.read(INSTRUCTIONS), b"hello"
+                    )
+                self.assert_retired(hooks, handles, fresh)
 
         self.run_async(run)
 
     def test_cancelled_finalization_retires_after_inflight_work_exits(self):
         async def run():
-            started = anyio.Event()
+            started, exited = anyio.Event(), anyio.Event()
 
             async def block(data):
                 started.set()
-                await anyio.sleep_forever()
+                try:
+                    await anyio.sleep_forever()
+                finally:
+                    exited.set()
 
-            _, hooks, begin = self.pending_fixture(upload=block)
+            hooks, handles, call = self.fixture(upload=block)
+            owner = Attachment.from_bytes(b"hello")
             async with hooks:
-                pending = begin("cancelled")
-                await pending.acquire()
-                prepared = pending.prepared_content
                 async with anyio.create_task_group() as group:
-                    group.start_soon(pending.accept_content)
+                    group.start_soon(call, owner)
                     await started.wait()
-                    pending.cancel()
-                self.assert_retired(pending, prepared)
-                self.assertEqual(hooks._operations, [])
+                    group.cancel_scope.cancel()
+                self.assertTrue(exited.is_set())
+            self.assert_retired(hooks, handles, owner)
 
         self.run_async(run)
 
     def test_retained_unused_source_releases_buffered_reader(self):
         async def run():
-            hooks, _ = harness(["metadata"])
+            hooks, handles, call = self.fixture(selection="metadata")
             stream = Stream()
             reference = weakref.ref(stream)
-            source = OwnedContentSource(stream)
-            sources = ContentSources({INSTRUCTIONS: source})
+            owner = Attachment(stream)
             del stream
             async with hooks:
-                result = await hooks.context_compact_before(payload(), sources=sources)
-                gc.collect()
-                self.assertIsNone(reference())
-                self.assertIsNone(source.stream)
-                self.assertIsNone(source._snapshot)
-                self.assertEqual(sources._references, {})
-                self.assertEqual(sources.bindings, {})
-                self.assertEqual(sources.uploads, {})
+                result = await call(owner)
                 self.assertEqual(result.diagnostics, [])
-                self.assertEqual(hooks._operations, [])
+                self.assertIsNotNone(reference())
+                self.assertIsNone(owner._snapshot)
+            # Unread binary sources now intentionally outlive Hooks.
+            await result.aclose()
+            gc.collect()
+            self.assertIsNone(reference())
+            self.assert_retired(hooks, handles, owner)
 
         self.run_async(run)
 
@@ -271,45 +347,47 @@ class ContentLifetimeTests(unittest.TestCase):
             retained = []
 
             async def upload(data):
-                return {"ref": "urn:blob:hello", "size": len(data),
-                        "sha256": hashlib.sha256(data).hexdigest()}
+                return {
+                    "ref": "urn:blob:hello",
+                    "size": len(data),
+                    "sha256": hashlib.sha256(data).hexdigest(),
+                }
 
             async with hooks:
                 for _ in range(4097):
-                    source = OwnedContentSource(Stream())
-                    sources = ContentSources({INSTRUCTIONS: source})
+                    owner = Attachment(Stream())
                     result = await hooks.context_compact_before(
-                        payload(), sources=sources,
+                        self.input(owner),
                         uploads={name: upload for name in transports},
                     )
                     self.assertEqual(result.diagnostics, [])
-                    self.assertIsNone(source._snapshot)
-                    self.assertIsNone(source.stream)
-                    self.assertEqual(sources._references, {})
-                    self.assertEqual(sources.bindings, {})
-                    self.assertEqual(sources.uploads, {})
+                    self.assertIsNone(owner.stream)
                     self.assertEqual(hooks._operations, [])
-                    retained.append((result, source))
+                    retained.append((result, owner))
                 self.assertEqual(len(retained), 4097)
-                self.assertEqual(retained[0][0].event["instructions"]["selection"],
-                                 "metadata")
                 for transport in transports.values():
                     self.assertEqual(len(transport.requests), 4097)
                     self.assertEqual(
-                        transport.requests[-1]["params"]["event"]["instructions"]["body"],
+                        transport.requests[-1]["params"]["event"]["items"][0]["parts"][
+                            0
+                        ]["body"],
                         {"ref": "urn:blob:hello"},
                     )
+            for result, owner in retained:
+                self.assertEqual(await result.attachments.read(INSTRUCTIONS), b"hello")
+                await result.aclose()
+                self.assert_retired(hooks, [], owner)
 
-        # Exercise the full public path; the other lifetime cases cover both loops.
+        # The remaining lifetime scenarios exercise both async backends.
         anyio.run(run)
 
     def test_live_source_limit_still_fails_and_releases_reader(self):
         async def run():
-            source = OwnedContentSource(Stream(), max_bytes=4)
+            owner = Attachment(Stream(), max_bytes=4)
             with self.assertRaises(ProtocolError):
-                await source.snapshot()
-            self.assertIsNone(source._snapshot)
-            self.assertIsNone(source.stream)
-            await source.aclose()
+                await owner.snapshot()
+            self.assertIsNone(owner._snapshot)
+            self.assertIsNone(owner.stream)
+            await owner.aclose()
 
         self.run_async(run)

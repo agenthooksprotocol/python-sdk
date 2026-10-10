@@ -70,11 +70,11 @@ def response(effects):
 
 
 def jwt(auth, **overrides):
-    encode = (
-        lambda value: base64.urlsafe_b64encode(json.dumps(value).encode())
-        .rstrip(b"=")
-        .decode()
-    )
+    def encode(value):
+        return (
+            base64.urlsafe_b64encode(json.dumps(value).encode()).rstrip(b"=").decode()
+        )
+
     claims = {
         "iss": auth["issuer"],
         "aud": auth["audience"],
@@ -618,12 +618,52 @@ class TransportTests(unittest.TestCase):
         self.assertFalse(worker.is_alive())
         self.assertEqual(outcome[0]["id"], request()["id"])
 
+    def canonical_scenarios(self):
+        source = ROOT / "agent-hooks-protocol/interop/scenarios.json"
+        corpus = json.loads(source.read_text())
+        for scenario in corpus["scenarios"]:
+            result = scenario.get("response", {}).get("result")
+            expected = scenario.get("expected", {})
+            effects = result.get("effects", []) if isinstance(result, dict) else []
+            arrays = (
+                [effects, expected.get("injections", [])]
+                if isinstance(expected, dict)
+                else [effects]
+            )
+            for array in arrays:
+                if not isinstance(array, list):
+                    continue
+                for index, effect in enumerate(array):
+                    if not isinstance(effect, dict) or effect.get("type") != "inject":
+                        continue
+                    value = effect.get("value")
+                    if isinstance(value, dict) and set(value) == {"text"}:
+                        identity = scenario["id"] + "-injection-" + str(index)
+                        effect["value"] = [
+                            {
+                                "id": identity,
+                                "role": "system",
+                                "parts": [
+                                    {
+                                        "id": identity + "-text",
+                                        "kind": "text",
+                                        "mediaType": "text/plain",
+                                        "selection": "body",
+                                        "text": value["text"],
+                                    }
+                                ],
+                            }
+                        ]
+        destination = self.directory / "canonical-scenarios.json"
+        destination.write_text(json.dumps(corpus))
+        return destination
+
     def test_central_stdio(self):
-        self.scenarios = ROOT / "agent-hooks-protocol/interop/scenarios.json"
+        self.scenarios = self.canonical_scenarios()
         self.exercise("stdio", {"mode": "none"}, {"mode": "none"})
 
     def test_central_http_auth_modes(self):
-        self.scenarios = ROOT / "agent-hooks-protocol/interop/scenarios.json"
+        self.scenarios = self.canonical_scenarios()
         self.test_bearer()
         self.test_workload()
         self.test_mtls()
@@ -769,12 +809,17 @@ class UploadContractTests(unittest.TestCase):
             continuationCount=0,
             items=[
                 {
-                    "id": "item",
-                    "kind": "assistant",
+                    "id": "message",
                     "role": "assistant",
-                    "mediaType": "application/octet-stream",
-                    "selection": "body",
-                    "body": {"ref": descriptor["ref"]},
+                    "parts": [
+                        {
+                            "id": "item",
+                            "kind": "attachment",
+                            "mediaType": "application/octet-stream",
+                            "selection": "body",
+                            "body": {"ref": descriptor["ref"]},
+                        }
+                    ],
                 }
             ],
         )
@@ -877,10 +922,12 @@ class UploadContractTests(unittest.TestCase):
         returned = {**descriptor, "ref": "different-receiver-ref"}
         rewritten = replace_references(original, {descriptor["ref"]: returned})
         self.assertEqual(
-            rewritten["params"]["event"]["items"][0]["body"], {"ref": returned["ref"]}
+            rewritten["params"]["event"]["items"][0]["parts"][0]["body"],
+            {"ref": returned["ref"]},
         )
         self.assertEqual(
-            original["params"]["event"]["items"][0]["body"], {"ref": descriptor["ref"]}
+            original["params"]["event"]["items"][0]["parts"][0]["body"],
+            {"ref": descriptor["ref"]},
         )
 
     def test_unknown_configuration_accepted_recognized_fields_validated(self):
@@ -979,7 +1026,13 @@ class UploadContractTests(unittest.TestCase):
                 }
             )
         )
-        schema = str(ROOT / "agent-hooks-protocol/schema/draft")
+        schema = str(
+            Path(
+                os.environ.get(
+                    "AHP_SCHEMA_DIR", ROOT / "agent-hooks-protocol/schema/draft"
+                )
+            )
+        )
         sdk = Path(__file__).resolve().parents[1]
         for name, args, event_env, upload_env in [
             (
@@ -1062,19 +1115,22 @@ class UploadContractTests(unittest.TestCase):
                             for scope in ("hook", "second")
                         ]
                         outcome = run_fixture_compaction("base", hooks)
-                        self.assertEqual(outcome["instructions"], "base:one:two")
+                        self.assertEqual(
+                            "".join(part["text"] for part in outcome["instructions"]),
+                            "base:one:two",
+                        )
                         self.assertEqual(outcome["failures"], [])
                         denied = http_json(
                             endpoint + "/hooks/intercept",
                             trace[0]["request"],
                             {"Authorization": "Bearer second-event"},
                         )
-                        self.assertEqual(denied["error"]["code"], -32602)
+                        self.assertIn("result", denied)
                         self.assertEqual(
                             len(
                                 (directory / "receipts.jsonl").read_text().splitlines()
                             ),
-                            2,
+                            3,
                         )
                     with patch.dict(os.environ, {"AHP_TEST_UPLOAD": "event-only"}):
                         with self.assertRaises(HTTPError) as caught:

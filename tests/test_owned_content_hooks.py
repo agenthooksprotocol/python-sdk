@@ -7,16 +7,11 @@ import unittest
 import anyio
 
 from agenthooksprotocol import Hooks
-from agenthooksprotocol._boundaries import CONTENT_SOURCE_SLOTS
 from agenthooksprotocol._hooks import HooksClosedError
-from agenthooksprotocol.content import ContentSources, OwnedContentSource
+from agenthooksprotocol.content import Attachment, OwnedAttachment
 
 
-INSTRUCTIONS = next(
-    name
-    for name, value in CONTENT_SOURCE_SLOTS.items()
-    if value == ("context.compact.before", ("instructions",))
-)
+INSTRUCTIONS = "context.compact.before.items_parts[0][0]"
 
 
 class Stream:
@@ -59,15 +54,29 @@ class Transport:
 def payload():
     return {
         "trigger": "manual",
-        "items": [],
-        "instructions": {
-            "id": "instructions",
-            "kind": "content",
-            "mediaType": "text/plain",
-            "selection": "metadata",
-            "size": 5,
-        },
+        "items": [
+            {
+                "role": "user",
+                "parts": [
+                    {
+                        "id": "instructions",
+                        "kind": "attachment",
+                        "mediaType": "application/pdf",
+                        "selection": "metadata",
+                        "size": 5,
+                    }
+                ],
+            }
+        ],
     }
+
+
+def owned_payload(stream):
+    value = payload()
+    part = value["items"][0]["parts"][0]
+    part.pop("size")
+    part.update(selection="body", body=OwnedAttachment(Attachment(stream)))
+    return value
 
 
 def harness(selections, *, mode="intercept", unmatched=False):
@@ -135,17 +144,19 @@ class OwnedContentHooksTests(unittest.TestCase):
 
                 return upload
 
-            sources = ContentSources({INSTRUCTIONS: OwnedContentSource(stream)})
             async with hooks:
                 result = await hooks.context_compact_before(
-                    payload(),
-                    sources=sources,
+                    owned_payload(stream),
                     uploads={name: uploader(name) for name in transports},
                 )
             self.assertEqual(result.diagnostics, [])
-            self.assertEqual(writes, [(name, b"hello") for name in transports])
+            self.assertEqual(await result.attachments.read(INSTRUCTIONS), b"hello")
+            await result.aclose()
+            self.assertCountEqual(writes, [(name, b"hello") for name in transports])
             for name, transport in transports.items():
-                body = transport.requests[0]["params"]["event"]["instructions"]["body"]
+                body = transport.requests[0]["params"]["event"]["items"][0]["parts"][0][
+                    "body"
+                ]
                 self.assertEqual(body["ref"], f"urn:blob:{name}")
                 self.assertEqual(transport.closes, 0)
             self.assertEqual((stream.reads, stream.closes), (2, 1))
@@ -163,12 +174,11 @@ class OwnedContentHooksTests(unittest.TestCase):
                 stream = Stream()
                 async with hooks:
                     result = await hooks.context_compact_before(
-                        payload(),
-                        sources=ContentSources(
-                            {INSTRUCTIONS: OwnedContentSource(stream)}
-                        ),
+                        owned_payload(stream),
                     )
                 self.assertEqual(result.diagnostics, [])
+                self.assertEqual(stream.closes, 0)
+                await result.aclose()
                 self.assertEqual((stream.reads, stream.closes), (0, 1))
                 transport = next(iter(transports.values()))
                 self.assertEqual(len(transport.requests), 0 if unmatched else 1)
@@ -194,10 +204,7 @@ class OwnedContentHooksTests(unittest.TestCase):
                 with self.assertRaises(TimeoutError):
                     with anyio.fail_after(5) as budget:
                         await hooks.context_compact_before(
-                            payload(),
-                            sources=ContentSources(
-                                {INSTRUCTIONS: OwnedContentSource(stream)}
-                            ),
+                            owned_payload(stream),
                             uploads={name: upload for name in transports},
                         )
             self.assertEqual(cancelled, [True])
@@ -221,10 +228,7 @@ class OwnedContentHooksTests(unittest.TestCase):
             async def call():
                 try:
                     await hooks.context_compact_before(
-                        payload(),
-                        sources=ContentSources(
-                            {INSTRUCTIONS: OwnedContentSource(stream)}
-                        ),
+                        owned_payload(stream),
                         uploads={name: upload for name in transports},
                     )
                 except HooksClosedError:
@@ -263,34 +267,31 @@ class OwnedContentHooksTests(unittest.TestCase):
 
             async with hooks:
                 result = await hooks.context_compact_before(
-                    payload(),
-                    sources=ContentSources(
-                        {INSTRUCTIONS: OwnedContentSource(stream)},
-                        uploads={name: upload for name in transports},
-                    ),
+                    owned_payload(stream),
+                    uploads={name: upload for name in transports},
                 )
             self.assertEqual(result.diagnostics, [])
+            self.assertEqual(await result.attachments.read(INSTRUCTIONS), b"hello")
+            await result.aclose()
             self.assertEqual(writes, [b"hello"])
             self.assertEqual(stream.closes, 1)
             self.assertEqual(len(next(iter(transports.values())).notifications), 1)
 
         self.run_async(run)
 
-    def test_generated_input_binds_indexed_source_without_wire_source_objects(self):
+    def test_generated_input_extracts_indexed_owner_without_wire_source_objects(self):
         from agenthooksprotocol.event import ContextCompactBeforeInput
 
         async def run():
             hooks, transports = harness(["body"])
             stream = Stream()
-            item = payload()["instructions"]
-            item["role"] = "user"
-            original = ContextCompactBeforeInput(
-                trigger="manual", items=[deepcopy(item)]
-            )
-            bound = original.bind_items_source(OwnedContentSource(stream), index=0)
+            original = ContextCompactBeforeInput(**payload())
+            bound = ContextCompactBeforeInput(**owned_payload(stream))
             self.assertEqual(original.content_sources, {})
-            self.assertTrue(bound.content_sources)
-            self.assertEqual(bound.to_wire(), original.to_wire())
+            self.assertEqual(set(bound.content_sources), {INSTRUCTIONS})
+            part = bound.to_wire()["items"][0]["parts"][0]
+            self.assertEqual(part["body"], {"ref": "ahp:owned:pending"})
+            self.assertEqual((stream.reads, stream.closes), (0, 0))
             writes = []
 
             async def upload(data):
@@ -306,27 +307,29 @@ class OwnedContentHooksTests(unittest.TestCase):
                     bound, uploads={name: upload for name in transports}
                 )
             self.assertEqual(result.diagnostics, [])
+            self.assertEqual(await result.attachments.read(INSTRUCTIONS), b"hello")
+            await result.aclose()
             delivered = next(iter(transports.values())).requests[0]["params"]["event"][
                 "items"
-            ][0]
+            ][0]["parts"][0]
             self.assertEqual(delivered["body"]["ref"], "urn:blob:indexed")
             self.assertEqual(writes, [b"hello"])
             self.assertEqual((stream.reads, stream.closes), (2, 1))
 
         self.run_async(run)
 
-    def test_generated_named_input_unused_source_is_closed(self):
+    def test_generated_input_unused_attachment_is_result_owned(self):
         from agenthooksprotocol.event import ContextCompactBeforeInput
 
         async def run():
             hooks, transports = harness(["metadata"])
             stream = Stream()
-            bound = ContextCompactBeforeInput(**payload()).bind_instructions_source(
-                OwnedContentSource(stream)
-            )
+            bound = ContextCompactBeforeInput(**owned_payload(stream))
             async with hooks:
                 result = await hooks.context_compact_before(bound)
             self.assertEqual(result.diagnostics, [])
+            self.assertEqual(stream.closes, 0)
+            await result.aclose()
             self.assertEqual((stream.reads, stream.closes), (0, 1))
 
         self.run_async(run)

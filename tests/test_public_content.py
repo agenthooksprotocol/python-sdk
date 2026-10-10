@@ -1,10 +1,11 @@
 """Public content-bound settlement on asyncio and Trio, including negative cases."""
 
 from copy import deepcopy
-import hashlib
 import json
 import unittest
 from uuid import uuid4
+
+from jsonschema.exceptions import ValidationError
 
 import anyio
 
@@ -12,43 +13,38 @@ from agenthooksprotocol import Hooks
 from agenthooksprotocol._content import ContentContext
 
 
+def text_parts(value):
+    return [
+        {
+            "id": str(uuid4()),
+            "kind": "text",
+            "mediaType": "text/plain",
+            "selection": "body",
+            "text": value,
+        }
+    ]
+
+
 class Store:
+    """Inline fixture factory; callbacks must never be needed for text."""
+
     def __init__(self):
-        self.bodies = {}
         self.reads = []
         self.writes = []
 
     def add(self, value, media="application/json", role=None):
-        data = value.encode() if isinstance(value, str) else json.dumps(value).encode()
-        reference = self.reference(data)
-        self.bodies[reference["ref"]] = data
-        item = {
-            "id": str(uuid4()),
-            "kind": "content",
-            "mediaType": media,
-            "selection": "body",
-            "body": {"ref": reference["ref"]},
-        }
+        item = text_parts(value if isinstance(value, str) else json.dumps(value))[0]
         if role is not None:
             item["role"] = role
         return item
 
-    def reference(self, data):
-        return {
-            "ref": "urn:blob:" + str(uuid4()),
-            "size": len(data),
-            "sha256": hashlib.sha256(data).hexdigest(),
-        }
-
     async def resolve(self, reference):
         self.reads.append(deepcopy(reference))
-        return self.bodies[reference["ref"]]
+        raise AssertionError("Inline text must not resolve storage")
 
     async def upload(self, data):
-        reference = self.reference(data)
-        self.bodies[reference["ref"]] = data
-        self.writes.append(reference)
-        return reference
+        self.writes.append(data)
+        raise AssertionError("Inline text must not upload storage")
 
 
 class Replies:
@@ -162,6 +158,8 @@ def elicitation(store):
 
 
 def modify(target, value):
+    if target in ("instructions", "summary") and isinstance(value, str):
+        value = text_parts(value)
     return {"type": "modify", "target": target, "operation": "replace", "value": value}
 
 
@@ -194,8 +192,7 @@ class PublicContentTests(unittest.TestCase):
                 self.assertEqual(result.state["messages"], ["audit"])
                 self.assertEqual(len(result.accepted_responses), 1)
                 self.assertEqual(store.writes, [])
-                if selection != "body":
-                    self.assertEqual(store.reads, [])
+                self.assertEqual(store.reads, [])
 
         self.run_async(run)
 
@@ -239,15 +236,17 @@ class PublicContentTests(unittest.TestCase):
                     self.assertEqual(settled.state["messages"], [])
                     self.assertEqual(settled.accepted_responses, [])
                     self.assertEqual(store.writes, [])
+                    self.assertEqual(store.reads, [])
                 else:
                     self.assertEqual(settled.diagnostics, [])
                     self.assertEqual(settled.state["messages"], ["audit"])
                     self.assertEqual(len(settled.accepted_responses), 1)
-                    self.assertEqual(len(store.writes), 1)
+                    self.assertEqual(store.writes, [])
+                    self.assertEqual(store.reads, [])
 
         self.run_async(run)
 
-    def test_elicitation_result_uses_original_snapshot_and_new_immutable_body(self):
+    def test_elicitation_result_uses_original_snapshot_and_new_inline_text(self):
         async def run():
             store = Store()
             request, result = elicitation(store)
@@ -270,14 +269,16 @@ class PublicContentTests(unittest.TestCase):
                 settled.state["content"]["content"],
                 {"action": "accept", "content": {"ok": True}},
             )
-            reference = settled.event["elicitation"]["result"]["body"]
-            self.assertNotEqual(
-                reference, result["params"]["event"]["elicitation"]["result"]["body"]
-            )
+            part = settled.event["elicitation"]["result"]
+            self.assertEqual(part["kind"], "text")
+            self.assertNotIn("body", part)
+            self.assertEqual(json.loads(part["text"])["content"], {"ok": True})
             self.assertEqual(
-                json.loads(store.bodies[reference["ref"]])["content"], {"ok": True}
+                result["params"]["event"]["elicitation"]["result"]["text"],
+                json.dumps({"action": "accept", "content": {"ok": False}}),
             )
-            self.assertEqual(len(store.writes), 1)
+            self.assertEqual(store.writes, [])
+            self.assertEqual(store.reads, [])
             self.assertFalse(settled.state["content"]["externalCompletion"])
 
         self.run_async(run)
@@ -308,10 +309,11 @@ class PublicContentTests(unittest.TestCase):
                         request["params"]["event"], content=context
                     )
                 self.assertEqual(bool(settled.accepted_responses), valid)
-                self.assertEqual(len(store.writes), int(valid))
+                self.assertEqual(store.writes, [])
+                self.assertEqual(store.reads, [])
                 if valid:
                     self.assertEqual(settled.candidate["value"], answer)
-                    self.assertIn("candidate", settled.state["content_references"])
+                    self.assertNotIn("content_references", settled.state)
                 else:
                     self.assertEqual(settled.decision, "deny")
 
@@ -343,8 +345,7 @@ class PublicContentTests(unittest.TestCase):
                     )
                 self.assertEqual(settled.decision, "deny")
                 self.assertEqual(store.writes, [])
-                if not bad_mode:
-                    self.assertEqual(store.reads, [])
+                self.assertEqual(store.reads, [])
 
         self.run_async(run)
 
@@ -375,6 +376,7 @@ class PublicContentTests(unittest.TestCase):
                 self.assertEqual(store.writes, [])
                 view = transport.requests[0]["params"]["event"]["elicitation"]["result"]
                 self.assertEqual(view["selection"], selection)
+                self.assertNotIn("text", view)
                 self.assertNotIn("body", view)
                 self.assertEqual(
                     settled.event["elicitation"]["result"],
@@ -389,34 +391,26 @@ class PublicContentTests(unittest.TestCase):
             payload = {
                 "trigger": "manual",
                 "items": [],
-                "instructions": store.add("old", "text/plain"),
+                "instructions": text_parts("old"),
             }
             caps = {
                 "effects": ["modify", "return", "deny", "message"],
                 "modify": {"instructions": {"replace": True, "merge": False}},
             }
-            context = ContentContext(
-                resolve=store.resolve,
-                upload=store.upload,
-                bindings={"instructions": ("instructions",)},
-                principal="hook",
-            )
             transport = Replies(
-                [{"type": "return", "value": "supplied"}],
+                [{"type": "return", "value": text_parts("supplied")}],
                 [modify("instructions", "new")],
                 [],
             )
             async with hooks_for(
                 "context.compact.before", caps, transport, count=3
             ) as hooks:
-                settled = await hooks.context_compact_before(payload, content=context)
+                settled = await hooks.context_compact_before(payload)
             self.assertEqual(settled.diagnostics, [])
             self.assertIsNone(settled.candidate)
-            self.assertEqual(settled.state["content"]["instructions"], "new")
-            self.assertEqual(
-                store.bodies[settled.event["instructions"]["body"]["ref"]], b"new"
-            )
-            self.assertEqual(len(store.writes), 2)
+            self.assertEqual(settled.event["instructions"][0]["text"], "new")
+            self.assertEqual(store.reads, [])
+            self.assertEqual(store.writes, [])
             self.assertEqual(
                 transport.requests[2]["params"]["event"]["instructions"],
                 settled.event["instructions"],
@@ -428,7 +422,7 @@ class PublicContentTests(unittest.TestCase):
         async def run():
             store = Store()
             payload = {
-                "summary": store.add("generated", "text/plain", "assistant"),
+                "summary": text_parts("generated"),
                 "removed": [],
                 "execution": {"status": "executed"},
             }
@@ -436,133 +430,127 @@ class PublicContentTests(unittest.TestCase):
                 "effects": ["modify", "message"],
                 "modify": {"summary": {"replace": True, "merge": False}},
             }
-            context = ContentContext(
-                resolve=store.resolve,
-                upload=store.upload,
-                bindings={"summary": ("summary",)},
-                principal="hook",
-            )
             async with hooks_for(
                 "context.compact.after", caps, Replies([modify("summary", "redacted")])
             ) as hooks:
-                settled = await hooks.context_compact_after(payload, content=context)
+                settled = await hooks.context_compact_after(payload)
             self.assertEqual(settled.diagnostics, [])
-            self.assertEqual(settled.state["content"]["summary"], "redacted")
+            self.assertEqual(settled.event["summary"][0]["text"], "redacted")
             self.assertEqual(settled.input, {})
-            self.assertEqual(settled.event["summary"]["id"], payload["summary"]["id"])
-            self.assertEqual(
-                store.bodies[settled.event["summary"]["body"]["ref"]], b"redacted"
-            )
+            self.assertEqual(store.reads, [])
+            self.assertEqual(store.writes, [])
 
         self.run_async(run)
 
-    def test_atomic_invalid_batch_and_upload_failure_publish_nothing(self):
+    def test_atomic_invalid_batch_and_unused_upload_publish_inline_only(self):
         async def run():
-            for failure in ("invalid", "upload"):
+            for failure in ("invalid", "unused-upload"):
                 store = Store()
-                payload = {
-                    "trigger": "manual",
-                    "items": [],
-                    "instructions": store.add("old", "text/plain"),
-                }
-                caps = {
-                    "effects": ["modify", "return"],
-                    "modify": {"instructions": {"replace": True, "merge": False}},
-                }
-
-                async def broken(data):
-                    raise OSError("receiver unavailable")
-
+                request, _ = elicitation(store)
+                caps = request["params"]["capabilities"]
+                caps["effects"].append("message")
                 context = ContentContext(
                     resolve=store.resolve,
-                    upload=broken if failure == "upload" else store.upload,
-                    bindings={"instructions": ("instructions",)},
+                    upload=store.upload,
+                    bindings={"request": ("elicitation", "request")},
                     principal="hook",
                 )
-                effects = [modify("instructions", "new")]
-                if failure == "invalid":
-                    effects.append({"type": "return", "value": 123})
+                answer = {
+                    "action": "accept",
+                    "content": {} if failure == "invalid" else {"ok": True},
+                }
+                effects = [
+                    {"type": "message", "text": "audit"},
+                    {"type": "return", "value": answer},
+                ]
                 async with hooks_for(
-                    "context.compact.before", caps, Replies(effects)
+                    "user.elicitation.request", caps, Replies(effects)
                 ) as hooks:
-                    pending = hooks.begin(
-                        wire("context.compact.before", "compact", payload, caps),
-                        content=context,
-                    )
+                    pending = hooks.begin(request, content=context)
                     await pending.acquire()
-                    with self.assertRaises((ValueError, OSError)):
-                        await pending.accept_content()
-                    self.assertEqual(pending.lifecycle.states, {})
-                    self.assertIsNone(pending.result)
+                    if failure == "invalid":
+                        with self.assertRaises(ValidationError):
+                            await pending.accept_content()
+                        self.assertEqual(pending.lifecycle.states, {})
+                        self.assertIsNone(pending.result)
+                    else:
+                        settled = await pending.accept_content()
+                        self.assertEqual(settled.candidate["value"], answer)
+                        self.assertEqual(settled.state["messages"], ["audit"])
+                self.assertEqual(store.reads, [])
                 self.assertEqual(store.writes, [])
 
         self.run_async(run)
 
-    def test_resolver_identity_is_derived_from_actual_bytes(self):
+    def test_prepared_inline_content_has_immutable_request_without_snapshot_owners(
+        self,
+    ):
         from agenthooksprotocol._content import PreparedContent
-        from agenthooksprotocol.runtime import ProtocolError, Validator
+        from agenthooksprotocol.runtime import Validator
 
         async def run():
             store = Store()
-            item = store.add("original", "text/plain")
+            request, _ = elicitation(store)
             context = ContentContext(
-                resolve=store.resolve,
-                upload=store.upload,
-                bindings={"instructions": ("instructions",)},
-                principal="hook",
+                bindings={"request": ("elicitation", "request")}, principal="hook"
             )
-            prepared = PreparedContent(context, {}, Validator())
-            self.assertEqual(await (await prepared._read(item)).snapshot(), b"original")
-            self.assertEqual(store.reads, [{"ref": item["body"]["ref"]}])
-            store.bodies[item["body"]["ref"]] = b"changed"
-            with self.assertRaises(ProtocolError):
-                await PreparedContent(context, {}, Validator())._read(item)
+            prepared = PreparedContent(context, request, Validator())
+            original = deepcopy(request)
+            request["params"]["event"]["elicitation"]["request"]["text"] = "changed"
+            await prepared.load()
+            self.assertEqual(prepared.request, original)
+            self.assertFalse(hasattr(prepared, "_read"))
+            self.assertFalse(hasattr(prepared, "owners"))
+            self.assertEqual(store.reads, [])
+            self.assertEqual(store.writes, [])
 
         self.run_async(run)
 
-    def test_unavailable_bytes_and_reused_upload_reference_fail_closed(self):
+    def test_invalid_inline_json_and_unselected_text_fail_closed(self):
         async def run():
-            for failure in ("corrupt", "reused", "metadata"):
+            for failure in (
+                "invalid-json",
+                "duplicate-key",
+                "nonfinite",
+                "metadata",
+                "omit",
+            ):
                 store = Store()
-                item = store.add("old", "text/plain")
-                payload = {"trigger": "manual", "items": [], "instructions": item}
-                caps = {
-                    "effects": ["modify"],
-                    "modify": {"instructions": {"replace": True, "merge": False}},
-                }
-
-                async def corrupt(reference):
-                    # A trusted resolver must reject unavailable/corrupt storage.
-                    raise ValueError("Stored content unavailable")
-
-                async def reused(data):
-                    return {
-                        **item["body"],
-                        "size": len(data),
-                        "sha256": hashlib.sha256(data).hexdigest(),
-                    }
-
+                request, _ = elicitation(store)
+                part = request["params"]["event"]["elicitation"]["request"]
+                if failure == "invalid-json":
+                    part["text"] = "not JSON"
+                elif failure == "duplicate-key":
+                    part["text"] = '{"mode":"form","mode":"url"}'
+                elif failure == "nonfinite":
+                    part["text"] = '{"mode":"form","message":NaN}'
                 context = ContentContext(
-                    resolve=corrupt if failure == "corrupt" else store.resolve,
-                    upload=reused if failure == "reused" else store.upload,
-                    bindings={"instructions": ("instructions",)},
+                    resolve=store.resolve,
+                    upload=store.upload,
+                    bindings={"request": ("elicitation", "request")},
                     principal="hook",
                 )
+                caps = request["params"]["capabilities"]
+                effects = [
+                    {
+                        "type": "return",
+                        "value": {"action": "accept", "content": {"ok": True}},
+                    }
+                ]
                 async with hooks_for(
-                    "context.compact.before",
+                    "user.elicitation.request",
                     caps,
-                    Replies([modify("instructions", "new")]),
-                    selection="metadata" if failure == "metadata" else "body",
+                    Replies(effects),
+                    selection=failure if failure in ("metadata", "omit") else "body",
                 ) as hooks:
-                    result = await hooks.context_compact_before(
-                        payload, content=context
+                    result = await hooks.user_elicitation_request(
+                        request["params"]["event"], content=context
                     )
                 self.assertEqual(result.decision, "deny")
                 self.assertEqual(result.accepted_responses, [])
-                self.assertEqual(result.event, {**result.event, "instructions": item})
+                self.assertEqual(result.event["elicitation"]["request"], part)
+                self.assertEqual(store.reads, [])
                 self.assertEqual(store.writes, [])
-                if failure == "metadata":
-                    self.assertEqual(store.reads, [])
 
         self.run_async(run)
 
@@ -607,6 +595,7 @@ class PublicContentTests(unittest.TestCase):
                 self.assertEqual(result.decision, "deny")
                 self.assertEqual(result.accepted_responses, [])
                 self.assertEqual(store.writes, [])
+                self.assertEqual(store.reads, [])
 
         self.run_async(run)
 
@@ -616,21 +605,15 @@ class PublicContentTests(unittest.TestCase):
             payload = {
                 "trigger": "manual",
                 "items": [],
-                "instructions": store.add("old", "text/plain"),
+                "instructions": text_parts("old"),
             }
             caps = {
                 "effects": ["modify", "return"],
                 "modify": {"instructions": {"replace": True, "merge": False}},
             }
-            context = ContentContext(
-                resolve=store.resolve,
-                upload=store.upload,
-                bindings={"instructions": ("instructions",)},
-                principal="hook",
-            )
             transport = Replies(
                 [
-                    {"type": "return", "value": "summary-for-final"},
+                    {"type": "return", "value": text_parts("summary-for-final")},
                     modify("instructions", "final"),
                 ],
                 [],
@@ -638,94 +621,102 @@ class PublicContentTests(unittest.TestCase):
             async with hooks_for(
                 "context.compact.before", caps, transport, count=2
             ) as hooks:
-                result = await hooks.context_compact_before(payload, content=context)
+                result = await hooks.context_compact_before(payload)
             self.assertEqual(result.diagnostics, [])
-            self.assertEqual(result.candidate["value"], "summary-for-final")
-            self.assertEqual(result.content["instructions"], "final")
-            self.assertEqual(
-                store.bodies[result.content_references["candidate"]["ref"]],
-                b"summary-for-final",
-            )
+            self.assertEqual(result.candidate["value"][0]["text"], "summary-for-final")
+            self.assertEqual(result.event["instructions"][0]["text"], "final")
+            self.assertEqual(store.reads, [])
+            self.assertEqual(store.writes, [])
 
         self.run_async(run)
 
     def test_reasoning_selection_cannot_be_overridden_by_category(self):
+        from agenthooksprotocol._content import project_content
+
+        item = {
+            "id": "reasoning",
+            "kind": "text",
+            "category": "reasoning",
+            "mediaType": "text/plain",
+            "selection": "body",
+            "text": "private",
+        }
+        projected = project_content(item, {"default": "body", "reasoning": "omit"})
+        self.assertEqual(projected["selection"], "omit")
+        self.assertNotIn("text", projected)
+        self.assertEqual(item["text"], "private")
+
+    def test_normal_result_boundary_accepts_canonical_original_request_snapshot(self):
         async def run():
             store = Store()
             request, result = elicitation(store)
-            item = result["params"]["event"]["elicitation"]["result"]
-            item.update(kind="reasoning", category="files")
             caps = result["params"]["capabilities"]
-            transport = Replies([])
-            hooks = hooks_for("user.elicitation.result", caps, transport)
-            hooks.config["hooks"][0]["subscriptions"][0]["content"]["reasoning"] = (
-                "omit"
-            )
-            context = ContentContext(
-                resolve=store.resolve,
-                upload=store.upload,
-                bindings={"content": ("elicitation", "result")},
-                principal="hook",
-                original_request=request,
-            )
-            async with hooks:
+            async with hooks_for(
+                "user.elicitation.result",
+                caps,
+                Replies([modify("content", {"ok": True})]),
+            ) as hooks:
                 settled = await hooks.user_elicitation_result(
-                    result["params"]["event"], content=context
+                    result["params"]["event"],
+                    original_request=request,
                 )
             self.assertEqual(settled.diagnostics, [])
-            self.assertEqual(store.reads, [])
             self.assertEqual(
-                transport.requests[0]["params"]["event"]["elicitation"]["result"][
-                    "selection"
-                ],
-                "omit",
+                json.loads(settled.event["elicitation"]["result"]["text"]),
+                {"action": "accept", "content": {"ok": True}},
             )
+            self.assertEqual(store.reads, [])
+            self.assertEqual(store.writes, [])
 
         self.run_async(run)
 
-    def test_cancel_during_upload_cannot_commit(self):
+    def test_cancel_during_inline_finalization_cannot_commit(self):
+        from unittest.mock import patch
+        from agenthooksprotocol._content import PreparedContent
+
         async def run():
             store = Store()
-            started, release = anyio.Event(), anyio.Event()
-
-            async def held(data):
-                started.set()
-                await release.wait()
-                return await store.upload(data)
-
-            payload = {
-                "trigger": "manual",
-                "items": [],
-                "instructions": store.add("old", "text/plain"),
-            }
-            caps = {
-                "effects": ["modify"],
-                "modify": {"instructions": {"replace": True, "merge": False}},
-            }
+            request, _ = elicitation(store)
             context = ContentContext(
                 resolve=store.resolve,
-                upload=held,
-                bindings={"instructions": ("instructions",)},
+                upload=store.upload,
+                bindings={"request": ("elicitation", "request")},
                 principal="hook",
             )
+            effects = [
+                {
+                    "type": "return",
+                    "value": {"action": "accept", "content": {"ok": True}},
+                }
+            ]
+            started, release = anyio.Event(), anyio.Event()
+            finalize = PreparedContent.finalize
+
+            async def held(prepared, state):
+                started.set()
+                await release.wait()
+                return await finalize(prepared, state)
+
             async with hooks_for(
-                "context.compact.before", caps, Replies([modify("instructions", "new")])
+                "user.elicitation.request",
+                request["params"]["capabilities"],
+                Replies(effects),
             ) as hooks:
-                pending = hooks.begin(
-                    wire("context.compact.before", "compact", payload, caps),
-                    content=context,
-                )
+                pending = hooks.begin(request, content=context)
                 await pending.acquire()
-                async with anyio.create_task_group() as group:
+                with patch.object(PreparedContent, "finalize", held):
+                    async with anyio.create_task_group() as group:
 
-                    async def accept():
-                        self.assertIsNone(await pending.accept_content())
+                        async def accept():
+                            self.assertIsNone(await pending.accept_content())
 
-                    group.start_soon(accept)
-                    await started.wait()
-                    pending.cancel()
-                    release.set()
+                        group.start_soon(accept)
+                        await started.wait()
+                        pending.cancel()
+                        release.set()
                 self.assertEqual(pending.lifecycle.states, {})
                 self.assertIsNone(pending.result)
+                self.assertEqual(store.reads, [])
+                self.assertEqual(store.writes, [])
 
         self.run_async(run)

@@ -19,7 +19,6 @@ from .interop import (
     NoRedirect,
     client_headers,
     tls_context,
-    synthetic_native_policy,
 )
 from .lifecycle import ContentStore
 from .interop import fixture_hooks, fixture_notify, host_outcome
@@ -372,7 +371,11 @@ def run(config):
                     notification = pending[ident].observe(
                         step["subscription"],
                         items=replace_references(
-                            step.get("items"), transport.references
+                            step.get("items"),
+                            transport.references,
+                            event_type=pending[ident].request["params"]["event"][
+                                "type"
+                            ],
                         ),
                     )
                     fixture_notify(notification, transport.observe)

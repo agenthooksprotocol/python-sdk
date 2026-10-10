@@ -220,28 +220,43 @@ class CatalogueTests(unittest.TestCase):
         parent["task"]["id"] = "work"
         late.accept(parent)
 
-    def test_known_content_owner_role_and_late_owner_are_transactional(self):
+    def test_known_message_role_and_late_part_are_transactional(self):
         graph = TaskLineage(self.validator)
         owner = {
             "id": "owner",
-            "kind": "message",
-            "mediaType": "text/plain",
-            "selection": "metadata",
             "role": "assistant",
+            "parts": [
+                {
+                    "id": "child",
+                    "kind": "text",
+                    "mediaType": "text/plain",
+                    "selection": "metadata",
+                    "category": "reasoning",
+                }
+            ],
         }
-        child = {**owner, "id": "child", "kind": "reasoning", "parentItemId": "owner"}
-        first = note("with-child")["params"]["event"]
-        first["items"] = [child]
-        graph.accept(first)  # A filtered/not-yet-delivered owner is not fabricated.
-        late = note("with-owner")["params"]["event"]
+        first = note("with-child", kind="context.compact.before")["params"]["event"]
+        first.pop("task")
+        first.update(trigger="manual", items=[owner])
+        graph.accept(first)  # The containing message establishes the child's role.
+        late = deepcopy(first)
+        late["id"] = "with-owner"
         late["items"] = [{**owner, "role": "user"}]
         with self.assertRaises(ProtocolError):
             graph.accept(late)
         self.assertNotIn((late["source"], late["id"]), graph.parents)
-        self.assertNotIn((late["source"], "owner"), graph.roles)
-        late["items"] = [owner]
+        self.assertEqual(graph.roles[(late["source"], "owner")], "assistant")
+        late["items"] = [
+            {
+                **owner,
+                "parts": [
+                    {**owner["parts"][0], "selection": "body", "text": "reasoning"}
+                ],
+            }
+        ]
         graph.accept(late)
-        other = note("other-source")["params"]["event"]
+        other = deepcopy(late)
+        other["id"] = "other-source"
         other["source"] = "urn:python:other-source"
         other["items"] = [{**owner, "role": "user"}]
         graph.accept(other)

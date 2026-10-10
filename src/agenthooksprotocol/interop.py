@@ -98,7 +98,10 @@ def tls_context(auth, server=False):
 def verify_token(token, auth):
     try:
         head, body, signature = token.split(".")
-        decode = lambda s: base64.urlsafe_b64decode(s + "=" * (-len(s) % 4))
+
+        def decode(value):
+            return base64.urlsafe_b64decode(value + "=" * (-len(value) % 4))
+
         header, claims = loads(decode(head)), loads(decode(body))
         expected = hmac.new(
             auth["signingKey"].encode(), (head + "." + body).encode(), hashlib.sha256
@@ -261,27 +264,48 @@ def fixture_notify(notification, deliver):
 def run_fixture_compaction(
     instructions, before=(), after=(), *, item_id="summary-1", observe_only=False
 ):
-    """Host scheduling only: callbacks return already-settled public HookResults."""
+    """Schedule callbacks that return already-settled public HookResults."""
     from .compaction import compaction_capabilities
 
-    if not isinstance(instructions, str) or not isinstance(item_id, str) or not item_id:
-        raise ValueError("instructions and nonempty item ID required")
+    validator = Validator()
+
+    def parts(value, identity):
+        if isinstance(value, str):
+            return [
+                {
+                    "id": identity,
+                    "kind": "text",
+                    "mediaType": "text/plain",
+                    "selection": "body",
+                    "text": value,
+                }
+            ]
+        if not isinstance(value, list):
+            raise ValueError("Compaction values require canonical text-part lists")
+        for item in value:
+            validator.validate("content-item", item)
+            if (
+                item.get("kind") != "text"
+                or item.get("selection") != "body"
+                or "text" not in item
+            ):
+                raise ValueError("Selected inline text required")
+        return deepcopy(value)
+
+    if not isinstance(item_id, str) or not item_id:
+        raise ValueError("nonempty summary ID required")
     state = {
-        "instructions": instructions,
+        "instructions": parts(instructions, "instructions"),
         "candidate": None,
         "summary": None,
-        "bodies": {},
         "messages": [],
         "denied": False,
     }
     seen, failures = [], []
 
-    def summary(body):
-        ref = "urn:ahp:compaction:utf8:" + body.encode("utf-8").hex()
-        state["bodies"][ref] = body
-        return {"id": item_id, "ref": ref}
-
     def pipeline(boundary, subscriptions):
+        nonlocal state
+        target = "instructions" if boundary == "before" else "summary"
         for supplier, policy, callback in subscriptions:
             snapshot = dict(
                 deepcopy(state),
@@ -291,23 +315,34 @@ def run_fixture_compaction(
             seen.append(deepcopy(snapshot))
             try:
                 settled = callback(snapshot)
-                values = settled.state["content"]
-                # No effect interpretation here: the SDK has committed the full
-                # response, resolved bodies, and confirmed replacement uploads.
+                committed = parts(settled.event[target], target)
+                staged = deepcopy(state)
+                staged[target] = committed
                 if boundary == "before":
-                    state["instructions"] = values["instructions"]
                     candidate = settled.candidate
-                    if candidate is None:
-                        state["candidate"] = None
-                    elif "candidate" in values:
-                        state["candidate"] = {
-                            "body": candidate["value"],
-                            "supplier": supplier,
+                    returned = any(
+                        effect["type"] == "return"
+                        for response in settled.accepted_responses
+                        for effect in response.get("result", {}).get("effects", [])
+                    )
+                    # A settled candidate may be inherited from the request.
+                    # Only an accepted return transfers ownership to this hook.
+                    original = state["candidate"]
+                    staged["candidate"] = (
+                        None
+                        if candidate is None
+                        else {
+                            "value": parts(candidate["value"], item_id),
+                            "supplier": (
+                                supplier
+                                if returned or original is None
+                                else original["supplier"]
+                            ),
                         }
-                else:
-                    state["summary"] = summary(values["summary"])
-                state["messages"].extend(settled.state["messages"])
-                state["denied"] = settled.decision == "deny"
+                    )
+                staged["messages"].extend(settled.state["messages"])
+                staged["denied"] = settled.decision == "deny"
+                state = staged
             except Exception:
                 failures.append({"boundary": boundary, "supplier": supplier})
                 if policy == "fail-closed":
@@ -320,12 +355,14 @@ def run_fixture_compaction(
     if pipeline("before", before):
         candidate = state["candidate"]
         if candidate is None:
-            body = "summary:" + state["instructions"]
+            state["summary"] = parts(
+                "summary:" + "".join(item["text"] for item in state["instructions"]),
+                item_id,
+            )
             generated, provenance = True, {"kind": "generated"}
         else:
-            body = candidate["body"]
+            state["summary"] = deepcopy(candidate["value"])
             provenance = {"kind": "supplied", "supplier": candidate["supplier"]}
-        state["summary"] = summary(body)
         applied = True if observe_only else pipeline("after", after)
     result = dict(
         state,
@@ -351,7 +388,7 @@ def run_fixture_compaction(
                 try:
                     callback(snapshot)
                 except BaseException:
-                    pass  # Best-effort notification cannot reopen settlement.
+                    pass
 
             threading.Thread(target=notify, daemon=True).start()
     return result
@@ -500,17 +537,24 @@ def upload_blob(config, data, validator):
         return validate_descriptor(response, data, validator)
 
 
-def replace_references(value, references):
-    """Rewrite fixture-local placeholders only after every upload is confirmed."""
-    if isinstance(value, dict):
-        if set(value) == {"ref"} and value["ref"] in references:
-            return {"ref": references[value["ref"]]["ref"]}
-        return {
-            key: replace_references(child, references) for key, child in value.items()
-        }
+def replace_references(value, references, *, event_type=None):
+    """Rewrite confirmed references only in generated schema-owned body slots."""
+    from .lifecycle import content_items
+
+    if value is None:
+        return None
     if isinstance(value, list):
-        return [replace_references(child, references) for child in value]
-    return value
+        if event_type is None:
+            raise ProtocolError("A normalized item list requires its event boundary")
+        wrapped = {"params": {"event": {"type": event_type, "items": value}}}
+        return replace_references(wrapped, references)["params"]["event"]["items"]
+    projected = deepcopy(value)
+    event = projected.get("params", {}).get("event", {})
+    for item in content_items(event):
+        body = item.get("body")
+        if isinstance(body, dict) and body.get("ref") in references:
+            item["body"] = {"ref": references[body["ref"]]["ref"]}
+    return projected
 
 
 def validate_adapter_config(config):

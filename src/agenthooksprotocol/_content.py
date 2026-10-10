@@ -1,13 +1,12 @@
-"""Explicit, trusted asynchronous bindings for immutable normalized content.
-
-Resolvers and uploaders are transport/storage adapters, not domain validators.
-Bodies never appear inline in wire events, and no primary payload is inferred.
-"""
+"""Schema-owned inline projection and invocation-owned binary attachments."""
 
 from __future__ import annotations
 
 from collections.abc import Awaitable, Callable, Mapping
 from copy import deepcopy
+from functools import lru_cache
+from pathlib import Path
+from urllib.parse import urljoin
 import hashlib
 import json
 import math
@@ -40,52 +39,165 @@ def put(value: Any, path: tuple[str | int, ...], replacement: Any) -> None:
     at(value, path[:-1])[path[-1]] = replacement
 
 
+@lru_cache(maxsize=1)
+def normalized_content_slots():
+    """Derive immutable part/message paths from bundled canonical schema refs.
+
+    Source slots exclude inline-only text fields. Projection and lineage must
+    include those fields, without examining opaque native or application JSON.
+    """
+    schemas = {
+        schema["$id"]: schema
+        for schema in json.loads(Path(__file__).with_name("schemas.json").read_text())
+    }
+    root = next(
+        schema for uri, schema in schemas.items() if uri.endswith("/event.schema.json")
+    )
+
+    def resolve(reference, base):
+        uri = urljoin(base, reference)
+        document, _, fragment = uri.partition("#")
+        schema = schemas[document]
+        for component in fragment.split("/")[1:]:
+            key = component.replace("~1", "/").replace("~0", "~")
+            schema = schema[int(key)] if isinstance(schema, list) else schema[key]
+        return schema, document, fragment
+
+    def event_name(schema, base, seen=frozenset()):
+        if not isinstance(schema, dict):
+            return None
+        name = schema.get("properties", {}).get("type", {}).get("const")
+        if isinstance(name, str):
+            return name
+        reference = schema.get("$ref")
+        if reference is not None and urljoin(base, reference) not in seen:
+            child, document, _ = resolve(reference, base)
+            name = event_name(child, document, seen | {urljoin(base, reference)})
+            if name is not None:
+                return name
+        for composition in ("allOf", "oneOf", "anyOf"):
+            for child in schema.get(composition, []):
+                name = event_name(child, base, seen)
+                if name is not None:
+                    return name
+        return None
+
+    slots = {}
+    for event_schema in root["oneOf"]:
+        parts, messages = set(), set()
+
+        def collect(schema, base, path=(), seen=frozenset()):
+            if not isinstance(schema, dict):
+                return
+            reference = schema.get("$ref")
+            if reference is not None:
+                uri = urljoin(base, reference)
+                if uri in seen:
+                    return
+                child, document, fragment = resolve(reference, base)
+                if document.endswith("/content-item.schema.json"):
+                    if fragment in ("", "/$defs/textPart"):
+                        parts.add(path)
+                        return
+                    if fragment == "/$defs/textParts":
+                        parts.add(path + ("*",))
+                        return
+                    if fragment in ("/$defs/message", "/$defs/modelVisibleItem"):
+                        messages.add(path)
+                        parts.add(path + ("parts", "*"))
+                        return
+                    if fragment == "/$defs/messages":
+                        messages.add(path + ("*",))
+                        parts.add(path + ("*", "parts", "*"))
+                        return
+                collect(child, document, path, seen | {uri})
+            for composition in ("allOf", "oneOf", "anyOf"):
+                for child in schema.get(composition, []):
+                    collect(child, base, path, seen)
+            for key, child in schema.get("properties", {}).items():
+                collect(child, base, path + (key,), seen)
+            if isinstance(schema.get("items"), dict):
+                collect(schema["items"], base, path + ("*",), seen)
+
+        collect(event_schema, root["$id"])
+        slots[event_name(event_schema, root["$id"])] = (
+            tuple(sorted(parts)),
+            tuple(sorted(messages)),
+        )
+    return slots
+
+
+def normalized_values(value, paths):
+    """Yield schema-owned values without searching native/application objects."""
+
+    def visit(node, path):
+        if not path:
+            yield node
+        elif path[0] == "*" and isinstance(node, list):
+            for child in node:
+                yield from visit(child, path[1:])
+        elif isinstance(node, dict) and path[0] in node:
+            yield from visit(node[path[0]], path[1:])
+
+    for path in paths:
+        yield from visit(value, path)
+
+
 def project_content(
     event: dict[str, Any], selection: dict[str, str], include_native: bool = False
 ) -> dict[str, Any]:
     """Project descriptors at every normalized depth, never arbitrary host JSON."""
 
-    def walk(value: Any) -> Any:
-        if isinstance(value, list):
-            return [walk(item) for item in value]
-        if not isinstance(value, dict):
-            return deepcopy(value)
-        if all(key in value for key in ("id", "kind", "mediaType", "selection")):
-            item = deepcopy(value)
-            media = item["mediaType"]
-            category = (
-                "reasoning"
-                if item["kind"] == "reasoning"
-                else item.get("category")
-                or (
-                    "text"
-                    if media.startswith("text/")
-                    else "images"
-                    if media.startswith("image/")
-                    else "audio"
-                    if media.startswith("audio/")
-                    else "video"
-                    if media.startswith("video/")
-                    else "files"
-                )
-            )
-            wanted = selection.get(category, selection["default"])
-            # A selection is a ceiling, never permission to restore absent bytes.
-            rank = {"omit": 0, "metadata": 1, "body": 2}
-            mode = min((wanted, item["selection"]), key=rank.__getitem__)
-            if mode != "body":
-                item.pop("body", None)
-                item.pop("gap", None)
-                item["selection"] = mode
-            return item
-        return {
-            key: deepcopy(item)
-            if key in ("input", "native", "extensions")
-            else walk(item)
-            for key, item in value.items()
-        }
+    def descriptor(value: dict[str, Any]) -> dict[str, Any]:
+        item = deepcopy(value)
+        media = item["mediaType"]
+        category = item.get("category") or (
+            "text"
+            if item["kind"] == "text"
+            else "images"
+            if media.startswith("image/")
+            else "audio"
+            if media.startswith("audio/")
+            else "video"
+            if media.startswith("video/")
+            else "files"
+        )
+        rank = {"omit": 0, "metadata": 1, "body": 2}
+        mode = min(
+            (selection.get(category, selection["default"]), item["selection"]),
+            key=rank.__getitem__,
+        )
+        if mode != "body":
+            for key in ("text", "body", "gap"):
+                item.pop(key, None)
+            item["selection"] = mode
+        return item
 
-    projected = walk(event)
+    def visit(value: Any, path: tuple[str | int, ...]) -> None:
+        if not path:
+            return
+        head, *tail = path
+        if head == "*":
+            if isinstance(value, list):
+                for index, child in enumerate(value):
+                    if tail:
+                        visit(child, tuple(tail))
+                    else:
+                        value[index] = descriptor(child)
+        elif isinstance(value, dict) and head in value:
+            if tail:
+                visit(value[head], tuple(tail))
+            else:
+                value[head] = descriptor(value[head])
+
+    # Only generated schema-owned slots are traversed. Opaque native/application
+    # dictionaries can resemble parts without becoming projection targets.
+    if all(key in event for key in ("id", "kind", "mediaType", "selection")):
+        return descriptor(event)
+    projected = deepcopy(event)
+    paths, _ = normalized_content_slots().get(event.get("type"), ((), ()))
+    for path in paths:
+        visit(projected, path)
     if not include_native:
         projected.pop("native", None)
     return projected
@@ -110,27 +222,37 @@ def merge_effective(original: Any, view: Any, effective: Any) -> Any:
                 else deepcopy(value)
             )
         return merged
+    if (
+        isinstance(original, list)
+        and isinstance(view, list)
+        and isinstance(effective, list)
+    ):
+        before = {
+            item.get("id"): (original[index], item)
+            for index, item in enumerate(view)
+            if index < len(original) and isinstance(item, dict) and "id" in item
+        }
+        return [
+            merge_effective(*before[item["id"]], item)
+            if isinstance(item, dict) and item.get("id") in before
+            else deepcopy(item)
+            for item in effective
+        ]
     return deepcopy(effective)
 
 
 class ContentContext:
-    """Explicit body bindings for one or more calls.
+    """Trusted inline elicitation correlation for one or more calls.
 
-    ``bindings`` maps effect targets to descriptor paths in the event. MCP
-    request binds ``request``; result binds ``content`` and supplies an immutable
-    ``original_request`` wire snapshot. Compaction binds ``instructions`` or
-    ``summary``. ``principal`` is trusted transport identity, never event data.
-    Attachments map effect targets to immutable owners. Resolvers are optional
-    adapters for external references; preparation never retains a ref-to-bytes
-    store. Uploaders return receipts checked against the owner's actual bytes.
-    A fresh prepared context is made per invocation, safe for concurrent calls.
+    Result contexts supply the original canonical request and authenticated
+    principal. Text is parsed directly; preparation never reads or uploads bytes.
     """
 
     def __init__(
         self,
         *,
         resolve: Resolver | None = None,
-        upload: Uploader,
+        upload: Uploader | None = None,
         bindings: Mapping[str, tuple[str | int, ...]],
         principal: str,
         original_request: dict[str, Any] | None = None,
@@ -165,293 +287,102 @@ class ContentContext:
 
 
 class PreparedContent:
+    """Selected inline MCP text; no byte snapshots, reads, or uploads."""
+
     def __init__(
         self, context: ContentContext, request: dict[str, Any], validator: Any
     ) -> None:
         self.context = context
         self.request = deepcopy(request)
         self.validator = validator
-        self.items: dict[str, dict[str, Any]] = {}
-        self.selected: dict[str, Attachment] = {}
-        self.effective: dict[str, Attachment] = {}
-        self.original = None
-        self._owned: set[Attachment] = set()
-        self.targets = set(context.bindings) - {"request"}
-
-    def retire(self) -> None:
-        """Release invocation bytes without touching caller-owned storage."""
-        for owner in self._owned:
-            owner._retire_eager()
-        self._owned.clear()
-        self.selected.clear()
-        self.effective.clear()
-        self.original = None
-        self.context = None
-
-    async def _read(self, item: dict[str, Any], owner=None):
-        from .attachment import Attachment
-
-        self.validator.validate("content-item", item)
-        if item["selection"] != "body":
-            return None
-        if "body" not in item:
-            raise ProtocolError("Selected content body is unavailable")
-        reference = item["body"]
-        if owner is None:
-            if self.context.resolve is None:
-                raise ProtocolError(
-                    "Selected content requires an attachment owner or resolver"
-                )
-            data = await self.context.resolve(deepcopy(reference))
-            if not isinstance(data, bytes):
-                raise ProtocolError("Content resolver must return bytes")
-            owner = Attachment.from_bytes(data)
-            self._owned.add(owner)
-            owner._claimed = True
-        data = await owner.snapshot()
-        identity = (len(data), hashlib.sha256(data).hexdigest())
-        known = self.context._identities.get(reference["ref"])
-        if known is not None and known != identity:
-            raise ProtocolError("Immutable content reference changed")
-        self.context._identities[reference["ref"]] = identity
-        return owner
+        self.targets = (
+            {"content"}
+            if request["params"]["event"]["type"] == "user.elicitation.result"
+            else set()
+        )
 
     async def load(self) -> None:
-        event = self.request["params"]["event"]
-        kind = event["type"]
-        expected = {
-            "user.elicitation.request": {"request": ("elicitation", "request")},
-            "user.elicitation.result": {"content": ("elicitation", "result")},
-            "context.compact.before": {"instructions": ("instructions",)},
-            "context.compact.after": {"summary": ("summary",)},
-        }.get(kind)
-        if expected is None or self.context.bindings != expected:
-            raise ProtocolError("Content targets must explicitly match this boundary")
-        if kind == "user.elicitation.result":
-            from .elicitation import validate_correlation
+        from .elicitation import read_selected, validate_correlation
 
-            original = self.context.original_request
-            if original is None:
+        event = self.request["params"]["event"]
+        if not event["type"].startswith("user.elicitation."):
+            raise ProtocolError("Inline context requires an elicitation boundary")
+        expected = (
+            {"request": ("elicitation", "request")}
+            if event["type"].endswith(".request")
+            else {"content": ("elicitation", "result")}
+        )
+        if self.context.bindings != expected:
+            raise ProtocolError("Content targets must explicitly match this boundary")
+        if event["type"].endswith(".result"):
+            if self.context.original_request is None:
                 raise ProtocolError(
                     "Elicitation result requires its original request snapshot"
                 )
-            self.validator.validate("intercept-request", original)
-            validate_correlation(original, self.request)
-            # The original snapshot is not a way to override current selection.
-            item = at(event, self.context.bindings["content"])
-            if item.get("selection") == "body":
-                original_item = original["params"]["event"]["elicitation"]["request"]
-                original_owner = await self._read(
-                    original_item, self.context.attachments.get("request")
-                )
-                if original_owner is not None:
-                    self.original = (original_item, original_owner)
-        for target, path in self.context.bindings.items():
-            try:
-                item = at(event, path)
-            except (KeyError, IndexError, TypeError) as exc:
-                raise ProtocolError("Bound content descriptor is absent") from exc
-            self.items[target] = deepcopy(item)
-            owner = await self._read(item, self.context.attachments.get(target))
-            if owner is not None:
-                self.selected[target] = owner
-        self.effective = dict(self.selected)
+            validate_correlation(self.context.original_request, self.request)
+        stage = "request" if event["type"].endswith(".request") else "result"
+        read_selected(event["elicitation"], stage, None, self.validator.validate)
 
-    def _resolve(self, reference: dict[str, Any]) -> bytes:
-        # Protocol validators are synchronous. Preparation materializes selected
-        # owners; this lookup borrows their snapshots, never a reference store.
-        for target, owner in self.selected.items():
-            if self.items[target].get("body") == reference:
-                return owner._snapshot
-        if self.original is not None and self.original[0].get("body") == reference:
-            return self.original[1]._snapshot
-        raise ProtocolError("Content was not selected and resolved")
+    def retire(self) -> None:
+        pass
 
-    def contents(self, event):
+    def contents(self, event: dict[str, Any]):
         from .attachment import AttachmentContents
-        from ._boundaries import CONTENT_SOURCE_SLOTS
 
-        slots = {
-            path: name
-            for name, (kind, path) in CONTENT_SOURCE_SLOTS.items()
-            if kind == event["type"]
-        }
-        bindings = {
-            slots.get(self.context.bindings.get(target), target): owner
-            for target, owner in self.effective.items()
-        }
-        for owner in bindings.values():
-            owner._claimed = True
-            self._owned.discard(owner)
-        return AttachmentContents(bindings)
+        return AttachmentContents({})
 
     def stage(
         self, request: dict[str, Any], effects: list[dict[str, Any]]
     ) -> dict[str, Any]:
+        from .elicitation import apply_effects
+
         event = request["params"]["event"]
-        kind = event["type"]
-        updates: list[dict[str, Any]] = []
-        values: dict[str, Any] = {}
-        changed = False
-        if kind.startswith("user.elicitation."):
-            from .elicitation import apply_effects, read_selected, validate_exchange
-
-            original = (
-                request if kind.endswith(".request") else self.context.original_request
-            )
-            result = None if kind.endswith(".request") else request
-            body_effects = [
-                effect
-                for effect in effects
-                if effect["type"] in ("return", "deny", "modify")
-            ]
-            if body_effects:
-                if not self.selected:
-                    raise ProtocolError("Elicitation effects require selected bodies")
-                binding = apply_effects(
-                    original,
-                    result,
-                    self._resolve,
-                    self.validator.validate,
-                    self.context.principal,
-                    body_effects,
-                )
-                answer = binding["result"]
-                target = "candidate" if result is None else "content"
-                values[target] = deepcopy(answer)
-                changed = result is not None and not json_equal(
-                    json.loads(self.selected["content"]._snapshot), answer
-                )
-                if result is None or changed:
-                    updates.append({"target": target, "value": answer})
-                values["provenance"] = binding["provenance"]
-                values["externalCompletion"] = False
-            elif self.selected:
-                if result is None:
-                    values["request"] = read_selected(
-                        event["elicitation"],
-                        "request",
-                        self._resolve,
-                        self.validator.validate,
-                    )
-                else:
-                    binding = validate_exchange(
-                        original,
-                        result,
-                        self._resolve,
-                        self.validator.validate,
-                        self.context.principal,
-                    )
-                    values["content"] = binding.get("result")
-                    values["externalCompletion"] = False
-        else:
-            from .compaction import validate_text_effects
-
-            boundary = "before" if kind.endswith(".before") else "after"
-            validate_text_effects(
-                boundary, effects, request["params"]["capabilities"], self.validator
-            )
-            for target, owner in self.selected.items():
-                if not self.items[target]["mediaType"].startswith("text/"):
-                    raise ProtocolError("Compaction requires selected UTF-8 text")
-                values[target] = owner._snapshot.decode("utf-8", errors="strict")
-            for effect in effects:
-                if effect["type"] == "modify":
-                    target = effect["target"]
-                    if target not in self.selected:
-                        raise ProtocolError(
-                            "Compaction modification requires selected content"
-                        )
-                    values[target] = effect["value"]
-                elif effect["type"] == "return":
-                    if "instructions" not in self.selected:
-                        raise ProtocolError(
-                            "Supplied compaction summary requires selected instructions"
-                        )
-                    values["candidate"] = effect["value"]
-            for target, value in values.items():
-                if target == "candidate" or value != self.selected[
-                    target
-                ]._snapshot.decode("utf-8"):
-                    updates.append({"target": target, "value": value})
-                    changed = changed or target != "candidate"
-        return {"changed": changed, "updates": updates, "values": values}
+        body_effects = [
+            effect
+            for effect in effects
+            if effect["type"] in ("return", "deny", "modify")
+        ]
+        if not body_effects:
+            return {"changed": False, "updates": [], "values": {}}
+        original = (
+            request
+            if event["type"].endswith(".request")
+            else self.context.original_request
+        )
+        result = None if event["type"].endswith(".request") else request
+        binding = apply_effects(
+            original,
+            result,
+            None,
+            self.validator.validate,
+            self.context.principal,
+            body_effects,
+        )
+        updates = (
+            [{"target": "content", "value": binding["result"]}]
+            if result is not None
+            else []
+        )
+        values = {
+            **binding,
+            "content" if result is not None else "candidate": binding["result"],
+        }
+        return {"changed": bool(updates), "updates": updates, "values": values}
 
     async def finalize(self, state: dict[str, Any]) -> dict[str, Any]:
         state = deepcopy(state)
-        updates = state.pop("_content_updates", [])
-        references = {}
-        from .attachment import Attachment
-
-        used = {item["body"]["ref"] for item in self.items.values() if "body" in item}
-        if self.original is not None:
-            used.add(self.original[0]["body"]["ref"])
-        effective = dict(self.selected)
-        for update in updates:
-            value = update["value"]
-            data = (
-                json.dumps(
-                    value, allow_nan=False, ensure_ascii=False, separators=(",", ":")
-                ).encode()
-                if self.request["params"]["event"]["type"].startswith(
-                    "user.elicitation."
-                )
-                else value.encode("utf-8")
+        for update in state.pop("_content_updates", []):
+            item = state["event"]["elicitation"]["result"]
+            item["text"] = json.dumps(
+                update["value"],
+                allow_nan=False,
+                ensure_ascii=False,
+                separators=(",", ":"),
             )
-            original_owner = self.selected.get(update["target"]) or next(
-                iter(self.selected.values())
-            )
-            owner = Attachment.from_bytes(data, max_bytes=original_owner.max_bytes)
-            self._owned.add(owner)
-            owner._claimed = True
-            data = await owner.snapshot()
-            reference = await self.context.upload(data)
-            self.validator.validate("content-upload-receipt", reference)
-            if (
-                reference["size"] != len(data)
-                or reference["sha256"] != hashlib.sha256(data).hexdigest()
-            ):
-                raise ProtocolError(
-                    "Uploaded descriptor does not match replacement bytes"
-                )
-            if reference["ref"] in used or reference["ref"] in self.context._identities:
-                raise ProtocolError(
-                    "Modified content requires a new immutable reference"
-                )
-            used.add(reference["ref"])
-            self.context._identities[reference["ref"]] = (
-                reference["size"],
-                reference["sha256"],
-            )
-            target = update["target"]
-            effective[target] = owner
-            references[target] = {"ref": reference["ref"]}
-            if target == "candidate" and state.get("candidate") is not None:
-                state["candidate"].setdefault("provenance", {}).update(
-                    authenticatedSource=self.context.principal,
-                    contentReference={"ref": reference["ref"]},
-                )
-            if target != "candidate":
-                item = deepcopy(self.items[target])
-                item.pop("gap", None)
-                item.update(selection="body", body={"ref": reference["ref"]})
-                item.pop("size", None)
-                item.pop("sha256", None)
-                put(state["event"], self.context.bindings[target], item)
-        candidate_ref = (
-            (state.get("candidate") or {}).get("provenance", {}).get("contentReference")
-        )
-        if (
-            isinstance(candidate_ref, dict)
-            and candidate_ref.get("ref") in self.context._identities
-        ):
-            references.setdefault("candidate", deepcopy(candidate_ref))
-        if references:
-            state["content_references"] = references
+            state["event"]["elicitation"]["action"] = update["value"]["action"]
         check = deepcopy(self.request)
         check["params"]["event"] = state["event"]
         self.validator.validate("intercept-request", check)
-        self.effective = effective
         return state
 
 
@@ -515,7 +446,12 @@ class OwnedContentSource:
         self._closed = False
         self._stream_closed = False
         self._close_done = anyio.Event()
-        self._lock = anyio.Lock()
+        self._pending = False
+        self._cancelled = False
+        self._error: BaseException | None = None
+        self._waiters = 0
+        self._materialized = anyio.Event()
+        self._worker: Any = None
         self._scope: Any = None
 
     async def _close_stream(self) -> None:
@@ -554,15 +490,12 @@ class OwnedContentSource:
             await anyio.lowlevel.checkpoint()
         return bytes(chunks)
 
-    async def snapshot(self) -> bytes:
-        async with self._lock:
-            if self._closed or self._failed:
-                raise ProtocolError("Owned content source is closed or failed")
-            if self._snapshot is not None:
-                return self._snapshot
-            try:
-                with anyio.fail_after(self.timeout) as scope:
-                    self._scope = scope
+    async def _materialize(self) -> None:
+        # The source owns this single pending worker, independently of readers.
+        # Last-waiter cancellation and aclose cancel its scope and join completion.
+        try:
+            with self._scope:
+                with anyio.fail_after(self.timeout):
                     data = await self._read_source()
                     if not isinstance(data, bytes):
                         raise ProtocolError("Owned content source must produce bytes")
@@ -577,35 +510,116 @@ class OwnedContentSource:
                         and self.expected_sha256 != hashlib.sha256(data).hexdigest()
                     ):
                         raise ProtocolError("Owned content digest expectation mismatch")
-                    if self._closed:
-                        raise OperationCancelledError(
-                            "Owned content source closed during preparation"
-                        )
-                    self._snapshot = data
-                if self._snapshot is None:
-                    raise OperationCancelledError("Owned content preparation cancelled")
-                return self._snapshot
-            except BaseException:
-                self._failed = True
-                self._snapshot = None
-                raise
-            finally:
-                self._scope = None
-                interrupted = sys.exception() is not None
-                try:
-                    await self._close_stream()
-                except BaseException:
+                    if not self._closed:
+                        self._snapshot = data
+            if self._snapshot is None:
+                self._cancelled = True
+                self._error = OperationCancelledError(
+                    "Owned content preparation cancelled"
+                )
+        except BaseException:
+            self._failed = True
+            self._error = sys.exception()
+            self._snapshot = None
+        finally:
+            try:
+                await self._close_stream()
+            except BaseException as exc:
+                if self._error is None:
                     self._failed = True
+                    self._error = exc
                     self._snapshot = None
-                    if not interrupted:
-                        raise
+            finally:
+                # Terminal state retains the error, not the worker's read frame
+                # or a second reference to rejected bytes.
+                data = None
+                if self._error is not None:
+                    self._error.__traceback__ = None
+                self._scope = None
+                self._pending = False
+                self._worker = None
+                self._materialized.set()
+
+    def _start_materialization(self) -> None:
+        import sniffio
+
+        # AnyIO task groups are lexically owned by one reader's cancel scope.
+        # Use backend scheduling only for this owner-tracked worker; its bounded
+        # lifetime is joined by the last departing reader or explicit owner close.
+        # Never retain completed tasks or transfer worker ownership to a waiter.
+        backend = sniffio.current_async_library()
+        self._scope = anyio.CancelScope(shield=True)
+        self._pending = True
+        try:
+            if backend == "asyncio":
+                import asyncio
+
+                self._worker = asyncio.create_task(
+                    self._materialize(), name="ahp-owned-materialization"
+                )
+            elif backend == "trio":
+                from contextvars import copy_context
+                import trio
+
+                self._worker = trio.lowlevel.spawn_system_task(
+                    self._materialize,
+                    name="ahp-owned-materialization",
+                    context=copy_context(),
+                )
+            else:
+                raise ProtocolError("Unsupported owned materialization backend")
+        except BaseException:
+            self._pending = False
+            self._scope = None
+            raise
+
+    def _leave_waiter(self) -> bool:
+        self._waiters -= 1
+        if self._waiters == 0 and self._pending:
+            self._scope.cancel()
+            return True
+        return False
+
+    async def snapshot(self) -> bytes:
+        if self._closed:
+            raise ProtocolError("Owned content source is closed")
+        if not self._pending:
+            if self._error is not None:
+                raise self._error
+            if self._snapshot is not None:
+                return self._snapshot
+
+        # Registration and departure are atomic between asynchronous checkpoints.
+        self._waiters += 1
+        try:
+            if not self._pending:
+                self._start_materialization()
+            await self._materialized.wait()
+        finally:
+            if self._leave_waiter():
+                # Only the last waiter joins safety cleanup; cancelled readers
+                # with surviving consumers return promptly and release permits.
+                with anyio.CancelScope(shield=True):
+                    await self._materialized.wait()
+        if self._closed:
+            raise OperationCancelledError(
+                "Owned content source closed during preparation"
+            )
+        if self._error is not None:
+            raise self._error
+        assert self._snapshot is not None
+        return self._snapshot
 
     async def aclose(self) -> None:
         self._closed = True
         self._snapshot = None
-        if self._scope is not None:
+        if self._pending:
             self._scope.cancel()
-        await self._close_stream()
+            with anyio.CancelScope(shield=True):
+                await self._materialized.wait()
+        else:
+            await self._close_stream()
+        self._error = None
 
     async def __aenter__(self) -> OwnedContentSource:
         if self._closed:
@@ -667,50 +681,74 @@ class ContentSources:
             )
         self._closed = False
         self._references: dict[str, tuple[int, str]] = {}
+        self._item_metadata: dict[str, dict[str, Any]] = {}
+        self._receipts = {}
+        self._receipt_locks = {}
         self._close_done = anyio.Event()
 
-    def edit_context(self, event, backend, upload, context):
-        from .attachment import Attachment
-
-        targets = {
-            "context.compact.before": {"instructions": ("instructions",)},
-            "context.compact.after": {"summary": ("summary",)},
-            "user.elicitation.request": {"request": ("elicitation", "request")},
-            "user.elicitation.result": {"content": ("elicitation", "result")},
-        }.get(event["type"], {})
-        owners = {}
-        for slot, owner in self.bindings.items():
-            if not isinstance(owner, Attachment):
+    def _remember(self, event):
+        for slot in self.bindings:
+            if slot in self._item_metadata:
                 continue
-            for target, path in targets.items():
-                if self._slots[slot][1] == path:
-                    item = at(event, path)
-                    if event["type"].startswith("context.compact.") and not item[
-                        "mediaType"
-                    ].startswith("text/"):
-                        continue
-                    owners[target] = owner
-        if not owners:
-            return context
+            kind, path = self._slots[slot]
+            if event.get("type") != kind:
+                raise ProtocolError("Content source slot does not match event boundary")
+            try:
+                self._item_metadata[slot] = deepcopy(at(event, path))
+            except (KeyError, IndexError, TypeError) as exc:
+                raise ProtocolError("Bound content source item is absent") from exc
 
-        async def unavailable(_value):
-            raise ProtocolError("An explicit original request attachment is required")
+    def _reconcile(self, event):
+        """Follow stable part identities across admitted message-list edits."""
+        from ._boundaries import CONTENT_SOURCE_SLOTS
 
-        # Wire references remain receiver receipts; edit preparation reads the
-        # exact same attachment that projection sent, not a local reference store.
-        prepared_context = ContentContext(
-            resolve=context.resolve if context is not None else unavailable,
-            upload=upload or self.uploads.get(backend) or unavailable,
-            bindings=targets,
-            principal=backend,
-            original_request=context.original_request if context is not None else None,
-            attachments={
-                **(context.attachments if context is not None else {}),
-                **owners,
-            },
-        )
-        prepared_context._identities = self._references
-        return prepared_context
+        candidates = {}
+
+        def visit(node, path, concrete=(), indices=()):
+            if not path:
+                yield concrete, indices, node
+            elif path[0] == "*" and isinstance(node, list):
+                for index, child in enumerate(node):
+                    yield from visit(
+                        child, path[1:], concrete + (index,), indices + (index,)
+                    )
+            elif isinstance(node, dict) and path[0] in node:
+                yield from visit(
+                    node[path[0]], path[1:], concrete + (path[0],), indices
+                )
+
+        for name, (kind, template) in CONTENT_SOURCE_SLOTS.items():
+            if kind != event["type"]:
+                continue
+            for path, indices, item in visit(event, template):
+                slot = name + "".join(f"[{index}]" for index in indices)
+                candidates.setdefault(item["id"], []).append((slot, kind, path, item))
+        bindings, slots, metadata = {}, {}, {}
+        previous = set(self.bindings.values())
+        for old_slot, source in self.bindings.items():
+            original = self._item_metadata[old_slot]
+            for slot, kind, path, item in candidates.get(original["id"], []):
+                if item.get("kind") != original.get("kind") or item.get(
+                    "mediaType"
+                ) != original.get("mediaType"):
+                    continue
+                if "body" in item and item["body"]["ref"] not in self._references:
+                    continue
+                if slot in bindings and bindings[slot] is not source:
+                    raise ProtocolError(
+                        "Logical content part has conflicting source owners"
+                    )
+                bindings[slot], slots[slot], metadata[slot] = (
+                    source,
+                    (kind, path),
+                    original,
+                )
+        self.bindings, self._slots, self._item_metadata = bindings, slots, metadata
+        return previous - set(bindings.values())
+
+    def edit_context(self, event, backend, upload, context):
+        # Binary owners are independent of inline text/JSON settlement.
+        return context
 
     async def project(
         self,
@@ -721,10 +759,18 @@ class ContentSources:
         backend: str | None = None,
         validator: Any,
         include_native: bool = False,
+        delivery_context: Any = None,
+        upload_limiter: Any = None,
     ) -> dict[str, Any]:
         if self._closed:
             raise ProtocolError("Content sources are closed")
+        self._remember(event)
         view = project_content(event, selection, include_native)
+        selected_items = []
+        context = delivery_context if delivery_context is not None else backend
+        if context is None:
+            # Unscoped standalone projections are distinct deliveries.
+            context = object()
         for slot, source in self.bindings.items():
             kind, path = self._slots[slot]
             if event.get("type") != kind:
@@ -738,41 +784,75 @@ class ContentSources:
             # A settled replacement or advanced caller-supplied reference is
             # not the owned source. Never overwrite it with the original bytes.
             reference = original.get("body")
-            if reference is not None and reference["ref"] not in self._references:
+            if (
+                reference is not None
+                and reference["ref"] not in self._references
+                and reference["ref"] != "ahp:owned:pending"
+            ):
                 continue
             available = deepcopy(original)
             available["selection"] = "body"
             selected = project_content(available, selection, True)
             if selected["selection"] != "body" or original["selection"] == "omit":
                 continue
-            uploader = upload if upload is not None else self.uploads.get(backend)
-            if uploader is None:
-                raise ProtocolError(
-                    "Selected content requires an authorized backend upload callback"
-                )
-            data = await source.snapshot()
-            digest = hashlib.sha256(data).hexdigest()
-            if any(
-                key in original and original[key] != value
-                for key, value in (("size", len(data)), ("sha256", digest))
-            ):
-                raise ProtocolError(
-                    "Content source metadata disagrees with actual bytes"
-                )
-            reference = await uploader(data)
-            validator.validate("content-upload-receipt", reference)
-            identity = (len(data), digest)
-            if (reference["size"], reference["sha256"]) != identity:
-                raise ProtocolError("Uploaded descriptor does not match source bytes")
-            known = self._references.get(reference["ref"])
-            if known is not None and known != identity:
-                raise ProtocolError("Immutable content reference changed")
-            self._references[reference["ref"]] = identity
+            selected_items.append((source, original, item))
+
+        async def prepare(source, original, item):
+            key = (context, source)
+            lock = self._receipt_locks.setdefault(key, anyio.Lock())
+            async with lock:
+                reference = self._receipts.get(key)
+                if reference is None:
+                    uploader = (
+                        upload if upload is not None else self.uploads.get(backend)
+                    )
+                    if uploader is None:
+                        raise ProtocolError(
+                            "Selected content requires an authorized backend upload callback"
+                        )
+
+                    async def transfer():
+                        data = await source.snapshot()
+                        digest = hashlib.sha256(data).hexdigest()
+                        if any(
+                            key in original and original[key] != value
+                            for key, value in (("size", len(data)), ("sha256", digest))
+                        ):
+                            raise ProtocolError(
+                                "Content source metadata disagrees with actual bytes"
+                            )
+                        receipt = await uploader(data)
+                        validator.validate("content-upload-receipt", receipt)
+                        identity = (len(data), digest)
+                        if (receipt["size"], receipt["sha256"]) != identity:
+                            raise ProtocolError(
+                                "Uploaded descriptor does not match source bytes"
+                            )
+                        known = self._references.get(receipt["ref"])
+                        if known is not None and known != identity:
+                            raise ProtocolError("Immutable content reference changed")
+                        self._references[receipt["ref"]] = identity
+                        return deepcopy(receipt)
+
+                    if upload_limiter is None:
+                        reference = await transfer()
+                    else:
+                        async with upload_limiter:
+                            reference = await transfer()
+                    # Publish only fully confirmed receipts, never bytes or tasks.
+                    self._receipts[key] = reference
             item.pop("gap", None)
             item.update(selection="body", body={"ref": reference["ref"]})
             item.pop("size", None)
             item.pop("sha256", None)
             validator.validate("content-item", item)
+
+        try:
+            async with anyio.create_task_group() as group:
+                for source, original, item in selected_items:
+                    group.start_soon(prepare, source, original, item)
+        except ExceptionGroup as exc:
+            raise exc.exceptions[0] from None
         return view
 
     async def aclose(self) -> None:
@@ -788,6 +868,9 @@ class ContentSources:
                         group.start_soon(source.aclose)
         finally:
             self._references.clear()
+            self._item_metadata.clear()
+            self._receipts.clear()
+            self._receipt_locks.clear()
             self.bindings.clear()
             self.uploads.clear()
             self._close_done.set()

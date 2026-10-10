@@ -235,18 +235,11 @@ class ContentStore:
 
 
 def content_items(value):
-    if isinstance(value, dict):
-        if (
-            "body" in value
-            and isinstance(value["body"], dict)
-            and "ref" in value["body"]
-        ):
-            yield value
-        for child in value.values():
-            yield from content_items(child)
-    elif isinstance(value, list):
-        for child in value:
-            yield from content_items(child)
+    """Enumerate canonical part slots, never opaque host JSON."""
+    from ._content import normalized_content_slots, normalized_values
+
+    paths, _ = normalized_content_slots().get(value.get("type"), ((), ()))
+    yield from normalized_values(value, paths)
 
 
 def dispatch_observations(event, subscriptions, called, prepare, notify):

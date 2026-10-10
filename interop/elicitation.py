@@ -264,7 +264,7 @@ def main():
                             validate_mode(meta["mode"], {"form": {}, "url": {}})
                             payload = read_selected(meta, "request", resolve, validate)
                             body = (
-                                resolve(meta["request"]["body"])
+                                meta["request"]["text"].encode("utf-8")
                                 if payload is not None
                                 else b""
                             )

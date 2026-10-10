@@ -1169,12 +1169,21 @@ class Hooks(BoundaryMixin):
                         with anyio.CancelScope(shield=True):
                             for source in retired_sources:
                                 await source.aclose()
-                    if not json_equal(previous, result.event) and not any(
-                        effect["type"] == "return" for effect in effects
-                    ):
-                        accepted.state["candidate"] = None
-                        if accepted.state["permission"] == "allow":
+                    if not json_equal(previous, result.event):
+                        # Invalidate inherited state when a projected write changes
+                        # the host value, but preserve fresh effects admitted by
+                        # this response for the modified operation.
+                        supplied = {effect["type"] for effect in effects}
+                        if "return" not in supplied:
+                            accepted.state["candidate"] = None
+                            accepted.state.pop("result", None)
+                        if (
+                            accepted.state["permission"] == "allow"
+                            and "allow" not in supplied
+                        ):
                             accepted.state["permission"] = "none"
+                            accepted.state["authorization"] = "pending"
+                            accepted.state.pop("result", None)
                     accepted.state["event"] = deepcopy(result.event)
                     result.accepted_responses.extend(accepted.accepted_responses)
                     messages = result.state.get("messages", []) + accepted.state.get(

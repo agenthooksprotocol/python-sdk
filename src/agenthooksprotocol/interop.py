@@ -320,12 +320,24 @@ def run_fixture_compaction(
                 staged[target] = committed
                 if boundary == "before":
                     candidate = settled.candidate
+                    returned = any(
+                        effect["type"] == "return"
+                        for response in settled.accepted_responses
+                        for effect in response.get("result", {}).get("effects", [])
+                    )
+                    # A settled candidate may be inherited from the request.
+                    # Only an accepted return transfers ownership to this hook.
+                    original = state["candidate"]
                     staged["candidate"] = (
                         None
                         if candidate is None
                         else {
                             "value": parts(candidate["value"], item_id),
-                            "supplier": supplier,
+                            "supplier": (
+                                supplier
+                                if returned or original is None
+                                else original["supplier"]
+                            ),
                         }
                     )
                 staged["messages"].extend(settled.state["messages"])

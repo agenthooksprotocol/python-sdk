@@ -17,6 +17,53 @@ def modify(target, value):
 
 
 class CompactionTests(unittest.TestCase):
+    def test_fixture_candidate_supplier_changes_only_on_accepted_return(self):
+        from copy import deepcopy
+        from agenthooksprotocol._hooks import HookResult
+        from agenthooksprotocol.interop import run_fixture_compaction
+
+        cached = text_parts("cached")
+        replacement = text_parts("replacement")
+
+        def settled(snapshot, effects, value):
+            return HookResult(
+                event={"instructions": deepcopy(snapshot["instructions"])},
+                state={"candidate": {"value": value}, "messages": []},
+                accepted_responses=[{"result": {"effects": effects}}],
+            )
+
+        cases = [
+            ("no-effects", [], cached, "cache"),
+            ("identical-input", [modify("instructions", "base")], cached, "cache"),
+            ("identical-return", [{"type": "return", "value": cached}], cached, "next"),
+            ("replacement", [{"type": "return", "value": replacement}], replacement, "next"),
+        ]
+        for name, effects, value, supplier in cases:
+            with self.subTest(name=name):
+                actual = run_fixture_compaction(
+                    "base",
+                    before=[
+                        (
+                            "cache",
+                            "fail-closed",
+                            lambda snapshot: settled(
+                                snapshot, [{"type": "return", "value": cached}], cached
+                            ),
+                        ),
+                        (
+                            "next",
+                            "fail-closed",
+                            lambda snapshot: settled(snapshot, effects, value),
+                        ),
+                    ],
+                )
+                self.assertFalse(actual["generated"])
+                self.assertEqual(actual["failures"], [])
+                self.assertEqual(actual["summary"], value)
+                self.assertEqual(
+                    actual["provenance"], {"kind": "supplied", "supplier": supplier}
+                )
+
     def test_callbacks_receive_effective_input_and_result(self):
         generated = []
 

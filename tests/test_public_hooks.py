@@ -746,3 +746,62 @@ class PublicHooksTests(unittest.TestCase):
                 self.assertFalse(client.is_closed)
 
         self.run_async(run)
+
+    def test_serial_modification_preserves_only_new_permission_and_candidate(self):
+        async def run():
+            for fresh_allow in (False, True):
+                for fresh_return in (False, True):
+                    event = request()["params"]["event"]
+                    original = deepcopy(event)
+                    effects = [
+                        {
+                            "type": "modify",
+                            "target": "input",
+                            "operation": "replace",
+                            "value": {"value": "settled"},
+                        }
+                    ]
+                    if fresh_allow:
+                        effects.append({"type": "allow"})
+                    if fresh_return:
+                        effects.append({"type": "return", "value": "fresh"})
+                    transport = MemoryTransport(effects, [])
+                    async with Hooks(
+                        config(count=2),
+                        source="urn:host",
+                        capabilities=capabilities(),
+                        transport=transport,
+                    ) as hooks:
+                        result = await hooks.dispatch(
+                            "tool.before",
+                            event,
+                            initial_state={
+                                "permission": "allow",
+                                "candidate": {"value": "stale"},
+                            },
+                        )
+                    self.assertEqual(result.diagnostics, [])
+                    expected_permission = "allow" if fresh_allow else "none"
+                    expected_candidate = {"value": "fresh"} if fresh_return else None
+                    self.assertEqual(
+                        transport.requests[1]["params"]["state"]["permission"],
+                        expected_permission,
+                    )
+                    self.assertEqual(
+                        transport.requests[1]["params"]["state"]["candidate"],
+                        expected_candidate,
+                    )
+                    self.assertEqual(result.state["permission"], expected_permission)
+                    self.assertEqual(result.candidate, expected_candidate)
+                    self.assertEqual(
+                        transport.requests[0]["params"]["event"]["tool"]["input"],
+                        original["tool"]["input"],
+                    )
+                    self.assertEqual(
+                        transport.requests[1]["params"]["event"]["tool"]["input"],
+                        {"value": "settled"},
+                    )
+                    self.assertEqual(event, original)
+                    await result.aclose()
+
+        self.run_async(run)

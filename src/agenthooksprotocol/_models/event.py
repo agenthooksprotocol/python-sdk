@@ -5,8 +5,6 @@ from . import ToolBatchAfterInputCallsItemCall as CallsItemCall
 from . import ToolBatchAfterInputCallsItemOutcome as CallsItemOutcome
 from . import ToolBatchAfterInputCallsItemTool as CallsItemTool
 from . import FileChangedInputChangesItem as ChangesItem
-from . import FileChangedInputChangesItemAfter as ChangesItemAfter
-from . import FileChangedInputChangesItemBefore as ChangesItemBefore
 from . import FileChangedInputChangesItemOperation as ChangesItemOperation
 from . import ConfigChangeAfterEvent as ConfigChangeAfter
 from . import ConfigChangeAfterEvent as ConfigChangeAfterEvent
@@ -22,6 +20,7 @@ from . import ContextCompactBeforeEvent as ContextCompactBeforeEvent
 from . import ContextCompactBeforeInput as ContextCompactBeforeInput
 from . import ToolPermissionResolvedInputDecidedBy as DecidedBy
 from . import ToolPermissionResolvedInputDecision as Decision
+from . import TurnProgressInputDelta as Delta
 from . import Event as Event
 from . import ModelErrorInputExecutionExecuted as ExecutionExecuted
 from . import ModelErrorInputExecutionSkippedCancelled as ExecutionSkippedCancelled
@@ -55,6 +54,7 @@ from . import ModelSwitchBeforeEvent as ModelSwitchBefore
 from . import ModelSwitchBeforeEvent as ModelSwitchBeforeEvent
 from . import ModelSwitchBeforeInput as ModelSwitchBeforeInput
 from . import ModelRequestBeforeInputParams as Params
+from . import ToolProgressInputPartialOutput as PartialOutput
 from . import Path as Path
 from . import ModelSwitchAfterInputPrevious as Previous
 from . import ModelSwitchBeforeInputPricing as Pricing
@@ -132,8 +132,6 @@ __all__ = [
     "CallsItemOutcome",
     "CallsItemTool",
     "ChangesItem",
-    "ChangesItemAfter",
-    "ChangesItemBefore",
     "ChangesItemOperation",
     "ConfigChangeAfter",
     "ConfigChangeAfterEvent",
@@ -149,6 +147,7 @@ __all__ = [
     "ContextCompactBeforeInput",
     "DecidedBy",
     "Decision",
+    "Delta",
     "Event",
     "ExecutionExecuted",
     "ExecutionSkippedCancelled",
@@ -180,6 +179,7 @@ __all__ = [
     "ModelSwitchBeforeEvent",
     "ModelSwitchBeforeInput",
     "Params",
+    "PartialOutput",
     "Path",
     "Previous",
     "Pricing",

@@ -1,7 +1,12 @@
 #!/usr/bin/env python3
 """Offline actual HTTP wire adapter; no expected outcomes or semantic controls."""
 
-import base64, hashlib, json, os, sys, uuid
+import base64
+import hashlib
+import json
+import os
+import sys
+import uuid
 import anyio
 from agenthooksprotocol.server.hooks import Handler as HookHandler, InterceptResult
 from http.server import BaseHTTPRequestHandler, HTTPServer
@@ -136,18 +141,6 @@ def main():
                         boundary = case.get("result") or case["request"]
                         target = "content" if case.get("result") else "request"
 
-                        async def resolve_content(reference):
-                            return resolve(reference)
-
-                        async def upload_content(data):
-                            reference = {
-                                "ref": "urn:ahp:elicitation:" + str(uuid.uuid4()),
-                                "size": len(data),
-                                "sha256": hashlib.sha256(data).hexdigest(),
-                            }
-                            store[reference["ref"]] = data
-                            return reference
-
                         async def respond(message):
                             return InterceptResult(effects=case["effects"])
 
@@ -159,8 +152,6 @@ def main():
 
                         async def settle():
                             context = ContentContext(
-                                resolve=resolve_content,
-                                upload=upload_content,
                                 bindings={
                                     target: (
                                         "elicitation",
@@ -288,8 +279,8 @@ def main():
                                 pending[key], message, resolve, validate, principal
                             )
                             body = (
-                                resolve(meta["result"]["body"])
-                                if meta.get("result", {}).get("body")
+                                meta["result"]["text"].encode("utf-8")
+                                if meta.get("result", {}).get("text") is not None
                                 else b""
                             )
                             del pending[key]

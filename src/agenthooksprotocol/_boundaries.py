@@ -216,23 +216,38 @@ CONTENT_SOURCE_SLOTS: dict[str, tuple[str, tuple[str, ...]]] = {
             "*",
         ),
     ),
-    "context.compact.after.items": (
+    "context.compact.after.items_parts": (
         "context.compact.after",
         (
             "items",
             "*",
+            "parts",
+            "*",
         ),
     ),
-    "context.compact.after.summary": ("context.compact.after", ("summary",)),
-    "context.compact.before.instructions": (
-        "context.compact.before",
-        ("instructions",),
-    ),
-    "context.compact.before.items": (
+    "context.compact.before.items_parts": (
         "context.compact.before",
         (
             "items",
             "*",
+            "parts",
+            "*",
+        ),
+    ),
+    "file.changed.changes_after": (
+        "file.changed",
+        (
+            "changes",
+            "*",
+            "after",
+        ),
+    ),
+    "file.changed.changes_before": (
+        "file.changed",
+        (
+            "changes",
+            "*",
+            "before",
         ),
     ),
     "file.changed.items": (
@@ -256,17 +271,21 @@ CONTENT_SOURCE_SLOTS: dict[str, tuple[str, tuple[str, ...]]] = {
             "*",
         ),
     ),
-    "model.request.before.items": (
+    "model.request.before.items_parts": (
         "model.request.before",
         (
             "items",
             "*",
+            "parts",
+            "*",
         ),
     ),
-    "model.response.after.items": (
+    "model.response.after.items_parts": (
         "model.response.after",
         (
             "items",
+            "*",
+            "parts",
             "*",
         ),
     ),
@@ -291,10 +310,12 @@ CONTENT_SOURCE_SLOTS: dict[str, tuple[str, tuple[str, ...]]] = {
             "*",
         ),
     ),
-    "session.start.items": (
+    "session.start.items_parts": (
         "session.start",
         (
             "items",
+            "*",
+            "parts",
             "*",
         ),
     ),
@@ -328,10 +349,12 @@ CONTENT_SOURCE_SLOTS: dict[str, tuple[str, tuple[str, ...]]] = {
             "before",
         ),
     ),
-    "tool.after.items": (
+    "tool.after.items_parts": (
         "tool.after",
         (
             "items",
+            "*",
+            "parts",
             "*",
         ),
     ),
@@ -370,22 +393,40 @@ CONTENT_SOURCE_SLOTS: dict[str, tuple[str, tuple[str, ...]]] = {
             "*",
         ),
     ),
-    "tool.progress.partial_output": ("tool.progress", ("partialOutput",)),
-    "turn.end.items": (
+    "tool.progress.partial_output_parts": (
+        "tool.progress",
+        (
+            "partialOutput",
+            "parts",
+            "*",
+        ),
+    ),
+    "turn.end.items_parts": (
         "turn.end",
         (
             "items",
             "*",
+            "parts",
+            "*",
         ),
     ),
-    "turn.finish.before.items": (
+    "turn.finish.before.items_parts": (
         "turn.finish.before",
         (
             "items",
             "*",
+            "parts",
+            "*",
         ),
     ),
-    "turn.progress.delta": ("turn.progress", ("delta",)),
+    "turn.progress.delta_parts": (
+        "turn.progress",
+        (
+            "delta",
+            "parts",
+            "*",
+        ),
+    ),
     "turn.progress.items": (
         "turn.progress",
         (
@@ -393,10 +434,12 @@ CONTENT_SOURCE_SLOTS: dict[str, tuple[str, tuple[str, ...]]] = {
             "*",
         ),
     ),
-    "turn.start.items": (
+    "turn.start.items_parts": (
         "turn.start",
         (
             "items",
+            "*",
+            "parts",
             "*",
         ),
     ),
@@ -407,34 +450,11 @@ CONTENT_SOURCE_SLOTS: dict[str, tuple[str, tuple[str, ...]]] = {
             "*",
         ),
     ),
-    "user.attention.attention_message": (
-        "user.attention",
-        (
-            "attention",
-            "message",
-            "*",
-        ),
-    ),
-    "user.attention.attention_title": (
-        "user.attention",
-        (
-            "attention",
-            "title",
-            "*",
-        ),
-    ),
     "user.elicitation.request.items": (
         "user.elicitation.request",
         (
             "items",
             "*",
-        ),
-    ),
-    "user.elicitation.request.elicitation_request": (
-        "user.elicitation.request",
-        (
-            "elicitation",
-            "request",
         ),
     ),
     "user.elicitation.result.items": (
@@ -444,13 +464,6 @@ CONTENT_SOURCE_SLOTS: dict[str, tuple[str, tuple[str, ...]]] = {
             "*",
         ),
     ),
-    "user.elicitation.result.elicitation_result": (
-        "user.elicitation.result",
-        (
-            "elicitation",
-            "result",
-        ),
-    ),
     "user.message.inbound.items": (
         "user.message.inbound",
         (
@@ -458,11 +471,13 @@ CONTENT_SOURCE_SLOTS: dict[str, tuple[str, tuple[str, ...]]] = {
             "*",
         ),
     ),
-    "user.message.inbound.message_text": (
+    "user.message.inbound.message_messages_parts": (
         "user.message.inbound",
         (
             "message",
-            "text",
+            "messages",
+            "*",
+            "parts",
             "*",
         ),
     ),
@@ -473,11 +488,13 @@ CONTENT_SOURCE_SLOTS: dict[str, tuple[str, tuple[str, ...]]] = {
             "*",
         ),
     ),
-    "user.message.outbound.message_payload": (
+    "user.message.outbound.message_messages_parts": (
         "user.message.outbound",
         (
             "message",
-            "payload",
+            "messages",
+            "*",
+            "parts",
             "*",
         ),
     ),

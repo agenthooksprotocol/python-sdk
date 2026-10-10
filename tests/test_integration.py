@@ -12,6 +12,57 @@ class IntegrationTests(unittest.TestCase):
     def setUp(self):
         self.validator = Validator()
 
+    def test_compaction_replace_and_merge_use_canonical_text_lists(self):
+        from test_public_content import text_parts, wire
+
+        for stage, target in (("before", "instructions"), ("after", "summary")):
+            with self.subTest(stage=stage):
+                original = text_parts("original")
+                replacement, appended = (
+                    text_parts("replacement"),
+                    text_parts("appended"),
+                )
+                caps = {
+                    "effects": ["modify"],
+                    "modify": {target: {"replace": True, "merge": True}},
+                }
+                payload = (
+                    {"trigger": "manual", "items": [], target: original}
+                    if stage == "before"
+                    else {
+                        target: original,
+                        "removed": [],
+                        "execution": {"status": "executed"},
+                    }
+                )
+                req = wire("context.compact." + stage, "compact", payload, caps)
+                effects = [
+                    {
+                        "type": "modify",
+                        "target": target,
+                        "operation": "replace",
+                        "value": replacement,
+                    },
+                    {
+                        "type": "modify",
+                        "target": target,
+                        "operation": "merge",
+                        "value": appended,
+                    },
+                ]
+                rep = response(effects)
+                rep["id"] = req["id"]
+                settled = apply_response(req, rep, self.validator)
+                self.assertEqual(settled["event"][target], replacement + appended)
+                self.assertEqual(req["params"]["event"][target], original)
+                self.assertNotIn("content_references", settled)
+                for selection in ("metadata", "omit"):
+                    unselected = deepcopy(req)
+                    unselected["params"]["event"][target][0]["selection"] = selection
+                    unselected["params"]["event"][target][0].pop("text")
+                    with self.assertRaisesRegex(ProtocolError, "selected inline text"):
+                        apply_response(unselected, rep, self.validator)
+
     def test_observations_are_effective_payload_only(self):
         for effects, expected in [
             ([], "normal"),

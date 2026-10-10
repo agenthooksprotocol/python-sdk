@@ -76,8 +76,8 @@ class LifecycleTests(unittest.TestCase):
         lifecycle.accept(req["id"], fallback=True)
         item = {
             "id": "content-1",
-            "kind": "text",
-            "mediaType": "text/plain",
+            "kind": "attachment",
+            "mediaType": "application/octet-stream",
             "selection": "body",
             "body": {"ref": descriptor["ref"]},
         }
@@ -232,8 +232,8 @@ class LifecycleTests(unittest.TestCase):
                 }
                 item = {
                     "id": "content-1",
-                    "kind": "text",
-                    "mediaType": "text/plain",
+                    "kind": "attachment",
+                    "mediaType": "application/octet-stream",
                     "selection": "body",
                     "body": {"ref": blob["ref"]},
                 }

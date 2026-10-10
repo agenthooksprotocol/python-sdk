@@ -5,10 +5,18 @@ import unittest
 
 import anyio
 
-from agenthooksprotocol import Attachment
+from agenthooksprotocol import Attachment, OwnedAttachment
 from agenthooksprotocol.event import ContextCompactBeforeInput
 from agenthooksprotocol.runtime import ProtocolError
 from test_owned_content_hooks import harness, payload, INSTRUCTIONS
+
+
+def inline_input(owner, value=None):
+    value = payload() if value is None else value
+    value["items"][0]["parts"][0].pop("size", None)
+    value["items"][0]["parts"][0].pop("selection", None)
+    value["items"][0]["parts"][0]["body"] = OwnedAttachment(owner)
+    return ContextCompactBeforeInput(**value)
 
 
 class AttachmentTests(unittest.TestCase):
@@ -30,9 +38,7 @@ class AttachmentTests(unittest.TestCase):
                     calls.append("close")
 
                 attachment = Attachment.lazy(load, aclose=close)
-                bound = ContextCompactBeforeInput(**payload()).bind_instructions_source(
-                    attachment
-                )
+                bound = inline_input(attachment)
                 hooks, _ = harness(["metadata"], unmatched=unmatched)
                 async with hooks:
                     result = await hooks.context_compact_before(bound)
@@ -53,11 +59,10 @@ class AttachmentTests(unittest.TestCase):
         self.run_async(run)
 
     def test_rejected_reuse_closes_only_fresh_mixed_sources(self):
-        from agenthooksprotocol import ContentSources, OwnedContentSource
         from test_owned_content_hooks import Stream
 
         async def run():
-            for explicit in (False, True):
+            for constructed in (False, True):
                 calls = []
 
                 async def original_load():
@@ -74,38 +79,30 @@ class AttachmentTests(unittest.TestCase):
                     calls.append("fresh close")
 
                 original = Attachment.lazy(original_load, aclose=original_close)
-                first = ContextCompactBeforeInput(**payload()).bind_instructions_source(
-                    original
-                )
                 hooks, _ = harness(["metadata"])
                 async with hooks:
-                    result = await hooks.context_compact_before(first)
+                    result = await hooks.context_compact_before(inline_input(original))
                     fresh = Attachment.lazy(fresh_load, aclose=fresh_close)
                     stream = Stream()
-                    ordinary = OwnedContentSource(stream)
+                    ordinary = Attachment(stream)
                     value = payload()
-                    item = dict(value["instructions"], role="user")
-                    value["items"] = [dict(item, id=str(index)) for index in range(3)]
-                    bindings = {
-                        INSTRUCTIONS: original,
-                        "context.compact.before.items[0]": fresh,
-                        "context.compact.before.items[1]": ordinary,
-                        # Aliased fresh resources must still be closed exactly once.
-                        "context.compact.before.items[2]": fresh,
-                    }
+                    part = value["items"][0]["parts"][0]
+                    part.pop("selection", None)
+                    part.pop("size", None)
+                    value["items"] = [
+                        {
+                            "role": "user",
+                            "parts": [
+                                dict(part, id=str(index), body=OwnedAttachment(owner))
+                            ],
+                        }
+                        for index, owner in enumerate(
+                            (original, fresh, ordinary, fresh)
+                        )
+                    ]
+                    value = ContextCompactBeforeInput(**value) if constructed else value
                     with self.assertRaisesRegex(ProtocolError, "already transferred"):
-                        if explicit:
-                            await hooks.context_compact_before(
-                                value, sources=ContentSources(bindings)
-                            )
-                        else:
-                            bound = ContextCompactBeforeInput(
-                                **value
-                            ).bind_instructions_source(original)
-                            bound = bound.bind_items_source(fresh, index=0)
-                            bound = bound.bind_items_source(ordinary, index=1)
-                            bound = bound.bind_items_source(fresh, index=2)
-                            await hooks.context_compact_before(bound)
+                        await hooks.context_compact_before(value)
                     self.assertEqual(calls, ["fresh close"])
                     self.assertEqual((stream.reads, stream.closes), (0, 1))
                     self.assertTrue(fresh._closed)
@@ -133,9 +130,7 @@ class AttachmentTests(unittest.TestCase):
                 attachment = (
                     Attachment.from_bytes(b"hello") if eager else Attachment.lazy(load)
                 )
-                bound = ContextCompactBeforeInput(**payload()).bind_instructions_source(
-                    attachment
-                )
+                bound = inline_input(attachment)
                 before = bound.to_wire()
                 hooks, transports = harness(["body", "body"])
                 writes = []
@@ -178,9 +173,7 @@ class AttachmentTests(unittest.TestCase):
                 async def close():
                     calls.append("close")
 
-                bound = ContextCompactBeforeInput(**payload()).bind_instructions_source(
-                    Attachment.lazy(load, aclose=close)
-                )
+                bound = inline_input(Attachment.lazy(load, aclose=close))
                 hooks, _ = harness(["metadata"])
                 if rejected:
                     await hooks.aclose()
@@ -215,8 +208,10 @@ class AttachmentTests(unittest.TestCase):
                 else:
                     with self.assertRaises((ValueError, ProtocolError, TimeoutError)):
                         await attachment.snapshot()
-                with self.assertRaises(ProtocolError):
+                self.assertIsNotNone(attachment._error)
+                with self.assertRaises(type(attachment._error)) as repeated:
                     await attachment.snapshot()
+                self.assertIs(repeated.exception, attachment._error)
                 await attachment.aclose()
                 self.assertEqual(calls, ["load", "close"])
 
@@ -224,30 +219,31 @@ class AttachmentTests(unittest.TestCase):
 
     def test_reject_unrelated_reference_and_metadata_mismatch(self):
         async def run():
-            for existing in (True, False):
-                value = payload()
-                if existing:
-                    value["instructions"].update(
-                        selection="body", body={"ref": "urn:other"}
-                    )
-                    value["instructions"].pop("size")
-                else:
-                    value["instructions"]["size"] = 9
-                attachment = Attachment.from_bytes(b"hello")
-                bound = ContextCompactBeforeInput(**value).bind_instructions_source(
-                    attachment
+            value = payload()
+            value["items"][0]["parts"][0].pop("size")
+            value["items"][0]["parts"][0].update(
+                selection="body", body={"ref": "urn:other"}
+            )
+            hooks, _ = harness(["metadata"])
+            async with hooks:
+                result = await hooks.context_compact_before(
+                    ContextCompactBeforeInput(**value)
                 )
-                hooks, _ = harness(["metadata"])
-                async with hooks:
-                    if existing:
-                        with self.assertRaises(ProtocolError):
-                            await hooks.context_compact_before(bound)
-                        self.assertTrue(attachment._closed)
-                    else:
-                        result = await hooks.context_compact_before(bound)
-                        async with result:
-                            with self.assertRaises(ProtocolError):
-                                await result.attachments.read(INSTRUCTIONS)
+                async with result:
+                    with self.assertRaises(KeyError):
+                        await result.attachments.read(INSTRUCTIONS)
+            value = payload()
+            value["items"][0]["parts"][0]["size"] = 9
+            attachment = Attachment.from_bytes(b"hello")
+            hooks, _ = harness(["metadata"])
+            async with hooks:
+                result = await hooks.context_compact_before(
+                    inline_input(attachment, value)
+                )
+            async with result:
+                result.attachments._metadata[INSTRUCTIONS] = {"size": 9}
+                with self.assertRaises(ProtocolError):
+                    await result.attachments.read(INSTRUCTIONS)
 
         self.run_async(run)
 
@@ -271,9 +267,7 @@ class AttachmentTests(unittest.TestCase):
 
             for transport in transports.values():
                 transport.request = request
-            bound = ContextCompactBeforeInput(**payload()).bind_instructions_source(
-                Attachment.lazy(load, aclose=close)
-            )
+            bound = inline_input(Attachment.lazy(load, aclose=close))
 
             async def dispatch():
                 from agenthooksprotocol import OperationCancelledError
@@ -305,10 +299,8 @@ class AttachmentTests(unittest.TestCase):
                     Attachment.from_bytes(data) if eager else Attachment.lazy(load)
                 )
                 value = payload()
-                value["instructions"]["size"] = len(data)
-                bound = ContextCompactBeforeInput(**value).bind_instructions_source(
-                    attachment
-                )
+                value["items"][0]["parts"][0]["size"] = len(data)
+                bound = inline_input(attachment, value)
                 uploads = []
 
                 async def upload(body):
@@ -337,7 +329,7 @@ class AttachmentTests(unittest.TestCase):
 
         self.run_async(run)
 
-    def test_existing_text_edits_replace_the_effective_owner_without_store(self):
+    def test_existing_text_edits_preserve_binary_owner_without_store(self):
         from test_public_content import Replies, hooks_for, modify
 
         async def run():
@@ -345,43 +337,57 @@ class AttachmentTests(unittest.TestCase):
                 "effects": ["modify"],
                 "modify": {"instructions": {"replace": True, "merge": False}},
             }
-            transport = Replies([modify("instructions", "reviewed")], [])
+            reviewed = [
+                {
+                    "id": "reviewed",
+                    "kind": "text",
+                    "mediaType": "text/plain",
+                    "selection": "body",
+                    "text": "reviewed",
+                }
+            ]
+            transport = Replies([modify("instructions", reviewed)], [])
             hooks = hooks_for("context.compact.before", caps, transport, count=2)
-            original = Attachment.from_bytes(b"hello", max_bytes=32)
-            bound = ContextCompactBeforeInput(**payload()).bind_instructions_source(
-                original
-            )
-            uploads = []
+            owner = Attachment.from_bytes(b"hello", max_bytes=32)
+            value = payload()
+            value["instructions"] = [
+                {
+                    "id": "old",
+                    "kind": "text",
+                    "mediaType": "text/plain",
+                    "selection": "body",
+                    "text": "old",
+                }
+            ]
+            writes = []
 
-            async def upload(body):
-                uploads.append(body)
+            async def upload(data):
+                writes.append(data)
                 return {
-                    "ref": f"urn:direct:{len(uploads)}",
-                    "size": len(body),
-                    "sha256": hashlib.sha256(body).hexdigest(),
+                    "ref": f"urn:direct:{len(writes)}",
+                    "size": len(data),
+                    "sha256": hashlib.sha256(data).hexdigest(),
                 }
 
             async with hooks:
                 result = await hooks.context_compact_before(
-                    bound, uploads={"org.example.content": upload}
+                    inline_input(owner, value), uploads={"org.example.content": upload}
                 )
             self.assertEqual(result.diagnostics, [])
-            self.assertEqual(uploads, [b"hello", b"reviewed", b"reviewed"])
-            self.assertTrue(original._closed)
+            self.assertEqual(result.event["instructions"], reviewed)
+            self.assertEqual(writes, [b"hello", b"hello"])
             async with result:
-                self.assertEqual(result.content["instructions"], "reviewed")
-                self.assertIs(await result.attachments.read(INSTRUCTIONS), uploads[1])
-                self.assertIs(uploads[1], uploads[2])
-                self.assertEqual(
-                    result.attachments._bindings[INSTRUCTIONS].max_bytes, 32
-                )
+                self.assertIs(result.attachments._bindings[INSTRUCTIONS], owner)
+                self.assertIs(await result.attachments.read(INSTRUCTIONS), writes[0])
+                self.assertIs(writes[0], writes[1])
+                self.assertEqual(owner.max_bytes, 32)
+            self.assertTrue(owner._closed)
 
         self.run_async(run)
 
-    def test_existing_json_return_uses_effective_attachment_without_store(self):
+    def test_existing_json_return_uses_inline_complete_json_without_store(self):
         import json
         from unittest.mock import patch
-        from agenthooksprotocol import ContentSources
         from test_public_content import Replies, hooks_for
 
         async def run():
@@ -394,78 +400,55 @@ class AttachmentTests(unittest.TestCase):
                     "required": ["ok"],
                 },
             }
-            data = json.dumps(request).encode()
-            # Use canonical generated slot metadata rather than a wire reference.
-            from agenthooksprotocol._boundaries import CONTENT_SOURCE_SLOTS
-
-            slot = next(
-                name
-                for name, value in CONTENT_SOURCE_SLOTS.items()
-                if value == ("user.elicitation.request", ("elicitation", "request"))
-            )
-            owner = Attachment.from_bytes(data)
             value = {
                 "elicitation": {
                     "mode": "form",
                     "server": "example",
                     "request": {
                         "id": "question",
-                        "kind": "content",
-                        "mediaType": "application/json",
-                        "selection": "metadata",
+                        "kind": "text",
+                        "mediaType": "text/plain",
+                        "selection": "body",
+                        "text": json.dumps(request),
                     },
                 }
             }
             caps = {"effects": ["return"], "elicitation": {"form": {}}}
             answer = {"action": "accept", "content": {"ok": True}}
-            first_answer = {"action": "accept", "content": {"ok": False}}
-            transport = Replies(
-                [{"type": "return", "value": first_answer}],
-                [{"type": "return", "value": answer}],
+            first = {"action": "accept", "content": {"ok": False}}
+            hooks = hooks_for(
+                "user.elicitation.request",
+                caps,
+                Replies(
+                    [{"type": "return", "value": first}],
+                    [{"type": "return", "value": answer}],
+                ),
+                count=2,
             )
-            hooks = hooks_for("user.elicitation.request", caps, transport, count=2)
-            created = []
-            real_from_bytes = Attachment.from_bytes
 
-            def create(data, **kwargs):
-                effective = real_from_bytes(data, **kwargs)
-                created.append(effective)
-                return effective
+            async def upload(data):
+                self.fail("inline JSON must never upload")
 
-            uploads = []
-
-            async def upload(body):
-                uploads.append(body)
-                return {
-                    "ref": f"urn:direct:{len(uploads)}",
-                    "size": len(body),
-                    "sha256": hashlib.sha256(body).hexdigest(),
-                }
-
-            with patch.object(Attachment, "from_bytes", side_effect=create):
+            with patch.object(
+                Attachment,
+                "from_bytes",
+                side_effect=AssertionError("inline JSON must never own bytes"),
+            ):
                 async with hooks:
                     result = await hooks.user_elicitation_request(
-                        value,
-                        sources=ContentSources({slot: owner}),
-                        uploads={"org.example.content": upload},
+                        value, uploads={"org.example.content": upload}
                     )
             self.assertEqual(result.diagnostics, [])
-            self.assertEqual(len(uploads), 4)
-            self.assertEqual(len(created), 2)
-            self.assertTrue(created[0]._closed)
-            self.assertIsNone(created[0]._snapshot)
-            self.assertFalse(created[1]._closed)
-            async with result:
-                self.assertIs(await result.attachments.read(slot), data)
-                effective = await result.attachments.read("candidate")
-                self.assertIs(effective, uploads[-1])
-                self.assertEqual(json.loads(effective), answer)
-            self.assertTrue(created[1]._closed)
-            self.assertIsNone(created[1]._snapshot)
+            self.assertEqual(result.candidate, {"value": answer})
+            self.assertEqual(result.attachments._bindings, {})
+            self.assertEqual(
+                json.loads(result.event["elicitation"]["request"]["text"]), request
+            )
+            await result.aclose()
 
         self.run_async(run)
 
-    def test_text_replacement_limit_preserves_original_on_rejection(self):
+    def test_invalid_text_replacement_preserves_original_binary_owner(self):
         from test_public_content import Replies, hooks_for, modify
 
         async def run():
@@ -476,39 +459,51 @@ class AttachmentTests(unittest.TestCase):
             hooks = hooks_for(
                 "context.compact.before",
                 caps,
-                Replies([modify("instructions", "too large")]),
+                Replies(
+                    [
+                        modify(
+                            "instructions",
+                            [
+                                {
+                                    "id": "invalid",
+                                    "kind": "attachment",
+                                    "mediaType": "application/pdf",
+                                    "selection": "metadata",
+                                }
+                            ],
+                        )
+                    ]
+                ),
             )
             owner = Attachment.from_bytes(b"hello", max_bytes=5)
-            bound = ContextCompactBeforeInput(**payload()).bind_instructions_source(
-                owner
-            )
-            uploads = []
+            writes = []
 
             async def upload(data):
-                uploads.append(data)
+                writes.append(data)
                 return {
-                    "ref": f"urn:direct:{len(uploads)}",
+                    "ref": "urn:direct:original",
                     "size": len(data),
                     "sha256": hashlib.sha256(data).hexdigest(),
                 }
 
             async with hooks:
                 result = await hooks.context_compact_before(
-                    bound, uploads={"org.example.content": upload}
+                    inline_input(owner), uploads={"org.example.content": upload}
                 )
             self.assertEqual(result.decision, "deny")
             self.assertEqual(len(result.diagnostics), 1)
-            self.assertEqual(uploads, [b"hello"])
+            self.assertEqual(writes, [b"hello"])
             async with result:
                 self.assertIs(result.attachments._bindings[INSTRUCTIONS], owner)
                 self.assertEqual(await result.attachments.read(INSTRUCTIONS), b"hello")
 
         self.run_async(run)
 
-    def test_existing_json_modify_reads_owned_correlation_and_effective_answer(self):
+    def test_existing_json_modify_reads_inline_correlation_and_complete_answer(self):
         import json
-        from agenthooksprotocol import ContentContext, ContentSources
-        from agenthooksprotocol._boundaries import CONTENT_SOURCE_SLOTS
+        from unittest.mock import patch
+        from agenthooksprotocol import ContentContext
+        from agenthooksprotocol.event import UserElicitationRequestInput
         from test_public_content import Replies, hooks_for, modify, wire
 
         async def run():
@@ -521,33 +516,25 @@ class AttachmentTests(unittest.TestCase):
                     "required": ["ok"],
                 },
             }
-            request_owner = Attachment.from_bytes(json.dumps(question).encode())
+            request = UserElicitationRequestInput(
+                elicitation={
+                    "mode": "form",
+                    "server": "example",
+                    "request": {
+                        "id": "question",
+                        "kind": "text",
+                        "mediaType": "text/plain",
+                        "selection": "body",
+                        "text": json.dumps(question),
+                    },
+                }
+            ).to_wire()
             request_caps = {"effects": ["return"], "elicitation": {"form": {}}}
             original = wire(
-                "user.elicitation.request",
-                "original",
-                {
-                    "elicitation": {
-                        "mode": "form",
-                        "server": "example",
-                        "request": {
-                            "id": "question",
-                            "kind": "content",
-                            "mediaType": "application/json",
-                            "selection": "body",
-                            "body": {"ref": "urn:receiver:original"},
-                        },
-                    }
-                },
-                request_caps,
+                "user.elicitation.request", "original", request, request_caps
             )
             answer = {"action": "accept", "content": {"ok": False}}
-            owner = Attachment.from_bytes(json.dumps(answer).encode())
-            slot = next(
-                name
-                for name, value in CONTENT_SOURCE_SLOTS.items()
-                if value == ("user.elicitation.result", ("elicitation", "result"))
-            )
+            changed = {"action": "accept", "content": {"ok": True}}
             value = {
                 "parentEventId": "original",
                 "session": {"id": "session"},
@@ -557,9 +544,10 @@ class AttachmentTests(unittest.TestCase):
                     "action": "accept",
                     "result": {
                         "id": "answer",
-                        "kind": "content",
-                        "mediaType": "application/json",
-                        "selection": "metadata",
+                        "kind": "text",
+                        "mediaType": "text/plain",
+                        "selection": "body",
+                        "text": json.dumps(answer),
                     },
                 },
             }
@@ -568,91 +556,59 @@ class AttachmentTests(unittest.TestCase):
                 "modify": {"content": {"replace": True, "merge": True}},
                 "elicitation": {"form": {}},
             }
-            changed = {"action": "accept", "content": {"ok": True}}
             hooks = hooks_for(
                 "user.elicitation.result",
                 caps,
                 Replies([modify("content", changed["content"])]),
             )
-            uploads = []
 
             async def upload(data):
-                uploads.append(data)
-                return {
-                    "ref": f"urn:direct:{len(uploads)}",
-                    "size": len(data),
-                    "sha256": hashlib.sha256(data).hexdigest(),
-                }
+                self.fail("inline JSON must never upload")
 
-            # Correlation needs the original request, not an external byte store.
             context = ContentContext(
-                upload=upload,
                 bindings={"content": ("elicitation", "result")},
                 principal="org.example.content",
                 original_request=original,
-                attachments={"request": request_owner},
             )
-            async with request_owner:
+            with patch.object(
+                Attachment,
+                "from_bytes",
+                side_effect=AssertionError("inline JSON must never own bytes"),
+            ):
                 async with hooks:
                     result = await hooks.user_elicitation_result(
-                        value,
-                        content=context,
-                        sources=ContentSources({slot: owner}),
-                        uploads={"org.example.content": upload},
+                        value, content=context, uploads={"org.example.content": upload}
                     )
-                self.assertEqual(result.diagnostics, [])
-                async with result:
-                    data = await result.attachments.read(slot)
-                    self.assertIs(data, uploads[-1])
-                    self.assertEqual(json.loads(data), changed)
-                    self.assertIsNot(result.attachments._bindings[slot], owner)
+            self.assertEqual(result.diagnostics, [])
+            self.assertEqual(
+                json.loads(result.event["elicitation"]["result"]["text"]), changed
+            )
+            self.assertEqual(result.attachments._bindings, {})
+            await result.aclose()
 
         self.run_async(run)
 
-    def test_unpublished_replacement_owners_are_retired(self):
+    def test_unpublished_binary_owners_are_retired(self):
         from contextlib import nullcontext
         from unittest.mock import patch
         from agenthooksprotocol import OperationCancelledError
         from agenthooksprotocol.lifecycle import Lifecycle
-        from test_public_content import Replies, hooks_for, modify
 
         async def run():
             for failure in ("upload", "receipt", "cancel", "late"):
-                created = []
-                real_from_bytes = Attachment.from_bytes
-
-                def create(data, **kwargs):
-                    owner = real_from_bytes(data, **kwargs)
-                    created.append(owner)
-                    return owner
-
-                original = Attachment.from_bytes(b"hello")
-                bound = ContextCompactBeforeInput(**payload()).bind_instructions_source(
-                    original
-                )
-                caps = {
-                    "effects": ["modify"],
-                    "modify": {"instructions": {"replace": True, "merge": False}},
-                }
-                hooks = hooks_for(
-                    "context.compact.before",
-                    caps,
-                    Replies([modify("instructions", "reviewed")]),
-                )
-                writes = []
+                owner = Attachment.from_bytes(b"hello")
+                hooks, transports = harness(["body"])
 
                 async def upload(data):
-                    writes.append(data)
-                    if len(writes) == 2:
-                        if failure == "upload":
-                            raise ValueError("upload failed")
-                        if failure == "cancel":
-                            await anyio.sleep_forever()
+                    if failure == "upload":
+                        raise ValueError("upload failed")
+                    if failure == "cancel":
+                        await anyio.sleep_forever()
                     return {
-                        "ref": f"urn:direct:{len(writes)}",
+                        "ref": "urn:direct:failed",
                         "size": len(data),
                         "sha256": "0" * 64
-                        if failure == "receipt" and len(writes) == 2
+                        if failure == "receipt"
                         else hashlib.sha256(data).hexdigest(),
                     }
 
@@ -661,66 +617,112 @@ class AttachmentTests(unittest.TestCase):
                     if failure == "late"
                     else nullcontext()
                 )
-                with patch.object(Attachment, "from_bytes", side_effect=create), late:
+                with late:
                     async with hooks:
                         try:
                             with anyio.move_on_after(0.1) as scope:
                                 result = await hooks.context_compact_before(
-                                    bound, uploads={"org.example.content": upload}
+                                    inline_input(owner),
+                                    uploads={name: upload for name in transports},
                                 )
                             if not scope.cancel_called:
                                 await result.aclose()
                         except OperationCancelledError:
                             self.assertEqual(failure, "late")
-                self.assertEqual(len(created), 1)
-                self.assertTrue(created[0]._closed)
-                self.assertIsNone(created[0]._snapshot)
+                self.assertTrue(owner._closed)
+                self.assertIsNone(owner._snapshot)
 
         self.run_async(run)
 
-    def test_effective_replacement_cannot_be_transferred_twice(self):
+    def test_effective_result_owner_cannot_be_transferred_twice(self):
+        async def run():
+            owner = Attachment.from_bytes(b"hello")
+            hooks, _ = harness(["metadata"])
+            async with hooks:
+                result = await hooks.context_compact_before(inline_input(owner))
+                effective = result.attachments._bindings[INSTRUCTIONS]
+                self.assertIs(effective, owner)
+                self.assertTrue(effective._claimed)
+                with self.assertRaisesRegex(ProtocolError, "already transferred"):
+                    await hooks.context_compact_before(inline_input(effective))
+            async with result:
+                self.assertEqual(await result.attachments.read(INSTRUCTIONS), b"hello")
+
+        self.run_async(run)
+
+    def test_replaced_and_removed_owners_close_before_next_serial_receiver(self):
+        from agenthooksprotocol.event import ModelRequestBeforeInput
         from test_public_content import Replies, hooks_for, modify
 
         async def run():
-            caps = {
-                "effects": ["modify"],
-                "modify": {"instructions": {"replace": True, "merge": False}},
-            }
-            hooks = hooks_for(
-                "context.compact.before",
-                caps,
-                Replies([modify("instructions", "reviewed")]),
-            )
-            original = Attachment.from_bytes(b"hello")
-            bound = ContextCompactBeforeInput(**payload()).bind_instructions_source(
-                original
-            )
-            count = []
-
-            async def upload(data):
-                count.append(data)
-                return {
-                    "ref": f"urn:direct:{len(count)}",
-                    "size": len(data),
-                    "sha256": hashlib.sha256(data).hexdigest(),
+            for replacement in (
+                [],
+                [
+                    {
+                        "id": "replacement",
+                        "role": "user",
+                        "parts": [
+                            {
+                                "id": "text",
+                                "kind": "text",
+                                "mediaType": "text/plain",
+                                "selection": "body",
+                                "text": "reviewed",
+                            }
+                        ],
+                    }
+                ],
+            ):
+                owner = Attachment.from_bytes(b"hello")
+                caps = {
+                    "effects": ["modify"],
+                    "modify": {"request": {"replace": True, "merge": False}},
                 }
+                replies = Replies([modify("request", replacement)], [])
+                original = replies.request
 
-            async with hooks:
-                result = await hooks.context_compact_before(
-                    bound, uploads={"org.example.content": upload}
-                )
-                replacement = result.attachments._bindings[INSTRUCTIONS]
-                self.assertTrue(replacement._claimed)
-                with self.assertRaisesRegex(ProtocolError, "already transferred"):
-                    await hooks.context_compact_before(
-                        ContextCompactBeforeInput(**payload()).bind_instructions_source(
-                            replacement
-                        )
+                async def request(value):
+                    if replies.requests:
+                        self.assertTrue(owner._closed)
+                        self.assertIsNone(owner._snapshot)
+                    return await original(value)
+
+                replies.request = request
+                hooks = hooks_for("model.request.before", caps, replies, count=2)
+
+                async def upload(data):
+                    return {
+                        "ref": "urn:direct:original",
+                        "size": len(data),
+                        "sha256": hashlib.sha256(data).hexdigest(),
+                    }
+
+                async with hooks:
+                    value = ModelRequestBeforeInput(
+                        items=[
+                            {
+                                "role": "user",
+                                "parts": [
+                                    {
+                                        "kind": "attachment",
+                                        "mediaType": "application/pdf",
+                                        "body": OwnedAttachment(owner),
+                                    }
+                                ],
+                            }
+                        ],
+                        attempt={"id": "attempt", "number": 1},
+                        model={"id": "model", "provider": "example"},
+                        params={},
                     )
-            async with result:
-                self.assertEqual(
-                    await result.attachments.read(INSTRUCTIONS), b"reviewed"
-                )
+                    result = await hooks.model_request_before(
+                        value, uploads={"org.example.content": upload}
+                    )
+                self.assertEqual(result.diagnostics, [])
+                self.assertEqual(result.event["items"], replacement)
+                self.assertTrue(owner._closed)
+                self.assertEqual(result.attachments._bindings, {})
+                await result.aclose()
 
         self.run_async(run)
 

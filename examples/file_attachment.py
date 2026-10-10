@@ -9,7 +9,7 @@ import sys
 
 import anyio
 
-from agenthooksprotocol import Attachment, Hooks, ModelVisibleItemMetadata
+from agenthooksprotocol import Attachment, Hooks
 from agenthooksprotocol.event import ContextCompactBeforeInput
 
 
@@ -23,15 +23,19 @@ async def main(path: Path) -> None:
     event = ContextCompactBeforeInput(
         trigger="manual",
         items=[
-            ModelVisibleItemMetadata(
-                id="report",
-                kind="content",
-                role="user",
-                media_type="application/pdf",
-                selection="metadata",
-            )
+            {
+                "role": "user",
+                "parts": [
+                    {"kind": "text", "text": "Review this report."},
+                    {
+                        "kind": "attachment",
+                        "mediaType": "application/pdf",
+                        "body": attachment,
+                    },
+                ],
+            }
         ],
-    ).bind_items_source(attachment, index=0)
+    )
     async with Hooks(
         {
             "protocolVersion": "draft",
@@ -53,6 +57,7 @@ async def main(path: Path) -> None:
             ],
         },
         source="urn:example:file-review",
+        max_concurrent_uploads=8,
         capabilities={
             "context.compact.after": {
                 "modes": ["observe"],
@@ -67,7 +72,7 @@ async def main(path: Path) -> None:
         result = await hooks.context_compact_before(event)
         # No matching receiver: the file has not been opened.
     async with result:
-        body = await result.attachments.read("context.compact.before.items[0]")
+        body = await result.attachments.read("context.compact.before.items_parts[0][1]")
         print(f"Retained {path.name}: {len(body)} bytes")
 
 

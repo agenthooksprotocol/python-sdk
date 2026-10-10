@@ -81,6 +81,19 @@ class Validator:
             if not body.is_valid(value):
                 raise ProtocolError("Canonical schema rejected " + kind)
             return value
+        if kind in ("intercept-request", "observe-notification"):
+            from .lifecycle import content_items
+
+            event = value.get("params", {}).get("event", {})
+            if isinstance(event, dict) and any(
+                isinstance(item, dict)
+                and isinstance(item.get("body"), dict)
+                and item["body"].get("ref") == "ahp:owned:pending"
+                for item in content_items(event)
+            ):
+                raise ProtocolError(
+                    "Pending local attachment references cannot enter wire messages"
+                )
         codec = getattr(generated, "parse_" + kind.replace("-", "_"), None)
         if codec is None:
             raise ProtocolError("Generated codec unavailable: " + kind)
@@ -112,6 +125,25 @@ def json_equal(left, right):
     return left == right
 
 
+def _modification_paths(event):
+    targets = {"input": ("tool", "input")} if "tool" in event else {}
+    if event["type"] == "workspace.change.before":
+        targets["workspace"] = ("workspace", "change")
+    for target, event_type, path in [
+        ("prompt", "turn.start", ("items",)),
+        ("output", "tool.after", ("items",)),
+        ("request", "model.request.before", ("items",)),
+        ("response", "model.response.after", ("items",)),
+        ("response", "turn.finish.before", ("items",)),
+        ("content", "context.compact.before", ("items",)),
+        ("instructions", "context.compact.before", ("instructions",)),
+        ("summary", "context.compact.after", ("summary",)),
+    ]:
+        if event["type"] == event_type:
+            targets[target] = path
+    return targets
+
+
 def apply_response(
     request,
     response,
@@ -136,41 +168,49 @@ def apply_response(
         params["capabilities"],
         params["event"],
     )
-    if content is None:
+    if (
+        content is None
+        and event["type"] == "user.elicitation.request"
+        and any(effect["type"] in ("return", "deny", "modify") for effect in effects)
+    ):
+        raise ProtocolError(
+            "Elicitation effects require an authenticated request context"
+        )
+    if (
+        content is None
+        and event["type"] == "user.elicitation.result"
+        and any(effect["type"] == "modify" for effect in effects)
+    ):
+        raise ProtocolError(
+            "Elicitation result edits require the original request context"
+        )
+    if event["type"].startswith("context.compact."):
         for effect in effects:
-            needs_body = (
-                event["type"].startswith("user.elicitation.")
-                and effect["type"] in ("modify", "return", "deny")
-            ) or (
-                event["type"].startswith("context.compact.")
-                and (
-                    effect["type"] == "return"
-                    or effect.get("target") in ("instructions", "summary")
+            target = effect.get("target")
+            if effect["type"] == "return" or target in ("instructions", "summary"):
+                parts = event.get(
+                    target if target in ("instructions", "summary") else "instructions"
                 )
-            )
-            if needs_body:
-                raise ProtocolError(
-                    "This effect requires an explicit trusted content binding"
-                )
+                if not isinstance(parts, list) or any(
+                    part.get("selection") != "body" or "text" not in part
+                    for part in parts
+                ):
+                    raise ProtocolError(
+                        "Compaction effects require selected inline text"
+                    )
+                if not isinstance(effect["value"], list):
+                    raise ProtocolError(
+                        "Compaction values require a canonical text-part list"
+                    )
+                for part in effect["value"]:
+                    validator.validate("content-item", part)
+                    if part.get("kind") != "text":
+                        raise ProtocolError("Compaction values require text parts")
     state = deepcopy(params.get("state", {}))
     original = deepcopy(event.get("tool", {}).get("input", event.get("input", {})))
     effective = deepcopy(original)
     effective_event = deepcopy(event)
-    targets = {"input": ("tool", "input")} if "tool" in event else {}
-    if event["type"] == "workspace.change.before":
-        targets["workspace"] = ("workspace", "change")
-    for target, event_type, path in [
-        ("prompt", "turn.start", ("items",)),
-        ("output", "tool.after", ("items",)),
-        ("request", "model.request.before", ("params",)),
-        ("response", "model.response.after", ("items",)),
-        ("response", "turn.finish.before", ("items",)),
-        ("content", "context.compact.before", ("items",)),
-        ("instructions", "context.compact.before", ("instructions",)),
-        ("summary", "context.compact.after", ("summary",)),
-    ]:
-        if event["type"] == event_type:
-            targets[target] = path
+    targets = _modification_paths(event)
     permission = state.get("permission", "none")
     denied, candidate = permission == "deny", state.get("candidate")
     messages = []
@@ -244,9 +284,12 @@ def apply_response(
             parent = parent[key]
         previous = parent.get(path[-1])
         if effect["operation"] == "merge":
-            if not isinstance(value, dict) or not isinstance(previous, dict):
-                raise ProtocolError("Merge requires object target and value")
-            value = {**previous, **value}
+            if isinstance(value, list) and isinstance(previous, list):
+                value = previous + value
+            elif isinstance(value, dict) and isinstance(previous, dict):
+                value = {**previous, **value}
+            else:
+                raise ProtocolError("Merge requires matching list or object targets")
         parent[path[-1]] = value
         intermediate = deepcopy(request)
         intermediate["params"]["event"] = effective_event

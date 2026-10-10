@@ -47,6 +47,7 @@ from . import ExecutionEventToolProgressBatch as ProgressBatch
 from . import ExecutionEventToolProgressCall as ProgressCall
 from . import ExecutionEventToolProgressExtensions as ProgressExtensions
 from . import ExecutionEventToolProgressGapsItem as ProgressGapsItem
+from . import ExecutionEventToolProgressPartialOutput as ProgressPartialOutput
 from . import ExecutionEventToolProgressSession as ProgressSession
 from . import ExecutionEventToolProgressTool as ProgressTool
 from . import ExecutionEventToolProgressTurn as ProgressTurn
@@ -93,6 +94,7 @@ __all__ = [
     "ProgressCall",
     "ProgressExtensions",
     "ProgressGapsItem",
+    "ProgressPartialOutput",
     "ProgressSession",
     "ProgressTool",
     "ProgressTurn",

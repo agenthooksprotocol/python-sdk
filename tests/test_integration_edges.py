@@ -1,8 +1,8 @@
 """Regression coverage for integration-discovered protocol boundaries."""
 
 from copy import deepcopy
+import os
 import json
-import hashlib
 from pathlib import Path
 from jsonschema import Draft202012Validator, FormatChecker
 from referencing import Registry, Resource
@@ -23,26 +23,18 @@ class IntegrationEdgeTests(unittest.TestCase):
             "requestedSchema": {"type": "object", "properties": {}},
         }
         result_body = {"action": "accept", "content": {}}
-        bodies = {}
         envelopes = []
         for stage, body in (("request", request_body), ("result", result_body)):
             ident = "elicitation:" + stage
-            raw = json.dumps(body).encode()
-            reference = {
-                "ref": "urn:" + ident,
-                "size": len(raw),
-                "sha256": hashlib.sha256(raw).hexdigest(),
-            }
-            bodies[reference["ref"]] = raw
             meta = {
                 "mode": "form",
                 "server": "example",
                 stage: {
                     "id": ident + ":item",
-                    "kind": "elicitation." + stage,
-                    "mediaType": "application/json",
+                    "kind": "text",
+                    "mediaType": "text/plain",
                     "selection": "body",
-                    "body": {"ref": reference["ref"]},
+                    "text": json.dumps(body),
                 },
             }
             event = {
@@ -75,11 +67,19 @@ class IntegrationEdgeTests(unittest.TestCase):
                 }
             )
         envelopes[0]["params"]["capabilities"].pop("modify")
-        return *envelopes, lambda ref: bodies[ref["ref"]]
+
+        def resolve(ref):
+            self.fail("Inline elicitation must not resolve storage")
+
+        return *envelopes, resolve
 
     def test_effects_require_explicit_boundary_mode(self):
-        directory = (
-            Path(__file__).resolve().parents[2] / "agent-hooks-protocol/schema/draft"
+        directory = Path(
+            os.environ.get(
+                "AHP_SCHEMA_DIR",
+                Path(__file__).resolve().parents[2]
+                / "canonical-inline-messages/schema/draft",
+            )
         )
         schemas = {
             p.stem.removesuffix(".schema"): json.loads(p.read_text())

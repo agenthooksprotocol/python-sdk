@@ -32,7 +32,13 @@ from weakref import WeakSet
 import anyio
 from jsonschema import FormatChecker
 
-from .runtime import OperationCancelledError, ProtocolError, Validator, apply_response
+from .runtime import (
+    OperationCancelledError,
+    ProtocolError,
+    Validator,
+    apply_response,
+    json_equal,
+)
 from .lifecycle import Lifecycle
 from .lineage import TaskLineage
 from ._boundaries import BoundaryMixin
@@ -54,13 +60,72 @@ def _owned_operation(method):
     async def run(self, *args, **kwargs):
         if method.__name__ == "dispatch":
             payload = args[1] if len(args) > 1 else kwargs.get("input")
+            if isinstance(payload, dict) and not hasattr(payload, "content_sources"):
+                from ._models import _normalize_owned_input
+                from ._boundaries import CONTENT_SOURCE_SLOTS
+
+                class HostInput(dict):
+                    @property
+                    def content_sources(self):
+                        return self._content_sources
+
+                    def to_wire(self):
+                        return dict(self)
+
+                name = args[0] if args else kwargs["event_name"]
+                normalized = HostInput(payload)
+                roots = {
+                    path[0]: [path[0]]
+                    for kind, path in CONTENT_SOURCE_SLOTS.values()
+                    if kind == name
+                }
+                from .lifecycle import content_items
+                from ._models import OwnedAttachment
+
+                parts = list(content_items(dict(payload, type=name)))
+                fresh = {
+                    owner
+                    for part in parts
+                    if isinstance(part, dict)
+                    for child in part.values()
+                    for owner in [
+                        child.source if isinstance(child, OwnedAttachment) else child
+                    ]
+                    if isinstance(owner, Attachment)
+                    and not owner._claimed
+                    and not owner._closed
+                }
+
+                try:
+                    _normalize_owned_input(normalized, name, roots)
+                except BaseException:
+                    with anyio.CancelScope(shield=True):
+                        for owner in fresh:
+                            await owner.aclose()
+                    raise
+                payload = normalized
+                if len(args) > 1:
+                    args = (args[0], payload, *args[2:])
+                else:
+                    kwargs["input"] = payload
             bindings = getattr(payload, "content_sources", None)
             if bindings:
-                if kwargs.get("sources") is not None:
-                    raise TypeError("Use input-bound sources or sources=, not both")
-                kwargs["sources"] = ContentSources(
-                    bindings, uploads=kwargs.get("uploads")
-                )
+                try:
+                    if kwargs.get("sources") is not None:
+                        raise TypeError("Use input-bound sources or sources=, not both")
+                    kwargs["sources"] = ContentSources(
+                        bindings, uploads=kwargs.get("uploads")
+                    )
+                except BaseException:
+                    with anyio.CancelScope(shield=True):
+                        for source in set(bindings.values()):
+                            if (
+                                isinstance(source, Attachment)
+                                and not source._claimed
+                                and not source._closed
+                            ):
+                                await source.aclose()
+                    raise
         sources = kwargs.get("sources")
         owned = (
             {
@@ -100,19 +165,43 @@ def _owned_operation(method):
                         raise ProtocolError("Attachment already transferred or closed")
                     if owned:
                         payload = args[1] if len(args) > 1 else kwargs.get("input")
+                        wire = deepcopy(
+                            payload.to_wire()
+                            if hasattr(payload, "to_wire")
+                            else payload
+                        )
                         for slot in owned:
-                            item = at(payload, sources._slots[slot][1])
-                            if "body" in item:
+                            item = at(wire, sources._slots[slot][1])
+                            if "body" in item and item["body"] != {
+                                "ref": "ahp:owned:pending"
+                            }:
                                 raise ProtocolError(
                                     "Owned attachments require items without existing body references"
                                 )
+                            # Pending local identities never enter a wire request or result.
+                            item.pop("body", None)
+                            item["selection"] = "metadata"
+                        if len(args) > 1:
+                            args = (args[0], wire, *args[2:])
+                        else:
+                            kwargs["input"] = wire
                     result = await method(self, *args, **kwargs)
                     if owned:
-                        effective = {
-                            slot: source
-                            for slot, source in sources.bindings.items()
-                            if isinstance(source, Attachment)
-                        }
+                        effective = {}
+                        for slot, source in sources.bindings.items():
+                            if not isinstance(source, Attachment):
+                                continue
+                            path = sources._slots[slot][1]
+                            try:
+                                current = at(result.event, path)
+                                original = sources._item_metadata[slot]
+                            except (KeyError, IndexError, TypeError):
+                                continue
+                            if current.get("id") == original.get("id") and (
+                                "body" not in current
+                                or current["body"]["ref"] in sources._references
+                            ):
+                                effective[slot] = source
                         metadata = {
                             slot: deepcopy(at(result.event, sources._slots[slot][1]))
                             for slot in effective
@@ -448,7 +537,16 @@ class Hooks(BoundaryMixin):
         transport: Any = None,
         resolve_credential: Any = None,
         auth_provider: Any = None,
+        max_concurrent_uploads: int = 8,
     ) -> None:
+        if (
+            isinstance(max_concurrent_uploads, bool)
+            or not isinstance(max_concurrent_uploads, int)
+            or max_concurrent_uploads <= 0
+        ):
+            raise ValueError("max_concurrent_uploads must be a positive integer")
+        self.max_concurrent_uploads = max_concurrent_uploads
+        self._upload_limiter = anyio.Semaphore(max_concurrent_uploads)
         self.validator = Validator()
         self._lineage = TaskLineage(self.validator)
         self.validator.validate("registration", config)
@@ -788,6 +886,7 @@ class Hooks(BoundaryMixin):
         event_id: str | None = None,
         content: ContentContext | None = None,
         sources: ContentSources | None = None,
+        original_request: dict[str, Any] | None = None,
         uploads: dict[str, Any] | None = None,
     ) -> HookResult:
         await self._ensure_ready()
@@ -804,6 +903,20 @@ class Hooks(BoundaryMixin):
         event = deepcopy(input.to_wire() if hasattr(input, "to_wire") else input)
         if not isinstance(event, dict):
             raise TypeError("Event input must be a canonical event payload object")
+        from ._content import normalized_content_slots, normalized_values
+
+        paths, _ = normalized_content_slots().get(event_name, ((), ()))
+        for part in normalized_values(event, paths):
+            if not isinstance(part, dict) or part.get("kind") != "text":
+                continue
+            if "id" not in part:
+                if part.get("synthesized") is False:
+                    raise ProtocolError(
+                        "Missing text identity conflicts with synthesized=false"
+                    )
+                part.update(id=str(uuid4()), synthesized=True)
+            part.setdefault("mediaType", "text/plain")
+            part.setdefault("selection", "body")
         if event_name == "session.start":
             event["manifest"] = deepcopy(self._manifest)
         event.update(
@@ -812,6 +925,8 @@ class Hooks(BoundaryMixin):
             type=event_name,
             time=event.get("time", datetime.now(timezone.utc).isoformat()),
         )
+        if sources is not None:
+            sources._remember(event)
         state = deepcopy(
             initial_state
             if initial_state is not None
@@ -861,6 +976,41 @@ class Hooks(BoundaryMixin):
         result = HookResult(deepcopy(event), current)
         observers = []
         halted = state.get("permission") == "deny" or state.get("flow") == "stop"
+        preupload_failures = {}
+        preupload_spent = {}
+
+        async def preupload(backend, index, subscription):
+            context = (backend["id"], index)
+            started = anyio.current_time()
+            try:
+                with anyio.fail_after(
+                    None
+                    if subscription.get("timeoutMs") is None
+                    else subscription["timeoutMs"] / 1000
+                ):
+                    await self._project_delivery(
+                        event,
+                        subscription,
+                        backend["id"],
+                        sources,
+                        uploads,
+                        delivery_context=context,
+                    )
+            except Exception as exc:
+                # Failure is settled only when this subscription is delivered.
+                preupload_failures[context] = exc
+            finally:
+                preupload_spent[context] = anyio.current_time() - started
+
+        if sources is not None:
+            async with anyio.create_task_group() as group:
+                for backend in self.config["hooks"]:
+                    for index, subscription in enumerate(backend["subscriptions"]):
+                        if any(
+                            _matches(pattern, event_name)
+                            for pattern in subscription["events"]
+                        ):
+                            group.start_soon(preupload, backend, index, subscription)
         for backend in self.config["hooks"]:
             transport = self._transports[backend["id"]]
             for subscription_index, subscription in enumerate(backend["subscriptions"]):
@@ -884,9 +1034,22 @@ class Hooks(BoundaryMixin):
                 request["params"]["state"] = deepcopy(state)
                 stage = "content"
                 try:
-                    with anyio.fail_after(subscription["timeoutMs"] / 1000):
+                    delivery_context = (backend["id"], subscription_index)
+                    remaining = max(
+                        0,
+                        subscription["timeoutMs"] / 1000
+                        - preupload_spent.get(delivery_context, 0),
+                    )
+                    with anyio.fail_after(remaining):
+                        if delivery_context in preupload_failures:
+                            raise preupload_failures[delivery_context]
                         request["params"]["event"] = await self._project_delivery(
-                            result.event, subscription, backend["id"], sources, uploads
+                            result.event,
+                            subscription,
+                            backend["id"],
+                            sources,
+                            uploads,
+                            delivery_context=delivery_context,
                         )
                         stage = "delivery"
                         delivery_content = (
@@ -901,6 +1064,24 @@ class Hooks(BoundaryMixin):
                             if sources is not None
                             else content
                         )
+                        if (
+                            delivery_content is None
+                            and event_name == "user.elicitation.request"
+                        ):
+                            delivery_content = ContentContext(
+                                bindings={"request": ("elicitation", "request")},
+                                principal=backend["id"],
+                            )
+                        if (
+                            delivery_content is None
+                            and event_name == "user.elicitation.result"
+                            and original_request is not None
+                        ):
+                            delivery_content = ContentContext(
+                                bindings={"content": ("elicitation", "result")},
+                                principal=backend["id"],
+                                original_request=original_request,
+                            )
                         accepted = await self.exchange(
                             request, transport=transport, content=delivery_content
                         )
@@ -946,8 +1127,54 @@ class Hooks(BoundaryMixin):
                     result.event = merge_effective(
                         previous, request["params"]["event"], accepted.event
                     )
+                    # Projection is not an edit. Apply explicit target writes to
+                    # the host value so replace also substitutes an identical
+                    # metadata view, while merge preserves hidden existing parts.
+                    from .runtime import _modification_paths
+
+                    paths = _modification_paths(previous)
+                    effects = (
+                        (accepted.accepted_response or {})
+                        .get("result", {})
+                        .get("effects", [])
+                    )
+                    written_paths = set()
+                    for effect in effects:
+                        if effect["type"] != "modify":
+                            continue
+                        path = paths.get(effect["target"])
+                        if path is None:
+                            continue
+                        value = deepcopy(effect["value"])
+                        if effect["operation"] == "merge":
+                            before = at(result.event, path)
+                            # merge_effective already includes admitted additions;
+                            # replay against the original host target exactly once.
+                            if path not in written_paths:
+                                before = at(previous, path)
+                            value = (
+                                before + value
+                                if isinstance(before, list)
+                                else {**before, **value}
+                            )
+                        put(result.event, path, value)
+                        written_paths.add(path)
                     for path in replaced_paths:
                         put(result.event, path, deepcopy(at(accepted.event, path)))
+                    if sources is not None:
+                        retired_sources = sources._reconcile(result.event)
+                        retired_sources.difference_update(
+                            result.attachments._bindings.values()
+                        )
+                        with anyio.CancelScope(shield=True):
+                            for source in retired_sources:
+                                await source.aclose()
+                    if not json_equal(previous, result.event) and not any(
+                        effect["type"] == "return" for effect in effects
+                    ):
+                        accepted.state["candidate"] = None
+                        if accepted.state["permission"] == "allow":
+                            accepted.state["permission"] = "none"
                     accepted.state["event"] = deepcopy(result.event)
                     result.accepted_responses.extend(accepted.accepted_responses)
                     messages = result.state.get("messages", []) + accepted.state.get(
@@ -1018,6 +1245,12 @@ class Hooks(BoundaryMixin):
                 selection=subscription,
                 sources=sources,
                 uploads=uploads,
+                preparation_error=preupload_failures.get(
+                    (backend["id"], subscription_index)
+                ),
+                preparation_spent=preupload_spent.get(
+                    (backend["id"], subscription_index), 0
+                ),
             )
         # The legacy evaluator uses a synthetic execution flag for fixtures;
         # the public harness never executes the host operation.
@@ -1036,16 +1269,29 @@ class Hooks(BoundaryMixin):
         selection: dict[str, Any] | None = None,
         sources: ContentSources | None = None,
         uploads: dict[str, Any] | None = None,
+        preparation_error: Exception | None = None,
+        preparation_spent: float = 0,
     ) -> None:
         # No private task/runtime: host task groups own concurrency and budgets.
         await anyio.lowlevel.checkpoint()
         stage = "content" if selection is not None else "delivery"
         try:
-            with anyio.fail_after(None if timeout_ms is None else timeout_ms / 1000):
+            with anyio.fail_after(
+                None
+                if timeout_ms is None
+                else max(0, timeout_ms / 1000 - preparation_spent)
+            ):
+                if preparation_error is not None:
+                    raise preparation_error
                 note = deepcopy(note)
                 if selection is not None:
                     note["params"]["event"] = await self._project_delivery(
-                        note["params"]["event"], selection, backend, sources, uploads
+                        note["params"]["event"],
+                        selection,
+                        backend,
+                        sources,
+                        uploads,
+                        delivery_context=(backend, subscription),
                     )
                 stage = "delivery"
                 self.validator.validate("observe-notification", note)
@@ -1063,7 +1309,9 @@ class Hooks(BoundaryMixin):
             result.diagnostics.append(diagnostic)
             self._observation_diagnostics.append(diagnostic)
 
-    async def _project_delivery(self, event, subscription, backend, sources, uploads):
+    async def _project_delivery(
+        self, event, subscription, backend, sources, uploads, *, delivery_context=None
+    ):
         if sources is None:
             return _project(
                 event, subscription["content"], subscription.get("includeNative", False)
@@ -1077,6 +1325,8 @@ class Hooks(BoundaryMixin):
                 upload=uploads.get(backend) if uploads is not None else None,
                 validator=self.validator,
                 include_native=subscription.get("includeNative", False),
+                delivery_context=delivery_context,
+                upload_limiter=self._upload_limiter,
             )
         except OperationCancelledError:
             raise

@@ -1,8 +1,7 @@
 """Serial host-side compaction interception. Text replacement is opt-in.
 
 Hooks get detached snapshots and return draft effect arrays. Responses stage
-privately. Only `applied` permits downstream use. Upload returned immutable UTF-8
-bodies before exposing references on the wire. No LLM is required.
+privately. Only `applied` permits downstream use. Text is carried as canonical inline text-part lists. No LLM is required.
 """
 
 from copy import deepcopy
@@ -21,14 +20,41 @@ def compaction_capabilities(boundary, observe_only=False):
         "modify": {
             "instructions" if boundary == "before" else "summary": {
                 "replace": True,
-                "merge": False,
+                "merge": True,
             }
         },
     }
 
 
+def text_parts(text, item_id="text-1"):
+    """Serialize host convenience text, never a hook effect value."""
+    return [
+        {
+            "id": item_id,
+            "kind": "text",
+            "mediaType": "text/plain",
+            "selection": "body",
+            "text": text,
+        }
+    ]
+
+
+def validate_text_parts(value, validator):
+    if not isinstance(value, list):
+        raise ValueError("Compaction text must be a text-part list")
+    for part in value:
+        validator.validate("content-item", part)
+        if (
+            part.get("kind") != "text"
+            or part.get("mediaType") != "text/plain"
+            or part.get("selection") != "body"
+            or "text" not in part
+        ):
+            raise ValueError("Compaction requires selected inline text")
+
+
 def validate_text_effects(boundary, effects, capabilities, validator):
-    """Shared compaction admission for legacy hosts and public content bindings."""
+    """Admit complete canonical responses before staging any changes."""
     target = "instructions" if boundary == "before" else "summary"
     for effect in effects:
         validator.validate("effect", effect)
@@ -39,17 +65,18 @@ def validate_text_effects(boundary, effects, capabilities, validator):
             else ("modify", "message")
         ):
             raise ValueError("Unsupported compaction effect")
-        if kind == "modify" and (
-            effect["target"] != target
-            or effect["operation"] != "replace"
-            or capabilities.get("modify", {}).get(target, {}).get("replace") is not True
-            or not isinstance(effect["value"], str)
-        ):
-            raise ValueError(
-                "Compaction modification requires granted text replacement"
-            )
-        if kind == "return" and not isinstance(effect["value"], str):
-            raise ValueError("Compaction summary must be text")
+        if kind == "modify":
+            operation = effect["operation"]
+            if (
+                effect["target"] != target
+                or operation not in ("replace", "merge")
+                or capabilities.get("modify", {}).get(target, {}).get(operation)
+                is not True
+            ):
+                raise ValueError("Compaction modification requires granted operation")
+            validate_text_parts(effect["value"], validator)
+        if kind == "return":
+            validate_text_parts(effect["value"], validator)
         if kind == "deny" and not effect.get("reason"):
             raise ValueError("Compaction denial requires a reason")
 
@@ -69,9 +96,12 @@ def run_compaction(
     changes invalidate it. Observe-only after callbacks are detached daemon-thread
     notifications of settled state; return values and failures are ignored.
     """
-    if not isinstance(instructions, str) or not isinstance(item_id, str) or not item_id:
+    if not isinstance(item_id, str) or not item_id:
         raise ValueError("instructions and nonempty item ID required")
     validator = Validator()
+    if isinstance(instructions, str):
+        instructions = text_parts(instructions, "instructions")
+    validate_text_parts(instructions, validator)
     before, after = list(before), list(after)
     for supplier, policy, callback in before + after:
         if (
@@ -82,19 +112,13 @@ def run_compaction(
         ):
             raise ValueError("invalid hook configuration")
     state = {
-        "instructions": instructions,
+        "instructions": deepcopy(instructions),
         "candidate": None,
         "summary": None,
-        "bodies": {},
         "messages": [],
         "denied": False,
     }
     seen, failures = [], []
-
-    def summary(staged, body):
-        ref = "urn:ahp:compaction:utf8:" + body.encode("utf-8").hex()
-        staged["bodies"][ref] = body
-        return {"id": item_id, "ref": ref}
 
     def pipeline(boundary, hooks):
         nonlocal state
@@ -109,37 +133,20 @@ def run_compaction(
                 validate_text_effects(boundary, effects, caps, validator)
                 staged = deepcopy(state)
                 for effect in effects:
-                    validator.validate("effect", effect)
-                    if effect["type"] not in caps["effects"]:
-                        raise ValueError("unsupported effect")
-                    kind = effect["type"]
-                    if kind == "modify":
-                        target = "instructions" if boundary == "before" else "summary"
-                        if (
-                            effect.get("target") != target
-                            or effect.get("operation") != "replace"
-                            or not isinstance(effect.get("value"), str)
-                        ):
-                            raise ValueError("invalid modification")
-                        if boundary == "before":
-                            staged["instructions"] = effect["value"]
-                        else:
-                            staged["summary"] = summary(staged, effect["value"])
-                    elif kind == "deny" and (
-                        not isinstance(effect.get("reason"), str)
-                        or not effect["reason"]
-                    ):
-                        raise ValueError("denial requires a reason")
-                    elif kind == "return" and not isinstance(effect.get("value"), str):
-                        raise ValueError("summary must be text")
-                    elif kind == "message" and not isinstance(effect.get("text"), str):
-                        raise ValueError("message must be text")
+                    if effect["type"] == "modify":
+                        target = effect["target"]
+                        value = deepcopy(effect["value"])
+                        staged[target] = (
+                            staged[target] + value
+                            if effect["operation"] == "merge"
+                            else value
+                        )
                 if staged["instructions"] != state["instructions"]:
                     staged["candidate"] = None
                 for effect in effects:
                     if effect["type"] == "return":
                         staged["candidate"] = {
-                            "body": effect["value"],
+                            "value": deepcopy(effect["value"]),
                             "supplier": supplier,
                         }
                     elif effect["type"] == "deny":
@@ -161,17 +168,23 @@ def run_compaction(
     if pipeline("before", before):
         candidate = state["candidate"]
         if candidate is not None:
-            body = candidate["body"]
+            body = deepcopy(candidate["value"])
             provenance = {"kind": "supplied", "supplier": candidate["supplier"]}
         else:
-            body = (generate or (lambda value: "summary:" + value))(
-                state["instructions"]
-            )
-            if not isinstance(body, str):
-                raise ValueError("generator must return text")
+            body = (
+                generate
+                or (
+                    lambda value: text_parts(
+                        "summary:" + "".join(part["text"] for part in value), item_id
+                    )
+                )
+            )(state["instructions"])
+            if isinstance(body, str):
+                body = text_parts(body, item_id)
+            validate_text_parts(body, validator)
             generated = True
             provenance = {"kind": "generated"}
-        state["summary"] = summary(state, body)
+        state["summary"] = deepcopy(body)
         applied = True if observe_only else pipeline("after", after)
     result = dict(
         state,

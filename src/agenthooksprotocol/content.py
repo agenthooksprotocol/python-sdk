@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .generated import ContentReference, ContentUploadReceipt
 
+from ._models.content import OwnedAttachment as OwnedAttachment
 from ._content import ContentContext as ContentContext
 from ._content import ContentSources as ContentSources
 from ._content import OwnedContentSource as OwnedContentSource

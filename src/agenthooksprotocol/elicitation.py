@@ -1,6 +1,6 @@
-"""MCP 2025-11-25 binding. Resolve only authenticated, pre-uploaded bytes.
+"""MCP 2025-11-25 binding for selected serialized JSON text.
 
-The resolver and validator are host-owned. Never build either from event fields.
+The validator and authenticated principal are supplied by the host.
 `principal` is the transport-authenticated hook identity, not elicitation.server.
 """
 
@@ -119,9 +119,9 @@ def validate_mode(mode, capabilities=None, origin="ahp"):
 def apply_effects(request, result, resolve, validate, principal, effects):
     """Stage a request return/deny or result content modification atomically.
 
-    No input or upload is mutated. Nothing is published until the whole effect
-    list and final MCP result validate. Hosts upload the returned complete result
-    before delivering its selected result event. A request phase has result=None.
+    No input is mutated. Nothing is published until the whole effect list and
+    final MCP result validate. Hosts serialize the returned complete result into
+    ordinary inline text. A request phase has result=None.
     """
     if (
         not isinstance(principal, str)
@@ -173,6 +173,8 @@ def apply_effects(request, result, resolve, validate, principal, effects):
                 or caps.get("modify", {}).get("content", {}).get(operation) is not True
             ):
                 raise ValueError("Modify target/operation not granted")
+            if not isinstance(effect["value"], dict):
+                raise ValueError("MCP content modification requires an object value")
             if operation == "replace":
                 staged["content"] = deepcopy(effect["value"])
             else:
@@ -199,16 +201,16 @@ def selection(meta, stage):
 
 
 def read_selected(meta, stage, resolve, validate):
-    """No resolver call for metadata/omit. Selected gaps fail closed by default."""
+    """Parse selected inline text only. Selected gaps fail closed by default."""
     item = meta.get(stage)
     if item is None:
         return None
     validate("content-item", item)
-    if item["mediaType"] != "application/json":
-        raise ValueError("MCP body must be application/json")
+    if item["kind"] != "text" or item["mediaType"] != "text/plain":
+        raise ValueError("MCP payload must be serialized ordinary text")
     if item["selection"] != "body":
         return None
-    if "body" not in item:
+    if "text" not in item:
         raise ValueError("Selected body unavailable (fail closed)")
 
     def pairs(items):
@@ -222,9 +224,7 @@ def read_selected(meta, stage, resolve, validate):
     def invalid(_):
         raise ValueError("Non JSON number")
 
-    payload = json.loads(
-        resolve(item["body"]), object_pairs_hook=pairs, parse_constant=invalid
-    )
+    payload = json.loads(item["text"], object_pairs_hook=pairs, parse_constant=invalid)
     validate("mcp-elicitation#" + stage, payload)
     if stage == "request" and meta["mode"] != payload.get("mode", "form"):
         raise ValueError("Mode mismatch")

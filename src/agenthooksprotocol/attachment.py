@@ -11,7 +11,7 @@ from .runtime import ProtocolError
 
 
 class Attachment(OwnedContentSource):
-    """Bind with an input's existing bind_*_source method.
+    """Immutable bytes owned by an inline attachment body.
 
     Ownership transfers on dispatch, once only. A successful result owns the
     attachment until aclose; unsuccessful dispatch closes it automatically.
@@ -85,6 +85,11 @@ class Attachment(OwnedContentSource):
         finally:
             self._load = None
             self._cleanup = None
+
+
+from ._models import _register_attachment_type  # noqa: E402
+
+_register_attachment_type(Attachment)
 
 
 class AttachmentContents:

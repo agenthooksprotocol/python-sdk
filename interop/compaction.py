@@ -9,36 +9,14 @@ from agenthooksprotocol.interop import open_local, loads, LIMIT
 
 
 def settle(snapshot, row):
-    """Run one offline backend through the same public content lifecycle as wire."""
-    from agenthooksprotocol import ContentContext
+    """Run one offline backend through the same public hook lifecycle as wire."""
     from agenthooksprotocol.server.hooks import Handler, InterceptResult
     from agenthooksprotocol.interop import fixture_hooks
     import anyio
-    import hashlib
-    import uuid
-
-    store = {}
-
-    async def upload(data):
-        reference = {
-            "ref": "urn:fixture:" + str(uuid.uuid4()),
-            "size": len(data),
-            "sha256": hashlib.sha256(data).hexdigest(),
-        }
-        store[reference["ref"]] = data
-        return reference
-
-    async def resolve(reference):
-        return store[reference["ref"]]
 
     async def invoke():
         boundary = snapshot["boundary"]
         target = "instructions" if boundary == "before" else "summary"
-        text = (
-            snapshot["instructions"]
-            if boundary == "before"
-            else snapshot["bodies"][snapshot["summary"]["ref"]]
-        )
         event = {
             "id": "fixture:" + boundary,
             "source": "urn:ahp:compaction-host",
@@ -46,14 +24,7 @@ def settle(snapshot, row):
             "session": {"id": "fixture"},
             "type": "context.compact." + boundary,
         }
-        event[target] = {
-            "id": target,
-            "kind": target,
-            "mediaType": "text/plain",
-            "role": "system" if boundary == "before" else "assistant",
-            "selection": "body",
-            "body": {"ref": (await upload(text.encode("utf-8")))["ref"]},
-        }
+        event[target] = snapshot[target]
         if boundary == "before":
             event.update(trigger="manual", items=[])
         else:
@@ -98,7 +69,7 @@ def settle(snapshot, row):
                 "capabilities": snapshot["capabilities"],
                 "state": {
                     "permission": "none",
-                    "candidate": {"value": candidate["body"]} if candidate else None,
+                    "candidate": {"value": candidate["value"]} if candidate else None,
                 },
             },
         }
@@ -107,14 +78,8 @@ def settle(snapshot, row):
             async def request(self, message):
                 return await Handler(intercept=respond).process(message)
 
-        context = ContentContext(
-            resolve=resolve,
-            upload=upload,
-            bindings={target: (target,)},
-            principal=row["supplier"],
-        )
         async with fixture_hooks(request, Transport()) as hooks:
-            return await hooks.exchange(request, content=context)
+            return await hooks.exchange(request)
 
     return anyio.run(invoke)
 

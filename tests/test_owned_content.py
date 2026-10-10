@@ -16,8 +16,12 @@ def generated_slot(kind, path):
     )
 
 
-INSTRUCTIONS = generated_slot("context.compact.before", ("instructions",))
-SUMMARY = generated_slot("context.compact.after", ("summary",))
+INSTRUCTIONS = (
+    generated_slot("context.compact.before", ("items", "*", "parts", "*")) + "[0][0]"
+)
+SUMMARY = (
+    generated_slot("context.compact.after", ("items", "*", "parts", "*")) + "[0][0]"
+)
 
 
 class Stream:
@@ -42,13 +46,20 @@ class Stream:
 def event():
     return {
         "type": "context.compact.before",
-        "instructions": {
-            "id": "instructions",
-            "kind": "content",
-            "mediaType": "text/plain",
-            "selection": "metadata",
-            "size": 5,
-        },
+        "items": [
+            {
+                "role": "user",
+                "parts": [
+                    {
+                        "id": "instructions",
+                        "kind": "attachment",
+                        "mediaType": "application/pdf",
+                        "selection": "metadata",
+                        "size": 5,
+                    }
+                ],
+            }
+        ],
     }
 
 
@@ -76,8 +87,10 @@ class OwnedContentTests(unittest.TestCase):
                         upload=upload,
                         validator=Validator(),
                     )
-                    self.assertEqual(view["instructions"]["selection"], selection)
-                    self.assertEqual(view["instructions"]["size"], 5)
+                    self.assertEqual(
+                        view["items"][0]["parts"][0]["selection"], selection
+                    )
+                    self.assertEqual(view["items"][0]["parts"][0]["size"], 5)
                 self.assertEqual((stream.reads, stream.closes), (0, 1))
             unused = Stream()
             async with ContentSources({INSTRUCTIONS: OwnedContentSource(unused)}):
@@ -119,18 +132,18 @@ class OwnedContentTests(unittest.TestCase):
                     group.start_soon(project)
                     group.start_soon(project)
                 self.assertNotEqual(
-                    views[0]["instructions"]["body"]["ref"],
-                    views[1]["instructions"]["body"]["ref"],
+                    views[0]["items"][0]["parts"][0]["body"]["ref"],
+                    views[1]["items"][0]["parts"][0]["body"]["ref"],
                 )
                 for view in views:
-                    item = view["instructions"]
+                    item = view["items"][0]["parts"][0]
                     self.assertEqual(set(item["body"]), {"ref"})
                     self.assertNotIn("size", item)
                     self.assertNotIn("sha256", item)
                 self.assertEqual(writes, [b"hello", b"hello"])
                 self.assertEqual(stream.reads, 2)
             self.assertEqual(stream.closes, 1)
-            self.assertNotIn("body", original["instructions"])
+            self.assertNotIn("body", original["items"][0]["parts"][0])
 
         self.run_async(run)
 
@@ -330,12 +343,12 @@ class OwnedContentTests(unittest.TestCase):
         async def run():
             stream = Stream()
             value = event()
-            value["instructions"].update(
+            value["items"][0]["parts"][0].update(
                 selection="body",
                 body={"ref": "urn:settled"},
             )
-            value["instructions"].pop("size", None)
-            value["instructions"].pop("sha256", None)
+            value["items"][0]["parts"][0].pop("size", None)
+            value["items"][0]["parts"][0].pop("sha256", None)
             async with ContentSources(
                 {INSTRUCTIONS: OwnedContentSource(stream)}
             ) as sources:
@@ -343,7 +356,7 @@ class OwnedContentTests(unittest.TestCase):
                     value, {"default": "body"}, backend="unknown", validator=Validator()
                 )
                 self.assertEqual(
-                    projected["instructions"]["body"]["ref"], "urn:settled"
+                    projected["items"][0]["parts"][0]["body"]["ref"], "urn:settled"
                 )
             self.assertEqual(stream.reads, 0)
 
@@ -351,29 +364,46 @@ class OwnedContentTests(unittest.TestCase):
 
     def test_generated_array_slot_indices_resolve_only_bound_item(self):
         async def run():
-            arrays = [
-                (name, kind, path)
-                for name, (kind, path) in CONTENT_SOURCE_SLOTS.items()
-                if "*" in path
-            ]
-            self.assertTrue(arrays, "generator must expose array content slots")
-            name, kind, path = arrays[0]
-
-            def value_at(components):
-                if not components:
-                    return {
-                        "id": "array-item",
-                        "kind": "content",
-                        "mediaType": "text/plain",
-                        "selection": "metadata",
-                    }
-                head, *tail = components
-                child = value_at(tail)
-                return [None, child] if head == "*" else {head: child}
-
-            value = value_at(path)
-            value["type"] = kind
-            binding = name + "[1]" * path.count("*")
+            name = generated_slot(
+                "context.compact.before", ("items", "*", "parts", "*")
+            )
+            value = {
+                "type": "context.compact.before",
+                "items": [
+                    {
+                        "role": "user",
+                        "parts": [
+                            {
+                                "id": "other-message",
+                                "kind": "text",
+                                "mediaType": "text/plain",
+                                "selection": "body",
+                                "text": "keep",
+                            }
+                        ],
+                    },
+                    {
+                        "role": "user",
+                        "parts": [
+                            {
+                                "id": "other-part",
+                                "kind": "text",
+                                "mediaType": "text/plain",
+                                "selection": "body",
+                                "text": "keep too",
+                            },
+                            {
+                                "id": "array-item",
+                                "kind": "attachment",
+                                "mediaType": "application/pdf",
+                                "selection": "metadata",
+                            },
+                        ],
+                    },
+                ],
+            }
+            path = ("items", "*", "parts", "*")
+            binding = name + "[1][1]"
             stream = Stream()
 
             async def upload(data):
@@ -394,6 +424,10 @@ class OwnedContentTests(unittest.TestCase):
                 item, original = item[index], original[index]
             self.assertEqual(item["body"]["ref"], "urn:array:body")
             self.assertNotIn("body", original)
+            self.assertEqual(projected["items"][0], value["items"][0])
+            self.assertEqual(
+                projected["items"][1]["parts"][0], value["items"][1]["parts"][0]
+            )
             self.assertEqual(stream.closes, 1)
 
         self.run_async(run)

@@ -80,7 +80,7 @@ class LifecycleAuthTests(unittest.TestCase):
                 }
                 item = {
                     "id": "binary",
-                    "kind": "text",
+                    "kind": "attachment",
                     "mediaType": "application/octet-stream",
                     "selection": "body",
                     "body": {"ref": blob["ref"]},
@@ -228,8 +228,8 @@ class LifecycleAuthTests(unittest.TestCase):
                 req["params"]["event"]["items"] = [
                     {
                         "id": "content",
-                        "kind": "text",
-                        "mediaType": "text/plain",
+                        "kind": "attachment",
+                        "mediaType": "application/octet-stream",
                         "selection": "body",
                         "body": {"ref": receipt["ref"]},
                     }

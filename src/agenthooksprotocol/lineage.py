@@ -45,32 +45,22 @@ class TaskLineage:
         with self.lock:
             roles, owners = dict(self.roles), dict(self.owners)
 
-            def collect(value):
-                if isinstance(value, dict):
-                    if (
-                        all(
-                            k in value for k in ("id", "kind", "mediaType", "selection")
-                        )
-                        and "role" in value
-                    ):
-                        item_key = (event["source"], value["id"])
-                        if item_key in roles and roles[item_key] != value["role"]:
-                            raise ProtocolError("Logical content item changed role")
-                        roles[item_key] = value["role"]
-                        if "parentItemId" in value:
-                            owner = (event["source"], value["parentItemId"])
-                            if item_key in owners and owners[item_key] != owner:
-                                raise ProtocolError(
-                                    "Logical content item changed owner"
-                                )
-                            owners[item_key] = owner
-                    for child in value.values():
-                        collect(child)
-                elif isinstance(value, list):
-                    for child in value:
-                        collect(child)
+            from ._content import normalized_content_slots, normalized_values
 
-            collect(event)
+            _, message_paths = normalized_content_slots().get(kind, ((), ()))
+            for message in normalized_values(event, message_paths):
+                message_key = (event["source"], message["id"])
+                if message_key in roles and roles[message_key] != message["role"]:
+                    raise ProtocolError("Logical message changed role")
+                roles[message_key] = message["role"]
+                for part in message["parts"]:
+                    part_key = (event["source"], part["id"])
+                    if part_key in owners and owners[part_key] != message_key:
+                        raise ProtocolError("Logical content part changed owner")
+                    if part_key in roles and roles[part_key] != message["role"]:
+                        raise ProtocolError("Logical content part changed role")
+                    owners[part_key] = message_key
+                    roles[part_key] = message["role"]
             for item_key, owner in owners.items():
                 if owner in roles and roles[item_key] != roles[owner]:
                     raise ProtocolError("Content child role disagrees with owner")

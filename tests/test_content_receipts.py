@@ -1,4 +1,4 @@
-"""Ref-only wire content, verified upload receipts, and shared Event consumers."""
+"""Attachment references, verified upload receipts, and shared Event consumers."""
 
 from __future__ import annotations
 
@@ -28,8 +28,8 @@ class ContentReceiptTests(unittest.TestCase):
         }
         self.item = {
             "id": "one",
-            "kind": "text",
-            "mediaType": "text/plain",
+            "kind": "attachment",
+            "mediaType": "application/octet-stream",
             "selection": "body",
             "body": {"ref": self.receipt["ref"]},
         }
@@ -142,13 +142,21 @@ class ContentReceiptTests(unittest.TestCase):
         self.assertEqual(event_identity(note.params.event), ("ended", "session.end"))
         with self.assertRaises(ValueError):
             models.InterceptRequestParams(
-                protocol_version="draft", capabilities={"effects": []}, event=event,
+                protocol_version="draft",
+                capabilities={"effects": []},
+                event=event,
             )
         # Native dictionary construction is outside the SDK decode contract;
         # parsing must still reject this malformed known event subset.
         req = {
-            "jsonrpc": "2.0", "id": "ended", "method": "hooks/intercept",
-            "params": {"protocolVersion": "draft", "capabilities": {"effects": []}, "event": event},
+            "jsonrpc": "2.0",
+            "id": "ended",
+            "method": "hooks/intercept",
+            "params": {
+                "protocolVersion": "draft",
+                "capabilities": {"effects": []},
+                "event": event,
+            },
         }
         with self.assertRaises(ProtocolError):
             self.validator.validate("intercept-request", req)

@@ -16,7 +16,7 @@ jobs:
       - uses: actions/checkout@v5
         with:
           repository: agenthooksprotocol/agent-hooks-protocol
-          ref: adfd36bfc5539ba7daf302f550bbb2d55c58989c
+          ref: 09a0fbba78b5b046d779d06681084f1244a96b96
           path: protocol-fixtures
       - run: mv protocol-fixtures ../agent-hooks-protocol
       - uses: actions/setup-python@v6

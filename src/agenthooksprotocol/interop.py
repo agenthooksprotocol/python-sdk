@@ -346,7 +346,7 @@ def run_fixture_compaction(
                         }
                     )
                 staged["messages"].extend(message.text for message in settled.messages)
-                staged["denied"] = settled.decision == "deny"
+                staged["denied"] = settled._state.get("decision", "allow") == "deny"
                 state = staged
             except Exception:
                 failures.append({"boundary": boundary, "supplier": supplier})

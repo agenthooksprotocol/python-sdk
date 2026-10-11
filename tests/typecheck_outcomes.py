@@ -12,10 +12,14 @@ from agenthooksprotocol import HookResult, _models as models
 from agenthooksprotocol.codec import Candidate
 from agenthooksprotocol.event import Event
 from agenthooksprotocol.response import ContextualResponse
+from agenthooksprotocol.state import Flow
 
 
 def contracts(outcome: HookResult[dict[str, int], str, dict[str, str]]) -> None:
     assert_type(outcome.event, Event)
+    assert_type(outcome.flow, Flow | None)
+    assert_type(outcome.instructions, list[str] | None)
+    assert_type(outcome.continuation_remaining, int | None)
     assert_type(outcome.messages, list[models.MessageEffect])
     assert_type(outcome.injections, list[models.InjectEffect])
     assert_type(outcome.accepted_responses, list[ContextualResponse])

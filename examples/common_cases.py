@@ -15,6 +15,7 @@ import anyio
 from agenthooksprotocol.generated import JsonValue
 import httpx
 from agenthooksprotocol import HookResult, Hooks, capability, event, tool
+from agenthooksprotocol.permission import Permission
 from agenthooksprotocol.wire import Effect, InterceptRequest
 from agenthooksprotocol.server import asgi, hooks
 from agenthooksprotocol.transports.http import HTTPTransport
@@ -80,7 +81,8 @@ async def run_case(case: dict[str, Any]) -> dict[str, Any]:
                 layer = "host-input-schema"
             if result.diagnostics and not result.accepted_responses:
                 layer = "protocol"
-            if host_accepted and result.decision == "allow":
+            if host_accepted and result.permission in (Permission.NONE, Permission.ALLOW):
+                # Explicit host validation can authorize NONE, but never DENY or ASK.
                 # A harmless ordinary host operation, not SDK execution or a shell.
                 executions.append(dict(effective))
             return {
@@ -88,7 +90,7 @@ async def run_case(case: dict[str, Any]) -> dict[str, Any]:
                 "sdkAccepted": bool(result.accepted_responses),
                 "hostAccepted": host_accepted,
                 "rejectionLayer": layer,
-                "decision": result.decision,
+                "permission": result.permission.value,
                 "effectiveInput": result.input,
                 "executed": bool(executions),
                 "executionCount": len(executions),

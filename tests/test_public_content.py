@@ -9,6 +9,8 @@ from jsonschema.exceptions import ValidationError
 
 import anyio
 
+from agenthooksprotocol.permission import Permission
+
 from agenthooksprotocol import Hooks
 from agenthooksprotocol._content import ContentContext
 
@@ -307,7 +309,7 @@ class PublicContentTests(unittest.TestCase):
                     self.assertEqual(settled.candidate.value, answer)
                     self.assertNotIn("content_references", settled._state)
                 else:
-                    self.assertEqual(settled.decision, "deny")
+                    self.assertEqual(settled.permission, Permission.DENY)
 
         self.run_async(run)
 
@@ -333,7 +335,7 @@ class PublicContentTests(unittest.TestCase):
                     settled = await hooks.user_elicitation_result(
                         result["params"]["event"], content=context
                     )
-                self.assertEqual(settled.decision, "deny")
+                self.assertEqual(settled.permission, Permission.DENY)
                 self.assertEqual(store.writes, [])
                 self.assertEqual(store.reads, [])
 
@@ -530,7 +532,7 @@ class PublicContentTests(unittest.TestCase):
                     result = await hooks.user_elicitation_request(
                         request["params"]["event"], content=context
                     )
-                self.assertEqual(result.decision, "deny")
+                self.assertEqual(result.permission, Permission.DENY)
                 self.assertEqual(result.accepted_responses, [])
                 self.assertEqual(result.event["elicitation"]["request"], part)
                 self.assertEqual(store.reads, [])
@@ -574,7 +576,7 @@ class PublicContentTests(unittest.TestCase):
                     result = await hooks.user_elicitation_request(
                         request["params"]["event"], content=context
                     )
-                self.assertEqual(result.decision, "deny")
+                self.assertEqual(result.permission, Permission.DENY)
                 self.assertEqual(result.accepted_responses, [])
                 self.assertEqual(store.writes, [])
                 self.assertEqual(store.reads, [])

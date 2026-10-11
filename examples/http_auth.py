@@ -16,6 +16,7 @@ from typing import Any
 
 import anyio
 from agenthooksprotocol import HookResult, Hooks, capability, effect, event, tool
+from agenthooksprotocol.permission import Permission
 from agenthooksprotocol.wire import InterceptRequest
 from agenthooksprotocol.server import attachments, hooks
 from agenthooksprotocol.transports.http import HTTPTransport
@@ -105,7 +106,8 @@ async def main() -> None:
                     input={"command": "echo original", "timeoutMs": 1000},
                 )
             )
-            assert result.decision == "allow" and result.accepted_responses[-1] is not None
+            assert result.permission is Permission.ALLOW
+            assert result.accepted_responses[-1] is not None
         uploader = HTTPTransport(
             base + "/hooks", headers={"Authorization": "Bearer event-only"}
         )

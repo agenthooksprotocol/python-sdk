@@ -5,6 +5,8 @@ import unittest
 
 import anyio
 
+from agenthooksprotocol.permission import Permission
+
 from agenthooksprotocol import Attachment
 from agenthooksprotocol.content import OwnedAttachment
 from agenthooksprotocol.event import ContextCompactBeforeInput
@@ -491,7 +493,7 @@ class AttachmentTests(unittest.TestCase):
                 result = await hooks.context_compact_before(
                     inline_input(owner), uploads={"org.example.content": upload}
                 )
-            self.assertEqual(result.decision, "deny")
+            self.assertEqual(result.permission, Permission.DENY)
             self.assertEqual(len(result.diagnostics), 1)
             self.assertEqual(writes, [b"hello"])
             async with result:

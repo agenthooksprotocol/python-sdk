@@ -12,6 +12,7 @@ class HandwrittenSurfaceTests(unittest.TestCase):
     def test_consumer_outcomes_have_one_authoritative_typed_surface(self):
         removed = (
             "state",
+            "decision",
             "effective_input",
             "raw_event",
             "settled_event",

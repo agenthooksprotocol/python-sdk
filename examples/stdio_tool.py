@@ -40,7 +40,7 @@ async def main() -> None:
         print(
             json.dumps(
                 {
-                    "decision": result.decision,
+                    "permission": result.permission.value,
                     "executed": False,
                     "effectiveInput": result.input,
                 }

@@ -7,6 +7,8 @@ import unittest
 
 import anyio
 
+from agenthooksprotocol.permission import Permission
+
 from agenthooksprotocol._hooks import Hooks
 from agenthooksprotocol.runtime import ProtocolError
 from agenthooksprotocol.transports import StdioTransport
@@ -145,7 +147,7 @@ class PublicHooksTests(unittest.TestCase):
                     capabilities={"effects": ["flow"]},
                 )
             result = await hooks.dispatch("tool.before", request()["params"]["event"])
-            self.assertEqual(result.decision, "deny")
+            self.assertEqual(result.permission, Permission.DENY)
             self.assertEqual(len(result.diagnostics), 1)
             self.assertEqual(len(transport.requests), 1)
             await hooks.aclose()
@@ -164,7 +166,7 @@ class PublicHooksTests(unittest.TestCase):
                 transport=transport,
             )
             result = await hooks.dispatch("tool.before", request()["params"]["event"])
-            self.assertEqual(result.decision, "ask")
+            self.assertEqual(result.permission, Permission.ASK)
             self.assertEqual(len(result.accepted_responses), 2)
             self.assertEqual(len(result.diagnostics), 1)
 
@@ -443,7 +445,7 @@ class PublicHooksTests(unittest.TestCase):
                         transport=transport,
                     ) as hooks:
                         result = await hooks.dispatch("tool.before", event)
-                    self.assertEqual(result.decision, "deny")
+                    self.assertEqual(result.permission, Permission.DENY)
                     self.assertEqual(len(transport.requests), 1)
                     sent = transport.requests[0]["params"]["event"]
                     self.assertEqual("native" in sent, include and native is not None)
@@ -470,7 +472,7 @@ class PublicHooksTests(unittest.TestCase):
                     transport=transport,
                 ) as hooks:
                     result = await hooks.dispatch("tool.before", event)
-                self.assertEqual(result.decision, "deny")
+                self.assertEqual(result.permission, Permission.DENY)
 
         self.run_async(run)
 
@@ -715,7 +717,7 @@ class PublicHooksTests(unittest.TestCase):
                         "tool.before", request()["params"]["event"]
                     )
                     diagnostics = await hooks.wait_observations()
-                    self.assertEqual(result.decision, "allow")
+                    self.assertEqual(result.permission, Permission.NONE)
                     self.assertEqual(result.accepted_responses, [])
                     self.assertEqual(len(diagnostics), 1)
                     self.assertEqual(diagnostics[0]["error"], "ProtocolError")

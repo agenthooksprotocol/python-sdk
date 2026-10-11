@@ -445,14 +445,22 @@ def _apply_response(
         result["result"] = candidate["value"]
     if flow is not None:
         result["flow"] = flow
-        if continuation_instructions or any(
-            k in flow_caps
-            for k in ("remainingContinuations", "maxContinuations", "continuationCount")
-        ):
-            result["continuationInstructions"] = continuation_instructions
-            result["continuationRemaining"] = (
-                remaining - 1 if flow == "continue" and new_continuation else remaining
-            )
+    elif "flow" in state:
+        result["flow"] = "none"
+    has_continuation_budget = any(
+        k in flow_caps
+        for k in ("remainingContinuations", "maxContinuations", "continuationCount")
+    )
+    if (
+        continuation_instructions
+        or "instructions" in state
+        or (flow is not None and has_continuation_budget)
+    ):
+        result["continuationInstructions"] = continuation_instructions
+    if has_continuation_budget:
+        result["continuationRemaining"] = (
+            remaining - 1 if flow == "continue" and new_continuation else remaining
+        )
     if injections:
         result["injections"] = injections
     if (

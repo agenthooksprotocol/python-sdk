@@ -5,6 +5,8 @@ import unittest
 
 import anyio
 
+from agenthooksprotocol.permission import Permission
+
 from agenthooksprotocol import Attachment, Hooks
 from test_inline_messages import Transport, harness, host, receipt
 
@@ -208,7 +210,7 @@ class UploadPlanningTests(unittest.TestCase):
                     transports[names[2]].requests[0]["method"],
                     "hooks/observe" if policy == "fail-closed" else "hooks/intercept",
                 )
-                self.assertEqual(result.decision == "deny", policy == "fail-closed")
+                self.assertEqual(result.permission is Permission.DENY, policy == "fail-closed")
                 self.assertTrue(
                     any(d["backend"] == names[1] for d in result.diagnostics)
                 )
@@ -254,7 +256,7 @@ class UploadPlanningTests(unittest.TestCase):
                 ],
                 [r["ref"] for r in calls],
             )
-            self.assertEqual(result.decision, "deny")
+            self.assertEqual(result.permission, Permission.DENY)
             self.assertEqual(result.diagnostics, [])
             await result.aclose()
 

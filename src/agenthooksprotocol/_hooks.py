@@ -15,6 +15,7 @@ from .event import Event
 from . import _models as models
 from ._outcomes import decode_event, decode_candidate, decode_response
 from .permission import Permission
+from .state import Flow
 from .diagnostics import Code
 from ._diagnostics import (
     Diagnostic,
@@ -333,12 +334,23 @@ class HookResult(Generic[InputT, ResultT, ProvenanceT]):
         await self.aclose()
 
     @property
-    def decision(self) -> str:
-        return self._state.get("decision", "allow")
-
-    @property
     def permission(self) -> Permission:
         return Permission(self._state.get("permission", "none"))
+
+    @property
+    def flow(self) -> Flow | None:
+        """Settled flow control; None means no supplied flow state."""
+        return Flow(self._state["flow"]) if "flow" in self._state else None
+
+    @property
+    def instructions(self) -> list[str] | None:
+        """Accumulated continuation instructions; None differs from explicit []."""
+        return deepcopy(self._state.get("continuationInstructions"))
+
+    @property
+    def continuation_remaining(self) -> int | None:
+        """Settled continuation budget, or None when no budget is declared."""
+        return self._state.get("continuationRemaining")
 
     @property
     def interrupted(self) -> bool:
@@ -365,6 +377,9 @@ class HookResult(Generic[InputT, ResultT, ProvenanceT]):
         try:
             event = decode_event(self.event)
             _ = self.candidate
+            _ = self.flow
+            _ = self.instructions
+            _ = self.continuation_remaining
             _ = self.messages
             _ = self.injections
             responses = [
@@ -1463,7 +1478,8 @@ class Hooks(BoundaryMixin):
                             "continuationRemaining"
                         ]
                     halted = (
-                        result.decision == "deny" or result._state.get("flow") == "stop"
+                        result._state.get("decision") == "deny"
+                        or result._state.get("flow") == "stop"
                     )
                 except (OperationCancelledError, SettlementDecodeError):
                     raise

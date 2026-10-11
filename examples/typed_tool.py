@@ -95,7 +95,7 @@ async def main() -> None:
                     {
                         "sdkAccepted": bool(result.accepted_responses),
                         "hostAccepted": host_accepted,
-                        "decision": result.decision,
+                        "permission": result.permission.value,
                         "effectiveInput": result.input,
                         "executed": False,  # This example deliberately does not run a shell.
                     }

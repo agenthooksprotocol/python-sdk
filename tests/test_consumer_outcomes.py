@@ -9,6 +9,7 @@ import anyio
 from agenthooksprotocol import (
     Candidate,
     HookResult,
+    Hooks,
     SettlementDecodeError,
     _models as models,
 )
@@ -147,6 +148,209 @@ class ConsumerOutcomeTests(TestCase):
                 self.assertIsNone(outcome.result)
 
         anyio.run(run)
+
+    def test_settled_flow_keeps_inherited_instructions_and_remaining_budget(self):
+        from agenthooksprotocol.state import Flow
+        from agenthooksprotocol import Permission
+
+        async def run():
+            payload = {
+                "turn": {"id": "turn-one"},
+                "outcome": "completed",
+                "continuationCount": 0,
+                "items": [],
+            }
+            caps = {
+                "effects": ["flow"],
+                "flow": {
+                    "operations": ["continue", "stop"],
+                    "remainingContinuations": 2,
+                    "continuationCount": 0,
+                    "maxContinuations": 2,
+                },
+            }
+            for operation in ("continue", "stop"):
+                effect = {"type": "flow", "operation": operation}
+                if operation == "continue":
+                    effect["instruction"] = "new"
+                else:
+                    effect["reason"] = "finished"
+                replies = Replies({"effects": [effect]})
+                name = (
+                    "turn.finish.before" if operation == "continue" else "tool.before"
+                )
+                operation_caps = (
+                    caps
+                    if operation == "continue"
+                    else {
+                        "effects": ["flow"],
+                        "flow": {"operations": ["stop"], "remainingContinuations": 2},
+                    }
+                )
+                async with hooks_for(name, operation_caps, replies) as hooks:
+                    outcome = await hooks.dispatch(
+                        name,
+                        payload if operation == "continue" else tool_input(),
+                        initial_state={
+                            "permission": "none",
+                            "candidate": None,
+                            "flow": "continue",
+                            "instructions": ["inherited"],
+                        },
+                    )
+                self.assertIs(outcome.flow, Flow(operation))
+                self.assertIs(outcome.permission, Permission.NONE)
+                self.assertEqual(
+                    outcome.instructions,
+                    ["inherited", "new"] if operation == "continue" else ["inherited"],
+                )
+                self.assertEqual(
+                    outcome.continuation_remaining, 1 if operation == "continue" else 2
+                )
+                self.assertEqual(
+                    outcome.accepted_responses[0].result.effects[0], effect
+                )
+                outcome.instructions.append("detached")
+                self.assertNotIn("detached", outcome.instructions)
+
+        for backend in ("asyncio", "trio"):
+            with self.subTest(backend=backend):
+                anyio.run(run, backend=backend)
+
+    def test_initial_flow_state_without_responses_preserves_presence(self):
+        from agenthooksprotocol.state import Flow
+
+        async def run():
+            for flow in (None, "none", "stop", "continue"):
+                for instructions in (None, [], ["inherited"]):
+                    for budget in (None, 0, 2):
+                        caps = {
+                            "effects": ["flow"],
+                            "flow": {"operations": ["stop"]},
+                        }
+                        if budget is not None:
+                            caps["flow"]["remainingContinuations"] = budget
+                            caps["flow"]["continuationCount"] = 0
+                            caps["flow"]["maxContinuations"] = budget
+                        else:
+                            caps["flow"]["operations"] = ["stop"]
+                        initial = {"permission": "none", "candidate": None}
+                        if flow is not None:
+                            initial["flow"] = flow
+                        if instructions is not None:
+                            initial["instructions"] = instructions
+                        async with Hooks(
+                            {
+                                "protocolVersion": "draft",
+                                "hooks": [
+                                    {
+                                        "id": "org.example.observer",
+                                        "transport": {
+                                            "type": "http",
+                                            "url": "https://receiver.invalid",
+                                        },
+                                        "subscriptions": [
+                                            {
+                                                "events": ["tool.before"],
+                                                "mode": "observe",
+                                                "content": {"default": "body"},
+                                            }
+                                        ],
+                                    }
+                                ],
+                            },
+                            source="urn:test:typed",
+                            transport=Replies(),
+                            capabilities={
+                                "tool.before": {
+                                    "modes": ["intercept", "observe"],
+                                    "capabilities": caps,
+                                }
+                            },
+                        ) as hooks:
+                            outcome = await hooks.tool_before(
+                                tool_input(), initial_state=initial
+                            )
+                        self.assertEqual(outcome.accepted_responses, [])
+                        self.assertIs(
+                            outcome.flow, None if flow is None else Flow(flow)
+                        )
+                        expected_instructions = instructions
+                        if (
+                            instructions is None
+                            and flow in ("stop", "continue")
+                            and budget is not None
+                        ):
+                            expected_instructions = []
+                        self.assertEqual(outcome.instructions, expected_instructions)
+                        self.assertEqual(outcome.continuation_remaining, budget)
+
+        for backend in ("asyncio", "trio"):
+            with self.subTest(backend=backend):
+                anyio.run(run, backend=backend)
+
+    def test_invalid_later_flow_response_keeps_previous_settlement(self):
+        from agenthooksprotocol.state import Flow
+
+        async def run():
+            caps = {
+                "effects": ["flow"],
+                "flow": {
+                    "operations": ["continue"],
+                    "remainingContinuations": 3,
+                    "continuationCount": 0,
+                    "maxContinuations": 3,
+                },
+            }
+            replies = Replies(
+                {
+                    "effects": [
+                        {
+                            "type": "flow",
+                            "operation": "continue",
+                            "instruction": "accepted",
+                        }
+                    ]
+                },
+                {
+                    "effects": [
+                        {"type": "flow", "operation": "continue", "instruction": 42}
+                    ]
+                },
+            )
+            async with hooks_for("turn.finish.before", caps, replies, count=2) as hooks:
+                outcome = await hooks.turn_finish_before(
+                    {
+                        "turn": {"id": "turn-one"},
+                        "outcome": "completed",
+                        "continuationCount": 0,
+                        "items": [],
+                    },
+                    initial_state={
+                        "permission": "none",
+                        "candidate": None,
+                        "instructions": ["inherited"],
+                    },
+                )
+            self.assertIs(outcome.flow, Flow.CONTINUE)
+            self.assertEqual(outcome.instructions, ["inherited", "accepted"])
+            self.assertEqual(outcome.continuation_remaining, 2)
+            self.assertEqual(len(outcome.accepted_responses), 1)
+            self.assertTrue(outcome.diagnostics)
+            self.assertEqual(
+                replies.requests[1]["params"]["state"]["instructions"],
+                ["inherited", "accepted"],
+            )
+            self.assertEqual(
+                replies.requests[1]["params"]["capabilities"]["flow"][
+                    "remainingContinuations"
+                ],
+                2,
+            )
+
+        for backend in ("asyncio", "trio"):
+            with self.subTest(backend=backend):
+                anyio.run(run, backend=backend)
 
     def test_invalid_known_event_never_silently_falls_back(self):
         with self.assertRaises(ProtocolError):

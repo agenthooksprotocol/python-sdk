@@ -30,12 +30,12 @@ class CorrelatedCoreTests(unittest.TestCase):
             ) as hooks:
                 result = await hooks.tool_before(tool_input())
                 self.assertIsInstance(result.event, _models.ToolBeforeEvent)
-                self.assertIsInstance(result.state["candidate"], _models.ToolCandidate)
+                self.assertIsInstance(result._state["candidate"], _models.ToolCandidate)
                 self.assertIsInstance(
                     result._contextual_response, _models.ToolBeforeInterceptResponse
                 )
-                self.assertIsInstance(result.decoded_candidate, Candidate)
-                self.assertEqual(result.decoded_candidate.value, {"result": 9})
+                self.assertIsInstance(result.candidate, Candidate)
+                self.assertEqual(result.candidate.value, {"result": 9})
 
         self.run_async(run)
 
@@ -93,7 +93,7 @@ class CorrelatedCoreTests(unittest.TestCase):
             async with hooks_for(name, {"effects": ["return"]}, transport) as hooks:
                 result = await hooks.model_request_before(payload)
                 self.assertEqual(result.accepted_responses, [])
-                self.assertIsNone(result.decoded_candidate)
+                self.assertIsNone(result.candidate)
                 self.assertTrue(result.diagnostics)
             with self.assertRaises(ProtocolError):
                 _apply_response(

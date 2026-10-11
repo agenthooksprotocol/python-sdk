@@ -440,7 +440,7 @@ class AttachmentTests(unittest.TestCase):
                         value, uploads={"org.example.content": upload}
                     )
             self.assertEqual(result.diagnostics, [])
-            self.assertEqual(result.candidate, {"value": answer})
+            self.assertEqual(result.candidate.to_dict() if result.candidate is not None else None, {"value": answer})
             self.assertEqual(result.attachments._bindings, {})
             self.assertEqual(
                 json.loads(result.event["elicitation"]["request"]["text"]), request

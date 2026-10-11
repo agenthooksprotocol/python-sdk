@@ -73,23 +73,11 @@ class Flow(dict[str, Any]):
         **extra: Any,
     ) -> None:
         if "continuationCount" in extra:
-            if continuation_count is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for continuationCount via continuation_count and wire key"
-                )
-            continuation_count = extra.pop("continuationCount")
+            raise TypeError("Use the canonical keyword continuation_count")
         if "maxContinuations" in extra:
-            if max_continuations is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for maxContinuations via max_continuations and wire key"
-                )
-            max_continuations = extra.pop("maxContinuations")
+            raise TypeError("Use the canonical keyword max_continuations")
         if "remainingContinuations" in extra:
-            if remaining_continuations is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for remainingContinuations via remaining_continuations and wire key"
-                )
-            remaining_continuations = extra.pop("remainingContinuations")
+            raise TypeError("Use the canonical keyword remaining_continuations")
         super().__init__(extra)
         if continuation_count is not _UNSET:
             self["continuationCount"] = continuation_count
@@ -155,9 +143,7 @@ class InjectContext(dict[str, Any]):
         self, *, append: Literal[True] = _UNSET, deliver_at: list[str], **extra: Any
     ) -> None:
         if "deliverAt" in extra:
-            raise TypeError(
-                "Duplicate assignment for deliverAt via deliver_at and wire key"
-            )
+            raise TypeError("Use the canonical keyword deliver_at")
         super().__init__(extra)
         self["append"] = json.loads("true") if append is _UNSET else append
         self["deliverAt"] = deliver_at

@@ -11,7 +11,6 @@ from . import ExecutionEventToolBatchAfterGapsItem as BatchAfterGapsItem
 from . import ExecutionEventToolBatchAfterSession as BatchAfterSession
 from . import ExecutionEventToolBatchAfterTurn as BatchAfterTurn
 from . import ToolBeforeEventCall as Call
-from . import ExecutionEventTool as Input
 from . import ExecutionEventToolMcp as Mcp
 from . import ExecutionEventToolOrigin as Origin
 from . import Path as Path
@@ -66,7 +65,6 @@ __all__ = [
     "BatchAfterSession",
     "BatchAfterTurn",
     "Call",
-    "Input",
     "Mcp",
     "Origin",
     "Path",

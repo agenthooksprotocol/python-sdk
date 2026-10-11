@@ -1,7 +1,8 @@
 """Lossless schema-owned projections of settled wire data.
 
-The reducer and transport retain their raw JSON contracts. These projections
-validate before hydration; an unsuccessful decode is never an allowed outcome.
+Reducer bookkeeping stays private. Explicit wire transports use JSON for framing
+and validation. These projections validate before hydration; an unsuccessful
+decode is never an allowed outcome.
 """
 
 from __future__ import annotations
@@ -14,7 +15,7 @@ from .event import Event
 from .response import ContextualResponse, response_for_request
 from .runtime import ProtocolError
 
-SchemaCandidate = (
+_SchemaCandidate = (
     models.ToolCandidate
     | models.MessagesCandidate
     | models.TextCandidate
@@ -38,7 +39,7 @@ def decode_event(value: dict[str, Any]) -> Event:
 
 def decode_candidate(
     event_type: str, value: dict[str, Any] | None
-) -> SchemaCandidate | None:
+) -> _SchemaCandidate | None:
     if value is None:
         return None
     candidate_models: dict[str, type[models._WireModel]] = {
@@ -52,7 +53,7 @@ def decode_candidate(
         event_type, models.InterceptRequestParamsStateCandidateValueObject
     )
     try:
-        return cast(SchemaCandidate, model.from_dict(deepcopy(value)))
+        return cast(_SchemaCandidate, model.from_dict(deepcopy(value)))
     except (ValueError, TypeError) as exc:
         raise ProtocolError("Cannot decode settled candidate") from exc
 

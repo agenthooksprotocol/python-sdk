@@ -11,13 +11,8 @@ from . import ContentSelectionImages as Images
 from . import CanonicalMessagesItem as Item
 from . import OwnedAttachment as OwnedAttachment
 from . import ContentSelectionReasoning as Reasoning
-from . import ContentUploadReceipt as Receipt
-from . import ContentReference as Reference
-from . import ContentSelection as Selection
 from . import ContentSelectionText as Text
 from . import TextParts as TextParts
-from . import ContentUpload as Upload
-from . import ContentUploadReceipt as UploadReceipt
 from . import ContentSelectionValue as Value
 from . import ContentSelectionVideo as Video
 
@@ -34,13 +29,8 @@ __all__ = [
     "Item",
     "OwnedAttachment",
     "Reasoning",
-    "Receipt",
-    "Reference",
-    "Selection",
     "Text",
     "TextParts",
-    "Upload",
-    "UploadReceipt",
     "Value",
     "Video",
 ]

@@ -15,7 +15,7 @@ from .interop import (
     validate_adapter_config,
 )
 from .lifecycle import ContentStore
-from .content import receive
+from ._interop_content import receive
 from .lineage import TaskLineage
 from .runtime import Validator, ProtocolError
 

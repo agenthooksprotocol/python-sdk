@@ -61,17 +61,17 @@ Capabilities explicitly grant effects and target operations. Supply event capabi
 
 Supply `input_codec=`, `result_codec=`, and optional `provenance_codec=` to a named hook method or `dispatch` to declare caller types. Complete staged values are decoded and validated before publication. Object merge is shallow: omitted fields remain unchanged, literal null is retained, and nested values replace whole values. An invalid response publishes none of its effects; earlier accepted responses remain visible to later interceptors. A codec must preserve the wire data it receives, including opaque extra fields. Lossy serialization rejects admission rather than dropping fields.
 
-`result.decoded_input` exposes the declared argument value. `result.decoded_candidate` is an application `Candidate[Result, Provenance]`, or `None` when there is no candidate. Its value can itself be `None`; optional provenance is omitted from `candidate.to_dict()` when absent. Raw `input` and `candidate` views remain detached snapshots. For explicitly selected opaque host slots, use `event_codecs={("params",): codec}` with event-relative paths. Unspecified native, provider, task, permission, and discovery values are not interpreted.
+`result.input` exposes the declared argument value. `result.candidate` is an SDK-owned `Candidate[Result, Provenance]`, or `None` when there is no candidate. Its value can itself be `None`; optional provenance is omitted from `candidate.to_dict()` when absent. Both values are detached snapshots. Without caller codecs, protocol-owned candidate values use canonical typed models and application-owned values remain JSON. `result.event` is the canonical typed event; `result.accepted_responses` retains complete contextual response envelopes in settlement order. `result.messages` and `result.injections` contain typed effects, including injection delivery timing. `result.has_result` distinguishes absence from a supplied null deliverable; `result.result` raises `KeyError` when absent. For explicitly selected opaque host slots, use `event_codecs={("params",): codec}` with event-relative paths. Unspecified native, provider, task, permission, and discovery values are not interpreted.
 
 For forms, construct `PydanticFormContract(TypeAdapter(Answer))` from one answer declaration. `request(message)` derives the restricted MCP schema; `result_codec()` decodes the complete MCP result and its accepted answer while preserving opaque result metadata. Unsupported shapes and schema constraints are rejected during construction. Decline, cancel, and URL results have no form content. See [`examples/value_codecs.py`](examples/value_codecs.py).
 
-After settlement, explicitly decode effective input with `result.decode_input(codec)`. A codec implements `encode(value)` and `decode(json_value)`; `IdentityCodec` copies JSON. The optional `integrations.pydantic.PydanticCodec` accepts a Pydantic `TypeAdapter`. A decoding error does not retroactively reject protocol effects: retain the settled result, raw effective input, accepted responses, and diagnostics, and report host-level rejection without executing.
+A codec implements `encode(value)` and `decode(json_value)`; `IdentityCodec` copies JSON. The optional `integrations.pydantic.PydanticCodec` accepts a Pydantic `TypeAdapter`. Hosts can call `codec.decode(result.input)` for an explicit application check when no input codec is declared. A post-settlement application error does not retroactively reject protocol effects: retain the settled result, accepted responses, and diagnostics, and report host-level rejection without executing.
 
-`result.permission` is the generated `Permission` enum (`NONE`, `ALLOW`, `ASK`, `DENY`) read from canonical settlement, not an independent decision engine. `NONE` is not approval; `ASK` needs host approval; interruption never authorizes execution. `result.input` is detached accepted JSON. Declared codecs validate accepted modifications; without a declared codec, the host supplies application validation. `decode_input(codec)` remains an explicit, post-settlement host check. Candidate, canonical event, accepted responses, and diagnostics remain accessible.
+`result.permission` is the generated `Permission` enum (`NONE`, `ALLOW`, `ASK`, `DENY`) read from canonical settlement, not an independent decision engine. `NONE` is not approval; `ASK` needs host approval; interruption never authorizes execution. `result.input` is the detached accepted argument value. Declared codecs validate accepted modifications; without a declared codec, the host supplies application validation. Candidate, canonical event, accepted responses, and diagnostics remain accessible.
 
 `state.initial(Permission.ALLOW)` represents a native decision **already made for this exact occurrence**, not an authorization shortcut. Its default candidate is absent (`null`); `state.Candidate(value=None)` instead means a supplied JSON-null result. Optional typed provenance records facts, not authenticated identity or execution proof. Canonical modifications still invalidate candidates/approval as specified.
 
-Generated backend helpers such as `effect.deny(reason="policy")`, `effect.replace_input(new_args)` and `effect.merge_input(changes)`, and `effect.Return(value=...)` fill discriminants and return canonical effect models. They cannot grant themselves authority: unsupported compound responses are rejected atomically.
+Generated backend helpers such as `effect.DenyEffect(reason="policy")`, `effect.replace_input(new_args)` and `effect.merge_input(changes)`, and `effect.ReturnToolEffect(value=...)` fill discriminants and return canonical effect models. They cannot grant themselves authority: unsupported compound responses are rejected atomically.
 
 ### Diagnostics and one call budget
 
@@ -249,13 +249,9 @@ are not SDK validation entrypoints. Re-parse after manually mutating a mapping.
 
 Nested model attributes expose declared protocol fields. For example, `capability.Capabilities(effects=["modify"], modify={}).modify.input` is `None` when that grant is absent. Family queries are available on generic and per-occurrence capability models.
 
-Constructor aliases cannot silently overwrite wire keys. Supplying both
-`tool_name=` and `toolName=` raises `TypeError`, even if the values agree. For
-optional/defaulted fields, a lone wire spelling (for example `addressForm=` or
-`protocolVersion=`) is used and validated rather than replaced by a default.
-Required constructor parameters use their documented Python spelling;
-use `from_dict` to decode complete wire-keyed objects. In `from_dict`, distinct
-keys such as `toolName` and `tool_name` remain distinct wire/extension keys.
+Use the documented Python spelling for constructor parameters. Use `from_dict`
+to decode complete wire-keyed objects. In `from_dict`, distinct keys such as
+`toolName` and `tool_name` remain distinct wire/extension keys.
 
 ### Owned attachments
 

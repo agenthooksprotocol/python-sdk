@@ -27,8 +27,11 @@ class CompactionTests(unittest.TestCase):
 
         def settled(snapshot, effects, value):
             return HookResult(
-                event={"instructions": deepcopy(snapshot["instructions"])},
-                state={"candidate": {"value": value}, "messages": []},
+                event={
+                    "type": "context.compact.before",
+                    "instructions": deepcopy(snapshot["instructions"]),
+                },
+                _state={"candidate": {"value": value}, "messages": []},
                 accepted_responses=[{"result": {"effects": effects}}],
             )
 
@@ -36,7 +39,12 @@ class CompactionTests(unittest.TestCase):
             ("no-effects", [], cached, "cache"),
             ("identical-input", [modify("instructions", "base")], cached, "cache"),
             ("identical-return", [{"type": "return", "value": cached}], cached, "next"),
-            ("replacement", [{"type": "return", "value": replacement}], replacement, "next"),
+            (
+                "replacement",
+                [{"type": "return", "value": replacement}],
+                replacement,
+                "next",
+            ),
         ]
         for name, effects, value, supplier in cases:
             with self.subTest(name=name):

@@ -108,8 +108,8 @@ class PublicHooksTests(unittest.TestCase):
                     "tool.before", request()["params"]["event"], event_id="event-one"
                 )
                 self.assertEqual(result.input, {"changed": True})
-                self.assertEqual(result.state["authorization"], "pending")
-                self.assertNotIn("result", result.state)
+                self.assertEqual(result._state["authorization"], "pending")
+                self.assertNotIn("result", result._state)
                 self.assertEqual(len(result.accepted_responses), 2)
                 self.assertEqual({r["id"] for r in transport.requests}, {"event-one"})
                 self.assertEqual(
@@ -122,7 +122,7 @@ class PublicHooksTests(unittest.TestCase):
                         raise ValueError("not my host model")
 
                 with self.assertRaises(ValueError):
-                    result.decode_input(BadCodec())
+                    BadCodec().decode(result.input)
                 self.assertEqual(result.input, {"changed": True})
                 self.assertEqual(len(result.accepted_responses), 2)
             self.assertFalse(transport.closed)
@@ -181,10 +181,13 @@ class PublicHooksTests(unittest.TestCase):
             )
             result = await hooks.exchange(request())
             self.assertEqual(result.permission, "none")
-            self.assertEqual(result.candidate, {"value": {"ok": True}})
-            self.assertEqual(result.state["authorization"], "pending")
-            self.assertNotIn("executed", result.state)
-            self.assertNotIn("result", result.state)
+            self.assertEqual(
+                result.candidate.to_dict() if result.candidate is not None else None,
+                {"value": {"ok": True}},
+            )
+            self.assertEqual(result._state["authorization"], "pending")
+            self.assertNotIn("executed", result._state)
+            self.assertNotIn("result", result._state)
             initial = {
                 "permission": "none",
                 "candidate": {"value": 1, "provenance": {"source": "earlier"}},
@@ -193,7 +196,10 @@ class PublicHooksTests(unittest.TestCase):
             result = await hooks.dispatch(
                 "tool.before", request()["params"]["event"], initial_state=initial
             )
-            self.assertEqual(result.candidate, initial["candidate"])
+            self.assertEqual(
+                result.candidate.to_dict() if result.candidate is not None else None,
+                initial["candidate"],
+            )
             await hooks.aclose()
 
         self.run_async(run)
@@ -300,7 +306,7 @@ class PublicHooksTests(unittest.TestCase):
                     changed["parentEventId"] = "C"
                     with self.assertRaises(ProtocolError):
                         await hooks.dispatch("tool.before", changed, event_id="A")
-                    await hooks.wait()
+                    await hooks.wait_observations()
                     self.assertEqual(
                         len(
                             transport.requests
@@ -381,7 +387,7 @@ class PublicHooksTests(unittest.TestCase):
             self.assertIsNone(pending.accept())
             other = hooks.begin(request())
             result = other.accept(fallback=True)
-            self.assertEqual(result.state["messages"], [])
+            self.assertEqual(result._state["messages"], [])
             self.assertIsNone(other.accept())
 
         self.run_async(run)
@@ -397,7 +403,7 @@ class PublicHooksTests(unittest.TestCase):
             )
             result = await hooks.dispatch("tool.before", request()["params"]["event"])
             self.assertEqual(result.accepted_responses, [])
-            await hooks.wait()
+            await hooks.wait_observations()
             self.assertEqual(len(transport.notifications), 1)
             self.assertNotIn("id", transport.notifications[0])
             await hooks.aclose()
@@ -481,7 +487,7 @@ class PublicHooksTests(unittest.TestCase):
                 event["native"] = {"secret": "opaque"}
                 for _ in range(20):
                     await hooks.dispatch("tool.before", event)
-                    await hooks.wait()
+                    await hooks.wait_observations()
                     self.assertEqual(hooks._observations, [])
                 self.assertTrue(
                     all(
@@ -559,7 +565,7 @@ class PublicHooksTests(unittest.TestCase):
                         )
                 self.assertTrue(stopped.is_set())
                 self.assertEqual(hooks._operations, [])
-                self.assertEqual(await hooks.wait(), [])
+                self.assertEqual(await hooks.wait_observations(), [])
 
         self.run_async(run)
 
@@ -615,7 +621,7 @@ class PublicHooksTests(unittest.TestCase):
                 transport=Broken(),
             )
             result = await hooks.dispatch("tool.before", request()["params"]["event"])
-            self.assertEqual(len(await hooks.wait()), 1)
+            self.assertEqual(len(await hooks.wait_observations()), 1)
             self.assertEqual(result.diagnostics[0]["error"], "RuntimeError")
             await hooks.aclose()
 
@@ -708,7 +714,7 @@ class PublicHooksTests(unittest.TestCase):
                     result = await hooks.dispatch(
                         "tool.before", request()["params"]["event"]
                     )
-                    diagnostics = await hooks.wait()
+                    diagnostics = await hooks.wait_observations()
                     self.assertEqual(result.decision, "allow")
                     self.assertEqual(result.accepted_responses, [])
                     self.assertEqual(len(diagnostics), 1)
@@ -791,8 +797,13 @@ class PublicHooksTests(unittest.TestCase):
                         transport.requests[1]["params"]["state"]["candidate"],
                         expected_candidate,
                     )
-                    self.assertEqual(result.state["permission"], expected_permission)
-                    self.assertEqual(result.candidate, expected_candidate)
+                    self.assertEqual(result._state["permission"], expected_permission)
+                    self.assertEqual(
+                        result.candidate.to_dict()
+                        if result.candidate is not None
+                        else None,
+                        expected_candidate,
+                    )
                     self.assertEqual(
                         transport.requests[0]["params"]["event"]["tool"]["input"],
                         original["tool"]["input"],

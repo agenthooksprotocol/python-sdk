@@ -28,8 +28,8 @@ class FixtureSettlementTests(unittest.TestCase):
                 {"type": "return", "value": {"cached": 2}},
             ]
         )
-        self.assertEqual(settled.state["permission"], "none")
-        self.assertEqual(settled.state["candidate"]["value"], {"cached": 2})
+        self.assertEqual(settled._state["permission"], "none")
+        self.assertEqual(settled._state["candidate"]["value"], {"cached": 2})
         actual = host_outcome(req, settled, validate_input=True)
         self.assertEqual(actual["input"]["task"], 2)
         self.assertEqual(actual["result"], {"cached": 2})

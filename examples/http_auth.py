@@ -105,7 +105,7 @@ async def main() -> None:
                     input={"command": "echo original", "timeoutMs": 1000},
                 )
             )
-            assert result.decision == "allow" and result.accepted_response is not None
+            assert result.decision == "allow" and result.accepted_responses[-1] is not None
         uploader = HTTPTransport(
             base + "/hooks", headers={"Authorization": "Bearer event-only"}
         )

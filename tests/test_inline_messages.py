@@ -345,7 +345,7 @@ class InlineMessageTests(unittest.TestCase):
                 [part["text"] for part in result.event["instructions"]],
                 ["replace", "append"],
             )
-            self.assertEqual(result.candidate["value"], [text("s", "summary")])
+            self.assertEqual(result.candidate.value, [text("s", "summary")])
             hooks, _ = harness(
                 ["body"],
                 replies=(

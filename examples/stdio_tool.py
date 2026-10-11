@@ -42,7 +42,7 @@ async def main() -> None:
                 {
                     "decision": result.decision,
                     "executed": False,
-                    "effectiveInput": result.effective_input,
+                    "effectiveInput": result.input,
                 }
             )
         )

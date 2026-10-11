@@ -64,7 +64,7 @@ async def main() -> dict[str, Any]:
             ),
             event_id="example-start",
         )
-        assert await harness.wait() == []
+        assert await harness.wait_observations() == []
     assert len(received) == 1 and received[0]["manifest"] == configured
     assert received[0]["source"] == "urn:example:manifest"
     return {

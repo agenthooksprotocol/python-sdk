@@ -9,13 +9,13 @@ from pydantic import TypeAdapter
 
 from ..generated import (
     JsonValue,
-    McpElicitationElicitRequestFormParams,
     McpElicitationElicitResult,
 )
 from ..codec import Codec, _decode_preserving
 from ..runtime import Validator
 from ..contract import ElicitResult, RequestedSchema
 from .. import _models
+from .._models import McpElicitationElicitRequestFormParams
 
 __all__ = ["PydanticCodec", "PydanticFormContract"]
 
@@ -26,7 +26,7 @@ class PydanticCodec(Generic[T]):
     """Decode application input explicitly or declare admission-time validation.
 
     Pass a TypeAdapter, for example ``PydanticCodec(TypeAdapter(ReadArguments))``.
-    Explicit decode_input errors do not modify settled results. When supplied
+    Explicit application decoding errors do not modify settled results. When supplied
     to dispatch, validation errors reject the entire staged response instead.
     """
 
@@ -128,7 +128,7 @@ class PydanticFormContract(PydanticCodec[T]):
             "requestedSchema": deepcopy(self._requested_schema),
         }
         Validator().validate("mcp-elicitation#request", request)
-        return cast(McpElicitationElicitRequestFormParams, request)
+        return McpElicitationElicitRequestFormParams.from_dict(request)
 
     def decode_result(
         self,

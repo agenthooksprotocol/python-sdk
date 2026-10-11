@@ -331,7 +331,7 @@ def _apply_response(
 
     def validate_content_result(value):
         if validate_candidate is not None:
-            validate_candidate(models.ElicitResultCandidate(value=value))
+            validate_candidate(models.ElicitResultCandidate.from_dict({"value": value}))
 
     bound = (
         content.stage(request, effects, validate_result=validate_content_result)
@@ -467,7 +467,9 @@ def _apply_response(
             and validate_candidate is not None
         ):
             validate_candidate(
-                models.ElicitResultCandidate(value=bound["values"]["result"])
+                models.ElicitResultCandidate.from_dict(
+                    {"value": bound["values"]["result"]}
+                )
             )
         result["content"] = bound["values"]
         result["_content_updates"] = bound["updates"]

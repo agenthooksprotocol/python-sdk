@@ -168,7 +168,7 @@ def main():
                                 return await hooks.exchange(boundary, content=context)
 
                         outcome = anyio.run(settle)
-                        values = outcome.state["content"]
+                        values = outcome._state["content"]
                         summary = {
                             "request": read_selected(
                                 case["request"]["params"]["event"]["elicitation"],

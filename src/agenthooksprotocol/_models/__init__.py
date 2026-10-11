@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Literal
 from typing import TYPE_CHECKING, Any
 from enum import StrEnum
-from copy import copy, deepcopy
+from copy import deepcopy
 from decimal import Decimal
 from typing import Self, get_args, get_origin, Union, Literal as _Literal
 from types import UnionType
@@ -48,11 +48,12 @@ class _WireModel(dict[str, Any]):
         result = _wire._parse_descriptor(_DESCRIPTORS[type(self).__name__], self, cache)
         if not result["ok"]:
             raise _ModelValidationError(result)
-        # Hydrate plain nested mappings after the one validation pass. Keep
-        # already typed child instances, preserving established constructor identity.
-        hydrated = type(self)._hydrate_validated(self, "", cache)
-        dict.clear(self)
-        dict.update(self, hydrated)
+        # Parsing owns hydration. Constructors require their declared model types.
+        for key, annotation in _field_types(type(self).__name__).items():
+            if key in self and not _constructor_matches(annotation, self[key]):
+                raise TypeError(
+                    f"{type(self).__name__}.{key} requires its declared model type"
+                )
 
     @classmethod
     def from_dict(cls, value: dict[str, Any]) -> Self:
@@ -105,6 +106,31 @@ def _literal_schema(annotation: Any) -> dict[str, Any]:
     if len(values) == 1:
         return {"kind": "literal", "value": values[0]}
     return {"kind": "enum", "open_strings": False, "values": list(values)}
+
+
+def _constructor_matches(annotation: Any, value: Any) -> bool:
+    if annotation is Any:
+        return True
+    origin = get_origin(annotation)
+    if origin in (Union, UnionType):
+        return any(_constructor_matches(arm, value) for arm in get_args(annotation))
+    if isinstance(annotation, type) and issubclass(annotation, _WireModel):
+        return isinstance(value, annotation)
+    if origin is list:
+        return isinstance(value, list) and all(
+            _constructor_matches(get_args(annotation)[0], child) for child in value
+        )
+    if origin is dict:
+        return isinstance(value, dict) and all(
+            _constructor_matches(get_args(annotation)[1], child)
+            for child in value.values()
+        )
+    if origin is _Literal:
+        return value in get_args(annotation)
+    if annotation in (int, float):
+        # The wire validator owns JSON number representation and range checks.
+        return isinstance(value, (int, float, Decimal))
+    return isinstance(value, annotation) if isinstance(annotation, type) else True
 
 
 def _matches(annotation: Any, value: Any, path: str, cache: dict[Any, Any]) -> bool:
@@ -419,9 +445,7 @@ class AttachmentBodyPart(_WireModel):
         **extra: Any,
     ) -> None:
         if "mediaType" in extra:
-            raise TypeError(
-                "Duplicate assignment for mediaType via media_type and wire key"
-            )
+            raise TypeError("Use the canonical keyword media_type")
         super().__init__(extra)
         self["body"] = body
         if category is not _UNSET:
@@ -481,9 +505,7 @@ class AttachmentGapPart(_WireModel):
         **extra: Any,
     ) -> None:
         if "mediaType" in extra:
-            raise TypeError(
-                "Duplicate assignment for mediaType via media_type and wire key"
-            )
+            raise TypeError("Use the canonical keyword media_type")
         super().__init__(extra)
         if category is not _UNSET:
             self["category"] = category
@@ -573,9 +595,7 @@ class AttachmentMetadataPart(_WireModel):
         **extra: Any,
     ) -> None:
         if "mediaType" in extra:
-            raise TypeError(
-                "Duplicate assignment for mediaType via media_type and wire key"
-            )
+            raise TypeError("Use the canonical keyword media_type")
         super().__init__(extra)
         if category is not _UNSET:
             self["category"] = category
@@ -643,9 +663,7 @@ class AttachmentOmittedPart(_WireModel):
         **extra: Any,
     ) -> None:
         if "mediaType" in extra:
-            raise TypeError(
-                "Duplicate assignment for mediaType via media_type and wire key"
-            )
+            raise TypeError("Use the canonical keyword media_type")
         super().__init__(extra)
         if category is not _UNSET:
             self["category"] = category
@@ -706,17 +724,9 @@ class AuthenticationBearer(_WireModel):
         **extra: Any,
     ) -> None:
         if "tokenEnv" in extra:
-            if token_env is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for tokenEnv via token_env and wire key"
-                )
-            token_env = extra.pop("tokenEnv")
+            raise TypeError("Use the canonical keyword token_env")
         if "tokenRef" in extra:
-            if token_ref is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for tokenRef via token_ref and wire key"
-                )
-            token_ref = extra.pop("tokenRef")
+            raise TypeError("Use the canonical keyword token_ref")
         super().__init__(extra)
         if token_env is not _UNSET:
             self["tokenEnv"] = token_env
@@ -754,15 +764,9 @@ class AuthenticationOauth(_WireModel):
         **extra: Any,
     ) -> None:
         if "clientId" in extra:
-            raise TypeError(
-                "Duplicate assignment for clientId via client_id and wire key"
-            )
+            raise TypeError("Use the canonical keyword client_id")
         if "clientSecretRef" in extra:
-            if client_secret_ref is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for clientSecretRef via client_secret_ref and wire key"
-                )
-            client_secret_ref = extra.pop("clientSecretRef")
+            raise TypeError("Use the canonical keyword client_secret_ref")
         super().__init__(extra)
         self["clientId"] = client_id
         if client_secret_ref is not _UNSET:
@@ -1027,23 +1031,11 @@ class CapabilitiesFlow(_WireModel):
         **extra: Any,
     ) -> None:
         if "continuationCount" in extra:
-            if continuation_count is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for continuationCount via continuation_count and wire key"
-                )
-            continuation_count = extra.pop("continuationCount")
+            raise TypeError("Use the canonical keyword continuation_count")
         if "maxContinuations" in extra:
-            if max_continuations is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for maxContinuations via max_continuations and wire key"
-                )
-            max_continuations = extra.pop("maxContinuations")
+            raise TypeError("Use the canonical keyword max_continuations")
         if "remainingContinuations" in extra:
-            if remaining_continuations is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for remainingContinuations via remaining_continuations and wire key"
-                )
-            remaining_continuations = extra.pop("remainingContinuations")
+            raise TypeError("Use the canonical keyword remaining_continuations")
         super().__init__(extra)
         if continuation_count is not _UNSET:
             self["continuationCount"] = continuation_count
@@ -1096,9 +1088,7 @@ class CapabilitiesInjectContext(_WireModel):
         self, *, append: Literal[True] = _UNSET, deliver_at: list[str], **extra: Any
     ) -> None:
         if "deliverAt" in extra:
-            raise TypeError(
-                "Duplicate assignment for deliverAt via deliver_at and wire key"
-            )
+            raise TypeError("Use the canonical keyword deliver_at")
         super().__init__(extra)
         self["append"] = json.loads("true") if append is _UNSET else append
         self["deliverAt"] = deliver_at
@@ -1400,11 +1390,7 @@ class CapabilitiesRequestParams(_WireModel):
         self, *, protocol_version: Literal["draft"] = _UNSET, **extra: Any
     ) -> None:
         if "protocolVersion" in extra:
-            if protocol_version is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for protocolVersion via protocol_version and wire key"
-                )
-            protocol_version = extra.pop("protocolVersion")
+            raise TypeError("Use the canonical keyword protocol_version")
         super().__init__(extra)
         self["protocolVersion"] = (
             json.loads('"draft"') if protocol_version is _UNSET else protocol_version
@@ -1457,11 +1443,7 @@ class CapabilitiesResponseResult(_WireModel):
         **extra: Any,
     ) -> None:
         if "protocolVersion" in extra:
-            if protocol_version is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for protocolVersion via protocol_version and wire key"
-                )
-            protocol_version = extra.pop("protocolVersion")
+            raise TypeError("Use the canonical keyword protocol_version")
         super().__init__(extra)
         self["manifest"] = manifest
         self["protocolVersion"] = (
@@ -1496,21 +1478,13 @@ class CapabilitiesResponseResultManifest(_WireModel):
         **extra: Any,
     ) -> None:
         if "contentCategories" in extra:
-            raise TypeError(
-                "Duplicate assignment for contentCategories via content_categories and wire key"
-            )
+            raise TypeError("Use the canonical keyword content_categories")
         if "correlationIdentityFields" in extra:
-            raise TypeError(
-                "Duplicate assignment for correlationIdentityFields via correlation_identity_fields and wire key"
-            )
+            raise TypeError("Use the canonical keyword correlation_identity_fields")
         if "managedPolicy" in extra:
-            raise TypeError(
-                "Duplicate assignment for managedPolicy via managed_policy and wire key"
-            )
+            raise TypeError("Use the canonical keyword managed_policy")
         if "toolPaths" in extra:
-            raise TypeError(
-                "Duplicate assignment for toolPaths via tool_paths and wire key"
-            )
+            raise TypeError("Use the canonical keyword tool_paths")
         super().__init__(extra)
         self["authentication"] = authentication
         self["contentCategories"] = content_categories
@@ -1667,29 +1641,13 @@ class CapabilitiesResponseResultManifestLimits(_WireModel):
         **extra: Any,
     ) -> None:
         if "maxContinuations" in extra:
-            if max_continuations is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for maxContinuations via max_continuations and wire key"
-                )
-            max_continuations = extra.pop("maxContinuations")
+            raise TypeError("Use the canonical keyword max_continuations")
         if "maxTimeoutMs" in extra:
-            if max_timeout_ms is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for maxTimeoutMs via max_timeout_ms and wire key"
-                )
-            max_timeout_ms = extra.pop("maxTimeoutMs")
+            raise TypeError("Use the canonical keyword max_timeout_ms")
         if "maxUploadBytes" in extra:
-            if max_upload_bytes is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for maxUploadBytes via max_upload_bytes and wire key"
-                )
-            max_upload_bytes = extra.pop("maxUploadBytes")
+            raise TypeError("Use the canonical keyword max_upload_bytes")
         if "minTimeoutMs" in extra:
-            if min_timeout_ms is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for minTimeoutMs via min_timeout_ms and wire key"
-                )
-            min_timeout_ms = extra.pop("minTimeoutMs")
+            raise TypeError("Use the canonical keyword min_timeout_ms")
         super().__init__(extra)
         if max_continuations is not _UNSET:
             self["maxContinuations"] = max_continuations
@@ -1779,11 +1737,7 @@ class ConfigChangeAfterEvent(_WireModel):
         **extra: Any,
     ) -> None:
         if "parentEventId" in extra:
-            if parent_event_id is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
-                )
-            parent_event_id = extra.pop("parentEventId")
+            raise TypeError("Use the canonical keyword parent_event_id")
         super().__init__(extra)
         if extensions is not _UNSET:
             self["extensions"] = extensions
@@ -1905,11 +1859,7 @@ class ConfigChangeAfterInput(dict[str, Any]):
         **extra: Any,
     ) -> None:
         if "parentEventId" in extra:
-            if parent_event_id is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
-                )
-            parent_event_id = extra.pop("parentEventId")
+            raise TypeError("Use the canonical keyword parent_event_id")
         super().__init__(extra)
         if extensions is not _UNSET:
             self["extensions"] = extensions
@@ -2007,18 +1957,6 @@ class ConfigChangeAfterInput(dict[str, Any]):
     def content_sources(self) -> dict[str, OwnedContentSource]:
         return dict(getattr(self, "_content_sources", {}))
 
-    def bind_items_source(
-        self, source: OwnedContentSource, *, index: int
-    ) -> ConfigChangeAfterInput:
-        if isinstance(index, bool) or not isinstance(index, int) or index < 0:
-            raise ValueError("Content source index must be a nonnegative integer")
-        result = copy(self)
-        result._content_sources = {
-            **self.content_sources,
-            f"config.change.after.items[{index}]": source,
-        }
-        return result
-
 
 class ConfigChangeAfterEventChange(_WireModel):
     """Keyword-only wire object; wire constructors validate the original descriptor. Optional attributes return None when absent; mapping-method names use a trailing underscore."""
@@ -2035,11 +1973,7 @@ class ConfigChangeAfterEventChange(_WireModel):
         **extra: Any,
     ) -> None:
         if "mcpServers" in extra:
-            if mcp_servers is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for mcpServers via mcp_servers and wire key"
-                )
-            mcp_servers = extra.pop("mcpServers")
+            raise TypeError("Use the canonical keyword mcp_servers")
         super().__init__(extra)
         if mcp_servers is not _UNSET:
             self["mcpServers"] = mcp_servers
@@ -2136,11 +2070,7 @@ class ConfigChangeAfterInputChange(_WireModel):
         **extra: Any,
     ) -> None:
         if "mcpServers" in extra:
-            if mcp_servers is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for mcpServers via mcp_servers and wire key"
-                )
-            mcp_servers = extra.pop("mcpServers")
+            raise TypeError("Use the canonical keyword mcp_servers")
         super().__init__(extra)
         if mcp_servers is not _UNSET:
             self["mcpServers"] = mcp_servers
@@ -2338,23 +2268,11 @@ class ConfigChangeBeforeCapabilitiesFlow(_WireModel):
         **extra: Any,
     ) -> None:
         if "continuationCount" in extra:
-            if continuation_count is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for continuationCount via continuation_count and wire key"
-                )
-            continuation_count = extra.pop("continuationCount")
+            raise TypeError("Use the canonical keyword continuation_count")
         if "maxContinuations" in extra:
-            if max_continuations is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for maxContinuations via max_continuations and wire key"
-                )
-            max_continuations = extra.pop("maxContinuations")
+            raise TypeError("Use the canonical keyword max_continuations")
         if "remainingContinuations" in extra:
-            if remaining_continuations is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for remainingContinuations via remaining_continuations and wire key"
-                )
-            remaining_continuations = extra.pop("remainingContinuations")
+            raise TypeError("Use the canonical keyword remaining_continuations")
         super().__init__(extra)
         if continuation_count is not _UNSET:
             self["continuationCount"] = continuation_count
@@ -2409,9 +2327,7 @@ class ConfigChangeBeforeCapabilitiesInjectContext(_WireModel):
         self, *, append: Literal[True] = _UNSET, deliver_at: list[str], **extra: Any
     ) -> None:
         if "deliverAt" in extra:
-            raise TypeError(
-                "Duplicate assignment for deliverAt via deliver_at and wire key"
-            )
+            raise TypeError("Use the canonical keyword deliver_at")
         super().__init__(extra)
         self["append"] = json.loads("true") if append is _UNSET else append
         self["deliverAt"] = deliver_at
@@ -2699,11 +2615,7 @@ class ConfigChangeBeforeEvent(_WireModel):
         **extra: Any,
     ) -> None:
         if "parentEventId" in extra:
-            if parent_event_id is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
-                )
-            parent_event_id = extra.pop("parentEventId")
+            raise TypeError("Use the canonical keyword parent_event_id")
         super().__init__(extra)
         if extensions is not _UNSET:
             self["extensions"] = extensions
@@ -2825,11 +2737,7 @@ class ConfigChangeBeforeInput(dict[str, Any]):
         **extra: Any,
     ) -> None:
         if "parentEventId" in extra:
-            if parent_event_id is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
-                )
-            parent_event_id = extra.pop("parentEventId")
+            raise TypeError("Use the canonical keyword parent_event_id")
         super().__init__(extra)
         if extensions is not _UNSET:
             self["extensions"] = extensions
@@ -2926,18 +2834,6 @@ class ConfigChangeBeforeInput(dict[str, Any]):
     @property
     def content_sources(self) -> dict[str, OwnedContentSource]:
         return dict(getattr(self, "_content_sources", {}))
-
-    def bind_items_source(
-        self, source: OwnedContentSource, *, index: int
-    ) -> ConfigChangeBeforeInput:
-        if isinstance(index, bool) or not isinstance(index, int) or index < 0:
-            raise ValueError("Content source index must be a nonnegative integer")
-        result = copy(self)
-        result._content_sources = {
-            **self.content_sources,
-            f"config.change.before.items[{index}]": source,
-        }
-        return result
 
 
 class ConfigChangeBeforeEventChange(_WireModel):
@@ -3142,11 +3038,7 @@ class ConfigChangeBeforeInterceptResponseResult(_WireModel):
         **extra: Any,
     ) -> None:
         if "protocolVersion" in extra:
-            if protocol_version is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for protocolVersion via protocol_version and wire key"
-                )
-            protocol_version = extra.pop("protocolVersion")
+            raise TypeError("Use the canonical keyword protocol_version")
         super().__init__(extra)
         if effects is not _UNSET:
             self["effects"] = effects
@@ -3304,13 +3196,9 @@ class ContentUpload(_WireModel):
         **extra: Any,
     ) -> None:
         if "maxBytes" in extra:
-            raise TypeError(
-                "Duplicate assignment for maxBytes via max_bytes and wire key"
-            )
+            raise TypeError("Use the canonical keyword max_bytes")
         if "timeoutMs" in extra:
-            raise TypeError(
-                "Duplicate assignment for timeoutMs via timeout_ms and wire key"
-            )
+            raise TypeError("Use the canonical keyword timeout_ms")
         super().__init__(extra)
         if auth is not _UNSET:
             self["auth"] = auth
@@ -3475,23 +3363,11 @@ class ContextCompactAfterCapabilitiesFlow(_WireModel):
         **extra: Any,
     ) -> None:
         if "continuationCount" in extra:
-            if continuation_count is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for continuationCount via continuation_count and wire key"
-                )
-            continuation_count = extra.pop("continuationCount")
+            raise TypeError("Use the canonical keyword continuation_count")
         if "maxContinuations" in extra:
-            if max_continuations is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for maxContinuations via max_continuations and wire key"
-                )
-            max_continuations = extra.pop("maxContinuations")
+            raise TypeError("Use the canonical keyword max_continuations")
         if "remainingContinuations" in extra:
-            if remaining_continuations is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for remainingContinuations via remaining_continuations and wire key"
-                )
-            remaining_continuations = extra.pop("remainingContinuations")
+            raise TypeError("Use the canonical keyword remaining_continuations")
         super().__init__(extra)
         if continuation_count is not _UNSET:
             self["continuationCount"] = continuation_count
@@ -3546,9 +3422,7 @@ class ContextCompactAfterCapabilitiesInjectContext(_WireModel):
         self, *, append: Literal[True] = _UNSET, deliver_at: list[str], **extra: Any
     ) -> None:
         if "deliverAt" in extra:
-            raise TypeError(
-                "Duplicate assignment for deliverAt via deliver_at and wire key"
-            )
+            raise TypeError("Use the canonical keyword deliver_at")
         super().__init__(extra)
         self["append"] = json.loads("true") if append is _UNSET else append
         self["deliverAt"] = deliver_at
@@ -3833,17 +3707,9 @@ class ContextCompactAfterInput(dict[str, Any]):
         **extra: Any,
     ) -> None:
         if "parentEventId" in extra:
-            if parent_event_id is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
-                )
-            parent_event_id = extra.pop("parentEventId")
+            raise TypeError("Use the canonical keyword parent_event_id")
         if "tokenCounts" in extra:
-            if token_counts is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for tokenCounts via token_counts and wire key"
-                )
-            token_counts = extra.pop("tokenCounts")
+            raise TypeError("Use the canonical keyword token_counts")
         super().__init__(extra)
         self["execution"] = execution
         if extensions is not _UNSET:
@@ -4049,11 +3915,7 @@ class ContextCompactAfterInterceptResponseResult(_WireModel):
         **extra: Any,
     ) -> None:
         if "protocolVersion" in extra:
-            if protocol_version is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for protocolVersion via protocol_version and wire key"
-                )
-            protocol_version = extra.pop("protocolVersion")
+            raise TypeError("Use the canonical keyword protocol_version")
         super().__init__(extra)
         if effects is not _UNSET:
             self["effects"] = effects
@@ -4233,23 +4095,11 @@ class ContextCompactBeforeCapabilitiesFlow(_WireModel):
         **extra: Any,
     ) -> None:
         if "continuationCount" in extra:
-            if continuation_count is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for continuationCount via continuation_count and wire key"
-                )
-            continuation_count = extra.pop("continuationCount")
+            raise TypeError("Use the canonical keyword continuation_count")
         if "maxContinuations" in extra:
-            if max_continuations is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for maxContinuations via max_continuations and wire key"
-                )
-            max_continuations = extra.pop("maxContinuations")
+            raise TypeError("Use the canonical keyword max_continuations")
         if "remainingContinuations" in extra:
-            if remaining_continuations is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for remainingContinuations via remaining_continuations and wire key"
-                )
-            remaining_continuations = extra.pop("remainingContinuations")
+            raise TypeError("Use the canonical keyword remaining_continuations")
         super().__init__(extra)
         if continuation_count is not _UNSET:
             self["continuationCount"] = continuation_count
@@ -4304,9 +4154,7 @@ class ContextCompactBeforeCapabilitiesInjectContext(_WireModel):
         self, *, append: Literal[True] = _UNSET, deliver_at: list[str], **extra: Any
     ) -> None:
         if "deliverAt" in extra:
-            raise TypeError(
-                "Duplicate assignment for deliverAt via deliver_at and wire key"
-            )
+            raise TypeError("Use the canonical keyword deliver_at")
         super().__init__(extra)
         self["append"] = json.loads("true") if append is _UNSET else append
         self["deliverAt"] = deliver_at
@@ -4587,17 +4435,9 @@ class ContextCompactBeforeInput(dict[str, Any]):
         **extra: Any,
     ) -> None:
         if "parentEventId" in extra:
-            if parent_event_id is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
-                )
-            parent_event_id = extra.pop("parentEventId")
+            raise TypeError("Use the canonical keyword parent_event_id")
         if "tokenCounts" in extra:
-            if token_counts is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for tokenCounts via token_counts and wire key"
-                )
-            token_counts = extra.pop("tokenCounts")
+            raise TypeError("Use the canonical keyword token_counts")
         super().__init__(extra)
         if extensions is not _UNSET:
             self["extensions"] = extensions
@@ -4786,11 +4626,7 @@ class ContextCompactBeforeInterceptResponseResult(_WireModel):
         **extra: Any,
     ) -> None:
         if "protocolVersion" in extra:
-            if protocol_version is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for protocolVersion via protocol_version and wire key"
-                )
-            protocol_version = extra.pop("protocolVersion")
+            raise TypeError("Use the canonical keyword protocol_version")
         super().__init__(extra)
         if effects is not _UNSET:
             self["effects"] = effects
@@ -5066,29 +4902,13 @@ class ExecutionEventAttemptusage(_WireModel):
         **extra: Any,
     ) -> None:
         if "cacheReadTokens" in extra:
-            if cache_read_tokens is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for cacheReadTokens via cache_read_tokens and wire key"
-                )
-            cache_read_tokens = extra.pop("cacheReadTokens")
+            raise TypeError("Use the canonical keyword cache_read_tokens")
         if "cacheWriteTokens" in extra:
-            if cache_write_tokens is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for cacheWriteTokens via cache_write_tokens and wire key"
-                )
-            cache_write_tokens = extra.pop("cacheWriteTokens")
+            raise TypeError("Use the canonical keyword cache_write_tokens")
         if "inputTokens" in extra:
-            if input_tokens is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for inputTokens via input_tokens and wire key"
-                )
-            input_tokens = extra.pop("inputTokens")
+            raise TypeError("Use the canonical keyword input_tokens")
         if "outputTokens" in extra:
-            if output_tokens is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for outputTokens via output_tokens and wire key"
-                )
-            output_tokens = extra.pop("outputTokens")
+            raise TypeError("Use the canonical keyword output_tokens")
         super().__init__(extra)
         if cache_read_tokens is not _UNSET:
             self["cacheReadTokens"] = cache_read_tokens
@@ -5187,9 +5007,7 @@ class ExecutionEventBatch(_WireModel):
         self, *, call_ids: list[str], id: str, synthesized: bool = _UNSET, **extra: Any
     ) -> None:
         if "callIds" in extra:
-            raise TypeError(
-                "Duplicate assignment for callIds via call_ids and wire key"
-            )
+            raise TypeError("Use the canonical keyword call_ids")
         super().__init__(extra)
         self["callIds"] = call_ids
         self["id"] = id
@@ -5240,17 +5058,9 @@ class ExecutionEventContextCompactAfter(_WireModel):
         **extra: Any,
     ) -> None:
         if "parentEventId" in extra:
-            if parent_event_id is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
-                )
-            parent_event_id = extra.pop("parentEventId")
+            raise TypeError("Use the canonical keyword parent_event_id")
         if "tokenCounts" in extra:
-            if token_counts is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for tokenCounts via token_counts and wire key"
-                )
-            token_counts = extra.pop("tokenCounts")
+            raise TypeError("Use the canonical keyword token_counts")
         super().__init__(extra)
         self["execution"] = execution
         if extensions is not _UNSET:
@@ -5431,17 +5241,9 @@ class ExecutionEventContextCompactBefore(_WireModel):
         **extra: Any,
     ) -> None:
         if "parentEventId" in extra:
-            if parent_event_id is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
-                )
-            parent_event_id = extra.pop("parentEventId")
+            raise TypeError("Use the canonical keyword parent_event_id")
         if "tokenCounts" in extra:
-            if token_counts is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for tokenCounts via token_counts and wire key"
-                )
-            token_counts = extra.pop("tokenCounts")
+            raise TypeError("Use the canonical keyword token_counts")
         super().__init__(extra)
         if extensions is not _UNSET:
             self["extensions"] = extensions
@@ -5591,7 +5393,7 @@ class ExecutionEventError(_WireModel):
         **extra: Any,
     ) -> None:
         if "class" in extra:
-            raise TypeError("Duplicate assignment for class via class_ and wire key")
+            raise TypeError("Use the canonical keyword class_")
         super().__init__(extra)
         self["class"] = class_
         if code is not _UNSET:
@@ -5813,11 +5615,7 @@ class ExecutionEventFilechange(_WireModel):
         **extra: Any,
     ) -> None:
         if "previousPath" in extra:
-            if previous_path is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for previousPath via previous_path and wire key"
-                )
-            previous_path = extra.pop("previousPath")
+            raise TypeError("Use the canonical keyword previous_path")
         super().__init__(extra)
         if after is not _UNSET:
             self["after"] = after
@@ -5897,9 +5695,7 @@ class ExecutionEventMcp(_WireModel):
         **extra: Any,
     ) -> None:
         if "toolName" in extra:
-            raise TypeError(
-                "Duplicate assignment for toolName via tool_name and wire key"
-            )
+            raise TypeError("Use the canonical keyword tool_name")
         super().__init__(extra)
         self["connection"] = connection
         self["provenance"] = provenance
@@ -5944,11 +5740,7 @@ class ExecutionEventMcpConnectionCustomTransport(_WireModel):
         **extra: Any,
     ) -> None:
         if "addressForm" in extra:
-            if address_form is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for addressForm via address_form and wire key"
-                )
-            address_form = extra.pop("addressForm")
+            raise TypeError("Use the canonical keyword address_form")
         super().__init__(extra)
         if address is not _UNSET:
             self["address"] = address
@@ -6242,17 +6034,9 @@ class ExecutionEventModelError(_WireModel):
         **extra: Any,
     ) -> None:
         if "latencyMs" in extra:
-            if latency_ms is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for latencyMs via latency_ms and wire key"
-                )
-            latency_ms = extra.pop("latencyMs")
+            raise TypeError("Use the canonical keyword latency_ms")
         if "parentEventId" in extra:
-            if parent_event_id is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
-                )
-            parent_event_id = extra.pop("parentEventId")
+            raise TypeError("Use the canonical keyword parent_event_id")
         super().__init__(extra)
         self["attempt"] = attempt
         self["error"] = error
@@ -6608,11 +6392,7 @@ class ExecutionEventModelRequestBefore(_WireModel):
         **extra: Any,
     ) -> None:
         if "parentEventId" in extra:
-            if parent_event_id is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
-                )
-            parent_event_id = extra.pop("parentEventId")
+            raise TypeError("Use the canonical keyword parent_event_id")
         super().__init__(extra)
         self["attempt"] = attempt
         if extensions is not _UNSET:
@@ -6776,21 +6556,11 @@ class ExecutionEventModelResponseAfter(_WireModel):
         **extra: Any,
     ) -> None:
         if "finishReason" in extra:
-            raise TypeError(
-                "Duplicate assignment for finishReason via finish_reason and wire key"
-            )
+            raise TypeError("Use the canonical keyword finish_reason")
         if "latencyMs" in extra:
-            if latency_ms is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for latencyMs via latency_ms and wire key"
-                )
-            latency_ms = extra.pop("latencyMs")
+            raise TypeError("Use the canonical keyword latency_ms")
         if "parentEventId" in extra:
-            if parent_event_id is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
-                )
-            parent_event_id = extra.pop("parentEventId")
+            raise TypeError("Use the canonical keyword parent_event_id")
         super().__init__(extra)
         self["attempt"] = attempt
         self["execution"] = execution
@@ -6973,11 +6743,7 @@ class ExecutionEventModelSwitchAfter(_WireModel):
         **extra: Any,
     ) -> None:
         if "parentEventId" in extra:
-            if parent_event_id is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
-                )
-            parent_event_id = extra.pop("parentEventId")
+            raise TypeError("Use the canonical keyword parent_event_id")
         super().__init__(extra)
         self["current"] = current
         if extensions is not _UNSET:
@@ -7150,11 +6916,7 @@ class ExecutionEventModelSwitchBefore(_WireModel):
         **extra: Any,
     ) -> None:
         if "parentEventId" in extra:
-            if parent_event_id is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
-                )
-            parent_event_id = extra.pop("parentEventId")
+            raise TypeError("Use the canonical keyword parent_event_id")
         super().__init__(extra)
         self["current"] = current
         if extensions is not _UNSET:
@@ -7292,17 +7054,9 @@ class ExecutionEventModelSwitchBeforePricing(_WireModel):
         **extra: Any,
     ) -> None:
         if "inputPerMillionTokens" in extra:
-            if input_per_million_tokens is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for inputPerMillionTokens via input_per_million_tokens and wire key"
-                )
-            input_per_million_tokens = extra.pop("inputPerMillionTokens")
+            raise TypeError("Use the canonical keyword input_per_million_tokens")
         if "outputPerMillionTokens" in extra:
-            if output_per_million_tokens is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for outputPerMillionTokens via output_per_million_tokens and wire key"
-                )
-            output_per_million_tokens = extra.pop("outputPerMillionTokens")
+            raise TypeError("Use the canonical keyword output_per_million_tokens")
         super().__init__(extra)
         self["currency"] = currency
         if input_per_million_tokens is not _UNSET:
@@ -7441,11 +7195,7 @@ class ExecutionEventToolBatchAfter(_WireModel):
         **extra: Any,
     ) -> None:
         if "parentEventId" in extra:
-            if parent_event_id is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
-                )
-            parent_event_id = extra.pop("parentEventId")
+            raise TypeError("Use the canonical keyword parent_event_id")
         super().__init__(extra)
         self["batch"] = batch
         self["calls"] = calls
@@ -7737,15 +7487,9 @@ class ExecutionEventToolPermissionRequest(_WireModel):
         **extra: Any,
     ) -> None:
         if "parentEventId" in extra:
-            if parent_event_id is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
-                )
-            parent_event_id = extra.pop("parentEventId")
+            raise TypeError("Use the canonical keyword parent_event_id")
         if "sandboxBypass" in extra:
-            raise TypeError(
-                "Duplicate assignment for sandboxBypass via sandbox_bypass and wire key"
-            )
+            raise TypeError("Use the canonical keyword sandbox_bypass")
         super().__init__(extra)
         if batch is not _UNSET:
             self["batch"] = batch
@@ -7965,15 +7709,9 @@ class ExecutionEventToolPermissionResolved(_WireModel):
         **extra: Any,
     ) -> None:
         if "decidedBy" in extra:
-            raise TypeError(
-                "Duplicate assignment for decidedBy via decided_by and wire key"
-            )
+            raise TypeError("Use the canonical keyword decided_by")
         if "parentEventId" in extra:
-            if parent_event_id is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
-                )
-            parent_event_id = extra.pop("parentEventId")
+            raise TypeError("Use the canonical keyword parent_event_id")
         super().__init__(extra)
         if batch is not _UNSET:
             self["batch"] = batch
@@ -8198,15 +7936,9 @@ class ExecutionEventToolProgress(_WireModel):
         **extra: Any,
     ) -> None:
         if "parentEventId" in extra:
-            if parent_event_id is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
-                )
-            parent_event_id = extra.pop("parentEventId")
+            raise TypeError("Use the canonical keyword parent_event_id")
         if "partialOutput" in extra:
-            raise TypeError(
-                "Duplicate assignment for partialOutput via partial_output and wire key"
-            )
+            raise TypeError("Use the canonical keyword partial_output")
         super().__init__(extra)
         self["backgrounded"] = backgrounded
         if batch is not _UNSET:
@@ -8406,21 +8138,11 @@ class ExecutionEventTurnEnd(_WireModel):
         **extra: Any,
     ) -> None:
         if "continuationCount" in extra:
-            raise TypeError(
-                "Duplicate assignment for continuationCount via continuation_count and wire key"
-            )
+            raise TypeError("Use the canonical keyword continuation_count")
         if "lastAssistantItem" in extra:
-            if last_assistant_item is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for lastAssistantItem via last_assistant_item and wire key"
-                )
-            last_assistant_item = extra.pop("lastAssistantItem")
+            raise TypeError("Use the canonical keyword last_assistant_item")
         if "parentEventId" in extra:
-            if parent_event_id is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
-                )
-            parent_event_id = extra.pop("parentEventId")
+            raise TypeError("Use the canonical keyword parent_event_id")
         super().__init__(extra)
         self["continuationCount"] = continuation_count
         if error is not _UNSET:
@@ -8607,21 +8329,11 @@ class ExecutionEventTurnFinishBefore(_WireModel):
         **extra: Any,
     ) -> None:
         if "continuationCount" in extra:
-            raise TypeError(
-                "Duplicate assignment for continuationCount via continuation_count and wire key"
-            )
+            raise TypeError("Use the canonical keyword continuation_count")
         if "lastAssistantItem" in extra:
-            if last_assistant_item is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for lastAssistantItem via last_assistant_item and wire key"
-                )
-            last_assistant_item = extra.pop("lastAssistantItem")
+            raise TypeError("Use the canonical keyword last_assistant_item")
         if "parentEventId" in extra:
-            if parent_event_id is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
-                )
-            parent_event_id = extra.pop("parentEventId")
+            raise TypeError("Use the canonical keyword parent_event_id")
         super().__init__(extra)
         self["continuationCount"] = continuation_count
         if extensions is not _UNSET:
@@ -8812,11 +8524,7 @@ class ExecutionEventTurnProgress(_WireModel):
         **extra: Any,
     ) -> None:
         if "parentEventId" in extra:
-            if parent_event_id is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
-                )
-            parent_event_id = extra.pop("parentEventId")
+            raise TypeError("Use the canonical keyword parent_event_id")
         super().__init__(extra)
         self["delta"] = delta
         if extensions is not _UNSET:
@@ -8996,17 +8704,9 @@ class ExecutionEventTurnStart(_WireModel):
         **extra: Any,
     ) -> None:
         if "expandedFrom" in extra:
-            if expanded_from is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for expandedFrom via expanded_from and wire key"
-                )
-            expanded_from = extra.pop("expandedFrom")
+            raise TypeError("Use the canonical keyword expanded_from")
         if "parentEventId" in extra:
-            if parent_event_id is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
-                )
-            parent_event_id = extra.pop("parentEventId")
+            raise TypeError("Use the canonical keyword parent_event_id")
         super().__init__(extra)
         if expanded_from is not _UNSET:
             self["expandedFrom"] = expanded_from
@@ -9150,29 +8850,13 @@ class ExecutionEventTurnusage(_WireModel):
         **extra: Any,
     ) -> None:
         if "cacheReadTokens" in extra:
-            if cache_read_tokens is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for cacheReadTokens via cache_read_tokens and wire key"
-                )
-            cache_read_tokens = extra.pop("cacheReadTokens")
+            raise TypeError("Use the canonical keyword cache_read_tokens")
         if "cacheWriteTokens" in extra:
-            if cache_write_tokens is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for cacheWriteTokens via cache_write_tokens and wire key"
-                )
-            cache_write_tokens = extra.pop("cacheWriteTokens")
+            raise TypeError("Use the canonical keyword cache_write_tokens")
         if "inputTokens" in extra:
-            if input_tokens is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for inputTokens via input_tokens and wire key"
-                )
-            input_tokens = extra.pop("inputTokens")
+            raise TypeError("Use the canonical keyword input_tokens")
         if "outputTokens" in extra:
-            if output_tokens is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for outputTokens via output_tokens and wire key"
-                )
-            output_tokens = extra.pop("outputTokens")
+            raise TypeError("Use the canonical keyword output_tokens")
         super().__init__(extra)
         if cache_read_tokens is not _UNSET:
             self["cacheReadTokens"] = cache_read_tokens
@@ -9288,29 +8972,13 @@ class ExecutionEventUsage(_WireModel):
         **extra: Any,
     ) -> None:
         if "cacheReadTokens" in extra:
-            if cache_read_tokens is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for cacheReadTokens via cache_read_tokens and wire key"
-                )
-            cache_read_tokens = extra.pop("cacheReadTokens")
+            raise TypeError("Use the canonical keyword cache_read_tokens")
         if "cacheWriteTokens" in extra:
-            if cache_write_tokens is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for cacheWriteTokens via cache_write_tokens and wire key"
-                )
-            cache_write_tokens = extra.pop("cacheWriteTokens")
+            raise TypeError("Use the canonical keyword cache_write_tokens")
         if "inputTokens" in extra:
-            if input_tokens is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for inputTokens via input_tokens and wire key"
-                )
-            input_tokens = extra.pop("inputTokens")
+            raise TypeError("Use the canonical keyword input_tokens")
         if "outputTokens" in extra:
-            if output_tokens is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for outputTokens via output_tokens and wire key"
-                )
-            output_tokens = extra.pop("outputTokens")
+            raise TypeError("Use the canonical keyword output_tokens")
         super().__init__(extra)
         if cache_read_tokens is not _UNSET:
             self["cacheReadTokens"] = cache_read_tokens
@@ -9456,11 +9124,7 @@ class FileChangedInput(dict[str, Any]):
         **extra: Any,
     ) -> None:
         if "parentEventId" in extra:
-            if parent_event_id is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
-                )
-            parent_event_id = extra.pop("parentEventId")
+            raise TypeError("Use the canonical keyword parent_event_id")
         super().__init__(extra)
         self["changes"] = changes
         if extensions is not _UNSET:
@@ -9558,42 +9222,6 @@ class FileChangedInput(dict[str, Any]):
     def content_sources(self) -> dict[str, OwnedContentSource]:
         return dict(getattr(self, "_content_sources", {}))
 
-    def bind_changes_after_source(
-        self, source: OwnedContentSource, *, index: int
-    ) -> FileChangedInput:
-        if isinstance(index, bool) or not isinstance(index, int) or index < 0:
-            raise ValueError("Content source index must be a nonnegative integer")
-        result = copy(self)
-        result._content_sources = {
-            **self.content_sources,
-            f"file.changed.changes_after[{index}]": source,
-        }
-        return result
-
-    def bind_changes_before_source(
-        self, source: OwnedContentSource, *, index: int
-    ) -> FileChangedInput:
-        if isinstance(index, bool) or not isinstance(index, int) or index < 0:
-            raise ValueError("Content source index must be a nonnegative integer")
-        result = copy(self)
-        result._content_sources = {
-            **self.content_sources,
-            f"file.changed.changes_before[{index}]": source,
-        }
-        return result
-
-    def bind_items_source(
-        self, source: OwnedContentSource, *, index: int
-    ) -> FileChangedInput:
-        if isinstance(index, bool) or not isinstance(index, int) or index < 0:
-            raise ValueError("Content source index must be a nonnegative integer")
-        result = copy(self)
-        result._content_sources = {
-            **self.content_sources,
-            f"file.changed.items[{index}]": source,
-        }
-        return result
-
 
 class FileChangedInputChangesItem(_WireModel):
     """Keyword-only wire object; wire constructors validate the original descriptor. Optional attributes return None when absent; mapping-method names use a trailing underscore."""
@@ -9623,9 +9251,7 @@ class FileChangedInputChangesItem(_WireModel):
         **extra: Any,
     ) -> None:
         if "agentCaused" in extra:
-            raise TypeError(
-                "Duplicate assignment for agentCaused via agent_caused and wire key"
-            )
+            raise TypeError("Use the canonical keyword agent_caused")
         super().__init__(extra)
         if after is not _UNSET:
             self["after"] = after
@@ -9755,9 +9381,7 @@ class HookFailureEvent(_WireModel):
         **extra: Any,
     ) -> None:
         if "parentEventId" in extra:
-            raise TypeError(
-                "Duplicate assignment for parentEventId via parent_event_id and wire key"
-            )
+            raise TypeError("Use the canonical keyword parent_event_id")
         super().__init__(extra)
         if extensions is not _UNSET:
             self["extensions"] = extensions
@@ -9878,9 +9502,7 @@ class HookFailureInput(dict[str, Any]):
         **extra: Any,
     ) -> None:
         if "parentEventId" in extra:
-            raise TypeError(
-                "Duplicate assignment for parentEventId via parent_event_id and wire key"
-            )
+            raise TypeError("Use the canonical keyword parent_event_id")
         super().__init__(extra)
         if extensions is not _UNSET:
             self["extensions"] = extensions
@@ -9977,18 +9599,6 @@ class HookFailureInput(dict[str, Any]):
     def content_sources(self) -> dict[str, OwnedContentSource]:
         return dict(getattr(self, "_content_sources", {}))
 
-    def bind_items_source(
-        self, source: OwnedContentSource, *, index: int
-    ) -> HookFailureInput:
-        if isinstance(index, bool) or not isinstance(index, int) or index < 0:
-            raise ValueError("Content source index must be a nonnegative integer")
-        result = copy(self)
-        result._content_sources = {
-            **self.content_sources,
-            f"hook.failure.items[{index}]": source,
-        }
-        return result
-
 
 class HookFailureEventFailure(_WireModel):
     """Keyword-only wire object; wire constructors validate the original descriptor. Optional attributes return None when absent; mapping-method names use a trailing underscore."""
@@ -9997,9 +9607,7 @@ class HookFailureEventFailure(_WireModel):
         self, *, backend_id: str, policy: str, reason: str, **extra: Any
     ) -> None:
         if "backendId" in extra:
-            raise TypeError(
-                "Duplicate assignment for backendId via backend_id and wire key"
-            )
+            raise TypeError("Use the canonical keyword backend_id")
         super().__init__(extra)
         self["backendId"] = backend_id
         self["policy"] = policy
@@ -10068,9 +9676,7 @@ class HookFailureInputFailure(_WireModel):
         self, *, backend_id: str, policy: str, reason: str, **extra: Any
     ) -> None:
         if "backendId" in extra:
-            raise TypeError(
-                "Duplicate assignment for backendId via backend_id and wire key"
-            )
+            raise TypeError("Use the canonical keyword backend_id")
         super().__init__(extra)
         self["backendId"] = backend_id
         self["policy"] = policy
@@ -10166,9 +9772,7 @@ class InjectEffect(_WireModel):
         **extra: Any,
     ) -> None:
         if "deliverAt" in extra:
-            raise TypeError(
-                "Duplicate assignment for deliverAt via deliver_at and wire key"
-            )
+            raise TypeError("Use the canonical keyword deliver_at")
         super().__init__(extra)
         self["deliverAt"] = deliver_at
         self["operation"] = json.loads('"append"') if operation is _UNSET else operation
@@ -10242,11 +9846,7 @@ class InteractionEventConfigChangeAfterChange(_WireModel):
         **extra: Any,
     ) -> None:
         if "mcpServers" in extra:
-            if mcp_servers is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for mcpServers via mcp_servers and wire key"
-                )
-            mcp_servers = extra.pop("mcpServers")
+            raise TypeError("Use the canonical keyword mcp_servers")
         super().__init__(extra)
         if mcp_servers is not _UNSET:
             self["mcpServers"] = mcp_servers
@@ -10370,9 +9970,7 @@ class InteractionEventHookFailure(_WireModel):
         **extra: Any,
     ) -> None:
         if "parentEventId" in extra:
-            raise TypeError(
-                "Duplicate assignment for parentEventId via parent_event_id and wire key"
-            )
+            raise TypeError("Use the canonical keyword parent_event_id")
         super().__init__(extra)
         self["failure"] = failure
         self["parentEventId"] = parent_event_id
@@ -10399,9 +9997,7 @@ class InteractionEventHookFailureFailure(_WireModel):
         self, *, backend_id: str, policy: str, reason: str, **extra: Any
     ) -> None:
         if "backendId" in extra:
-            raise TypeError(
-                "Duplicate assignment for backendId via backend_id and wire key"
-            )
+            raise TypeError("Use the canonical keyword backend_id")
         super().__init__(extra)
         self["backendId"] = backend_id
         self["policy"] = policy
@@ -10902,11 +10498,7 @@ class InterceptDenyResponseResult(_WireModel):
         **extra: Any,
     ) -> None:
         if "protocolVersion" in extra:
-            if protocol_version is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for protocolVersion via protocol_version and wire key"
-                )
-            protocol_version = extra.pop("protocolVersion")
+            raise TypeError("Use the canonical keyword protocol_version")
         super().__init__(extra)
         if effects is not _UNSET:
             self["effects"] = effects
@@ -11002,11 +10594,7 @@ class InterceptNoEffectResponseResult(_WireModel):
         **extra: Any,
     ) -> None:
         if "protocolVersion" in extra:
-            if protocol_version is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for protocolVersion via protocol_version and wire key"
-                )
-            protocol_version = extra.pop("protocolVersion")
+            raise TypeError("Use the canonical keyword protocol_version")
         super().__init__(extra)
         if effects is not _UNSET:
             self["effects"] = effects
@@ -11096,11 +10684,7 @@ class InterceptRequestParams(_WireModel):
         **extra: Any,
     ) -> None:
         if "protocolVersion" in extra:
-            if protocol_version is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for protocolVersion via protocol_version and wire key"
-                )
-            protocol_version = extra.pop("protocolVersion")
+            raise TypeError("Use the canonical keyword protocol_version")
         super().__init__(extra)
         self["capabilities"] = capabilities
         self["event"] = event
@@ -11250,23 +10834,11 @@ class InterceptRequestParamsCapabilitiesFlow(_WireModel):
         **extra: Any,
     ) -> None:
         if "continuationCount" in extra:
-            if continuation_count is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for continuationCount via continuation_count and wire key"
-                )
-            continuation_count = extra.pop("continuationCount")
+            raise TypeError("Use the canonical keyword continuation_count")
         if "maxContinuations" in extra:
-            if max_continuations is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for maxContinuations via max_continuations and wire key"
-                )
-            max_continuations = extra.pop("maxContinuations")
+            raise TypeError("Use the canonical keyword max_continuations")
         if "remainingContinuations" in extra:
-            if remaining_continuations is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for remainingContinuations via remaining_continuations and wire key"
-                )
-            remaining_continuations = extra.pop("remainingContinuations")
+            raise TypeError("Use the canonical keyword remaining_continuations")
         super().__init__(extra)
         if continuation_count is not _UNSET:
             self["continuationCount"] = continuation_count
@@ -11321,9 +10893,7 @@ class InterceptRequestParamsCapabilitiesInjectContext(_WireModel):
         self, *, append: Literal[True] = _UNSET, deliver_at: list[str], **extra: Any
     ) -> None:
         if "deliverAt" in extra:
-            raise TypeError(
-                "Duplicate assignment for deliverAt via deliver_at and wire key"
-            )
+            raise TypeError("Use the canonical keyword deliver_at")
         super().__init__(extra)
         self["append"] = json.loads("true") if append is _UNSET else append
         self["deliverAt"] = deliver_at
@@ -11725,11 +11295,7 @@ class InterceptResponseResult(_WireModel):
         **extra: Any,
     ) -> None:
         if "protocolVersion" in extra:
-            if protocol_version is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for protocolVersion via protocol_version and wire key"
-                )
-            protocol_version = extra.pop("protocolVersion")
+            raise TypeError("Use the canonical keyword protocol_version")
         super().__init__(extra)
         if effects is not _UNSET:
             self["effects"] = effects
@@ -11788,19 +11354,11 @@ class InterceptSubscription(_WireModel):
         **extra: Any,
     ) -> None:
         if "failurePolicy" in extra:
-            raise TypeError(
-                "Duplicate assignment for failurePolicy via failure_policy and wire key"
-            )
+            raise TypeError("Use the canonical keyword failure_policy")
         if "includeNative" in extra:
-            if include_native is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for includeNative via include_native and wire key"
-                )
-            include_native = extra.pop("includeNative")
+            raise TypeError("Use the canonical keyword include_native")
         if "timeoutMs" in extra:
-            raise TypeError(
-                "Duplicate assignment for timeoutMs via timeout_ms and wire key"
-            )
+            raise TypeError("Use the canonical keyword timeout_ms")
         super().__init__(extra)
         self["content"] = content
         if disableable is not _UNSET:
@@ -11895,11 +11453,7 @@ class InterceptSubscriptionFilters(_WireModel):
         self, *, paths: list[str] = _UNSET, tool_kinds: list[str] = _UNSET, **extra: Any
     ) -> None:
         if "toolKinds" in extra:
-            if tool_kinds is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for toolKinds via tool_kinds and wire key"
-                )
-            tool_kinds = extra.pop("toolKinds")
+            raise TypeError("Use the canonical keyword tool_kinds")
         super().__init__(extra)
         if paths is not _UNSET:
             self["paths"] = paths
@@ -12151,9 +11705,7 @@ class McpElicitationElicitRequestFormParams(_WireModel):
         **extra: Any,
     ) -> None:
         if "requestedSchema" in extra:
-            raise TypeError(
-                "Duplicate assignment for requestedSchema via requested_schema and wire key"
-            )
+            raise TypeError("Use the canonical keyword requested_schema")
         super().__init__(extra)
         if _meta is not _UNSET:
             self["_meta"] = _meta
@@ -12190,11 +11742,7 @@ class McpElicitationElicitRequestFormParamsMeta(_WireModel):
 
     def __init__(self, *, progress_token: float | str = _UNSET, **extra: Any) -> None:
         if "progressToken" in extra:
-            if progress_token is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for progressToken via progress_token and wire key"
-                )
-            progress_token = extra.pop("progressToken")
+            raise TypeError("Use the canonical keyword progress_token")
         super().__init__(extra)
         if progress_token is not _UNSET:
             self["progressToken"] = progress_token
@@ -12228,11 +11776,7 @@ class McpElicitationElicitRequestFormParamsRequestedSchema(_WireModel):
         **extra: Any,
     ) -> None:
         if "$schema" in extra:
-            if _schema is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for $schema via _schema and wire key"
-                )
-            _schema = extra.pop("$schema")
+            raise TypeError("Use the canonical keyword _schema")
         super().__init__(extra)
         if _schema is not _UNSET:
             self["$schema"] = _schema
@@ -12286,9 +11830,7 @@ class McpElicitationElicitRequestURLParams(_WireModel):
         **extra: Any,
     ) -> None:
         if "elicitationId" in extra:
-            raise TypeError(
-                "Duplicate assignment for elicitationId via elicitation_id and wire key"
-            )
+            raise TypeError("Use the canonical keyword elicitation_id")
         super().__init__(extra)
         if _meta is not _UNSET:
             self["_meta"] = _meta
@@ -12330,11 +11872,7 @@ class McpElicitationElicitRequestURLParamsMeta(_WireModel):
 
     def __init__(self, *, progress_token: float | str = _UNSET, **extra: Any) -> None:
         if "progressToken" in extra:
-            if progress_token is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for progressToken via progress_token and wire key"
-                )
-            progress_token = extra.pop("progressToken")
+            raise TypeError("Use the canonical keyword progress_token")
         super().__init__(extra)
         if progress_token is not _UNSET:
             self["progressToken"] = progress_token
@@ -12398,11 +11936,7 @@ class McpElicitationLegacyTitledEnumSchema(_WireModel):
         **extra: Any,
     ) -> None:
         if "enumNames" in extra:
-            if enum_names is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for enumNames via enum_names and wire key"
-                )
-            enum_names = extra.pop("enumNames")
+            raise TypeError("Use the canonical keyword enum_names")
         super().__init__(extra)
         if default is not _UNSET:
             self["default"] = default
@@ -12515,17 +12049,9 @@ class McpElicitationStringSchema(_WireModel):
         **extra: Any,
     ) -> None:
         if "maxLength" in extra:
-            if max_length is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for maxLength via max_length and wire key"
-                )
-            max_length = extra.pop("maxLength")
+            raise TypeError("Use the canonical keyword max_length")
         if "minLength" in extra:
-            if min_length is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for minLength via min_length and wire key"
-                )
-            min_length = extra.pop("minLength")
+            raise TypeError("Use the canonical keyword min_length")
         super().__init__(extra)
         if default is not _UNSET:
             self["default"] = default
@@ -12608,17 +12134,9 @@ class McpElicitationTitledMultiSelectEnumSchema(_WireModel):
         **extra: Any,
     ) -> None:
         if "maxItems" in extra:
-            if max_items is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for maxItems via max_items and wire key"
-                )
-            max_items = extra.pop("maxItems")
+            raise TypeError("Use the canonical keyword max_items")
         if "minItems" in extra:
-            if min_items is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for minItems via min_items and wire key"
-                )
-            min_items = extra.pop("minItems")
+            raise TypeError("Use the canonical keyword min_items")
         super().__init__(extra)
         if default is not _UNSET:
             self["default"] = default
@@ -12673,7 +12191,7 @@ class McpElicitationTitledMultiSelectEnumSchemaItems(_WireModel):
         **extra: Any,
     ) -> None:
         if "anyOf" in extra:
-            raise TypeError("Duplicate assignment for anyOf via any_of and wire key")
+            raise TypeError("Use the canonical keyword any_of")
         super().__init__(extra)
         self["anyOf"] = any_of
         self._validate()
@@ -12715,7 +12233,7 @@ class McpElicitationTitledSingleSelectEnumSchema(_WireModel):
         **extra: Any,
     ) -> None:
         if "oneOf" in extra:
-            raise TypeError("Duplicate assignment for oneOf via one_of and wire key")
+            raise TypeError("Use the canonical keyword one_of")
         super().__init__(extra)
         if default is not _UNSET:
             self["default"] = default
@@ -12782,17 +12300,9 @@ class McpElicitationUntitledMultiSelectEnumSchema(_WireModel):
         **extra: Any,
     ) -> None:
         if "maxItems" in extra:
-            if max_items is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for maxItems via max_items and wire key"
-                )
-            max_items = extra.pop("maxItems")
+            raise TypeError("Use the canonical keyword max_items")
         if "minItems" in extra:
-            if min_items is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for minItems via min_items and wire key"
-                )
-            min_items = extra.pop("minItems")
+            raise TypeError("Use the canonical keyword min_items")
         super().__init__(extra)
         if default is not _UNSET:
             self["default"] = default
@@ -13054,17 +12564,9 @@ class ModelErrorInput(dict[str, Any]):
         **extra: Any,
     ) -> None:
         if "latencyMs" in extra:
-            if latency_ms is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for latencyMs via latency_ms and wire key"
-                )
-            latency_ms = extra.pop("latencyMs")
+            raise TypeError("Use the canonical keyword latency_ms")
         if "parentEventId" in extra:
-            if parent_event_id is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
-                )
-            parent_event_id = extra.pop("parentEventId")
+            raise TypeError("Use the canonical keyword parent_event_id")
         super().__init__(extra)
         self["attempt"] = attempt
         self["error"] = error
@@ -13203,18 +12705,6 @@ class ModelErrorInput(dict[str, Any]):
     @property
     def content_sources(self) -> dict[str, OwnedContentSource]:
         return dict(getattr(self, "_content_sources", {}))
-
-    def bind_items_source(
-        self, source: OwnedContentSource, *, index: int
-    ) -> ModelErrorInput:
-        if isinstance(index, bool) or not isinstance(index, int) or index < 0:
-            raise ValueError("Content source index must be a nonnegative integer")
-        result = copy(self)
-        result._content_sources = {
-            **self.content_sources,
-            f"model.error.items[{index}]": source,
-        }
-        return result
 
 
 class ModelErrorInputExecutionExecuted(_WireModel):
@@ -13531,23 +13021,11 @@ class ModelRequestBeforeCapabilitiesFlow(_WireModel):
         **extra: Any,
     ) -> None:
         if "continuationCount" in extra:
-            if continuation_count is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for continuationCount via continuation_count and wire key"
-                )
-            continuation_count = extra.pop("continuationCount")
+            raise TypeError("Use the canonical keyword continuation_count")
         if "maxContinuations" in extra:
-            if max_continuations is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for maxContinuations via max_continuations and wire key"
-                )
-            max_continuations = extra.pop("maxContinuations")
+            raise TypeError("Use the canonical keyword max_continuations")
         if "remainingContinuations" in extra:
-            if remaining_continuations is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for remainingContinuations via remaining_continuations and wire key"
-                )
-            remaining_continuations = extra.pop("remainingContinuations")
+            raise TypeError("Use the canonical keyword remaining_continuations")
         super().__init__(extra)
         if continuation_count is not _UNSET:
             self["continuationCount"] = continuation_count
@@ -13602,9 +13080,7 @@ class ModelRequestBeforeCapabilitiesInjectContext(_WireModel):
         self, *, append: Literal[True] = _UNSET, deliver_at: list[str], **extra: Any
     ) -> None:
         if "deliverAt" in extra:
-            raise TypeError(
-                "Duplicate assignment for deliverAt via deliver_at and wire key"
-            )
+            raise TypeError("Use the canonical keyword deliver_at")
         super().__init__(extra)
         self["append"] = json.loads("true") if append is _UNSET else append
         self["deliverAt"] = deliver_at
@@ -13883,11 +13359,7 @@ class ModelRequestBeforeInput(dict[str, Any]):
         **extra: Any,
     ) -> None:
         if "parentEventId" in extra:
-            if parent_event_id is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
-                )
-            parent_event_id = extra.pop("parentEventId")
+            raise TypeError("Use the canonical keyword parent_event_id")
         super().__init__(extra)
         self["attempt"] = attempt
         if extensions is not _UNSET:
@@ -14075,11 +13547,7 @@ class ModelRequestBeforeInterceptResponseResult(_WireModel):
         **extra: Any,
     ) -> None:
         if "protocolVersion" in extra:
-            if protocol_version is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for protocolVersion via protocol_version and wire key"
-                )
-            protocol_version = extra.pop("protocolVersion")
+            raise TypeError("Use the canonical keyword protocol_version")
         super().__init__(extra)
         if effects is not _UNSET:
             self["effects"] = effects
@@ -14264,23 +13732,11 @@ class ModelResponseAfterCapabilitiesFlow(_WireModel):
         **extra: Any,
     ) -> None:
         if "continuationCount" in extra:
-            if continuation_count is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for continuationCount via continuation_count and wire key"
-                )
-            continuation_count = extra.pop("continuationCount")
+            raise TypeError("Use the canonical keyword continuation_count")
         if "maxContinuations" in extra:
-            if max_continuations is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for maxContinuations via max_continuations and wire key"
-                )
-            max_continuations = extra.pop("maxContinuations")
+            raise TypeError("Use the canonical keyword max_continuations")
         if "remainingContinuations" in extra:
-            if remaining_continuations is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for remainingContinuations via remaining_continuations and wire key"
-                )
-            remaining_continuations = extra.pop("remainingContinuations")
+            raise TypeError("Use the canonical keyword remaining_continuations")
         super().__init__(extra)
         if continuation_count is not _UNSET:
             self["continuationCount"] = continuation_count
@@ -14335,9 +13791,7 @@ class ModelResponseAfterCapabilitiesInjectContext(_WireModel):
         self, *, append: Literal[True] = _UNSET, deliver_at: list[str], **extra: Any
     ) -> None:
         if "deliverAt" in extra:
-            raise TypeError(
-                "Duplicate assignment for deliverAt via deliver_at and wire key"
-            )
+            raise TypeError("Use the canonical keyword deliver_at")
         super().__init__(extra)
         self["append"] = json.loads("true") if append is _UNSET else append
         self["deliverAt"] = deliver_at
@@ -14624,21 +14078,11 @@ class ModelResponseAfterInput(dict[str, Any]):
         **extra: Any,
     ) -> None:
         if "finishReason" in extra:
-            raise TypeError(
-                "Duplicate assignment for finishReason via finish_reason and wire key"
-            )
+            raise TypeError("Use the canonical keyword finish_reason")
         if "latencyMs" in extra:
-            if latency_ms is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for latencyMs via latency_ms and wire key"
-                )
-            latency_ms = extra.pop("latencyMs")
+            raise TypeError("Use the canonical keyword latency_ms")
         if "parentEventId" in extra:
-            if parent_event_id is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
-                )
-            parent_event_id = extra.pop("parentEventId")
+            raise TypeError("Use the canonical keyword parent_event_id")
         super().__init__(extra)
         self["attempt"] = attempt
         self["execution"] = execution
@@ -14839,11 +14283,7 @@ class ModelResponseAfterInterceptResponseResult(_WireModel):
         **extra: Any,
     ) -> None:
         if "protocolVersion" in extra:
-            if protocol_version is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for protocolVersion via protocol_version and wire key"
-                )
-            protocol_version = extra.pop("protocolVersion")
+            raise TypeError("Use the canonical keyword protocol_version")
         super().__init__(extra)
         if effects is not _UNSET:
             self["effects"] = effects
@@ -14937,11 +14377,7 @@ class ModelSwitchAfterInput(dict[str, Any]):
         **extra: Any,
     ) -> None:
         if "parentEventId" in extra:
-            if parent_event_id is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
-                )
-            parent_event_id = extra.pop("parentEventId")
+            raise TypeError("Use the canonical keyword parent_event_id")
         super().__init__(extra)
         self["current"] = current
         if extensions is not _UNSET:
@@ -15048,18 +14484,6 @@ class ModelSwitchAfterInput(dict[str, Any]):
     @property
     def content_sources(self) -> dict[str, OwnedContentSource]:
         return dict(getattr(self, "_content_sources", {}))
-
-    def bind_items_source(
-        self, source: OwnedContentSource, *, index: int
-    ) -> ModelSwitchAfterInput:
-        if isinstance(index, bool) or not isinstance(index, int) or index < 0:
-            raise ValueError("Content source index must be a nonnegative integer")
-        result = copy(self)
-        result._content_sources = {
-            **self.content_sources,
-            f"model.switch.after.items[{index}]": source,
-        }
-        return result
 
 
 class ModelSwitchAfterInputGapsItem(_WireModel):
@@ -15215,23 +14639,11 @@ class ModelSwitchBeforeCapabilitiesFlow(_WireModel):
         **extra: Any,
     ) -> None:
         if "continuationCount" in extra:
-            if continuation_count is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for continuationCount via continuation_count and wire key"
-                )
-            continuation_count = extra.pop("continuationCount")
+            raise TypeError("Use the canonical keyword continuation_count")
         if "maxContinuations" in extra:
-            if max_continuations is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for maxContinuations via max_continuations and wire key"
-                )
-            max_continuations = extra.pop("maxContinuations")
+            raise TypeError("Use the canonical keyword max_continuations")
         if "remainingContinuations" in extra:
-            if remaining_continuations is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for remainingContinuations via remaining_continuations and wire key"
-                )
-            remaining_continuations = extra.pop("remainingContinuations")
+            raise TypeError("Use the canonical keyword remaining_continuations")
         super().__init__(extra)
         if continuation_count is not _UNSET:
             self["continuationCount"] = continuation_count
@@ -15286,9 +14698,7 @@ class ModelSwitchBeforeCapabilitiesInjectContext(_WireModel):
         self, *, append: Literal[True] = _UNSET, deliver_at: list[str], **extra: Any
     ) -> None:
         if "deliverAt" in extra:
-            raise TypeError(
-                "Duplicate assignment for deliverAt via deliver_at and wire key"
-            )
+            raise TypeError("Use the canonical keyword deliver_at")
         super().__init__(extra)
         self["append"] = json.loads("true") if append is _UNSET else append
         self["deliverAt"] = deliver_at
@@ -15578,11 +14988,7 @@ class ModelSwitchBeforeInput(dict[str, Any]):
         **extra: Any,
     ) -> None:
         if "parentEventId" in extra:
-            if parent_event_id is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
-                )
-            parent_event_id = extra.pop("parentEventId")
+            raise TypeError("Use the canonical keyword parent_event_id")
         super().__init__(extra)
         self["current"] = current
         if extensions is not _UNSET:
@@ -15696,18 +15102,6 @@ class ModelSwitchBeforeInput(dict[str, Any]):
     def content_sources(self) -> dict[str, OwnedContentSource]:
         return dict(getattr(self, "_content_sources", {}))
 
-    def bind_items_source(
-        self, source: OwnedContentSource, *, index: int
-    ) -> ModelSwitchBeforeInput:
-        if isinstance(index, bool) or not isinstance(index, int) or index < 0:
-            raise ValueError("Content source index must be a nonnegative integer")
-        result = copy(self)
-        result._content_sources = {
-            **self.content_sources,
-            f"model.switch.before.items[{index}]": source,
-        }
-        return result
-
 
 class ModelSwitchBeforeInputGapsItem(_WireModel):
     """Keyword-only wire object; wire constructors validate the original descriptor. Optional attributes return None when absent; mapping-method names use a trailing underscore."""
@@ -15739,17 +15133,9 @@ class ModelSwitchBeforeInputPricing(_WireModel):
         **extra: Any,
     ) -> None:
         if "inputPerMillionTokens" in extra:
-            if input_per_million_tokens is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for inputPerMillionTokens via input_per_million_tokens and wire key"
-                )
-            input_per_million_tokens = extra.pop("inputPerMillionTokens")
+            raise TypeError("Use the canonical keyword input_per_million_tokens")
         if "outputPerMillionTokens" in extra:
-            if output_per_million_tokens is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for outputPerMillionTokens via output_per_million_tokens and wire key"
-                )
-            output_per_million_tokens = extra.pop("outputPerMillionTokens")
+            raise TypeError("Use the canonical keyword output_per_million_tokens")
         super().__init__(extra)
         self["currency"] = currency
         if input_per_million_tokens is not _UNSET:
@@ -15832,11 +15218,7 @@ class ModelSwitchBeforeInterceptResponseResult(_WireModel):
         **extra: Any,
     ) -> None:
         if "protocolVersion" in extra:
-            if protocol_version is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for protocolVersion via protocol_version and wire key"
-                )
-            protocol_version = extra.pop("protocolVersion")
+            raise TypeError("Use the canonical keyword protocol_version")
         super().__init__(extra)
         if effects is not _UNSET:
             self["effects"] = effects
@@ -16099,11 +15481,7 @@ class ObserveNotificationParams(_WireModel):
         self, *, event: Event, protocol_version: Literal["draft"] = _UNSET, **extra: Any
     ) -> None:
         if "protocolVersion" in extra:
-            if protocol_version is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for protocolVersion via protocol_version and wire key"
-                )
-            protocol_version = extra.pop("protocolVersion")
+            raise TypeError("Use the canonical keyword protocol_version")
         super().__init__(extra)
         self["event"] = event
         self["protocolVersion"] = (
@@ -16137,11 +15515,7 @@ class ObserveSubscription(_WireModel):
         **extra: Any,
     ) -> None:
         if "includeNative" in extra:
-            if include_native is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for includeNative via include_native and wire key"
-                )
-            include_native = extra.pop("includeNative")
+            raise TypeError("Use the canonical keyword include_native")
         super().__init__(extra)
         self["content"] = content
         if disableable is not _UNSET:
@@ -16234,11 +15608,7 @@ class ObserveSubscriptionFilters(_WireModel):
         self, *, paths: list[str] = _UNSET, tool_kinds: list[str] = _UNSET, **extra: Any
     ) -> None:
         if "toolKinds" in extra:
-            if tool_kinds is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for toolKinds via tool_kinds and wire key"
-                )
-            tool_kinds = extra.pop("toolKinds")
+            raise TypeError("Use the canonical keyword tool_kinds")
         super().__init__(extra)
         if paths is not _UNSET:
             self["paths"] = paths
@@ -16272,11 +15642,7 @@ class Registration(_WireModel):
         **extra: Any,
     ) -> None:
         if "protocolVersion" in extra:
-            if protocol_version is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for protocolVersion via protocol_version and wire key"
-                )
-            protocol_version = extra.pop("protocolVersion")
+            raise TypeError("Use the canonical keyword protocol_version")
         super().__init__(extra)
         self["hooks"] = hooks
         self["protocolVersion"] = (
@@ -16306,13 +15672,9 @@ class RegistrationContentreceiver(_WireModel):
         **extra: Any,
     ) -> None:
         if "maxBytes" in extra:
-            raise TypeError(
-                "Duplicate assignment for maxBytes via max_bytes and wire key"
-            )
+            raise TypeError("Use the canonical keyword max_bytes")
         if "timeoutMs" in extra:
-            raise TypeError(
-                "Duplicate assignment for timeoutMs via timeout_ms and wire key"
-            )
+            raise TypeError("Use the canonical keyword timeout_ms")
         super().__init__(extra)
         if authentication is not _UNSET:
             self["authentication"] = authentication
@@ -16448,11 +15810,7 @@ class Session(_WireModel):
         **extra: Any,
     ) -> None:
         if "workspaceRoots" in extra:
-            if workspace_roots is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for workspaceRoots via workspace_roots and wire key"
-                )
-            workspace_roots = extra.pop("workspaceRoots")
+            raise TypeError("Use the canonical keyword workspace_roots")
         super().__init__(extra)
         if agent is not _UNSET:
             self["agent"] = agent
@@ -16531,29 +15889,13 @@ class SessionCounters(_WireModel):
         **extra: Any,
     ) -> None:
         if "inputTokens" in extra:
-            if input_tokens is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for inputTokens via input_tokens and wire key"
-                )
-            input_tokens = extra.pop("inputTokens")
+            raise TypeError("Use the canonical keyword input_tokens")
         if "modelRequests" in extra:
-            if model_requests is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for modelRequests via model_requests and wire key"
-                )
-            model_requests = extra.pop("modelRequests")
+            raise TypeError("Use the canonical keyword model_requests")
         if "outputTokens" in extra:
-            if output_tokens is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for outputTokens via output_tokens and wire key"
-                )
-            output_tokens = extra.pop("outputTokens")
+            raise TypeError("Use the canonical keyword output_tokens")
         if "toolCalls" in extra:
-            if tool_calls is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for toolCalls via tool_calls and wire key"
-                )
-            tool_calls = extra.pop("toolCalls")
+            raise TypeError("Use the canonical keyword tool_calls")
         super().__init__(extra)
         if input_tokens is not _UNSET:
             self["inputTokens"] = input_tokens
@@ -16621,11 +15963,7 @@ class SessionEndEvent(_WireModel):
         **extra: Any,
     ) -> None:
         if "parentEventId" in extra:
-            if parent_event_id is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
-                )
-            parent_event_id = extra.pop("parentEventId")
+            raise TypeError("Use the canonical keyword parent_event_id")
         super().__init__(extra)
         if counters is not _UNSET:
             self["counters"] = counters
@@ -16759,11 +16097,7 @@ class SessionEndInput(dict[str, Any]):
         **extra: Any,
     ) -> None:
         if "parentEventId" in extra:
-            if parent_event_id is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
-                )
-            parent_event_id = extra.pop("parentEventId")
+            raise TypeError("Use the canonical keyword parent_event_id")
         super().__init__(extra)
         if counters is not _UNSET:
             self["counters"] = counters
@@ -16870,18 +16204,6 @@ class SessionEndInput(dict[str, Any]):
     @property
     def content_sources(self) -> dict[str, OwnedContentSource]:
         return dict(getattr(self, "_content_sources", {}))
-
-    def bind_items_source(
-        self, source: OwnedContentSource, *, index: int
-    ) -> SessionEndInput:
-        if isinstance(index, bool) or not isinstance(index, int) or index < 0:
-            raise ValueError("Content source index must be a nonnegative integer")
-        result = copy(self)
-        result._content_sources = {
-            **self.content_sources,
-            f"session.end.items[{index}]": source,
-        }
-        return result
 
 
 class SessionEndEventGapsItem(_WireModel):
@@ -17088,23 +16410,11 @@ class SessionStartCapabilitiesFlow(_WireModel):
         **extra: Any,
     ) -> None:
         if "continuationCount" in extra:
-            if continuation_count is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for continuationCount via continuation_count and wire key"
-                )
-            continuation_count = extra.pop("continuationCount")
+            raise TypeError("Use the canonical keyword continuation_count")
         if "maxContinuations" in extra:
-            if max_continuations is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for maxContinuations via max_continuations and wire key"
-                )
-            max_continuations = extra.pop("maxContinuations")
+            raise TypeError("Use the canonical keyword max_continuations")
         if "remainingContinuations" in extra:
-            if remaining_continuations is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for remainingContinuations via remaining_continuations and wire key"
-                )
-            remaining_continuations = extra.pop("remainingContinuations")
+            raise TypeError("Use the canonical keyword remaining_continuations")
         super().__init__(extra)
         if continuation_count is not _UNSET:
             self["continuationCount"] = continuation_count
@@ -17159,9 +16469,7 @@ class SessionStartCapabilitiesInjectContext(_WireModel):
         self, *, append: Literal[True] = _UNSET, deliver_at: list[str], **extra: Any
     ) -> None:
         if "deliverAt" in extra:
-            raise TypeError(
-                "Duplicate assignment for deliverAt via deliver_at and wire key"
-            )
+            raise TypeError("Use the canonical keyword deliver_at")
         super().__init__(extra)
         self["append"] = json.loads("true") if append is _UNSET else append
         self["deliverAt"] = deliver_at
@@ -17444,21 +16752,11 @@ class SessionStartEvent(_WireModel):
         **extra: Any,
     ) -> None:
         if "parentEventId" in extra:
-            if parent_event_id is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
-                )
-            parent_event_id = extra.pop("parentEventId")
+            raise TypeError("Use the canonical keyword parent_event_id")
         if "permissionMode" in extra:
-            raise TypeError(
-                "Duplicate assignment for permissionMode via permission_mode and wire key"
-            )
+            raise TypeError("Use the canonical keyword permission_mode")
         if "resumedFrom" in extra:
-            if resumed_from is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for resumedFrom via resumed_from and wire key"
-                )
-            resumed_from = extra.pop("resumedFrom")
+            raise TypeError("Use the canonical keyword resumed_from")
         super().__init__(extra)
         if extensions is not _UNSET:
             self["extensions"] = extensions
@@ -17578,21 +16876,11 @@ class SessionStartInput(dict[str, Any]):
         **extra: Any,
     ) -> None:
         if "parentEventId" in extra:
-            if parent_event_id is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
-                )
-            parent_event_id = extra.pop("parentEventId")
+            raise TypeError("Use the canonical keyword parent_event_id")
         if "permissionMode" in extra:
-            raise TypeError(
-                "Duplicate assignment for permissionMode via permission_mode and wire key"
-            )
+            raise TypeError("Use the canonical keyword permission_mode")
         if "resumedFrom" in extra:
-            if resumed_from is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for resumedFrom via resumed_from and wire key"
-                )
-            resumed_from = extra.pop("resumedFrom")
+            raise TypeError("Use the canonical keyword resumed_from")
         super().__init__(extra)
         if extensions is not _UNSET:
             self["extensions"] = extensions
@@ -17897,11 +17185,7 @@ class SessionStartInterceptResponseResult(_WireModel):
         **extra: Any,
     ) -> None:
         if "protocolVersion" in extra:
-            if protocol_version is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for protocolVersion via protocol_version and wire key"
-                )
-            protocol_version = extra.pop("protocolVersion")
+            raise TypeError("Use the canonical keyword protocol_version")
         super().__init__(extra)
         if effects is not _UNSET:
             self["effects"] = effects
@@ -17943,21 +17227,13 @@ class StaticCapabilityManifest(_WireModel):
         **extra: Any,
     ) -> None:
         if "contentCategories" in extra:
-            raise TypeError(
-                "Duplicate assignment for contentCategories via content_categories and wire key"
-            )
+            raise TypeError("Use the canonical keyword content_categories")
         if "correlationIdentityFields" in extra:
-            raise TypeError(
-                "Duplicate assignment for correlationIdentityFields via correlation_identity_fields and wire key"
-            )
+            raise TypeError("Use the canonical keyword correlation_identity_fields")
         if "managedPolicy" in extra:
-            raise TypeError(
-                "Duplicate assignment for managedPolicy via managed_policy and wire key"
-            )
+            raise TypeError("Use the canonical keyword managed_policy")
         if "toolPaths" in extra:
-            raise TypeError(
-                "Duplicate assignment for toolPaths via tool_paths and wire key"
-            )
+            raise TypeError("Use the canonical keyword tool_paths")
         super().__init__(extra)
         self["authentication"] = authentication
         self["contentCategories"] = content_categories
@@ -18114,29 +17390,13 @@ class StaticCapabilityManifestLimits(_WireModel):
         **extra: Any,
     ) -> None:
         if "maxContinuations" in extra:
-            if max_continuations is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for maxContinuations via max_continuations and wire key"
-                )
-            max_continuations = extra.pop("maxContinuations")
+            raise TypeError("Use the canonical keyword max_continuations")
         if "maxTimeoutMs" in extra:
-            if max_timeout_ms is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for maxTimeoutMs via max_timeout_ms and wire key"
-                )
-            max_timeout_ms = extra.pop("maxTimeoutMs")
+            raise TypeError("Use the canonical keyword max_timeout_ms")
         if "maxUploadBytes" in extra:
-            if max_upload_bytes is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for maxUploadBytes via max_upload_bytes and wire key"
-                )
-            max_upload_bytes = extra.pop("maxUploadBytes")
+            raise TypeError("Use the canonical keyword max_upload_bytes")
         if "minTimeoutMs" in extra:
-            if min_timeout_ms is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for minTimeoutMs via min_timeout_ms and wire key"
-                )
-            min_timeout_ms = extra.pop("minTimeoutMs")
+            raise TypeError("Use the canonical keyword min_timeout_ms")
         super().__init__(extra)
         if max_continuations is not _UNSET:
             self["maxContinuations"] = max_continuations
@@ -18304,11 +17564,7 @@ class TaskChangeAfterInput(dict[str, Any]):
         **extra: Any,
     ) -> None:
         if "parentEventId" in extra:
-            if parent_event_id is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
-                )
-            parent_event_id = extra.pop("parentEventId")
+            raise TypeError("Use the canonical keyword parent_event_id")
         super().__init__(extra)
         if extensions is not _UNSET:
             self["extensions"] = extensions
@@ -18405,18 +17661,6 @@ class TaskChangeAfterInput(dict[str, Any]):
     @property
     def content_sources(self) -> dict[str, OwnedContentSource]:
         return dict(getattr(self, "_content_sources", {}))
-
-    def bind_items_source(
-        self, source: OwnedContentSource, *, index: int
-    ) -> TaskChangeAfterInput:
-        if isinstance(index, bool) or not isinstance(index, int) or index < 0:
-            raise ValueError("Content source index must be a nonnegative integer")
-        result = copy(self)
-        result._content_sources = {
-            **self.content_sources,
-            f"task.change.after.items[{index}]": source,
-        }
-        return result
 
 
 class TaskChangeAfterInputGapsItem(_WireModel):
@@ -18645,23 +17889,11 @@ class TaskChangeBeforeCapabilitiesFlow(_WireModel):
         **extra: Any,
     ) -> None:
         if "continuationCount" in extra:
-            if continuation_count is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for continuationCount via continuation_count and wire key"
-                )
-            continuation_count = extra.pop("continuationCount")
+            raise TypeError("Use the canonical keyword continuation_count")
         if "maxContinuations" in extra:
-            if max_continuations is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for maxContinuations via max_continuations and wire key"
-                )
-            max_continuations = extra.pop("maxContinuations")
+            raise TypeError("Use the canonical keyword max_continuations")
         if "remainingContinuations" in extra:
-            if remaining_continuations is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for remainingContinuations via remaining_continuations and wire key"
-                )
-            remaining_continuations = extra.pop("remainingContinuations")
+            raise TypeError("Use the canonical keyword remaining_continuations")
         super().__init__(extra)
         if continuation_count is not _UNSET:
             self["continuationCount"] = continuation_count
@@ -18716,9 +17948,7 @@ class TaskChangeBeforeCapabilitiesInjectContext(_WireModel):
         self, *, append: Literal[True] = _UNSET, deliver_at: list[str], **extra: Any
     ) -> None:
         if "deliverAt" in extra:
-            raise TypeError(
-                "Duplicate assignment for deliverAt via deliver_at and wire key"
-            )
+            raise TypeError("Use the canonical keyword deliver_at")
         super().__init__(extra)
         self["append"] = json.loads("true") if append is _UNSET else append
         self["deliverAt"] = deliver_at
@@ -19005,11 +18235,7 @@ class TaskChangeBeforeInput(dict[str, Any]):
         **extra: Any,
     ) -> None:
         if "parentEventId" in extra:
-            if parent_event_id is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
-                )
-            parent_event_id = extra.pop("parentEventId")
+            raise TypeError("Use the canonical keyword parent_event_id")
         super().__init__(extra)
         if extensions is not _UNSET:
             self["extensions"] = extensions
@@ -19106,18 +18332,6 @@ class TaskChangeBeforeInput(dict[str, Any]):
     @property
     def content_sources(self) -> dict[str, OwnedContentSource]:
         return dict(getattr(self, "_content_sources", {}))
-
-    def bind_items_source(
-        self, source: OwnedContentSource, *, index: int
-    ) -> TaskChangeBeforeInput:
-        if isinstance(index, bool) or not isinstance(index, int) or index < 0:
-            raise ValueError("Content source index must be a nonnegative integer")
-        result = copy(self)
-        result._content_sources = {
-            **self.content_sources,
-            f"task.change.before.items[{index}]": source,
-        }
-        return result
 
 
 class TaskChangeBeforeInputGapsItem(_WireModel):
@@ -19272,11 +18486,7 @@ class TaskChangeBeforeInterceptResponseResult(_WireModel):
         **extra: Any,
     ) -> None:
         if "protocolVersion" in extra:
-            if protocol_version is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for protocolVersion via protocol_version and wire key"
-                )
-            protocol_version = extra.pop("protocolVersion")
+            raise TypeError("Use the canonical keyword protocol_version")
         super().__init__(extra)
         if effects is not _UNSET:
             self["effects"] = effects
@@ -19331,11 +18541,7 @@ class TaskWorkspaceEventFileChanged(_WireModel):
         **extra: Any,
     ) -> None:
         if "parentEventId" in extra:
-            if parent_event_id is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
-                )
-            parent_event_id = extra.pop("parentEventId")
+            raise TypeError("Use the canonical keyword parent_event_id")
         super().__init__(extra)
         self["changes"] = changes
         if extensions is not _UNSET:
@@ -19455,9 +18661,7 @@ class TaskWorkspaceEventFileChangedChangesItem(_WireModel):
         **extra: Any,
     ) -> None:
         if "agentCaused" in extra:
-            raise TypeError(
-                "Duplicate assignment for agentCaused via agent_caused and wire key"
-            )
+            raise TypeError("Use the canonical keyword agent_caused")
         super().__init__(extra)
         if after is not _UNSET:
             self["after"] = after
@@ -19587,11 +18791,7 @@ class TaskWorkspaceEventTaskChangeAfter(_WireModel):
         **extra: Any,
     ) -> None:
         if "parentEventId" in extra:
-            if parent_event_id is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
-                )
-            parent_event_id = extra.pop("parentEventId")
+            raise TypeError("Use the canonical keyword parent_event_id")
         super().__init__(extra)
         if extensions is not _UNSET:
             self["extensions"] = extensions
@@ -19824,11 +19024,7 @@ class TaskWorkspaceEventTaskChangeBefore(_WireModel):
         **extra: Any,
     ) -> None:
         if "parentEventId" in extra:
-            if parent_event_id is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
-                )
-            parent_event_id = extra.pop("parentEventId")
+            raise TypeError("Use the canonical keyword parent_event_id")
         super().__init__(extra)
         if extensions is not _UNSET:
             self["extensions"] = extensions
@@ -20061,11 +19257,7 @@ class TaskWorkspaceEventWorkspaceChangeAfter(_WireModel):
         **extra: Any,
     ) -> None:
         if "parentEventId" in extra:
-            if parent_event_id is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
-                )
-            parent_event_id = extra.pop("parentEventId")
+            raise TypeError("Use the canonical keyword parent_event_id")
         super().__init__(extra)
         if extensions is not _UNSET:
             self["extensions"] = extensions
@@ -20271,11 +19463,7 @@ class TaskWorkspaceEventWorkspaceChangeBefore(_WireModel):
         **extra: Any,
     ) -> None:
         if "parentEventId" in extra:
-            if parent_event_id is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
-                )
-            parent_event_id = extra.pop("parentEventId")
+            raise TypeError("Use the canonical keyword parent_event_id")
         super().__init__(extra)
         if extensions is not _UNSET:
             self["extensions"] = extensions
@@ -20466,11 +19654,7 @@ class TextBodyPart(_WireModel):
         **extra: Any,
     ) -> None:
         if "mediaType" in extra:
-            if media_type is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for mediaType via media_type and wire key"
-                )
-            media_type = extra.pop("mediaType")
+            raise TypeError("Use the canonical keyword media_type")
         super().__init__(extra)
         if category is not _UNSET:
             self["category"] = category
@@ -20567,11 +19751,7 @@ class TextGapPart(_WireModel):
         **extra: Any,
     ) -> None:
         if "mediaType" in extra:
-            if media_type is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for mediaType via media_type and wire key"
-                )
-            media_type = extra.pop("mediaType")
+            raise TypeError("Use the canonical keyword media_type")
         super().__init__(extra)
         if category is not _UNSET:
             self["category"] = category
@@ -20663,11 +19843,7 @@ class TextMetadataPart(_WireModel):
         **extra: Any,
     ) -> None:
         if "mediaType" in extra:
-            if media_type is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for mediaType via media_type and wire key"
-                )
-            media_type = extra.pop("mediaType")
+            raise TypeError("Use the canonical keyword media_type")
         super().__init__(extra)
         if category is not _UNSET:
             self["category"] = category
@@ -20737,11 +19913,7 @@ class TextOmittedPart(_WireModel):
         **extra: Any,
     ) -> None:
         if "mediaType" in extra:
-            if media_type is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for mediaType via media_type and wire key"
-                )
-            media_type = extra.pop("mediaType")
+            raise TypeError("Use the canonical keyword media_type")
         super().__init__(extra)
         if category is not _UNSET:
             self["category"] = category
@@ -20966,23 +20138,11 @@ class ToolAfterCapabilitiesFlow(_WireModel):
         **extra: Any,
     ) -> None:
         if "continuationCount" in extra:
-            if continuation_count is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for continuationCount via continuation_count and wire key"
-                )
-            continuation_count = extra.pop("continuationCount")
+            raise TypeError("Use the canonical keyword continuation_count")
         if "maxContinuations" in extra:
-            if max_continuations is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for maxContinuations via max_continuations and wire key"
-                )
-            max_continuations = extra.pop("maxContinuations")
+            raise TypeError("Use the canonical keyword max_continuations")
         if "remainingContinuations" in extra:
-            if remaining_continuations is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for remainingContinuations via remaining_continuations and wire key"
-                )
-            remaining_continuations = extra.pop("remainingContinuations")
+            raise TypeError("Use the canonical keyword remaining_continuations")
         super().__init__(extra)
         if continuation_count is not _UNSET:
             self["continuationCount"] = continuation_count
@@ -21037,9 +20197,7 @@ class ToolAfterCapabilitiesInjectContext(_WireModel):
         self, *, append: Literal[True] = _UNSET, deliver_at: list[str], **extra: Any
     ) -> None:
         if "deliverAt" in extra:
-            raise TypeError(
-                "Duplicate assignment for deliverAt via deliver_at and wire key"
-            )
+            raise TypeError("Use the canonical keyword deliver_at")
         super().__init__(extra)
         self["append"] = json.loads("true") if append is _UNSET else append
         self["deliverAt"] = deliver_at
@@ -21331,23 +20489,11 @@ class ToolAfterEvent(_WireModel):
         **extra: Any,
     ) -> None:
         if "durationMs" in extra:
-            if duration_ms is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for durationMs via duration_ms and wire key"
-                )
-            duration_ms = extra.pop("durationMs")
+            raise TypeError("Use the canonical keyword duration_ms")
         if "fileChanges" in extra:
-            if file_changes is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for fileChanges via file_changes and wire key"
-                )
-            file_changes = extra.pop("fileChanges")
+            raise TypeError("Use the canonical keyword file_changes")
         if "parentEventId" in extra:
-            if parent_event_id is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
-                )
-            parent_event_id = extra.pop("parentEventId")
+            raise TypeError("Use the canonical keyword parent_event_id")
         super().__init__(extra)
         if batch is not _UNSET:
             self["batch"] = batch
@@ -21515,43 +20661,19 @@ class ToolAfterInput(dict[str, Any]):
         **extra: Any,
     ) -> None:
         if "callId" in extra:
-            raise TypeError("Duplicate assignment for callId via call_id and wire key")
+            raise TypeError("Use the canonical keyword call_id")
         if "callSynthesized" in extra:
-            if call_synthesized is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for callSynthesized via call_synthesized and wire key"
-                )
-            call_synthesized = extra.pop("callSynthesized")
+            raise TypeError("Use the canonical keyword call_synthesized")
         if "durationMs" in extra:
-            if duration_ms is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for durationMs via duration_ms and wire key"
-                )
-            duration_ms = extra.pop("durationMs")
+            raise TypeError("Use the canonical keyword duration_ms")
         if "fileChanges" in extra:
-            if file_changes is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for fileChanges via file_changes and wire key"
-                )
-            file_changes = extra.pop("fileChanges")
+            raise TypeError("Use the canonical keyword file_changes")
         if "parentEventId" in extra:
-            if parent_event_id is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
-                )
-            parent_event_id = extra.pop("parentEventId")
+            raise TypeError("Use the canonical keyword parent_event_id")
         if "toolKind" in extra:
-            if tool_kind is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for toolKind via tool_kind and wire key"
-                )
-            tool_kind = extra.pop("toolKind")
+            raise TypeError("Use the canonical keyword tool_kind")
         if "toolMcp" in extra:
-            if tool_mcp is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for toolMcp via tool_mcp and wire key"
-                )
-            tool_mcp = extra.pop("toolMcp")
+            raise TypeError("Use the canonical keyword tool_mcp")
         super().__init__(extra)
         if batch is not _UNSET:
             self["batch"] = batch
@@ -21750,30 +20872,6 @@ class ToolAfterInput(dict[str, Any]):
     def content_sources(self) -> dict[str, OwnedContentSource]:
         return dict(getattr(self, "_content_sources", {}))
 
-    def bind_file_changes_after_source(
-        self, source: OwnedContentSource, *, index: int
-    ) -> ToolAfterInput:
-        if isinstance(index, bool) or not isinstance(index, int) or index < 0:
-            raise ValueError("Content source index must be a nonnegative integer")
-        result = copy(self)
-        result._content_sources = {
-            **self.content_sources,
-            f"tool.after.file_changes_after[{index}]": source,
-        }
-        return result
-
-    def bind_file_changes_before_source(
-        self, source: OwnedContentSource, *, index: int
-    ) -> ToolAfterInput:
-        if isinstance(index, bool) or not isinstance(index, int) or index < 0:
-            raise ValueError("Content source index must be a nonnegative integer")
-        result = copy(self)
-        result._content_sources = {
-            **self.content_sources,
-            f"tool.after.file_changes_before[{index}]": source,
-        }
-        return result
-
 
 class ToolAfterEventCall(_WireModel):
     """Keyword-only wire object; wire constructors validate the original descriptor. Optional attributes return None when absent; mapping-method names use a trailing underscore."""
@@ -21945,11 +21043,7 @@ class ToolAfterInterceptResponseResult(_WireModel):
         **extra: Any,
     ) -> None:
         if "protocolVersion" in extra:
-            if protocol_version is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for protocolVersion via protocol_version and wire key"
-                )
-            protocol_version = extra.pop("protocolVersion")
+            raise TypeError("Use the canonical keyword protocol_version")
         super().__init__(extra)
         if effects is not _UNSET:
             self["effects"] = effects
@@ -22133,23 +21227,11 @@ class ToolBatchAfterCapabilitiesFlow(_WireModel):
         **extra: Any,
     ) -> None:
         if "continuationCount" in extra:
-            if continuation_count is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for continuationCount via continuation_count and wire key"
-                )
-            continuation_count = extra.pop("continuationCount")
+            raise TypeError("Use the canonical keyword continuation_count")
         if "maxContinuations" in extra:
-            if max_continuations is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for maxContinuations via max_continuations and wire key"
-                )
-            max_continuations = extra.pop("maxContinuations")
+            raise TypeError("Use the canonical keyword max_continuations")
         if "remainingContinuations" in extra:
-            if remaining_continuations is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for remainingContinuations via remaining_continuations and wire key"
-                )
-            remaining_continuations = extra.pop("remainingContinuations")
+            raise TypeError("Use the canonical keyword remaining_continuations")
         super().__init__(extra)
         if continuation_count is not _UNSET:
             self["continuationCount"] = continuation_count
@@ -22204,9 +21286,7 @@ class ToolBatchAfterCapabilitiesInjectContext(_WireModel):
         self, *, append: Literal[True] = _UNSET, deliver_at: list[str], **extra: Any
     ) -> None:
         if "deliverAt" in extra:
-            raise TypeError(
-                "Duplicate assignment for deliverAt via deliver_at and wire key"
-            )
+            raise TypeError("Use the canonical keyword deliver_at")
         super().__init__(extra)
         self["append"] = json.loads("true") if append is _UNSET else append
         self["deliverAt"] = deliver_at
@@ -22494,11 +21574,7 @@ class ToolBatchAfterInput(dict[str, Any]):
         **extra: Any,
     ) -> None:
         if "parentEventId" in extra:
-            if parent_event_id is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
-                )
-            parent_event_id = extra.pop("parentEventId")
+            raise TypeError("Use the canonical keyword parent_event_id")
         super().__init__(extra)
         self["batch"] = batch
         self["calls"] = calls
@@ -22600,18 +21676,6 @@ class ToolBatchAfterInput(dict[str, Any]):
     @property
     def content_sources(self) -> dict[str, OwnedContentSource]:
         return dict(getattr(self, "_content_sources", {}))
-
-    def bind_items_source(
-        self, source: OwnedContentSource, *, index: int
-    ) -> ToolBatchAfterInput:
-        if isinstance(index, bool) or not isinstance(index, int) or index < 0:
-            raise ValueError("Content source index must be a nonnegative integer")
-        result = copy(self)
-        result._content_sources = {
-            **self.content_sources,
-            f"tool.batch.after.items[{index}]": source,
-        }
-        return result
 
 
 class ToolBatchAfterInputBatch(_WireModel):
@@ -22802,11 +21866,7 @@ class ToolBatchAfterInterceptResponseResult(_WireModel):
         **extra: Any,
     ) -> None:
         if "protocolVersion" in extra:
-            if protocol_version is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for protocolVersion via protocol_version and wire key"
-                )
-            protocol_version = extra.pop("protocolVersion")
+            raise TypeError("Use the canonical keyword protocol_version")
         super().__init__(extra)
         if effects is not _UNSET:
             self["effects"] = effects
@@ -22946,23 +22006,11 @@ class ToolBeforeCapabilitiesFlow(_WireModel):
         **extra: Any,
     ) -> None:
         if "continuationCount" in extra:
-            if continuation_count is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for continuationCount via continuation_count and wire key"
-                )
-            continuation_count = extra.pop("continuationCount")
+            raise TypeError("Use the canonical keyword continuation_count")
         if "maxContinuations" in extra:
-            if max_continuations is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for maxContinuations via max_continuations and wire key"
-                )
-            max_continuations = extra.pop("maxContinuations")
+            raise TypeError("Use the canonical keyword max_continuations")
         if "remainingContinuations" in extra:
-            if remaining_continuations is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for remainingContinuations via remaining_continuations and wire key"
-                )
-            remaining_continuations = extra.pop("remainingContinuations")
+            raise TypeError("Use the canonical keyword remaining_continuations")
         super().__init__(extra)
         if continuation_count is not _UNSET:
             self["continuationCount"] = continuation_count
@@ -23017,9 +22065,7 @@ class ToolBeforeCapabilitiesInjectContext(_WireModel):
         self, *, append: Literal[True] = _UNSET, deliver_at: list[str], **extra: Any
     ) -> None:
         if "deliverAt" in extra:
-            raise TypeError(
-                "Duplicate assignment for deliverAt via deliver_at and wire key"
-            )
+            raise TypeError("Use the canonical keyword deliver_at")
         super().__init__(extra)
         self["append"] = json.loads("true") if append is _UNSET else append
         self["deliverAt"] = deliver_at
@@ -23310,11 +22356,7 @@ class ToolBeforeEvent(_WireModel):
         **extra: Any,
     ) -> None:
         if "parentEventId" in extra:
-            if parent_event_id is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
-                )
-            parent_event_id = extra.pop("parentEventId")
+            raise TypeError("Use the canonical keyword parent_event_id")
         super().__init__(extra)
         if batch is not _UNSET:
             self["batch"] = batch
@@ -23460,31 +22502,15 @@ class ToolBeforeInput(dict[str, Any]):
         **extra: Any,
     ) -> None:
         if "callId" in extra:
-            raise TypeError("Duplicate assignment for callId via call_id and wire key")
+            raise TypeError("Use the canonical keyword call_id")
         if "callSynthesized" in extra:
-            if call_synthesized is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for callSynthesized via call_synthesized and wire key"
-                )
-            call_synthesized = extra.pop("callSynthesized")
+            raise TypeError("Use the canonical keyword call_synthesized")
         if "parentEventId" in extra:
-            if parent_event_id is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
-                )
-            parent_event_id = extra.pop("parentEventId")
+            raise TypeError("Use the canonical keyword parent_event_id")
         if "toolKind" in extra:
-            if tool_kind is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for toolKind via tool_kind and wire key"
-                )
-            tool_kind = extra.pop("toolKind")
+            raise TypeError("Use the canonical keyword tool_kind")
         if "toolMcp" in extra:
-            if tool_mcp is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for toolMcp via tool_mcp and wire key"
-                )
-            tool_mcp = extra.pop("toolMcp")
+            raise TypeError("Use the canonical keyword tool_mcp")
         super().__init__(extra)
         if batch is not _UNSET:
             self["batch"] = batch
@@ -23661,18 +22687,6 @@ class ToolBeforeInput(dict[str, Any]):
     def content_sources(self) -> dict[str, OwnedContentSource]:
         return dict(getattr(self, "_content_sources", {}))
 
-    def bind_items_source(
-        self, source: OwnedContentSource, *, index: int
-    ) -> ToolBeforeInput:
-        if isinstance(index, bool) or not isinstance(index, int) or index < 0:
-            raise ValueError("Content source index must be a nonnegative integer")
-        result = copy(self)
-        result._content_sources = {
-            **self.content_sources,
-            f"tool.before.items[{index}]": source,
-        }
-        return result
-
 
 class ToolBeforeEventCall(_WireModel):
     """Keyword-only wire object; wire constructors validate the original descriptor. Optional attributes return None when absent; mapping-method names use a trailing underscore."""
@@ -23831,11 +22845,7 @@ class ToolBeforeInterceptResponseResult(_WireModel):
         **extra: Any,
     ) -> None:
         if "protocolVersion" in extra:
-            if protocol_version is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for protocolVersion via protocol_version and wire key"
-                )
-            protocol_version = extra.pop("protocolVersion")
+            raise TypeError("Use the canonical keyword protocol_version")
         super().__init__(extra)
         if effects is not _UNSET:
             self["effects"] = effects
@@ -24059,23 +23069,11 @@ class ToolPermissionRequestCapabilitiesFlow(_WireModel):
         **extra: Any,
     ) -> None:
         if "continuationCount" in extra:
-            if continuation_count is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for continuationCount via continuation_count and wire key"
-                )
-            continuation_count = extra.pop("continuationCount")
+            raise TypeError("Use the canonical keyword continuation_count")
         if "maxContinuations" in extra:
-            if max_continuations is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for maxContinuations via max_continuations and wire key"
-                )
-            max_continuations = extra.pop("maxContinuations")
+            raise TypeError("Use the canonical keyword max_continuations")
         if "remainingContinuations" in extra:
-            if remaining_continuations is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for remainingContinuations via remaining_continuations and wire key"
-                )
-            remaining_continuations = extra.pop("remainingContinuations")
+            raise TypeError("Use the canonical keyword remaining_continuations")
         super().__init__(extra)
         if continuation_count is not _UNSET:
             self["continuationCount"] = continuation_count
@@ -24130,9 +23128,7 @@ class ToolPermissionRequestCapabilitiesInjectContext(_WireModel):
         self, *, append: Literal[True] = _UNSET, deliver_at: list[str], **extra: Any
     ) -> None:
         if "deliverAt" in extra:
-            raise TypeError(
-                "Duplicate assignment for deliverAt via deliver_at and wire key"
-            )
+            raise TypeError("Use the canonical keyword deliver_at")
         super().__init__(extra)
         self["append"] = json.loads("true") if append is _UNSET else append
         self["deliverAt"] = deliver_at
@@ -24431,35 +23427,17 @@ class ToolPermissionRequestInput(dict[str, Any]):
         **extra: Any,
     ) -> None:
         if "callId" in extra:
-            raise TypeError("Duplicate assignment for callId via call_id and wire key")
+            raise TypeError("Use the canonical keyword call_id")
         if "callSynthesized" in extra:
-            if call_synthesized is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for callSynthesized via call_synthesized and wire key"
-                )
-            call_synthesized = extra.pop("callSynthesized")
+            raise TypeError("Use the canonical keyword call_synthesized")
         if "parentEventId" in extra:
-            if parent_event_id is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
-                )
-            parent_event_id = extra.pop("parentEventId")
+            raise TypeError("Use the canonical keyword parent_event_id")
         if "sandboxBypass" in extra:
-            raise TypeError(
-                "Duplicate assignment for sandboxBypass via sandbox_bypass and wire key"
-            )
+            raise TypeError("Use the canonical keyword sandbox_bypass")
         if "toolKind" in extra:
-            if tool_kind is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for toolKind via tool_kind and wire key"
-                )
-            tool_kind = extra.pop("toolKind")
+            raise TypeError("Use the canonical keyword tool_kind")
         if "toolMcp" in extra:
-            if tool_mcp is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for toolMcp via tool_mcp and wire key"
-                )
-            tool_mcp = extra.pop("toolMcp")
+            raise TypeError("Use the canonical keyword tool_mcp")
         super().__init__(extra)
         if batch is not _UNSET:
             self["batch"] = batch
@@ -24646,18 +23624,6 @@ class ToolPermissionRequestInput(dict[str, Any]):
     def content_sources(self) -> dict[str, OwnedContentSource]:
         return dict(getattr(self, "_content_sources", {}))
 
-    def bind_items_source(
-        self, source: OwnedContentSource, *, index: int
-    ) -> ToolPermissionRequestInput:
-        if isinstance(index, bool) or not isinstance(index, int) or index < 0:
-            raise ValueError("Content source index must be a nonnegative integer")
-        result = copy(self)
-        result._content_sources = {
-            **self.content_sources,
-            f"tool.permission.request.items[{index}]": source,
-        }
-        return result
-
 
 class ToolPermissionRequestInputGapsItem(_WireModel):
     """Keyword-only wire object; wire constructors validate the original descriptor. Optional attributes return None when absent; mapping-method names use a trailing underscore."""
@@ -24765,11 +23731,7 @@ class ToolPermissionRequestInterceptResponseResult(_WireModel):
         **extra: Any,
     ) -> None:
         if "protocolVersion" in extra:
-            if protocol_version is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for protocolVersion via protocol_version and wire key"
-                )
-            protocol_version = extra.pop("protocolVersion")
+            raise TypeError("Use the canonical keyword protocol_version")
         super().__init__(extra)
         if effects is not _UNSET:
             self["effects"] = effects
@@ -24885,35 +23847,17 @@ class ToolPermissionResolvedInput(dict[str, Any]):
         **extra: Any,
     ) -> None:
         if "callId" in extra:
-            raise TypeError("Duplicate assignment for callId via call_id and wire key")
+            raise TypeError("Use the canonical keyword call_id")
         if "callSynthesized" in extra:
-            if call_synthesized is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for callSynthesized via call_synthesized and wire key"
-                )
-            call_synthesized = extra.pop("callSynthesized")
+            raise TypeError("Use the canonical keyword call_synthesized")
         if "decidedBy" in extra:
-            raise TypeError(
-                "Duplicate assignment for decidedBy via decided_by and wire key"
-            )
+            raise TypeError("Use the canonical keyword decided_by")
         if "parentEventId" in extra:
-            if parent_event_id is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
-                )
-            parent_event_id = extra.pop("parentEventId")
+            raise TypeError("Use the canonical keyword parent_event_id")
         if "toolKind" in extra:
-            if tool_kind is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for toolKind via tool_kind and wire key"
-                )
-            tool_kind = extra.pop("toolKind")
+            raise TypeError("Use the canonical keyword tool_kind")
         if "toolMcp" in extra:
-            if tool_mcp is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for toolMcp via tool_mcp and wire key"
-                )
-            tool_mcp = extra.pop("toolMcp")
+            raise TypeError("Use the canonical keyword tool_mcp")
         super().__init__(extra)
         if batch is not _UNSET:
             self["batch"] = batch
@@ -25100,18 +24044,6 @@ class ToolPermissionResolvedInput(dict[str, Any]):
     def content_sources(self) -> dict[str, OwnedContentSource]:
         return dict(getattr(self, "_content_sources", {}))
 
-    def bind_items_source(
-        self, source: OwnedContentSource, *, index: int
-    ) -> ToolPermissionResolvedInput:
-        if isinstance(index, bool) or not isinstance(index, int) or index < 0:
-            raise ValueError("Content source index must be a nonnegative integer")
-        result = copy(self)
-        result._content_sources = {
-            **self.content_sources,
-            f"tool.permission.resolved.items[{index}]": source,
-        }
-        return result
-
 
 class ToolPermissionResolvedInputDecidedBy(StrEnum):
     USER = "user"
@@ -25216,35 +24148,17 @@ class ToolProgressInput(dict[str, Any]):
         **extra: Any,
     ) -> None:
         if "callId" in extra:
-            raise TypeError("Duplicate assignment for callId via call_id and wire key")
+            raise TypeError("Use the canonical keyword call_id")
         if "callSynthesized" in extra:
-            if call_synthesized is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for callSynthesized via call_synthesized and wire key"
-                )
-            call_synthesized = extra.pop("callSynthesized")
+            raise TypeError("Use the canonical keyword call_synthesized")
         if "parentEventId" in extra:
-            if parent_event_id is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
-                )
-            parent_event_id = extra.pop("parentEventId")
+            raise TypeError("Use the canonical keyword parent_event_id")
         if "partialOutput" in extra:
-            raise TypeError(
-                "Duplicate assignment for partialOutput via partial_output and wire key"
-            )
+            raise TypeError("Use the canonical keyword partial_output")
         if "toolKind" in extra:
-            if tool_kind is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for toolKind via tool_kind and wire key"
-                )
-            tool_kind = extra.pop("toolKind")
+            raise TypeError("Use the canonical keyword tool_kind")
         if "toolMcp" in extra:
-            if tool_mcp is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for toolMcp via tool_mcp and wire key"
-                )
-            tool_mcp = extra.pop("toolMcp")
+            raise TypeError("Use the canonical keyword tool_mcp")
         super().__init__(extra)
         self["backgrounded"] = backgrounded
         if batch is not _UNSET:
@@ -25431,18 +24345,6 @@ class ToolProgressInput(dict[str, Any]):
     def content_sources(self) -> dict[str, OwnedContentSource]:
         return dict(getattr(self, "_content_sources", {}))
 
-    def bind_items_source(
-        self, source: OwnedContentSource, *, index: int
-    ) -> ToolProgressInput:
-        if isinstance(index, bool) or not isinstance(index, int) or index < 0:
-            raise ValueError("Content source index must be a nonnegative integer")
-        result = copy(self)
-        result._content_sources = {
-            **self.content_sources,
-            f"tool.progress.items[{index}]": source,
-        }
-        return result
-
 
 class ToolProgressInputGapsItem(_WireModel):
     """Keyword-only wire object; wire constructors validate the original descriptor. Optional attributes return None when absent; mapping-method names use a trailing underscore."""
@@ -25576,21 +24478,11 @@ class TurnEndInput(dict[str, Any]):
         **extra: Any,
     ) -> None:
         if "continuationCount" in extra:
-            raise TypeError(
-                "Duplicate assignment for continuationCount via continuation_count and wire key"
-            )
+            raise TypeError("Use the canonical keyword continuation_count")
         if "lastAssistantItem" in extra:
-            if last_assistant_item is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for lastAssistantItem via last_assistant_item and wire key"
-                )
-            last_assistant_item = extra.pop("lastAssistantItem")
+            raise TypeError("Use the canonical keyword last_assistant_item")
         if "parentEventId" in extra:
-            if parent_event_id is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
-                )
-            parent_event_id = extra.pop("parentEventId")
+            raise TypeError("Use the canonical keyword parent_event_id")
         super().__init__(extra)
         self["continuationCount"] = continuation_count
         if error is not _UNSET:
@@ -25875,23 +24767,11 @@ class TurnFinishBeforeCapabilitiesFlow(_WireModel):
         **extra: Any,
     ) -> None:
         if "continuationCount" in extra:
-            if continuation_count is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for continuationCount via continuation_count and wire key"
-                )
-            continuation_count = extra.pop("continuationCount")
+            raise TypeError("Use the canonical keyword continuation_count")
         if "maxContinuations" in extra:
-            if max_continuations is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for maxContinuations via max_continuations and wire key"
-                )
-            max_continuations = extra.pop("maxContinuations")
+            raise TypeError("Use the canonical keyword max_continuations")
         if "remainingContinuations" in extra:
-            if remaining_continuations is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for remainingContinuations via remaining_continuations and wire key"
-                )
-            remaining_continuations = extra.pop("remainingContinuations")
+            raise TypeError("Use the canonical keyword remaining_continuations")
         super().__init__(extra)
         if continuation_count is not _UNSET:
             self["continuationCount"] = continuation_count
@@ -25946,9 +24826,7 @@ class TurnFinishBeforeCapabilitiesInjectContext(_WireModel):
         self, *, append: Literal[True] = _UNSET, deliver_at: list[str], **extra: Any
     ) -> None:
         if "deliverAt" in extra:
-            raise TypeError(
-                "Duplicate assignment for deliverAt via deliver_at and wire key"
-            )
+            raise TypeError("Use the canonical keyword deliver_at")
         super().__init__(extra)
         self["append"] = json.loads("true") if append is _UNSET else append
         self["deliverAt"] = deliver_at
@@ -26228,21 +25106,11 @@ class TurnFinishBeforeInput(dict[str, Any]):
         **extra: Any,
     ) -> None:
         if "continuationCount" in extra:
-            raise TypeError(
-                "Duplicate assignment for continuationCount via continuation_count and wire key"
-            )
+            raise TypeError("Use the canonical keyword continuation_count")
         if "lastAssistantItem" in extra:
-            if last_assistant_item is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for lastAssistantItem via last_assistant_item and wire key"
-                )
-            last_assistant_item = extra.pop("lastAssistantItem")
+            raise TypeError("Use the canonical keyword last_assistant_item")
         if "parentEventId" in extra:
-            if parent_event_id is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
-                )
-            parent_event_id = extra.pop("parentEventId")
+            raise TypeError("Use the canonical keyword parent_event_id")
         super().__init__(extra)
         self["continuationCount"] = continuation_count
         if extensions is not _UNSET:
@@ -26452,11 +25320,7 @@ class TurnFinishBeforeInterceptResponseResult(_WireModel):
         **extra: Any,
     ) -> None:
         if "protocolVersion" in extra:
-            if protocol_version is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for protocolVersion via protocol_version and wire key"
-                )
-            protocol_version = extra.pop("protocolVersion")
+            raise TypeError("Use the canonical keyword protocol_version")
         super().__init__(extra)
         if effects is not _UNSET:
             self["effects"] = effects
@@ -26555,11 +25419,7 @@ class TurnProgressInput(dict[str, Any]):
         **extra: Any,
     ) -> None:
         if "parentEventId" in extra:
-            if parent_event_id is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
-                )
-            parent_event_id = extra.pop("parentEventId")
+            raise TypeError("Use the canonical keyword parent_event_id")
         super().__init__(extra)
         self["delta"] = delta
         if extensions is not _UNSET:
@@ -26665,18 +25525,6 @@ class TurnProgressInput(dict[str, Any]):
     @property
     def content_sources(self) -> dict[str, OwnedContentSource]:
         return dict(getattr(self, "_content_sources", {}))
-
-    def bind_items_source(
-        self, source: OwnedContentSource, *, index: int
-    ) -> TurnProgressInput:
-        if isinstance(index, bool) or not isinstance(index, int) or index < 0:
-            raise ValueError("Content source index must be a nonnegative integer")
-        result = copy(self)
-        result._content_sources = {
-            **self.content_sources,
-            f"turn.progress.items[{index}]": source,
-        }
-        return result
 
 
 class TurnProgressInputGapsItem(_WireModel):
@@ -26851,23 +25699,11 @@ class TurnStartCapabilitiesFlow(_WireModel):
         **extra: Any,
     ) -> None:
         if "continuationCount" in extra:
-            if continuation_count is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for continuationCount via continuation_count and wire key"
-                )
-            continuation_count = extra.pop("continuationCount")
+            raise TypeError("Use the canonical keyword continuation_count")
         if "maxContinuations" in extra:
-            if max_continuations is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for maxContinuations via max_continuations and wire key"
-                )
-            max_continuations = extra.pop("maxContinuations")
+            raise TypeError("Use the canonical keyword max_continuations")
         if "remainingContinuations" in extra:
-            if remaining_continuations is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for remainingContinuations via remaining_continuations and wire key"
-                )
-            remaining_continuations = extra.pop("remainingContinuations")
+            raise TypeError("Use the canonical keyword remaining_continuations")
         super().__init__(extra)
         if continuation_count is not _UNSET:
             self["continuationCount"] = continuation_count
@@ -26922,9 +25758,7 @@ class TurnStartCapabilitiesInjectContext(_WireModel):
         self, *, append: Literal[True] = _UNSET, deliver_at: list[str], **extra: Any
     ) -> None:
         if "deliverAt" in extra:
-            raise TypeError(
-                "Duplicate assignment for deliverAt via deliver_at and wire key"
-            )
+            raise TypeError("Use the canonical keyword deliver_at")
         super().__init__(extra)
         self["append"] = json.loads("true") if append is _UNSET else append
         self["deliverAt"] = deliver_at
@@ -27202,17 +26036,9 @@ class TurnStartInput(dict[str, Any]):
         **extra: Any,
     ) -> None:
         if "expandedFrom" in extra:
-            if expanded_from is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for expandedFrom via expanded_from and wire key"
-                )
-            expanded_from = extra.pop("expandedFrom")
+            raise TypeError("Use the canonical keyword expanded_from")
         if "parentEventId" in extra:
-            if parent_event_id is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
-                )
-            parent_event_id = extra.pop("parentEventId")
+            raise TypeError("Use the canonical keyword parent_event_id")
         super().__init__(extra)
         if expanded_from is not _UNSET:
             self["expandedFrom"] = expanded_from
@@ -27393,11 +26219,7 @@ class TurnStartInterceptResponseResult(_WireModel):
         **extra: Any,
     ) -> None:
         if "protocolVersion" in extra:
-            if protocol_version is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for protocolVersion via protocol_version and wire key"
-                )
-            protocol_version = extra.pop("protocolVersion")
+            raise TypeError("Use the canonical keyword protocol_version")
         super().__init__(extra)
         if effects is not _UNSET:
             self["effects"] = effects
@@ -27496,11 +26318,7 @@ class UserAttentionEvent(_WireModel):
         **extra: Any,
     ) -> None:
         if "parentEventId" in extra:
-            if parent_event_id is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
-                )
-            parent_event_id = extra.pop("parentEventId")
+            raise TypeError("Use the canonical keyword parent_event_id")
         super().__init__(extra)
         if extensions is not _UNSET:
             self["extensions"] = extensions
@@ -27622,11 +26440,7 @@ class UserAttentionInput(dict[str, Any]):
         **extra: Any,
     ) -> None:
         if "parentEventId" in extra:
-            if parent_event_id is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
-                )
-            parent_event_id = extra.pop("parentEventId")
+            raise TypeError("Use the canonical keyword parent_event_id")
         super().__init__(extra)
         if extensions is not _UNSET:
             self["extensions"] = extensions
@@ -27723,18 +26537,6 @@ class UserAttentionInput(dict[str, Any]):
     @property
     def content_sources(self) -> dict[str, OwnedContentSource]:
         return dict(getattr(self, "_content_sources", {}))
-
-    def bind_items_source(
-        self, source: OwnedContentSource, *, index: int
-    ) -> UserAttentionInput:
-        if isinstance(index, bool) or not isinstance(index, int) or index < 0:
-            raise ValueError("Content source index must be a nonnegative integer")
-        result = copy(self)
-        result._content_sources = {
-            **self.content_sources,
-            f"user.attention.items[{index}]": source,
-        }
-        return result
 
 
 class UserAttentionEventAttention(_WireModel):
@@ -27995,23 +26797,11 @@ class UserElicitationRequestCapabilitiesFlow(_WireModel):
         **extra: Any,
     ) -> None:
         if "continuationCount" in extra:
-            if continuation_count is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for continuationCount via continuation_count and wire key"
-                )
-            continuation_count = extra.pop("continuationCount")
+            raise TypeError("Use the canonical keyword continuation_count")
         if "maxContinuations" in extra:
-            if max_continuations is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for maxContinuations via max_continuations and wire key"
-                )
-            max_continuations = extra.pop("maxContinuations")
+            raise TypeError("Use the canonical keyword max_continuations")
         if "remainingContinuations" in extra:
-            if remaining_continuations is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for remainingContinuations via remaining_continuations and wire key"
-                )
-            remaining_continuations = extra.pop("remainingContinuations")
+            raise TypeError("Use the canonical keyword remaining_continuations")
         super().__init__(extra)
         if continuation_count is not _UNSET:
             self["continuationCount"] = continuation_count
@@ -28066,9 +26856,7 @@ class UserElicitationRequestCapabilitiesInjectContext(_WireModel):
         self, *, append: Literal[True] = _UNSET, deliver_at: list[str], **extra: Any
     ) -> None:
         if "deliverAt" in extra:
-            raise TypeError(
-                "Duplicate assignment for deliverAt via deliver_at and wire key"
-            )
+            raise TypeError("Use the canonical keyword deliver_at")
         super().__init__(extra)
         self["append"] = json.loads("true") if append is _UNSET else append
         self["deliverAt"] = deliver_at
@@ -28358,11 +27146,7 @@ class UserElicitationRequestEvent(_WireModel):
         **extra: Any,
     ) -> None:
         if "parentEventId" in extra:
-            if parent_event_id is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
-                )
-            parent_event_id = extra.pop("parentEventId")
+            raise TypeError("Use the canonical keyword parent_event_id")
         super().__init__(extra)
         if extensions is not _UNSET:
             self["extensions"] = extensions
@@ -28486,11 +27270,7 @@ class UserElicitationRequestInput(dict[str, Any]):
         **extra: Any,
     ) -> None:
         if "parentEventId" in extra:
-            if parent_event_id is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
-                )
-            parent_event_id = extra.pop("parentEventId")
+            raise TypeError("Use the canonical keyword parent_event_id")
         super().__init__(extra)
         if extensions is not _UNSET:
             self["extensions"] = extensions
@@ -28587,18 +27367,6 @@ class UserElicitationRequestInput(dict[str, Any]):
     @property
     def content_sources(self) -> dict[str, OwnedContentSource]:
         return dict(getattr(self, "_content_sources", {}))
-
-    def bind_items_source(
-        self, source: OwnedContentSource, *, index: int
-    ) -> UserElicitationRequestInput:
-        if isinstance(index, bool) or not isinstance(index, int) or index < 0:
-            raise ValueError("Content source index must be a nonnegative integer")
-        result = copy(self)
-        result._content_sources = {
-            **self.content_sources,
-            f"user.elicitation.request.items[{index}]": source,
-        }
-        return result
 
 
 class UserElicitationRequestEventElicitation(_WireModel):
@@ -28799,11 +27567,7 @@ class UserElicitationRequestInterceptResponseResult(_WireModel):
         **extra: Any,
     ) -> None:
         if "protocolVersion" in extra:
-            if protocol_version is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for protocolVersion via protocol_version and wire key"
-                )
-            protocol_version = extra.pop("protocolVersion")
+            raise TypeError("Use the canonical keyword protocol_version")
         super().__init__(extra)
         if effects is not _UNSET:
             self["effects"] = effects
@@ -28943,23 +27707,11 @@ class UserElicitationResultCapabilitiesFlow(_WireModel):
         **extra: Any,
     ) -> None:
         if "continuationCount" in extra:
-            if continuation_count is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for continuationCount via continuation_count and wire key"
-                )
-            continuation_count = extra.pop("continuationCount")
+            raise TypeError("Use the canonical keyword continuation_count")
         if "maxContinuations" in extra:
-            if max_continuations is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for maxContinuations via max_continuations and wire key"
-                )
-            max_continuations = extra.pop("maxContinuations")
+            raise TypeError("Use the canonical keyword max_continuations")
         if "remainingContinuations" in extra:
-            if remaining_continuations is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for remainingContinuations via remaining_continuations and wire key"
-                )
-            remaining_continuations = extra.pop("remainingContinuations")
+            raise TypeError("Use the canonical keyword remaining_continuations")
         super().__init__(extra)
         if continuation_count is not _UNSET:
             self["continuationCount"] = continuation_count
@@ -29014,9 +27766,7 @@ class UserElicitationResultCapabilitiesInjectContext(_WireModel):
         self, *, append: Literal[True] = _UNSET, deliver_at: list[str], **extra: Any
     ) -> None:
         if "deliverAt" in extra:
-            raise TypeError(
-                "Duplicate assignment for deliverAt via deliver_at and wire key"
-            )
+            raise TypeError("Use the canonical keyword deliver_at")
         super().__init__(extra)
         self["append"] = json.loads("true") if append is _UNSET else append
         self["deliverAt"] = deliver_at
@@ -29306,11 +28056,7 @@ class UserElicitationResultEvent(_WireModel):
         **extra: Any,
     ) -> None:
         if "parentEventId" in extra:
-            if parent_event_id is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
-                )
-            parent_event_id = extra.pop("parentEventId")
+            raise TypeError("Use the canonical keyword parent_event_id")
         super().__init__(extra)
         if extensions is not _UNSET:
             self["extensions"] = extensions
@@ -29434,11 +28180,7 @@ class UserElicitationResultInput(dict[str, Any]):
         **extra: Any,
     ) -> None:
         if "parentEventId" in extra:
-            if parent_event_id is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
-                )
-            parent_event_id = extra.pop("parentEventId")
+            raise TypeError("Use the canonical keyword parent_event_id")
         super().__init__(extra)
         if extensions is not _UNSET:
             self["extensions"] = extensions
@@ -29535,18 +28277,6 @@ class UserElicitationResultInput(dict[str, Any]):
     @property
     def content_sources(self) -> dict[str, OwnedContentSource]:
         return dict(getattr(self, "_content_sources", {}))
-
-    def bind_items_source(
-        self, source: OwnedContentSource, *, index: int
-    ) -> UserElicitationResultInput:
-        if isinstance(index, bool) or not isinstance(index, int) or index < 0:
-            raise ValueError("Content source index must be a nonnegative integer")
-        result = copy(self)
-        result._content_sources = {
-            **self.content_sources,
-            f"user.elicitation.result.items[{index}]": source,
-        }
-        return result
 
 
 class UserElicitationResultEventElicitation(_WireModel):
@@ -29771,11 +28501,7 @@ class UserElicitationResultInterceptResponseResult(_WireModel):
         **extra: Any,
     ) -> None:
         if "protocolVersion" in extra:
-            if protocol_version is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for protocolVersion via protocol_version and wire key"
-                )
-            protocol_version = extra.pop("protocolVersion")
+            raise TypeError("Use the canonical keyword protocol_version")
         super().__init__(extra)
         if effects is not _UNSET:
             self["effects"] = effects
@@ -29951,23 +28677,11 @@ class UserMessageInboundCapabilitiesFlow(_WireModel):
         **extra: Any,
     ) -> None:
         if "continuationCount" in extra:
-            if continuation_count is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for continuationCount via continuation_count and wire key"
-                )
-            continuation_count = extra.pop("continuationCount")
+            raise TypeError("Use the canonical keyword continuation_count")
         if "maxContinuations" in extra:
-            if max_continuations is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for maxContinuations via max_continuations and wire key"
-                )
-            max_continuations = extra.pop("maxContinuations")
+            raise TypeError("Use the canonical keyword max_continuations")
         if "remainingContinuations" in extra:
-            if remaining_continuations is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for remainingContinuations via remaining_continuations and wire key"
-                )
-            remaining_continuations = extra.pop("remainingContinuations")
+            raise TypeError("Use the canonical keyword remaining_continuations")
         super().__init__(extra)
         if continuation_count is not _UNSET:
             self["continuationCount"] = continuation_count
@@ -30022,9 +28736,7 @@ class UserMessageInboundCapabilitiesInjectContext(_WireModel):
         self, *, append: Literal[True] = _UNSET, deliver_at: list[str], **extra: Any
     ) -> None:
         if "deliverAt" in extra:
-            raise TypeError(
-                "Duplicate assignment for deliverAt via deliver_at and wire key"
-            )
+            raise TypeError("Use the canonical keyword deliver_at")
         super().__init__(extra)
         self["append"] = json.loads("true") if append is _UNSET else append
         self["deliverAt"] = deliver_at
@@ -30312,11 +29024,7 @@ class UserMessageInboundEvent(_WireModel):
         **extra: Any,
     ) -> None:
         if "parentEventId" in extra:
-            if parent_event_id is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
-                )
-            parent_event_id = extra.pop("parentEventId")
+            raise TypeError("Use the canonical keyword parent_event_id")
         super().__init__(extra)
         if extensions is not _UNSET:
             self["extensions"] = extensions
@@ -30438,11 +29146,7 @@ class UserMessageInboundInput(dict[str, Any]):
         **extra: Any,
     ) -> None:
         if "parentEventId" in extra:
-            if parent_event_id is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
-                )
-            parent_event_id = extra.pop("parentEventId")
+            raise TypeError("Use the canonical keyword parent_event_id")
         super().__init__(extra)
         if extensions is not _UNSET:
             self["extensions"] = extensions
@@ -30539,18 +29243,6 @@ class UserMessageInboundInput(dict[str, Any]):
     @property
     def content_sources(self) -> dict[str, OwnedContentSource]:
         return dict(getattr(self, "_content_sources", {}))
-
-    def bind_items_source(
-        self, source: OwnedContentSource, *, index: int
-    ) -> UserMessageInboundInput:
-        if isinstance(index, bool) or not isinstance(index, int) or index < 0:
-            raise ValueError("Content source index must be a nonnegative integer")
-        result = copy(self)
-        result._content_sources = {
-            **self.content_sources,
-            f"user.message.inbound.items[{index}]": source,
-        }
-        return result
 
 
 class UserMessageInboundEventGapsItem(_WireModel):
@@ -30845,11 +29537,7 @@ class UserMessageInboundInterceptResponseResult(_WireModel):
         **extra: Any,
     ) -> None:
         if "protocolVersion" in extra:
-            if protocol_version is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for protocolVersion via protocol_version and wire key"
-                )
-            protocol_version = extra.pop("protocolVersion")
+            raise TypeError("Use the canonical keyword protocol_version")
         super().__init__(extra)
         if effects is not _UNSET:
             self["effects"] = effects
@@ -31027,23 +29715,11 @@ class UserMessageOutboundCapabilitiesFlow(_WireModel):
         **extra: Any,
     ) -> None:
         if "continuationCount" in extra:
-            if continuation_count is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for continuationCount via continuation_count and wire key"
-                )
-            continuation_count = extra.pop("continuationCount")
+            raise TypeError("Use the canonical keyword continuation_count")
         if "maxContinuations" in extra:
-            if max_continuations is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for maxContinuations via max_continuations and wire key"
-                )
-            max_continuations = extra.pop("maxContinuations")
+            raise TypeError("Use the canonical keyword max_continuations")
         if "remainingContinuations" in extra:
-            if remaining_continuations is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for remainingContinuations via remaining_continuations and wire key"
-                )
-            remaining_continuations = extra.pop("remainingContinuations")
+            raise TypeError("Use the canonical keyword remaining_continuations")
         super().__init__(extra)
         if continuation_count is not _UNSET:
             self["continuationCount"] = continuation_count
@@ -31098,9 +29774,7 @@ class UserMessageOutboundCapabilitiesInjectContext(_WireModel):
         self, *, append: Literal[True] = _UNSET, deliver_at: list[str], **extra: Any
     ) -> None:
         if "deliverAt" in extra:
-            raise TypeError(
-                "Duplicate assignment for deliverAt via deliver_at and wire key"
-            )
+            raise TypeError("Use the canonical keyword deliver_at")
         super().__init__(extra)
         self["append"] = json.loads("true") if append is _UNSET else append
         self["deliverAt"] = deliver_at
@@ -31388,11 +30062,7 @@ class UserMessageOutboundEvent(_WireModel):
         **extra: Any,
     ) -> None:
         if "parentEventId" in extra:
-            if parent_event_id is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
-                )
-            parent_event_id = extra.pop("parentEventId")
+            raise TypeError("Use the canonical keyword parent_event_id")
         super().__init__(extra)
         if extensions is not _UNSET:
             self["extensions"] = extensions
@@ -31514,11 +30184,7 @@ class UserMessageOutboundInput(dict[str, Any]):
         **extra: Any,
     ) -> None:
         if "parentEventId" in extra:
-            if parent_event_id is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
-                )
-            parent_event_id = extra.pop("parentEventId")
+            raise TypeError("Use the canonical keyword parent_event_id")
         super().__init__(extra)
         if extensions is not _UNSET:
             self["extensions"] = extensions
@@ -31615,18 +30281,6 @@ class UserMessageOutboundInput(dict[str, Any]):
     @property
     def content_sources(self) -> dict[str, OwnedContentSource]:
         return dict(getattr(self, "_content_sources", {}))
-
-    def bind_items_source(
-        self, source: OwnedContentSource, *, index: int
-    ) -> UserMessageOutboundInput:
-        if isinstance(index, bool) or not isinstance(index, int) or index < 0:
-            raise ValueError("Content source index must be a nonnegative integer")
-        result = copy(self)
-        result._content_sources = {
-            **self.content_sources,
-            f"user.message.outbound.items[{index}]": source,
-        }
-        return result
 
 
 class UserMessageOutboundEventGapsItem(_WireModel):
@@ -31909,11 +30563,7 @@ class UserMessageOutboundInterceptResponseResult(_WireModel):
         **extra: Any,
     ) -> None:
         if "protocolVersion" in extra:
-            if protocol_version is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for protocolVersion via protocol_version and wire key"
-                )
-            protocol_version = extra.pop("protocolVersion")
+            raise TypeError("Use the canonical keyword protocol_version")
         super().__init__(extra)
         if effects is not _UNSET:
             self["effects"] = effects
@@ -31982,11 +30632,7 @@ class WorkspaceChange(_WireModel):
         self, *, cwd: str = _UNSET, workspace_roots: list[str] = _UNSET, **extra: Any
     ) -> None:
         if "workspaceRoots" in extra:
-            if workspace_roots is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for workspaceRoots via workspace_roots and wire key"
-                )
-            workspace_roots = extra.pop("workspaceRoots")
+            raise TypeError("Use the canonical keyword workspace_roots")
         super().__init__(extra)
         if cwd is not _UNSET:
             self["cwd"] = cwd
@@ -32033,11 +30679,7 @@ class WorkspaceChangeAfterInput(dict[str, Any]):
         **extra: Any,
     ) -> None:
         if "parentEventId" in extra:
-            if parent_event_id is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
-                )
-            parent_event_id = extra.pop("parentEventId")
+            raise TypeError("Use the canonical keyword parent_event_id")
         super().__init__(extra)
         if extensions is not _UNSET:
             self["extensions"] = extensions
@@ -32134,18 +30776,6 @@ class WorkspaceChangeAfterInput(dict[str, Any]):
     @property
     def content_sources(self) -> dict[str, OwnedContentSource]:
         return dict(getattr(self, "_content_sources", {}))
-
-    def bind_items_source(
-        self, source: OwnedContentSource, *, index: int
-    ) -> WorkspaceChangeAfterInput:
-        if isinstance(index, bool) or not isinstance(index, int) or index < 0:
-            raise ValueError("Content source index must be a nonnegative integer")
-        result = copy(self)
-        result._content_sources = {
-            **self.content_sources,
-            f"workspace.change.after.items[{index}]": source,
-        }
-        return result
 
 
 class WorkspaceChangeAfterInputGapsItem(_WireModel):
@@ -32345,23 +30975,11 @@ class WorkspaceChangeBeforeCapabilitiesFlow(_WireModel):
         **extra: Any,
     ) -> None:
         if "continuationCount" in extra:
-            if continuation_count is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for continuationCount via continuation_count and wire key"
-                )
-            continuation_count = extra.pop("continuationCount")
+            raise TypeError("Use the canonical keyword continuation_count")
         if "maxContinuations" in extra:
-            if max_continuations is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for maxContinuations via max_continuations and wire key"
-                )
-            max_continuations = extra.pop("maxContinuations")
+            raise TypeError("Use the canonical keyword max_continuations")
         if "remainingContinuations" in extra:
-            if remaining_continuations is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for remainingContinuations via remaining_continuations and wire key"
-                )
-            remaining_continuations = extra.pop("remainingContinuations")
+            raise TypeError("Use the canonical keyword remaining_continuations")
         super().__init__(extra)
         if continuation_count is not _UNSET:
             self["continuationCount"] = continuation_count
@@ -32416,9 +31034,7 @@ class WorkspaceChangeBeforeCapabilitiesInjectContext(_WireModel):
         self, *, append: Literal[True] = _UNSET, deliver_at: list[str], **extra: Any
     ) -> None:
         if "deliverAt" in extra:
-            raise TypeError(
-                "Duplicate assignment for deliverAt via deliver_at and wire key"
-            )
+            raise TypeError("Use the canonical keyword deliver_at")
         super().__init__(extra)
         self["append"] = json.loads("true") if append is _UNSET else append
         self["deliverAt"] = deliver_at
@@ -32707,11 +31323,7 @@ class WorkspaceChangeBeforeInput(dict[str, Any]):
         **extra: Any,
     ) -> None:
         if "parentEventId" in extra:
-            if parent_event_id is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for parentEventId via parent_event_id and wire key"
-                )
-            parent_event_id = extra.pop("parentEventId")
+            raise TypeError("Use the canonical keyword parent_event_id")
         super().__init__(extra)
         if extensions is not _UNSET:
             self["extensions"] = extensions
@@ -32808,18 +31420,6 @@ class WorkspaceChangeBeforeInput(dict[str, Any]):
     @property
     def content_sources(self) -> dict[str, OwnedContentSource]:
         return dict(getattr(self, "_content_sources", {}))
-
-    def bind_items_source(
-        self, source: OwnedContentSource, *, index: int
-    ) -> WorkspaceChangeBeforeInput:
-        if isinstance(index, bool) or not isinstance(index, int) or index < 0:
-            raise ValueError("Content source index must be a nonnegative integer")
-        result = copy(self)
-        result._content_sources = {
-            **self.content_sources,
-            f"workspace.change.before.items[{index}]": source,
-        }
-        return result
 
 
 class WorkspaceChangeBeforeInputGapsItem(_WireModel):
@@ -32947,11 +31547,7 @@ class WorkspaceChangeBeforeInterceptResponseResult(_WireModel):
         **extra: Any,
     ) -> None:
         if "protocolVersion" in extra:
-            if protocol_version is not _UNSET:
-                raise TypeError(
-                    "Duplicate assignment for protocolVersion via protocol_version and wire key"
-                )
-            protocol_version = extra.pop("protocolVersion")
+            raise TypeError("Use the canonical keyword protocol_version")
         super().__init__(extra)
         if effects is not _UNSET:
             self["effects"] = effects

@@ -9,6 +9,7 @@ from . import (
     effect,
     event,
     generated,
+    wire,
     path,
     registration,
     subscription,
@@ -29,7 +30,6 @@ from ._hooks import (
     PendingInvocation as PendingInvocation,
     HooksClosedError as HooksClosedError,
 )
-from ._outcomes import SchemaCandidate as SchemaCandidate
 from .permission import Permission as Permission
 from .content import (
     OwnedContentSource as OwnedContentSource,
@@ -46,7 +46,6 @@ from .runtime import (
     OperationCancelledError as OperationCancelledError,
 )
 
-wire = generated
 
 __all__ = list(_model_names) + [
     "Attachment",
@@ -72,7 +71,6 @@ __all__ = list(_model_names) + [
     "Hooks",
     "HookResult",
     "SettlementDecodeError",
-    "SchemaCandidate",
     "PendingInvocation",
     "ProtocolError",
     "Codec",

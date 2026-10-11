@@ -10,6 +10,3 @@ class Code(StrEnum):
     DEADLINE_EXCEEDED = "deadline_exceeded"
     PREPARATION = "preparation"
     CAPACITY = "capacity"
-
-
-DiagnosticCode = Code

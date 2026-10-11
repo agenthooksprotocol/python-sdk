@@ -2,7 +2,7 @@
 
 import argparse
 import base64
-from .content import upload
+from ._interop_content import upload
 from .interop import wire_request, replace_references, validate_adapter_config
 from collections import defaultdict, deque
 from concurrent.futures import Future, ThreadPoolExecutor

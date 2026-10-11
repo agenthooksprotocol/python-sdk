@@ -6,7 +6,12 @@ from unittest.mock import patch
 
 import anyio
 
-from agenthooksprotocol import HookResult, SettlementDecodeError, _models as models
+from agenthooksprotocol import (
+    Candidate,
+    HookResult,
+    SettlementDecodeError,
+    _models as models,
+)
 from agenthooksprotocol.compaction import text_parts
 from agenthooksprotocol._outcomes import decode_event
 from agenthooksprotocol.runtime import ProtocolError
@@ -69,12 +74,12 @@ class ConsumerOutcomeTests(TestCase):
                 self.assertIsInstance(
                     outcome.injections[0].value[0], models.CanonicalMessage
                 )
-                self.assertIsInstance(outcome.candidate, models.ToolCandidate)
+                self.assertIsInstance(outcome.candidate, Candidate)
                 self.assertIsNone(outcome.candidate.value)
-                self.assertIsNotNone(outcome.decoded_candidate)
-                self.assertIsNone(outcome.decoded_candidate.value)
-                self.assertEqual(outcome.raw_accepted_responses, replies.responses)
-                outcome.raw_event["tool"]["input"]["future"] = False
+                self.assertIsNotNone(outcome.candidate)
+                self.assertIsNone(outcome.candidate.value)
+                self.assertEqual(outcome.accepted_responses, replies.responses)
+                deepcopy(dict(outcome.event))["tool"]["input"]["future"] = False
                 self.assertEqual(outcome.event.tool.input, opaque)
 
         anyio.run(run)
@@ -99,10 +104,10 @@ class ConsumerOutcomeTests(TestCase):
                     with self.assertRaises(SettlementDecodeError) as caught:
                         await hooks.tool_before(tool_input())
                 self.assertEqual(
-                    caught.exception.settlement.raw_accepted_responses,
+                    caught.exception.settlement.accepted_responses,
                     replies.responses,
                 )
-                self.assertNotIn("executed", caught.exception.settlement.state)
+                self.assertNotIn("executed", caught.exception.settlement._state)
                 self.assertIsNotNone(caught.exception.__cause__)
 
         anyio.run(run)
@@ -115,29 +120,31 @@ class ConsumerOutcomeTests(TestCase):
                 "context.compact.before", {"effects": ["return"]}, replies
             ) as hooks:
                 outcome = await hooks.context_compact_before(
-                    {"instructions": text_parts("input"), "trigger": "manual", "items": []}
+                    {
+                        "instructions": text_parts("input"),
+                        "trigger": "manual",
+                        "items": [],
+                    }
                 )
-                self.assertIsInstance(outcome.candidate, models.TextCandidate)
-                self.assertIsInstance(
-                    outcome.decoded_candidate.value[0], models.TextBodyPart
-                )
-                self.assertEqual(outcome.decoded_candidate.value, parts)
+                self.assertIsInstance(outcome.candidate, Candidate)
+                self.assertIsInstance(outcome.candidate.value[0], models.TextBodyPart)
+                self.assertEqual(outcome.candidate.value, parts)
                 opaque = {"future": {"parts": None}}
-                outcome.state["candidate"]["provenance"] = opaque
-                self.assertEqual(outcome.decoded_candidate.provenance, opaque)
+                outcome._state["candidate"]["provenance"] = opaque
+                self.assertEqual(outcome.candidate.provenance, opaque)
                 # The raw reducer state stays inspectable; typed result views
                 # distinguish no result from an explicitly supplied null.
                 self.assertFalse(outcome.has_result)
                 with self.assertRaises(KeyError):
-                    _ = outcome.decoded_result
+                    _ = outcome.result
             replies = Replies({"effects": [{"type": "return", "value": None}]})
             async with hooks_for(
                 "tool.before", {"effects": ["return"]}, replies
             ) as hooks:
                 outcome = await hooks.tool_before(tool_input())
-                outcome.state["result"] = None
+                outcome._state["result"] = None
                 self.assertTrue(outcome.has_result)
-                self.assertIsNone(outcome.decoded_result)
+                self.assertIsNone(outcome.result)
 
         anyio.run(run)
 

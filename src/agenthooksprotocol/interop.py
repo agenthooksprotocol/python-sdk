@@ -164,11 +164,15 @@ def host_outcome(request, outcome, *, validate_input=False):
     """Apply this fixture host's policy after SDK settlement, never inside it."""
     if outcome is None:
         raise ProtocolError("No correlated response accepted")
-    actual = deepcopy(outcome.state)
+    actual = deepcopy(outcome._state)
     actual["executed"] = False
     candidate = actual.pop("candidate", None)
     actual.pop("permission", None)
-    effects = (outcome.accepted_response or {}).get("result", {}).get("effects", [])
+    effects = (
+        (outcome.accepted_responses[-1] if outcome.accepted_responses else {})
+        .get("result", {})
+        .get("effects", [])
+    )
     if not (
         any(e.get("type") == "modify" and e.get("target") != "input" for e in effects)
         or outcome.event["type"] == "task.change.before"
@@ -320,7 +324,7 @@ def run_fixture_compaction(
                 staged = deepcopy(state)
                 staged[target] = committed
                 if boundary == "before":
-                    candidate = settled.raw_candidate
+                    candidate = settled.candidate
                     returned = any(
                         effect["type"] == "return"
                         for response in settled.accepted_responses
@@ -333,7 +337,7 @@ def run_fixture_compaction(
                         None
                         if candidate is None
                         else {
-                            "value": parts(candidate["value"], item_id),
+                            "value": parts(candidate.value, item_id),
                             "supplier": (
                                 supplier
                                 if returned or original is None
@@ -341,7 +345,7 @@ def run_fixture_compaction(
                             ),
                         }
                     )
-                staged["messages"].extend(settled.state["messages"])
+                staged["messages"].extend(message.text for message in settled.messages)
                 staged["denied"] = settled.decision == "deny"
                 state = staged
             except Exception:

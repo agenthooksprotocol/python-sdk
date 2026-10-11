@@ -8,7 +8,11 @@ from pathlib import Path
 import agenthooksprotocol as ahp
 from decimal import Decimal
 
-from agenthooksprotocol import ContentReference, ContentUploadReceipt, ExecutionEventMcpConnectionHttp
+from agenthooksprotocol import (
+    ContentReference,
+    ContentUploadReceipt,
+    ExecutionEventMcpConnectionHttp,
+)
 from agenthooksprotocol import capability, effect, state
 from agenthooksprotocol.generated import parse_content_reference
 
@@ -20,14 +24,23 @@ class StructuralFacadeTests(unittest.TestCase):
         self.assertEqual(decoded.gaps[0].reason, "unavailable")
         self.assertEqual(decoded.gaps[0].path, "url")
         self.assertEqual(decoded, raw)
-        caps = capability.Capabilities.from_dict({"effects": ["modify"], "modify": {"input": {"replace": True, "merge": False}}})
+        caps = capability.Capabilities.from_dict(
+            {
+                "effects": ["modify"],
+                "modify": {"input": {"replace": True, "merge": False}},
+            }
+        )
         self.assertTrue(caps.modify.input.replace)
 
     def test_all_generated_effect_array_queries_are_sound(self):
         families, payloads = set(), set()
         for name in ahp._models.__all__:
             cls = getattr(ahp._models, name)
-            if isinstance(cls, type) and issubclass(cls, dict) and isinstance(getattr(cls, "effects", None), property):
+            if (
+                isinstance(cls, type)
+                and issubclass(cls, dict)
+                and isinstance(getattr(cls, "effects", None), property)
+            ):
                 annotation = typing.get_type_hints(cls.effects.fget)["return"]
                 (families if annotation == list[str] else payloads).add(cls)
         self.assertGreaterEqual(len(families), 21)
@@ -36,63 +49,151 @@ class StructuralFacadeTests(unittest.TestCase):
         self.assertTrue(all(not hasattr(cls, "supports") for cls in payloads))
 
     def test_all_exported_capability_models_support_family_queries(self):
-        classes = {value for value in vars(capability).values()
-                   if isinstance(value, type) and issubclass(value, dict) and hasattr(value, "effects")}
+        classes = {
+            value
+            for value in vars(capability).values()
+            if isinstance(value, type)
+            and issubclass(value, dict)
+            and hasattr(value, "effects")
+        }
         self.assertGreaterEqual(len(classes), 20)
         for cls in classes:
             with self.subTest(cls.__name__):
-                for caps in (cls(effects=["deny", "vendor.custom"]),
-                             cls.from_dict({"effects": ["deny", "vendor.custom"]})):
+                for caps in (
+                    cls(effects=["deny", "vendor.custom"]),
+                    cls.from_dict({"effects": ["deny", "vendor.custom"]}),
+                ):
                     self.assertTrue(caps.supports(capability.EffectName.DENY))
                     self.assertTrue(caps.supports("vendor.custom"))
                     self.assertFalse(caps.supports(capability.EffectName.MODIFY))
                 self.assertFalse(cls(effects=[]).supports(capability.EffectName.DENY))
-        self.assertTrue(capability.ToolBeforeCapabilities(effects=["deny"]).supports(capability.EffectName.DENY))
+        self.assertTrue(
+            capability.ToolBeforeCapabilities(effects=["deny"]).supports(
+                capability.EffectName.DENY
+            )
+        )
         self.assertFalse(hasattr(ahp.InterceptDenyResponseResult, "supports"))
 
-    def test_constructors_hydrate_nested_mapping_values(self):
-        caps = capability.Capabilities(effects=["modify"], modify={})
+    def test_constructors_require_typed_nested_values(self):
+        with self.assertRaises(TypeError):
+            capability.Capabilities(effects=["modify"], modify={})
+        caps = capability.Capabilities(
+            effects=["modify"], modify=ahp.CapabilitiesModify()
+        )
         self.assertIsNone(caps.modify.input)
         self.assertIsInstance(caps.modify, ahp.CapabilitiesModify)
+        with self.assertRaises(TypeError):
+            ExecutionEventMcpConnectionHttp(
+                transport="http",
+                gaps=[{"path": "url", "reason": "unavailable"}],
+            )
         connection = ExecutionEventMcpConnectionHttp(
-            transport="http", gaps=[{"path": "url", "reason": "unavailable"}],
+            transport="http",
+            gaps=[
+                ahp.ExecutionEventMcpConnectionHttpGapsItem(
+                    path="url",
+                    reason="unavailable",
+                )
+            ],
         )
         self.assertEqual(connection.gaps[0].reason, "unavailable")
         reused = ExecutionEventMcpConnectionHttp(transport="http", gaps=connection.gaps)
         self.assertIs(reused.gaps, connection.gaps)
         self.assertIs(reused.gaps[0], connection.gaps[0])
-        mcp = ahp.ExecutionEventMcp(connection=dict(connection), provenance="runtime",
-                                    server={"id": "server"}, tool_name="read")
-        self.assertEqual(mcp.connection.gaps[0].reason, "unavailable")
-        self.assertEqual(mcp.server.id, "server")
+        server = ahp.ExecutionEventMcpServer(id="server")
+        with self.assertRaises(TypeError):
+            ahp.ExecutionEventMcp(
+                connection=dict(connection),
+                provenance="runtime",
+                server=server,
+                tool_name="read",
+            )
+        with self.assertRaises(TypeError):
+            ahp.ExecutionEventMcp(
+                connection=connection,
+                provenance="runtime",
+                server={"id": "server"},
+                tool_name="read",
+            )
+        mcp = ahp.ExecutionEventMcp(
+            connection=connection, provenance="runtime", server=server, tool_name="read"
+        )
+        self.assertIs(mcp.connection, connection)
+        self.assertIs(mcp.server, server)
 
-    def test_constructor_wire_alias_collisions_are_explicit(self):
-        facts = {"connection": {"transport": "http", "url": "https://example.test"},
-                 "provenance": "runtime", "server": {"id": "server"}}
-        for duplicate in ("snake", "camel"):
-            with self.assertRaisesRegex(TypeError, "Duplicate assignment"):
-                ahp.ExecutionEventMcp(**facts, tool_name="snake", toolName=duplicate)
+    def test_constructor_wire_keyword_aliases_are_rejected(self):
+        facts = {
+            "connection": ahp.ExecutionEventMcpConnectionHttp(
+                transport="http", url="https://example.test"
+            ),
+            "provenance": "runtime",
+            "server": ahp.ExecutionEventMcpServer(id="server"),
+        }
+        for keywords in (
+            {"toolName": "camel"},
+            {"tool_name": "snake", "toolName": "camel"},
+        ):
+            with self.subTest(keywords=keywords), self.assertRaises(TypeError):
+                ahp.ExecutionEventMcp(**facts, **keywords)
         custom = ahp.ExecutionEventMcpConnectionCustomTransport
-        self.assertEqual(custom(transport="vendor.pipe", address="pipe", addressForm="opaque").address_form, "opaque")
-        for duplicate in ("opaque", "other"):
-            with self.assertRaisesRegex(TypeError, "Duplicate assignment"):
-                custom(transport="vendor.pipe", address_form="opaque", addressForm=duplicate)
-        self.assertEqual(ahp.Registration(hooks=[], protocolVersion="draft").protocol_version, "draft")
+        self.assertEqual(
+            custom(
+                transport="vendor.pipe", address="pipe", address_form="opaque"
+            ).address_form,
+            "opaque",
+        )
+        for keywords in (
+            {"addressForm": "opaque"},
+            {"address_form": "opaque", "addressForm": "opaque"},
+        ):
+            with self.subTest(keywords=keywords), self.assertRaises(TypeError):
+                custom(transport="vendor.pipe", **keywords)
+        self.assertEqual(
+            ahp.Registration(hooks=[], protocol_version="draft").protocol_version,
+            "draft",
+        )
         with self.assertRaises(ValueError):
-            ahp.Registration(hooks=[], protocolVersion="future")
-        with self.assertRaisesRegex(TypeError, "Duplicate assignment"):
-            ahp.Registration(hooks=[], protocol_version="draft", protocolVersion="draft")
-        # A raw wire mapping has distinct keys, not constructor keyword aliases.
-        raw = {**facts, "toolName": "camel", "tool_name": "extension"}
+            ahp.Registration(hooks=[], protocol_version="future")
+        for keywords in (
+            {"protocolVersion": "draft"},
+            {"protocol_version": "draft", "protocolVersion": "draft"},
+        ):
+            with self.subTest(keywords=keywords), self.assertRaises(TypeError):
+                ahp.Registration(hooks=[], **keywords)
+        # Wire-key decoding remains explicit and retains distinct extension keys.
+        raw = {
+            "connection": dict(facts["connection"]),
+            "provenance": "runtime",
+            "server": dict(facts["server"]),
+            "toolName": "camel",
+            "tool_name": "extension",
+        }
         self.assertEqual(ahp.ExecutionEventMcp.from_dict(raw), raw)
+        self.assertEqual(
+            custom.from_dict(
+                {"transport": "vendor.pipe", "address": "pipe", "addressForm": "opaque"}
+            ).address_form,
+            "opaque",
+        )
+        self.assertEqual(
+            ahp.Registration.from_dict(
+                {"hooks": [], "protocolVersion": "draft"}
+            ).protocol_version,
+            "draft",
+        )
 
     def test_family_support_is_not_authorization(self):
         self.assertIs(capability.EffectName, effect.EffectName)
-        for cls in (capability.Capabilities, capability.InterceptRequestParamsCapabilities):
-            caps = cls.from_dict({
-                "effects": ["deny", "vendor.custom"],
-                "modify": {"input": {"replace": True, "merge": False}},
-            })
+        for cls in (
+            capability.Capabilities,
+            capability.InterceptRequestParamsCapabilities,
+        ):
+            caps = cls.from_dict(
+                {
+                    "effects": ["deny", "vendor.custom"],
+                    "modify": {"input": {"replace": True, "merge": False}},
+                }
+            )
             self.assertTrue(caps.supports(capability.EffectName.DENY))
             self.assertTrue(caps.supports("vendor.custom"))
             self.assertFalse(caps.supports(capability.EffectName.MODIFY))
@@ -120,7 +221,9 @@ class StructuralFacadeTests(unittest.TestCase):
         value = {"ref": "opaque", "extension": Decimal("1.000000000000000000001")}
         decoded = ContentReference.from_dict(value)
         self.assertEqual(decoded, value)
-        self.assertEqual(parse_content_reference(decoded), parse_content_reference(value))
+        self.assertEqual(
+            parse_content_reference(decoded), parse_content_reference(value)
+        )
         for bad in ({"ref": "opaque", "size": None}, {"ref": 7}):
             with self.assertRaises(ValueError) as raised:
                 ContentReference.from_dict(bad)
@@ -132,7 +235,9 @@ class StructuralFacadeTests(unittest.TestCase):
 
 class SharedStructuralMatrixTests(unittest.TestCase):
     def test_public_models_and_parsers_match_expected_contract(self):
-        cases = json.loads(Path(__file__).with_name("structural-acceptance.json").read_text())["cases"]
+        cases = json.loads(
+            Path(__file__).with_name("structural-acceptance.json").read_text()
+        )["cases"]
         for entry in cases:
             with self.subTest(entry["id"]):
                 model_name = "".join(word.title() for word in entry["root"].split("_"))
@@ -140,7 +245,10 @@ class SharedStructuralMatrixTests(unittest.TestCase):
                 parse = getattr(ahp.generated, "parse_" + entry["root"])
                 parsed = parse(entry["value"])
                 self.assertEqual(parsed["ok"], entry["accepted"])
-                self.assertEqual(any(d["severity"] == "warning" for d in parsed["diagnostics"]), entry["warning"])
+                self.assertEqual(
+                    any(d["severity"] == "warning" for d in parsed["diagnostics"]),
+                    entry["warning"],
+                )
                 self.assertEqual(parsed["raw"], entry["value"])
                 if entry["accepted"]:
                     decoded = model.from_dict(entry["value"])

@@ -110,7 +110,7 @@ class UnificationTests(unittest.TestCase):
                     transport.requests[0]["params"]["event"]["call"]["id"], "call-1"
                 )
                 self.assertEqual(
-                    result.accepted_response["result"]["effects"][0]["type"], "modify"
+                    result.accepted_responses[-1]["result"]["effects"][0]["type"], "modify"
                 )
 
         self.run_async(run)
@@ -123,10 +123,14 @@ class UnificationTests(unittest.TestCase):
             {"value": None},
         )
 
+    def test_removed_effect_wrapper_is_absent(self):
+        self.assertFalse(hasattr(effect, "deny"))
+        self.assertEqual(effect.Deny(reason="policy"), {"type": "deny", "reason": "policy"})
+
     def test_generated_effects_do_not_authorize_their_own_response(self):
         async def run():
             transport = MemoryTransport(
-                [effect.deny(reason="policy"), effect.replace_input({"bad": True})]
+                [effect.Deny(reason="policy"), effect.replace_input({"bad": True})]
             )
             async with Hooks(
                 config(),

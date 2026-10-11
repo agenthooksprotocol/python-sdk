@@ -12,6 +12,7 @@ import json
 from typing import Any, cast
 
 import anyio
+from agenthooksprotocol.generated import JsonValue
 import httpx
 from agenthooksprotocol import HookResult, Hooks, capability, event, tool
 from agenthooksprotocol.wire import Effect, InterceptRequest
@@ -71,7 +72,7 @@ async def run_case(case: dict[str, Any]) -> dict[str, Any]:
             host_accepted = False
             executions: list[dict[str, Any]] = []
             try:
-                effective = result.decode_input(ShellCodec())
+                effective = ShellCodec().decode(cast(JsonValue, result.input))
                 host_accepted = allowed_by_host(effective)
                 if not host_accepted:
                     layer = "host-policy"
@@ -88,7 +89,7 @@ async def run_case(case: dict[str, Any]) -> dict[str, Any]:
                 "hostAccepted": host_accepted,
                 "rejectionLayer": layer,
                 "decision": result.decision,
-                "effectiveInput": result.effective_input,
+                "effectiveInput": result.input,
                 "executed": bool(executions),
                 "executionCount": len(executions),
                 "diagnostics": result.diagnostics,

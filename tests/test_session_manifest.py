@@ -70,7 +70,7 @@ class ManifestTests(unittest.TestCase):
                 snapshot = harness.manifest
                 snapshot["events"].clear()
                 first = await harness.session_start(facts, event_id="owned-id")
-                self.assertEqual(await harness.wait(), [])
+                self.assertEqual(await harness.wait_observations(), [])
                 self.assertEqual(harness.manifest, expected)
                 self.assertEqual(first.event["manifest"], expected)
                 # Raw caller attempts cannot override SDK-owned envelope fields.
@@ -84,7 +84,7 @@ class ManifestTests(unittest.TestCase):
                     },
                     event_id="second-id",
                 )
-                self.assertEqual(await harness.wait(), [])
+                self.assertEqual(await harness.wait_observations(), [])
                 self.assertEqual(harness.config, registration)
             self.assertEqual(facts, original)
             self.assertEqual(len(received), 2)
@@ -156,7 +156,7 @@ class ManifestTests(unittest.TestCase):
                 transport=Transport(),
             ) as harness:
                 await harness.session_start(host_facts())
-                self.assertEqual(await harness.wait(), [])
+                self.assertEqual(await harness.wait_observations(), [])
                 self.assertEqual(len(received), 1)
                 self.assertEqual(received[0]["manifest"], harness.manifest)
                 self.assertEqual(received[0]["source"], "urn:shorthand")

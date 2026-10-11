@@ -131,8 +131,8 @@ async def main() -> None:
                     origin="native",
                 ),
             )
-            assert tool_result.decoded_input.path == "reviewed.md"
-            candidate = tool_result.decoded_candidate
+            assert tool_result.input.path == "reviewed.md"
+            candidate = tool_result.candidate
             assert candidate is not None and candidate.value.contents == "Reviewed"
             form_result: HookResult[
                 object, ElicitResult[Answer], object
@@ -152,13 +152,13 @@ async def main() -> None:
                 },
                 result_codec=form_result_codec,
             )
-            supplied = form_result.decoded_candidate
+            supplied = form_result.candidate
             assert supplied is not None and supplied.value.content.approved
             # Candidates are not permission to execute or proof of human approval.
             print(
                 json.dumps(
                     {
-                        "path": tool_result.decoded_input.path,
+                        "path": tool_result.input.path,
                         "contents": candidate.value.contents,
                         "approved": supplied.value.content.approved,
                     }

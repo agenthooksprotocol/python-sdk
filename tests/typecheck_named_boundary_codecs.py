@@ -53,8 +53,8 @@ def main() -> None:
                 [
                     f"    {name} = await h.{method}({{}}, {', '.join(args)})",
                     f"    assert_type({name}, HookResult[{', '.join(types)}])",
-                    f"    assert_type({name}.decoded_result, {types[1]})",
-                    f"    assert_type({name}.decoded_candidate, Candidate[{types[1]}, {types[2]}] | None)",
+                    f"    assert_type({name}.result, {types[1]})",
+                    f"    assert_type({name}.candidate, Candidate[{types[1]}, {types[2]}] | None)",
                 ]
             )
         lines.append(

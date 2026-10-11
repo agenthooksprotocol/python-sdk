@@ -8,6 +8,7 @@ from copy import deepcopy
 import unittest
 
 import anyio
+from agenthooksprotocol import Candidate
 
 from agenthooksprotocol import Hooks
 from agenthooksprotocol.compaction import compaction_capabilities, text_parts
@@ -109,7 +110,7 @@ class TypedContractRegressions(unittest.TestCase):
                 self.assertIsNone(result.candidate)
                 self.assertEqual(result.permission.value, "none")
                 self.assertEqual(
-                    response_for_request("tool.before", result.accepted_response)[
+                    response_for_request("tool.before", result.accepted_responses[-1])[
                         "value"
                     ].result.effects,
                     [],
@@ -126,14 +127,14 @@ class TypedContractRegressions(unittest.TestCase):
                 self.assertEqual(result.input, tool_input()["tool"]["input"])
                 self.assertIsNone(result.candidate)
                 self.assertEqual(
-                    response_for_request("tool.before", result.accepted_response)[
+                    response_for_request("tool.before", result.accepted_responses[-1])[
                         "value"
                     ].result.effects,
                     [],
                 )
-                self.assertNotIn("effects", result.accepted_response["result"])
+                self.assertNotIn("effects", result.accepted_responses[-1]["result"])
                 self.assertNotIn("effects", transport.responses[0]["result"])
-                parsed = InterceptResponse.from_dict(result.accepted_response)
+                parsed = InterceptResponse.from_dict(result.accepted_responses[-1])
                 self.assertEqual(
                     response_for_request("tool.before", parsed)["value"].result.effects,
                     [],
@@ -312,7 +313,7 @@ class TypedContractRegressions(unittest.TestCase):
                     result.event["extensions"]["org.example.future"], opaque
                 )
                 self.assertEqual(
-                    result.accepted_response["result"]["extensions"][
+                    result.accepted_responses[-1]["result"]["extensions"][
                         "org.example.future"
                     ],
                     opaque,
@@ -341,12 +342,12 @@ class TypedContractRegressions(unittest.TestCase):
             async with hooks_for(name, {"effects": ["return"]}, transport) as hooks:
                 result = await hooks.dispatch(name, payload)
                 self.assertEqual(len(result.accepted_responses), 1, result.diagnostics)
-                from agenthooksprotocol._models import MessagesCandidate, CanonicalMessage
-                self.assertIsInstance(result.candidate, MessagesCandidate)
-                self.assertIsInstance(result.decoded_candidate.value[0], CanonicalMessage)
-                self.assertEqual(result.candidate["value"], messages)
+                from agenthooksprotocol._models import CanonicalMessage
+                self.assertIsInstance(result.candidate, Candidate)
+                self.assertIsInstance(result.candidate.value[0], CanonicalMessage)
+                self.assertEqual(result.candidate.value, messages)
                 self.assertEqual(result.event["params"], payload["params"])
-                self.assertNotIn("parts", result.candidate["value"][0]["parts"][0])
+                self.assertNotIn("parts", result.candidate.value[0]["parts"][0])
 
         self.run_async(run)
 
@@ -404,12 +405,12 @@ class TypedContractRegressions(unittest.TestCase):
             ) as hooks:
                 result = await hooks.dispatch(name, original["params"]["event"])
                 self.assertEqual(len(result.accepted_responses), 1, result.diagnostics)
-                from agenthooksprotocol._models import ElicitResultCandidate, McpElicitationElicitResult
-                self.assertIsInstance(result.candidate, ElicitResultCandidate)
-                self.assertIsInstance(result.decoded_candidate.value, McpElicitationElicitResult)
-                self.assertEqual(result.decoded_candidate.value.action, "accept")
-                self.assertEqual(result.candidate["value"], value)
-                self.assertEqual(result.content["candidate"], value)
+                from agenthooksprotocol._models import McpElicitationElicitResult
+                self.assertIsInstance(result.candidate, Candidate)
+                self.assertIsInstance(result.candidate.value, McpElicitationElicitResult)
+                self.assertEqual(result.candidate.value.action, "accept")
+                self.assertEqual(result.candidate.value, value)
+                self.assertEqual(result.candidate.value, value)
             self.assertEqual(original, before)
 
         self.run_async(run)

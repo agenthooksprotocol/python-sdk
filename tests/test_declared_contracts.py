@@ -87,10 +87,10 @@ class DeclaredContractsTests(unittest.TestCase):
                     p, input_codec=PydanticCodec(TypeAdapter(Arguments))
                 )
                 self.assertEqual(len(result.accepted_responses), 2, result.diagnostics)
-                self.assertIsInstance(result.decoded_input, Arguments)
-                self.assertEqual(result.decoded_input.required, 2)
+                self.assertIsInstance(result.input, Arguments)
+                self.assertEqual(result.input.required, 2)
                 self.assertEqual(
-                    result.input,
+                    PydanticCodec(TypeAdapter(Arguments)).encode(result.input),
                     {
                         "required": 2,
                         "keep": "unchanged",
@@ -100,7 +100,7 @@ class DeclaredContractsTests(unittest.TestCase):
                 )
                 self.assertEqual(
                     transport.requests[1]["params"]["event"]["tool"]["input"],
-                    result.input,
+                    PydanticCodec(TypeAdapter(Arguments)).encode(result.input),
                 )
             self.assertEqual(p, before)
 
@@ -134,10 +134,10 @@ class DeclaredContractsTests(unittest.TestCase):
                     result_codec=PydanticCodec(TypeAdapter(Result)),
                 )
                 self.assertEqual(len(result.accepted_responses), 2, result.diagnostics)
-                self.assertEqual(result.decoded_input.required, 2)
-                self.assertIsInstance(result.decoded_candidate.value, Result)
-                self.assertEqual(result.decoded_candidate.value.text, "accepted")
-                self.assertEqual(result.state["messages"], [])
+                self.assertEqual(result.input.required, 2)
+                self.assertIsInstance(result.candidate.value, Result)
+                self.assertEqual(result.candidate.value.text, "accepted")
+                self.assertEqual(result._state["messages"], [])
                 self.assertEqual(
                     transport.requests[2]["params"]["event"]["tool"]["input"][
                         "required"
@@ -165,8 +165,11 @@ class DeclaredContractsTests(unittest.TestCase):
                         result_codec=PydanticCodec(TypeAdapter(Result)),
                     )
                     self.assertEqual(result.accepted_responses, [])
-                    self.assertEqual(result.input, payload()["tool"]["input"])
-                    self.assertIsNone(result.decoded_candidate)
+                    self.assertEqual(
+                        PydanticCodec(TypeAdapter(Arguments)).encode(result.input),
+                        payload()["tool"]["input"],
+                    )
+                    self.assertIsNone(result.candidate)
                     self.assertTrue(result.diagnostics)
 
         self.run_async(run)
@@ -185,9 +188,9 @@ class DeclaredContractsTests(unittest.TestCase):
                     )
                     self.assertEqual(len(result.accepted_responses), int(accepted))
                     if accepted:
-                        self.assertEqual(result.input["future"], value["future"])
+                        self.assertEqual(result.input.future, value["future"])
                         self.assertEqual(
-                            result.decoded_input.model_extra["future"], value["future"]
+                            result.input.model_extra["future"], value["future"]
                         )
 
         self.run_async(run)
@@ -206,12 +209,10 @@ class DeclaredContractsTests(unittest.TestCase):
                         provenance_codec=PydanticCodec(TypeAdapter(Provenance)),
                     )
                     if candidate is None:
-                        self.assertIsNone(result.decoded_candidate)
+                        self.assertIsNone(result.candidate)
                     else:
-                        self.assertIsNone(result.decoded_candidate.value)
-                        self.assertEqual(
-                            result.decoded_candidate.provenance.source, "host"
-                        )
+                        self.assertIsNone(result.candidate.value)
+                        self.assertEqual(result.candidate.provenance.source, "host")
             transport = Replies(
                 {
                     "effects": [
@@ -231,9 +232,9 @@ class DeclaredContractsTests(unittest.TestCase):
                     result_codec=PydanticCodec(TypeAdapter(str)),
                     provenance_codec=PydanticCodec(TypeAdapter(Provenance)),
                 )
-                self.assertEqual(result.decoded_candidate.value, "replacement")
-                self.assertNotIn("provenance", result.decoded_candidate.to_dict())
-                self.assertNotIn("provenance", result.candidate)
+                self.assertEqual(result.candidate.value, "replacement")
+                self.assertNotIn("provenance", result.candidate.to_dict())
+                self.assertNotIn("provenance", result.candidate.to_dict())
 
         self.run_async(run)
 
@@ -243,10 +244,10 @@ class DeclaredContractsTests(unittest.TestCase):
             async with hooks_for("tool.before", caps(), transport) as hooks:
                 result = await hooks.tool_before(payload())
                 self.assertEqual(len(result.accepted_responses), 1)
-                before = deepcopy(result.state)
+                before = deepcopy(result._state)
                 with self.assertRaises(ValueError):
-                    result.decode_input(PydanticCodec(TypeAdapter(Arguments)))
-                self.assertEqual(result.state, before)
+                    PydanticCodec(TypeAdapter(Arguments)).decode(result.input)
+                self.assertEqual(result._state, before)
                 self.assertEqual(len(result.accepted_responses), 1)
 
         self.run_async(run)
@@ -268,14 +269,14 @@ class DeclaredContractsTests(unittest.TestCase):
                     input_codec=PydanticCodec(TypeAdapter(Arguments)),
                     result_codec=PydanticCodec(TypeAdapter(Result)),
                 )
-                self.assertEqual(result.decoded_input.required, large)
-                self.assertIs(type(result.input["required"]), int)
-                typed = result.decoded_input
+                self.assertEqual(result.input.required, large)
+                self.assertIs(type(result.input.required), int)
+                typed = result.input
                 typed.nested.clear()
-                candidate = result.decoded_candidate
+                candidate = result.candidate
                 candidate.value.text = "mutated"
-                self.assertEqual(result.input["nested"], {"a": 1, "b": 2})
-                self.assertEqual(result.candidate["value"], {"text": "accepted"})
+                self.assertEqual(result.input.nested, {"a": 1, "b": 2})
+                self.assertEqual(result.candidate.value.text, "accepted")
 
         self.run_async(run)
 
@@ -297,8 +298,8 @@ class DeclaredContractsTests(unittest.TestCase):
                     result_codec=PydanticCodec(TypeAdapter(Result)),
                     provenance_codec=PydanticCodec(TypeAdapter(Provenance)),
                 )
-                self.assertEqual(result.decoded_candidate.value.text, "new")
-                self.assertNotIn("provenance", result.decoded_candidate.to_dict())
+                self.assertEqual(result.candidate.value.text, "new")
+                self.assertNotIn("provenance", result.candidate.to_dict())
 
         self.run_async(run)
 
@@ -363,20 +364,14 @@ class DeclaredContractsTests(unittest.TestCase):
                         result.diagnostics,
                     )
                     if accepted:
-                        self.assertIsInstance(
-                            result.decoded_candidate.value.content, Answer
-                        )
+                        self.assertIsInstance(result.candidate.value.content, Answer)
+                        self.assertEqual(result.candidate.value.content.count, 2)
                         self.assertEqual(
-                            result.decoded_candidate.value.content.count, 2
-                        )
-                        self.assertEqual(
-                            contract.result_codec().encode(
-                                result.decoded_candidate.value
-                            ),
+                            contract.result_codec().encode(result.candidate.value),
                             value,
                         )
                     else:
-                        self.assertIsNone(result.decoded_candidate)
+                        self.assertIsNone(result.candidate)
 
         self.run_async(run)
 
@@ -390,9 +385,23 @@ class FormContractTests(unittest.TestCase):
 
         contract = PydanticFormContract(TypeAdapter(Answer))
         requested = contract.request("Answer now")
-        self.assertEqual(
-            requested["requestedSchema"]["properties"]["count"]["minimum"], 1
+        from agenthooksprotocol import (
+            McpElicitationElicitRequestFormParams,
+            McpElicitationElicitRequestFormParamsRequestedSchema,
+            McpElicitationNumberSchema,
         )
+
+        self.assertIsInstance(requested, McpElicitationElicitRequestFormParams)
+        self.assertEqual(requested.mode, "form")
+        self.assertEqual(requested.message, "Answer now")
+        self.assertIsInstance(
+            requested.requested_schema,
+            McpElicitationElicitRequestFormParamsRequestedSchema,
+        )
+        self.assertIsInstance(
+            requested.requested_schema.properties["count"], McpElicitationNumberSchema
+        )
+        self.assertEqual(requested.requested_schema.properties["count"].minimum, 1)
         answer = contract.decode_result(
             {"action": "accept", "content": {"count": 2, "name": "Hi", "ok": True}}
         )
@@ -404,7 +413,7 @@ class FormContractTests(unittest.TestCase):
         ):
             with self.assertRaises(Exception):
                 contract.decode_result({"action": "accept", "content": value})
-        requested["requestedSchema"]["properties"]["count"]["minimum"] = -100
+        requested.requested_schema.properties["count"]["minimum"] = -100
         self.assertEqual(contract.requested_schema["properties"]["count"]["minimum"], 1)
 
     def test_omitted_form_answers_decode_empty_optional_and_reject_required(self):
@@ -431,7 +440,9 @@ class FormContractTests(unittest.TestCase):
                 if accepted:
                     self.assertIsInstance(contract.decode_result(wire), kind)
                 else:
-                    with self.assertRaises((ValueError, ProtocolError, ValidationError)):
+                    with self.assertRaises(
+                        (ValueError, ProtocolError, ValidationError)
+                    ):
                         contract.decode_result(wire)
                 self.assertNotIn("content", wire)
                 self.assertIsNone(contract.decode_result(wire, mode="url"))
@@ -460,15 +471,15 @@ class FormContractTests(unittest.TestCase):
                         result.diagnostics,
                     )
                     if accepted:
-                        self.assertIsInstance(
-                            result.decoded_candidate.value.content, kind
-                        )
+                        self.assertIsInstance(result.candidate.value.content, kind)
                         self.assertNotIn(
                             "content",
-                            result.accepted_response["result"]["effects"][0]["value"],
+                            result.accepted_responses[-1]["result"]["effects"][0][
+                                "value"
+                            ],
                         )
                     else:
-                        self.assertIsNone(result.decoded_candidate)
+                        self.assertIsNone(result.candidate)
                 self.assertNotIn("content", wire)
 
         for backend in ("asyncio", "trio"):

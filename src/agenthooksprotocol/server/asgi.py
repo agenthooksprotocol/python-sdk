@@ -60,7 +60,3 @@ class App:
             {"type": "http.response.start", "status": status, "headers": headers}
         )
         await send({"type": "http.response.body", "body": payload})
-
-
-def app(handler: Handler, **options: Any) -> App:
-    return App(handler, **options)

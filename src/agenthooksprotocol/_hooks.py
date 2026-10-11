@@ -10,11 +10,10 @@ from __future__ import annotations
 from typing import Any, Callable, Generic, Mapping, TypeVar, cast, overload
 from types import TracebackType
 from .codec import ValueCodecs, Codec, Candidate, _decode_preserving
-from .generated import JsonValue
 from .response import ContextualResponse
 from .event import Event
 from . import _models as models
-from ._outcomes import SchemaCandidate, decode_event, decode_candidate, decode_response
+from ._outcomes import decode_event, decode_candidate, decode_response
 from .permission import Permission
 from .diagnostics import Code
 from ._diagnostics import (
@@ -259,12 +258,12 @@ ProvenanceT = TypeVar("ProvenanceT")
 class HookResult(Generic[InputT, ResultT, ProvenanceT]):
     """Committed settlement with schema-owned typed consumer views.
 
-    ``state`` stays raw for reducer compatibility. Host values use caller codecs;
-    decoding never rolls back accepted effects or grants host authorization.
+    Host values use caller codecs; reducer bookkeeping is private.
+    Decoding never rolls back accepted effects or grants host authorization.
     """
 
     event: Event
-    state: dict[str, Any]
+    _state: dict[str, Any] = field(repr=False)
     accepted_responses: list[ContextualResponse] = field(default_factory=list)
     diagnostics: list[Diagnostic] = field(default_factory=list)
 
@@ -277,19 +276,21 @@ class HookResult(Generic[InputT, ResultT, ProvenanceT]):
     _contextual_response: ContextualResponse | None = field(default=None, repr=False)
 
     @property
-    def decoded_input(self) -> InputT:
+    def input(self) -> InputT:
         codec = self._value_codecs.input
         return cast(
             InputT,
-            self.input if codec is None else _decode_preserving(codec, self.input),
+            deepcopy(self._state.get("input", {}))
+            if codec is None
+            else _decode_preserving(codec, self._state.get("input", {})),
         )
 
     @property
-    def decoded_candidate(self) -> Candidate[ResultT, ProvenanceT] | None:
-        candidate = self.schema_candidate
+    def candidate(self) -> Candidate[ResultT, ProvenanceT] | None:
+        candidate = decode_candidate(self.event["type"], self._state.get("candidate"))
         if candidate is None:
             return None
-        value = candidate["value"]
+        value = candidate.value
         provenance = candidate.get("provenance")
         if self._value_codecs.result is not None:
             value = _decode_preserving(self._value_codecs.result, value)
@@ -310,12 +311,12 @@ class HookResult(Generic[InputT, ResultT, ProvenanceT]):
     @property
     def has_result(self) -> bool:
         """Distinguish a supplied null result from no deliverable result."""
-        return "result" in self.state
+        return "result" in self._state
 
     @property
-    def decoded_result(self) -> ResultT:
+    def result(self) -> ResultT:
         """Decode a present result; absence raises KeyError, not a null sentinel."""
-        value = deepcopy(self.state["result"])
+        value = deepcopy(self._state["result"])
         if self._value_codecs.result is not None:
             return _decode_preserving(self._value_codecs.result, value)
         candidate = decode_candidate(self.event["type"], {"value": value})
@@ -332,111 +333,50 @@ class HookResult(Generic[InputT, ResultT, ProvenanceT]):
         await self.aclose()
 
     @property
-    def input(self) -> JsonValue:
-        return deepcopy(self.state.get("input", {}))
-
-    @property
-    def effective_input(self) -> JsonValue:
-        return self.input
-
-    @property
     def decision(self) -> str:
-        return self.state.get("decision", "allow")
+        return self._state.get("decision", "allow")
 
     @property
     def permission(self) -> Permission:
-        return Permission(self.state.get("permission", "none"))
+        return Permission(self._state.get("permission", "none"))
 
     @property
     def interrupted(self) -> bool:
-        return bool(self.state.get("interrupted", False))
-
-    @property
-    def candidate(self) -> SchemaCandidate | None:
-        """Schema-owned candidate envelope; presence is not delivery authority."""
-        return self.schema_candidate
-
-    @property
-    def raw_candidate(self) -> dict[str, Any] | None:
-        return deepcopy(self.state.get("candidate"))
-
-    @property
-    def schema_candidate(self) -> SchemaCandidate | None:
-        return decode_candidate(self.event["type"], self.raw_candidate)
-
-    @property
-    def settled_event(self) -> Event:
-        """Typed effective event, including for low-level raw settlements."""
-        return decode_event(self.event)
-
-    @property
-    def raw_event(self) -> dict[str, Any]:
-        return deepcopy(dict(self.event))
+        return bool(self._state.get("interrupted", False))
 
     @property
     def messages(self) -> list[models.MessageEffect]:
         """Diagnostic message effects, not conversational CanonicalMessages."""
-        return [models.MessageEffect(text=text) for text in self.state.get("messages", [])]
+        return [
+            models.MessageEffect(text=text) for text in self._state.get("messages", [])
+        ]
 
     @property
     def injections(self) -> list[models.InjectEffect]:
         """Complete injection envelopes, including target and delivery timing."""
         return [
             models.InjectEffect.from_dict(deepcopy(value))
-            for value in self.state.get("injections", [])
+            for value in self._state.get("injections", [])
         ]
-
-    @property
-    def decoded_accepted_responses(self) -> list[ContextualResponse]:
-        """Accepted canonical envelopes in settlement order, detached from state."""
-        return [decode_response(self.event["type"], value) for value in self.accepted_responses]
-
-    @property
-    def accepted_response(self) -> ContextualResponse | None:
-        return (
-            decode_response(self.event["type"], self.accepted_responses[-1])
-            if self.accepted_responses else None
-        )
-
-    @property
-    def raw_accepted_response(self) -> dict[str, Any] | None:
-        return deepcopy(dict(self.accepted_responses[-1])) if self.accepted_responses else None
-
-    @property
-    def raw_accepted_responses(self) -> list[dict[str, Any]]:
-        return [deepcopy(dict(value)) for value in self.accepted_responses]
 
     def _decode_settlement(self) -> None:
         # Stage every projection first. A failed decode is an error, not a
         # failure-policy fallback or an apparently authorized partial result.
         try:
-            event = self.settled_event
-            _ = self.schema_candidate
+            event = decode_event(self.event)
+            _ = self.candidate
             _ = self.messages
             _ = self.injections
-            responses = self.decoded_accepted_responses
-            _ = self.decoded_input if self._value_codecs.input is not None else None
-            _ = self.decoded_candidate
-            _ = self.decoded_result if self.has_result else None
+            responses = [
+                decode_response(event["type"], value)
+                for value in self.accepted_responses
+            ]
+            _ = self.input if self._value_codecs.input is not None else None
+            _ = self.result if self.has_result else None
         except Exception as exc:
             raise SettlementDecodeError(self) from exc
         self.event = event
         self.accepted_responses = responses
-
-    def decode_input(self, codec: Codec[T]) -> T:
-        return codec.decode(self.input)
-
-    @property
-    def content(self) -> dict[str, Any]:
-        """Explicit settled body targets; no inferred primary content."""
-        return deepcopy(self.state.get("content", {}))
-
-    @property
-    def content_references(self) -> dict[str, Any]:
-        return deepcopy(self.state.get("content_references", {}))
-
-    def decode_content(self, target: str, codec: Codec[T]) -> T:
-        return codec.decode(deepcopy(self.state["content"][target]))
 
 
 class SettlementDecodeError(ProtocolError):
@@ -913,9 +853,6 @@ class Hooks(BoundaryMixin):
         self._observation_diagnostics.clear()
         return diagnostics
 
-    async def wait(self) -> list[dict[str, Any]]:
-        return await self.wait_observations()
-
     @asynccontextmanager
     async def _operation(self):
         if self._closed:
@@ -1386,18 +1323,7 @@ class Hooks(BoundaryMixin):
                             delivery_context=delivery_context,
                         )
                         stage = "delivery"
-                        delivery_content = (
-                            sources.edit_context(
-                                request["params"]["event"],
-                                backend["id"],
-                                uploads.get(backend["id"])
-                                if uploads is not None
-                                else None,
-                                content,
-                            )
-                            if sources is not None
-                            else content
-                        )
+                        delivery_content = content
                         if (
                             delivery_content is None
                             and event_name == "user.elicitation.request"
@@ -1504,25 +1430,25 @@ class Hooks(BoundaryMixin):
                         # this response for the modified operation.
                         supplied = {effect.type for effect in effects}
                         if "return" not in supplied:
-                            accepted.state["candidate"] = None
-                            accepted.state.pop("result", None)
+                            accepted._state["candidate"] = None
+                            accepted._state.pop("result", None)
                         if (
-                            accepted.state["permission"] == "allow"
+                            accepted._state["permission"] == "allow"
                             and "allow" not in supplied
                         ):
-                            accepted.state["permission"] = "none"
-                            accepted.state["authorization"] = "pending"
-                            accepted.state.pop("result", None)
-                    accepted.state["event"] = deepcopy(result.event)
+                            accepted._state["permission"] = "none"
+                            accepted._state["authorization"] = "pending"
+                            accepted._state.pop("result", None)
+                    accepted._state["event"] = deepcopy(result.event)
                     result.accepted_responses.extend(accepted.accepted_responses)
                     result._contextual_response = accepted._contextual_response
-                    messages = result.state.get("messages", []) + accepted.state.get(
+                    messages = result._state.get("messages", []) + accepted._state.get(
                         "messages", []
                     )
-                    result.state = accepted.state
-                    result.state["messages"] = messages
+                    result._state = accepted._state
+                    result._state["messages"] = messages
                     state = {
-                        key: deepcopy(accepted.state[key])
+                        key: deepcopy(accepted._state[key])
                         for key in ("permission", "candidate")
                     }
                     for key, target in (
@@ -1530,14 +1456,14 @@ class Hooks(BoundaryMixin):
                         ("continuationInstructions", "instructions"),
                         ("injections", "injections"),
                     ):
-                        if key in result.state:
-                            state[target] = deepcopy(result.state[key])
-                    if "continuationRemaining" in result.state:
-                        caps["flow"]["remainingContinuations"] = result.state[
+                        if key in result._state:
+                            state[target] = deepcopy(result._state[key])
+                    if "continuationRemaining" in result._state:
+                        caps["flow"]["remainingContinuations"] = result._state[
                             "continuationRemaining"
                         ]
                     halted = (
-                        result.decision == "deny" or result.state.get("flow") == "stop"
+                        result.decision == "deny" or result._state.get("flow") == "stop"
                     )
                 except (OperationCancelledError, SettlementDecodeError):
                     raise
@@ -1560,11 +1486,11 @@ class Hooks(BoundaryMixin):
                     )
                     if closed:
                         state["permission"] = "deny"
-                        result.state["decision"] = "deny"
-                        result.state["permission"] = "deny"
-                        result.state["executed"] = False
-                        result.state.pop("result", None)
-                        result.state.pop("authorization", None)
+                        result._state["decision"] = "deny"
+                        result._state["permission"] = "deny"
+                        result._state["executed"] = False
+                        result._state.pop("result", None)
+                        result._state.pop("authorization", None)
                         halted = True
         result._value_codecs = value_codecs
         result._decode_settlement()
@@ -1593,9 +1519,9 @@ class Hooks(BoundaryMixin):
                     (backend["id"], subscription_index), 0
                 ),
             )
-        # The legacy evaluator uses a synthetic execution flag for fixtures;
+        # The fixture evaluator uses a synthetic execution flag;
         # the public harness never executes the host operation.
-        result.state.pop("executed", None)
+        result._state.pop("executed", None)
         result._value_codecs = value_codecs
         return result
 

@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from pathlib import Path
 import json
-from typing import TypedDict
+from typing import TypedDict, cast
 
 import anyio
 import httpx
@@ -86,7 +86,7 @@ async def main() -> None:
             )
             # Protocol settlement has already happened. Decoding is ordinary host code.
             try:
-                effective = result.decode_input(codec)
+                effective = codec.decode(cast(JsonValue, result.input))
                 host_accepted = allowed_by_host(effective)
             except ValueError:
                 host_accepted = False
@@ -96,7 +96,7 @@ async def main() -> None:
                         "sdkAccepted": bool(result.accepted_responses),
                         "hostAccepted": host_accepted,
                         "decision": result.decision,
-                        "effectiveInput": result.effective_input,
+                        "effectiveInput": result.input,
                         "executed": False,  # This example deliberately does not run a shell.
                     }
                 )

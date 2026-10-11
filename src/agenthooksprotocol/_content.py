@@ -19,11 +19,8 @@ from typing import Any, TYPE_CHECKING
 from .runtime import OperationCancelledError, ProtocolError, _json_equal
 
 if TYPE_CHECKING:
-    from .attachment import Attachment
     from .generated import ContentUploadReceipt
 
-Reference = dict[str, Any]
-Resolver = Callable[[Reference], Awaitable[bytes]]
 Uploader = Callable[[bytes], Awaitable["ContentUploadReceipt"]]
 
 
@@ -271,12 +268,9 @@ class ContentContext:
     def __init__(
         self,
         *,
-        resolve: Resolver | None = None,
-        upload: Uploader | None = None,
         bindings: Mapping[str, tuple[str | int, ...]],
         principal: str,
         original_request: dict[str, Any] | None = None,
-        attachments: Mapping[str, Attachment] | None = None,
     ) -> None:
         if not principal or not isinstance(principal, str):
             raise ProtocolError("Authenticated content principal is required")
@@ -288,12 +282,9 @@ class ContentContext:
             for path in bindings.values()
         ):
             raise ProtocolError("Explicit nonempty content paths are required")
-        self.resolve = resolve
-        self.upload = upload
         self.bindings = {key: tuple(path) for key, path in bindings.items()}
         self.principal = principal
         self.original_request = deepcopy(original_request)
-        self.attachments = dict(attachments or {})
         self._identities: dict[str, tuple[int, str]] = {}
 
     async def prepare(self, request: dict[str, Any], validator: Any) -> PreparedContent:
@@ -768,10 +759,6 @@ class ContentSources:
                 )
         self.bindings, self._slots, self._item_metadata = bindings, slots, metadata
         return previous - set(bindings.values())
-
-    def edit_context(self, event, backend, upload, context):
-        # Binary owners are independent of inline text/JSON settlement.
-        return context
 
     async def project(
         self,

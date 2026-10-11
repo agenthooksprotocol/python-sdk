@@ -60,14 +60,20 @@ class PublicContractSurfaceTests(unittest.TestCase):
     def test_new_public_type_hints_resolve_without_injected_names(self):
         for method in (
             ahp.Hooks.dispatch,
-            ahp.HookResult.decoded_input.fget,
-            ahp.HookResult.decoded_candidate.fget,
+            ahp.HookResult.input.fget,
+            ahp.HookResult.candidate.fget,
             pydantic.PydanticFormContract.request,
             pydantic.PydanticFormContract.result_codec,
             pydantic.PydanticFormContract.decode_result,
         ):
             with self.subTest(method=method.__qualname__):
                 self.assertTrue(get_type_hints(method))
+
+    def test_form_request_annotation_is_the_public_runtime_model(self):
+        self.assertIs(
+            get_type_hints(pydantic.PydanticFormContract.request)["return"],
+            ahp.McpElicitationElicitRequestFormParams,
+        )
 
     def test_generated_named_boundary_type_hints_resolve(self):
         self.assertTrue(get_type_hints(ahp.Hooks.tool_before))
@@ -80,7 +86,7 @@ class PublicContractSurfaceTests(unittest.TestCase):
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
         self.assertEqual(
-            module.form_request["requestedSchema"]["properties"]["approved"]["type"],
+            module.form_request.requested_schema.properties["approved"].type,
             "boolean",
         )
         self.assertTrue(get_type_hints(module.intercept_tool))

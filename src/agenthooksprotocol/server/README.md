@@ -44,7 +44,7 @@ Cancellation propagates. Exceptions from callbacks do not disclose their details
 
 ## Transports and resource ownership
 
-`asgi.App(handler, max_bytes=4194304, **engine_options)` and its `asgi.app` alias
+`asgi.App(handler, max_bytes=4194304, **engine_options)`
 accept HTTP POST at their mounted path. Routing, authentication, TLS, request
 timeouts and deployment concurrency limits belong to the caller/framework. HTTP
 request bodies are bounded; disconnect before dispatch does not invoke callbacks.

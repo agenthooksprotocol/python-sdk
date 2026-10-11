@@ -7,7 +7,7 @@ Ordinary host authorization and domain validation remain the caller's job.
 
 from __future__ import annotations
 
-from typing import Any, Callable, Generic, Mapping, TypeVar, cast
+from typing import Any, Callable, Generic, Mapping, TypeVar, cast, overload
 from types import TracebackType
 from .codec import ValueCodecs, Codec, Candidate, _decode_preserving
 from .generated import JsonValue
@@ -1043,6 +1043,158 @@ class Hooks(BoundaryMixin):
         await self._notify(transport, note, result, backend_id or "injected")
         return deepcopy(result.diagnostics)
 
+    @overload
+    async def dispatch(
+        self,
+        event_name: str,
+        input: dict[str, Any],
+        *,
+        initial_state: dict[str, Any] | None = None,
+        capabilities: dict[str, Any] | None = None,
+        event_id: str | None = None,
+        content: ContentContext | None = None,
+        sources: ContentSources | None = None,
+        original_request: dict[str, Any] | None = None,
+        uploads: dict[str, Any] | None = None,
+        input_codec: None = None,
+        result_codec: None = None,
+        provenance_codec: None = None,
+        event_codecs: Mapping[tuple[str, ...], Codec[Any]] | None = None,
+    ) -> HookResult[object, object, object]: ...
+
+    @overload
+    async def dispatch(
+        self,
+        event_name: str,
+        input: dict[str, Any],
+        *,
+        initial_state: dict[str, Any] | None = None,
+        capabilities: dict[str, Any] | None = None,
+        event_id: str | None = None,
+        content: ContentContext | None = None,
+        sources: ContentSources | None = None,
+        original_request: dict[str, Any] | None = None,
+        uploads: dict[str, Any] | None = None,
+        input_codec: Codec[InputT],
+        result_codec: None = None,
+        provenance_codec: None = None,
+        event_codecs: Mapping[tuple[str, ...], Codec[Any]] | None = None,
+    ) -> HookResult[InputT, object, object]: ...
+
+    @overload
+    async def dispatch(
+        self,
+        event_name: str,
+        input: dict[str, Any],
+        *,
+        initial_state: dict[str, Any] | None = None,
+        capabilities: dict[str, Any] | None = None,
+        event_id: str | None = None,
+        content: ContentContext | None = None,
+        sources: ContentSources | None = None,
+        original_request: dict[str, Any] | None = None,
+        uploads: dict[str, Any] | None = None,
+        input_codec: None = None,
+        result_codec: Codec[ResultT],
+        provenance_codec: None = None,
+        event_codecs: Mapping[tuple[str, ...], Codec[Any]] | None = None,
+    ) -> HookResult[object, ResultT, object]: ...
+
+    @overload
+    async def dispatch(
+        self,
+        event_name: str,
+        input: dict[str, Any],
+        *,
+        initial_state: dict[str, Any] | None = None,
+        capabilities: dict[str, Any] | None = None,
+        event_id: str | None = None,
+        content: ContentContext | None = None,
+        sources: ContentSources | None = None,
+        original_request: dict[str, Any] | None = None,
+        uploads: dict[str, Any] | None = None,
+        input_codec: Codec[InputT],
+        result_codec: Codec[ResultT],
+        provenance_codec: None = None,
+        event_codecs: Mapping[tuple[str, ...], Codec[Any]] | None = None,
+    ) -> HookResult[InputT, ResultT, object]: ...
+
+    @overload
+    async def dispatch(
+        self,
+        event_name: str,
+        input: dict[str, Any],
+        *,
+        initial_state: dict[str, Any] | None = None,
+        capabilities: dict[str, Any] | None = None,
+        event_id: str | None = None,
+        content: ContentContext | None = None,
+        sources: ContentSources | None = None,
+        original_request: dict[str, Any] | None = None,
+        uploads: dict[str, Any] | None = None,
+        input_codec: None = None,
+        result_codec: None = None,
+        provenance_codec: Codec[ProvenanceT],
+        event_codecs: Mapping[tuple[str, ...], Codec[Any]] | None = None,
+    ) -> HookResult[object, object, ProvenanceT]: ...
+
+    @overload
+    async def dispatch(
+        self,
+        event_name: str,
+        input: dict[str, Any],
+        *,
+        initial_state: dict[str, Any] | None = None,
+        capabilities: dict[str, Any] | None = None,
+        event_id: str | None = None,
+        content: ContentContext | None = None,
+        sources: ContentSources | None = None,
+        original_request: dict[str, Any] | None = None,
+        uploads: dict[str, Any] | None = None,
+        input_codec: Codec[InputT],
+        result_codec: None = None,
+        provenance_codec: Codec[ProvenanceT],
+        event_codecs: Mapping[tuple[str, ...], Codec[Any]] | None = None,
+    ) -> HookResult[InputT, object, ProvenanceT]: ...
+
+    @overload
+    async def dispatch(
+        self,
+        event_name: str,
+        input: dict[str, Any],
+        *,
+        initial_state: dict[str, Any] | None = None,
+        capabilities: dict[str, Any] | None = None,
+        event_id: str | None = None,
+        content: ContentContext | None = None,
+        sources: ContentSources | None = None,
+        original_request: dict[str, Any] | None = None,
+        uploads: dict[str, Any] | None = None,
+        input_codec: None = None,
+        result_codec: Codec[ResultT],
+        provenance_codec: Codec[ProvenanceT],
+        event_codecs: Mapping[tuple[str, ...], Codec[Any]] | None = None,
+    ) -> HookResult[object, ResultT, ProvenanceT]: ...
+
+    @overload
+    async def dispatch(
+        self,
+        event_name: str,
+        input: dict[str, Any],
+        *,
+        initial_state: dict[str, Any] | None = None,
+        capabilities: dict[str, Any] | None = None,
+        event_id: str | None = None,
+        content: ContentContext | None = None,
+        sources: ContentSources | None = None,
+        original_request: dict[str, Any] | None = None,
+        uploads: dict[str, Any] | None = None,
+        input_codec: Codec[InputT],
+        result_codec: Codec[ResultT],
+        provenance_codec: Codec[ProvenanceT],
+        event_codecs: Mapping[tuple[str, ...], Codec[Any]] | None = None,
+    ) -> HookResult[InputT, ResultT, ProvenanceT]: ...
+
     @_owned_operation
     async def dispatch(
         self,
@@ -1056,11 +1208,11 @@ class Hooks(BoundaryMixin):
         sources: ContentSources | None = None,
         original_request: dict[str, Any] | None = None,
         uploads: dict[str, Any] | None = None,
-        input_codec: Codec[InputT] | None = None,
-        result_codec: Codec[ResultT] | None = None,
-        provenance_codec: Codec[ProvenanceT] | None = None,
+        input_codec: Codec[Any] | None = None,
+        result_codec: Codec[Any] | None = None,
+        provenance_codec: Codec[Any] | None = None,
         event_codecs: Mapping[tuple[str, ...], Codec[Any]] | None = None,
-    ) -> HookResult[InputT, ResultT, ProvenanceT]:
+    ) -> HookResult[Any, Any, Any]:
         await self._ensure_ready()
         value_codecs = ValueCodecs(
             input_codec, result_codec, provenance_codec, event_codecs

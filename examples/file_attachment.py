@@ -9,8 +9,7 @@ import sys
 
 import anyio
 
-from agenthooksprotocol.wire import JsonValue
-from agenthooksprotocol import HookResult, Attachment, Hooks
+from agenthooksprotocol import HookResult, Attachment, Hooks, TextParts
 from agenthooksprotocol.event import ContextCompactBeforeInput
 
 
@@ -70,7 +69,7 @@ async def main(path: Path) -> None:
             },
         },
     ) as hooks:
-        result: HookResult[JsonValue, JsonValue, JsonValue] = await hooks.context_compact_before(event)
+        result: HookResult[object, TextParts, object] = await hooks.context_compact_before(event)
         # No matching receiver: the file has not been opened.
     async with result:
         body = await result.attachments.read("context.compact.before.items_parts[0][1]")

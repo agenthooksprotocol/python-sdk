@@ -7,11 +7,14 @@ Ordinary host authorization and domain validation remain the caller's job.
 
 from __future__ import annotations
 
-from typing import Any, Callable, Generic, Mapping, TypeVar, cast
+from typing import Any, Callable, Generic, Mapping, TypeVar, cast, overload
 from types import TracebackType
 from .codec import ValueCodecs, Codec, Candidate, _decode_preserving
 from .generated import JsonValue
 from .response import ContextualResponse
+from .event import Event
+from . import _models as models
+from ._outcomes import SchemaCandidate, decode_event, decode_candidate, decode_response
 from .permission import Permission
 from .diagnostics import Code
 from ._diagnostics import (
@@ -254,11 +257,15 @@ ProvenanceT = TypeVar("ProvenanceT")
 
 @dataclass
 class HookResult(Generic[InputT, ResultT, ProvenanceT]):
-    """Raw committed wire state. Decoding never rolls back accepted effects."""
+    """Committed settlement with schema-owned typed consumer views.
 
-    event: dict[str, Any]
+    ``state`` stays raw for reducer compatibility. Host values use caller codecs;
+    decoding never rolls back accepted effects or grants host authorization.
+    """
+
+    event: Event
     state: dict[str, Any]
-    accepted_responses: list[dict[str, Any]] = field(default_factory=list)
+    accepted_responses: list[ContextualResponse] = field(default_factory=list)
     diagnostics: list[Diagnostic] = field(default_factory=list)
 
     attachments: AttachmentContents = field(
@@ -279,7 +286,7 @@ class HookResult(Generic[InputT, ResultT, ProvenanceT]):
 
     @property
     def decoded_candidate(self) -> Candidate[ResultT, ProvenanceT] | None:
-        candidate = self.candidate
+        candidate = self.schema_candidate
         if candidate is None:
             return None
         value = candidate["value"]
@@ -299,6 +306,21 @@ class HookResult(Generic[InputT, ResultT, ProvenanceT]):
         if "provenance" in candidate:
             decoded.provenance = cast(ProvenanceT, provenance)
         return decoded
+
+    @property
+    def has_result(self) -> bool:
+        """Distinguish a supplied null result from no deliverable result."""
+        return "result" in self.state
+
+    @property
+    def decoded_result(self) -> ResultT:
+        """Decode a present result; absence raises KeyError, not a null sentinel."""
+        value = deepcopy(self.state["result"])
+        if self._value_codecs.result is not None:
+            return _decode_preserving(self._value_codecs.result, value)
+        candidate = decode_candidate(self.event["type"], {"value": value})
+        assert candidate is not None
+        return cast(ResultT, candidate.value)
 
     async def aclose(self) -> None:
         await self.attachments.aclose()
@@ -330,15 +352,76 @@ class HookResult(Generic[InputT, ResultT, ProvenanceT]):
         return bool(self.state.get("interrupted", False))
 
     @property
-    def candidate(self) -> dict[str, Any] | None:
-        """Settled candidate, not authorization to deliver it."""
+    def candidate(self) -> SchemaCandidate | None:
+        """Schema-owned candidate envelope; presence is not delivery authority."""
+        return self.schema_candidate
+
+    @property
+    def raw_candidate(self) -> dict[str, Any] | None:
         return deepcopy(self.state.get("candidate"))
 
     @property
-    def accepted_response(self) -> dict[str, Any] | None:
+    def schema_candidate(self) -> SchemaCandidate | None:
+        return decode_candidate(self.event["type"], self.raw_candidate)
+
+    @property
+    def settled_event(self) -> Event:
+        """Typed effective event, including for low-level raw settlements."""
+        return decode_event(self.event)
+
+    @property
+    def raw_event(self) -> dict[str, Any]:
+        return deepcopy(dict(self.event))
+
+    @property
+    def messages(self) -> list[models.MessageEffect]:
+        """Diagnostic message effects, not conversational CanonicalMessages."""
+        return [models.MessageEffect(text=text) for text in self.state.get("messages", [])]
+
+    @property
+    def injections(self) -> list[models.InjectEffect]:
+        """Complete injection envelopes, including target and delivery timing."""
+        return [
+            models.InjectEffect.from_dict(deepcopy(value))
+            for value in self.state.get("injections", [])
+        ]
+
+    @property
+    def decoded_accepted_responses(self) -> list[ContextualResponse]:
+        """Accepted canonical envelopes in settlement order, detached from state."""
+        return [decode_response(self.event["type"], value) for value in self.accepted_responses]
+
+    @property
+    def accepted_response(self) -> ContextualResponse | None:
         return (
-            deepcopy(self.accepted_responses[-1]) if self.accepted_responses else None
+            decode_response(self.event["type"], self.accepted_responses[-1])
+            if self.accepted_responses else None
         )
+
+    @property
+    def raw_accepted_response(self) -> dict[str, Any] | None:
+        return deepcopy(dict(self.accepted_responses[-1])) if self.accepted_responses else None
+
+    @property
+    def raw_accepted_responses(self) -> list[dict[str, Any]]:
+        return [deepcopy(dict(value)) for value in self.accepted_responses]
+
+    def _decode_settlement(self) -> None:
+        # Stage every projection first. A failed decode is an error, not a
+        # failure-policy fallback or an apparently authorized partial result.
+        try:
+            event = self.settled_event
+            _ = self.schema_candidate
+            _ = self.messages
+            _ = self.injections
+            responses = self.decoded_accepted_responses
+            _ = self.decoded_input if self._value_codecs.input is not None else None
+            _ = self.decoded_candidate
+            _ = self.decoded_result if self.has_result else None
+        except Exception as exc:
+            raise SettlementDecodeError(self) from exc
+        self.event = event
+        self.accepted_responses = responses
 
     def decode_input(self, codec: Codec[T]) -> T:
         return codec.decode(self.input)
@@ -354,6 +437,17 @@ class HookResult(Generic[InputT, ResultT, ProvenanceT]):
 
     def decode_content(self, target: str, codec: Codec[T]) -> T:
         return codec.decode(deepcopy(self.state["content"][target]))
+
+
+class SettlementDecodeError(ProtocolError):
+    """Canonical settlement is retained, but no typed consumer outcome exists.
+
+    ``settlement`` is diagnostic committed wire state, not execution authority.
+    """
+
+    def __init__(self, settlement: HookResult[Any, Any, Any]) -> None:
+        super().__init__("Cannot decode committed settlement")
+        self.settlement = settlement
 
 
 class PendingInvocation:
@@ -548,6 +642,7 @@ class PendingInvocation:
         self.result._contextual_response = (
             None if fallback else self.contextual_response
         )
+        self.result._decode_settlement()
         return self.result
 
     def cancel(self) -> bool:
@@ -948,6 +1043,158 @@ class Hooks(BoundaryMixin):
         await self._notify(transport, note, result, backend_id or "injected")
         return deepcopy(result.diagnostics)
 
+    @overload
+    async def dispatch(
+        self,
+        event_name: str,
+        input: dict[str, Any],
+        *,
+        initial_state: dict[str, Any] | None = None,
+        capabilities: dict[str, Any] | None = None,
+        event_id: str | None = None,
+        content: ContentContext | None = None,
+        sources: ContentSources | None = None,
+        original_request: dict[str, Any] | None = None,
+        uploads: dict[str, Any] | None = None,
+        input_codec: None = None,
+        result_codec: None = None,
+        provenance_codec: None = None,
+        event_codecs: Mapping[tuple[str, ...], Codec[Any]] | None = None,
+    ) -> HookResult[object, object, object]: ...
+
+    @overload
+    async def dispatch(
+        self,
+        event_name: str,
+        input: dict[str, Any],
+        *,
+        initial_state: dict[str, Any] | None = None,
+        capabilities: dict[str, Any] | None = None,
+        event_id: str | None = None,
+        content: ContentContext | None = None,
+        sources: ContentSources | None = None,
+        original_request: dict[str, Any] | None = None,
+        uploads: dict[str, Any] | None = None,
+        input_codec: Codec[InputT],
+        result_codec: None = None,
+        provenance_codec: None = None,
+        event_codecs: Mapping[tuple[str, ...], Codec[Any]] | None = None,
+    ) -> HookResult[InputT, object, object]: ...
+
+    @overload
+    async def dispatch(
+        self,
+        event_name: str,
+        input: dict[str, Any],
+        *,
+        initial_state: dict[str, Any] | None = None,
+        capabilities: dict[str, Any] | None = None,
+        event_id: str | None = None,
+        content: ContentContext | None = None,
+        sources: ContentSources | None = None,
+        original_request: dict[str, Any] | None = None,
+        uploads: dict[str, Any] | None = None,
+        input_codec: None = None,
+        result_codec: Codec[ResultT],
+        provenance_codec: None = None,
+        event_codecs: Mapping[tuple[str, ...], Codec[Any]] | None = None,
+    ) -> HookResult[object, ResultT, object]: ...
+
+    @overload
+    async def dispatch(
+        self,
+        event_name: str,
+        input: dict[str, Any],
+        *,
+        initial_state: dict[str, Any] | None = None,
+        capabilities: dict[str, Any] | None = None,
+        event_id: str | None = None,
+        content: ContentContext | None = None,
+        sources: ContentSources | None = None,
+        original_request: dict[str, Any] | None = None,
+        uploads: dict[str, Any] | None = None,
+        input_codec: Codec[InputT],
+        result_codec: Codec[ResultT],
+        provenance_codec: None = None,
+        event_codecs: Mapping[tuple[str, ...], Codec[Any]] | None = None,
+    ) -> HookResult[InputT, ResultT, object]: ...
+
+    @overload
+    async def dispatch(
+        self,
+        event_name: str,
+        input: dict[str, Any],
+        *,
+        initial_state: dict[str, Any] | None = None,
+        capabilities: dict[str, Any] | None = None,
+        event_id: str | None = None,
+        content: ContentContext | None = None,
+        sources: ContentSources | None = None,
+        original_request: dict[str, Any] | None = None,
+        uploads: dict[str, Any] | None = None,
+        input_codec: None = None,
+        result_codec: None = None,
+        provenance_codec: Codec[ProvenanceT],
+        event_codecs: Mapping[tuple[str, ...], Codec[Any]] | None = None,
+    ) -> HookResult[object, object, ProvenanceT]: ...
+
+    @overload
+    async def dispatch(
+        self,
+        event_name: str,
+        input: dict[str, Any],
+        *,
+        initial_state: dict[str, Any] | None = None,
+        capabilities: dict[str, Any] | None = None,
+        event_id: str | None = None,
+        content: ContentContext | None = None,
+        sources: ContentSources | None = None,
+        original_request: dict[str, Any] | None = None,
+        uploads: dict[str, Any] | None = None,
+        input_codec: Codec[InputT],
+        result_codec: None = None,
+        provenance_codec: Codec[ProvenanceT],
+        event_codecs: Mapping[tuple[str, ...], Codec[Any]] | None = None,
+    ) -> HookResult[InputT, object, ProvenanceT]: ...
+
+    @overload
+    async def dispatch(
+        self,
+        event_name: str,
+        input: dict[str, Any],
+        *,
+        initial_state: dict[str, Any] | None = None,
+        capabilities: dict[str, Any] | None = None,
+        event_id: str | None = None,
+        content: ContentContext | None = None,
+        sources: ContentSources | None = None,
+        original_request: dict[str, Any] | None = None,
+        uploads: dict[str, Any] | None = None,
+        input_codec: None = None,
+        result_codec: Codec[ResultT],
+        provenance_codec: Codec[ProvenanceT],
+        event_codecs: Mapping[tuple[str, ...], Codec[Any]] | None = None,
+    ) -> HookResult[object, ResultT, ProvenanceT]: ...
+
+    @overload
+    async def dispatch(
+        self,
+        event_name: str,
+        input: dict[str, Any],
+        *,
+        initial_state: dict[str, Any] | None = None,
+        capabilities: dict[str, Any] | None = None,
+        event_id: str | None = None,
+        content: ContentContext | None = None,
+        sources: ContentSources | None = None,
+        original_request: dict[str, Any] | None = None,
+        uploads: dict[str, Any] | None = None,
+        input_codec: Codec[InputT],
+        result_codec: Codec[ResultT],
+        provenance_codec: Codec[ProvenanceT],
+        event_codecs: Mapping[tuple[str, ...], Codec[Any]] | None = None,
+    ) -> HookResult[InputT, ResultT, ProvenanceT]: ...
+
     @_owned_operation
     async def dispatch(
         self,
@@ -961,11 +1208,11 @@ class Hooks(BoundaryMixin):
         sources: ContentSources | None = None,
         original_request: dict[str, Any] | None = None,
         uploads: dict[str, Any] | None = None,
-        input_codec: Codec[InputT] | None = None,
-        result_codec: Codec[ResultT] | None = None,
-        provenance_codec: Codec[ProvenanceT] | None = None,
+        input_codec: Codec[Any] | None = None,
+        result_codec: Codec[Any] | None = None,
+        provenance_codec: Codec[Any] | None = None,
         event_codecs: Mapping[tuple[str, ...], Codec[Any]] | None = None,
-    ) -> HookResult[InputT, ResultT, ProvenanceT]:
+    ) -> HookResult[Any, Any, Any]:
         await self._ensure_ready()
         value_codecs = ValueCodecs(
             input_codec, result_codec, provenance_codec, event_codecs
@@ -1292,7 +1539,7 @@ class Hooks(BoundaryMixin):
                     halted = (
                         result.decision == "deny" or result.state.get("flow") == "stop"
                     )
-                except OperationCancelledError:
+                except (OperationCancelledError, SettlementDecodeError):
                     raise
                 except Exception as exc:
                     closed = (
@@ -1319,6 +1566,8 @@ class Hooks(BoundaryMixin):
                         result.state.pop("result", None)
                         result.state.pop("authorization", None)
                         halted = True
+        result._value_codecs = value_codecs
+        result._decode_settlement()
         for backend, subscription_index, subscription, transport in observers:
             await self._notify(
                 transport,

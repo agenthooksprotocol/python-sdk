@@ -5,7 +5,6 @@ from pathlib import Path
 import sys
 
 import anyio
-from agenthooksprotocol.wire import JsonValue
 from agenthooksprotocol import HookResult, Hooks, capability, event, tool
 
 
@@ -27,7 +26,7 @@ async def main() -> None:
             ),
         },
     ) as harness:
-        result: HookResult[JsonValue, JsonValue, JsonValue] = await harness.tool_before(
+        result: HookResult[object, object, object] = await harness.tool_before(
             event.ToolBeforeInput(
                 call_id="call-1",
                 path=tool.Path.NATIVE,

@@ -135,7 +135,7 @@ async def main() -> None:
             candidate = tool_result.decoded_candidate
             assert candidate is not None and candidate.value.contents == "Reviewed"
             form_result: HookResult[
-                wire.JsonValue, ElicitResult[Answer], wire.JsonValue
+                object, ElicitResult[Answer], object
             ] = await harness.user_elicitation_request(
                 {
                     "elicitation": {

@@ -33325,6 +33325,8 @@ WorkspaceChangeBeforeInputWorkspaceChange = WorkspaceChange
 WorkspaceChangeBeforeInputWorkspacePrior = WorkspaceChange
 WorkspaceChangeBeforeInterceptResponseResultExtensions = Extensions
 WorkspaceChangeBeforeModifyEffectValue = WorkspaceChange
+CanonicalMessages = list[CanonicalMessage]
+TextParts = list[TextBodyPart | TextGapPart | TextMetadataPart | TextOmittedPart]
 
 Event = (
     ConfigChangeAfterEvent
@@ -34640,6 +34642,8 @@ __all__ = [
     "WorkspaceChangeBeforeModifyEffect",
     "WorkspaceChangeBeforeModifyEffectValue",
     "Path",
+    "CanonicalMessages",
+    "TextParts",
     "Event",
     "ConfigChangeAfterInput",
     "ConfigChangeBeforeInput",

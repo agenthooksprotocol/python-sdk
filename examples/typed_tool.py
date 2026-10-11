@@ -73,7 +73,7 @@ async def main() -> None:
             },
             transport=transport,
         ) as harness:
-            result: HookResult[JsonValue, JsonValue, JsonValue] = await harness.tool_before(
+            result: HookResult[object, object, object] = await harness.tool_before(
                 event.ToolBeforeInput(
                     call_id="call-1",
                     path=tool.Path.NATIVE,

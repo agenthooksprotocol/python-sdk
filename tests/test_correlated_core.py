@@ -246,12 +246,14 @@ class CorrelatedCoreTests(unittest.TestCase):
                 }
             ],
         }
+        from test_interop import ROOT
+
         schema = os.environ.get(
-            "AHP_SCHEMA_DIR",
-            str(
-                Path(__file__).resolve().parents[2]
-                / "typed-contract-protocol/schema/draft"
-            ),
+            "AHP_SCHEMA_DIR", str(ROOT / "agent-hooks-protocol/schema/draft")
+        )
+        self.assertTrue(
+            (Path(schema) / "intercept-request.schema.json").is_file(),
+            "Canonical schema fixture is missing: " + schema,
         )
         process = subprocess.run(
             [

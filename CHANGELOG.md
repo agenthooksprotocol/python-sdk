@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.4.0](https://github.com/agenthooksprotocol/python-sdk/compare/v0.3.0...v0.4.0) (2026-10-11)
+
+
+### ⚠ BREAKING CHANGES
+
+* Consumer input and result APIs use domain names, and internal SDK assembly helpers are no longer exported.
+
+### Features
+
+* enforce typed operation contracts and clean public APIs ([094426c](https://github.com/agenthooksprotocol/python-sdk/commit/094426c2c7aae3f43268c0e51b14b5d8356efc5b))
+
 ## [0.3.0](https://github.com/agenthooksprotocol/python-sdk/compare/v0.2.0...v0.3.0) (2026-10-10)
 
 

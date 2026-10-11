@@ -46,14 +46,14 @@ class UnificationTests(unittest.TestCase):
         self.assertEqual(capability.observe().to_wire()["modes"], ["observe"])
         self.assertNotIn("elicitation", base.to_wire()["capabilities"])
 
-    def test_generated_flow_counts_are_safe_and_required(self):
+    def test_generated_flow_counts_are_integral_nonnegative_and_required(self):
         base = capability.intercept()
         for field in (
             "continuation_count",
             "remaining_continuations",
             "max_continuations",
         ):
-            for value in (-1, 9007199254740992, True, False, 0.5):
+            for value in (-1, True, False, 0.5):
                 with (
                     self.subTest(field=field, value=value),
                     self.assertRaises(ValueError),
@@ -62,7 +62,7 @@ class UnificationTests(unittest.TestCase):
         for counts in ({}, {"continuation_count": 0}, {"remaining_continuations": 0}):
             with self.subTest(counts=counts), self.assertRaises(ValueError):
                 base.flow(operations=["continue"], **counts)
-        for value in (0, 9007199254740991):
+        for value in (0, 9007199254740991, 9007199254740992, 10**100):
             caps = base.flow(
                 operations=["continue"],
                 continuation_count=value,

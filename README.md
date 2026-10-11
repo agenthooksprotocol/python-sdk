@@ -42,6 +42,7 @@ Capability builders are immutable: reusing a base declaration does not widen it.
 
 Runnable, statically checked consumer programs live in [`examples/`](examples):
 
+- `value_codecs.py`: independent argument/result/provenance codecs, admission-time invariants, and a form schema derived from its answer type.
 - `typed_tool.py`: JSON registration, generated tool input, typed grants, initial state, real in-process ASGI handler, borrowed HTTP client, and explicit application decoding.
 - `common_cases.py`: rewrite/allow, deny, invalid application shape, host policy, occurrence narrowing, native initial state, and fail-open/fail-closed reports. The host operation is an in-memory execution recorder, not a shell.
 - `stdio_tool.py` / `stdio_backend.py`: a real owned backend process using the same public Handler, denial, and child cleanup.
@@ -58,9 +59,15 @@ Generated constructors build JSON-shaped protocol values. Generated `TypedDict` 
 
 Capabilities explicitly grant effects and target operations. Supply event capabilities at harness construction; a per-occurrence capability override can narrow them, never widen them. `initial_state` carries the host's native prior decision for one occurrence. A hook-supplied result is a candidate, not an assertion that an operation executed. The host owns its ordinary input validation and actual execution.
 
+Supply `input_codec=`, `result_codec=`, and optional `provenance_codec=` to a named hook method or `dispatch` to declare caller types. Complete staged values are decoded and validated before publication. Object merge is shallow: omitted fields remain unchanged, literal null is retained, and nested values replace whole values. An invalid response publishes none of its effects; earlier accepted responses remain visible to later interceptors. A codec must preserve the wire data it receives, including opaque extra fields. Lossy serialization rejects admission rather than dropping fields.
+
+`result.decoded_input` exposes the declared argument value. `result.decoded_candidate` is an application `Candidate[Result, Provenance]`, or `None` when there is no candidate. Its value can itself be `None`; optional provenance is omitted from `candidate.to_dict()` when absent. Raw `input` and `candidate` views remain detached snapshots. For explicitly selected opaque host slots, use `event_codecs={("params",): codec}` with event-relative paths. Unspecified native, provider, task, permission, and discovery values are not interpreted.
+
+For forms, construct `PydanticFormContract(TypeAdapter(Answer))` from one answer declaration. `request(message)` derives the restricted MCP schema; `result_codec()` decodes the complete MCP result and its accepted answer while preserving opaque result metadata. Unsupported shapes and schema constraints are rejected during construction. Decline, cancel, and URL results have no form content. See [`examples/value_codecs.py`](examples/value_codecs.py).
+
 After settlement, explicitly decode effective input with `result.decode_input(codec)`. A codec implements `encode(value)` and `decode(json_value)`; `IdentityCodec` copies JSON. The optional `integrations.pydantic.PydanticCodec` accepts a Pydantic `TypeAdapter`. A decoding error does not retroactively reject protocol effects: retain the settled result, raw effective input, accepted responses, and diagnostics, and report host-level rejection without executing.
 
-`result.permission` is the generated `Permission` enum (`NONE`, `ALLOW`, `ASK`, `DENY`) read from canonical settlement, not an independent decision engine. `NONE` is not approval; `ASK` needs host approval; interruption never authorizes execution. `result.input` is detached accepted JSON, not a claim that backend modifications satisfy an application's original type. `decode_input(codec)` remains an explicit, post-settlement host check. Candidate, canonical event, accepted responses, and diagnostics remain accessible.
+`result.permission` is the generated `Permission` enum (`NONE`, `ALLOW`, `ASK`, `DENY`) read from canonical settlement, not an independent decision engine. `NONE` is not approval; `ASK` needs host approval; interruption never authorizes execution. `result.input` is detached accepted JSON. Declared codecs validate accepted modifications; without a declared codec, the host supplies application validation. `decode_input(codec)` remains an explicit, post-settlement host check. Candidate, canonical event, accepted responses, and diagnostics remain accessible.
 
 `state.initial(Permission.ALLOW)` represents a native decision **already made for this exact occurrence**, not an authorization shortcut. Its default candidate is absent (`null`); `state.Candidate(value=None)` instead means a supplied JSON-null result. Optional typed provenance records facts, not authenticated identity or execution proof. Canonical modifications still invalidate candidates/approval as specified.
 
@@ -155,7 +162,7 @@ snapshot; answer-object merge is shallow. Elicitation request bodies are immutab
 to modification effects. No text/JSON upload callback is needed. Metadata and omit selections
 cannot authorize body-dependent effects.
 
-For custom transports, `begin(canonical_request)` separates acquisition,
+For custom transports, `begin(canonical_request, value_codecs=ValueCodecs(...))` separates acquisition,
 cancellation, and acceptance; `exchange(canonical_request)` uses the same
 settlement engine. Elicitation correlation can be supplied through
 `ContentContext(original_request=..., bindings={"content": ("elicitation", "result")},
@@ -165,7 +172,7 @@ principal=authenticated_identity)` and `await pending.accept_content()`.
 
 Semantic namespaces (`event`, `tool`, `effect`, `capability`, and registration models) and all named event boundaries come from schema metadata, not a selected handwritten helper list. Constructors may supply fixed protocol literals; parsers never repair missing input. Open fields are retained for forward-compatible JSON round trips.
 
-The low-level `generated` module exports the full schema's typed models, `parse_<root>` / `encode_<root>` codecs, `PROTOCOL_VERSION`, `SCHEMA_REVISION`, and JSON types. `ahp-codegen.lock.json` records immutable generator provenance. Change canonical schemas and generator source in the protocol repository rather than editing generated files.
+The `wire` namespace exposes canonical JSON-shaped request, notification, effect, and response types with structural codecs. Server callbacks use these raw wire contracts. The low-level `generated` module exports the full schema's typed models, `parse_<root>` / `encode_<root>` codecs, `PROTOCOL_VERSION`, `SCHEMA_REVISION`, and JSON types. `ahp-codegen.lock.json` records immutable generator provenance. Change canonical schemas and generator source in the protocol repository rather than editing generated files.
 
 ## Development
 
@@ -187,8 +194,8 @@ attributes. `ModelVisibleItem` is a canonical message with a typed role and orde
 
 Facade objects are mappings with read-only attributes.
 Optional attributes return `None` when absent; mapping membership still records
-presence. Attributes conflicting with mapping methods use a trailing underscore
-(such as `items_`), so `dict.items()` keeps working. Wire parsers return lossless mappings, not hydrated facade instances.
+presence. Omitted and explicit-empty response effects are both neutral; decoded effects provide an empty list without modifying the source wire object. Attributes conflicting with mapping methods use a trailing underscore
+(such as `items_`), so `dict.items()` keeps working. Raw wire parsers return lossless mappings. `response.response_for_request(event_type, raw)` returns the generated contextual response selected by the originating event type, not by payload shape.
 
 Use generated nested models for typed constructor arguments. Wire constructors, dictionary decoding, and runtime parsing
 check location/evidence alternatives and other structural schema constraints. Application
@@ -222,13 +229,7 @@ the same structural descriptor engine as generated `parse_*` functions. The
 original composition is retained, including required members, explicit nulls,
 literals, closed enums, forbidden combinations, and union ambiguity. This is the
 SDK's structural contract, not complete contextual protocol validation.
-`from_dict` does not supply omitted wire literals or defaults. It validates once
-and privately hydrates nested typed models without recursively calling public
-constructors. For example, a decoded HTTP connection supports
-`connection.gaps[0].reason`, just like a constructed connection. Union selection
-reuses memoized descriptor checks from that decode; subtrees are not repeatedly
-validated during hydration. Extension/application values remain ordinary JSON
-values. Descriptors and hydration metadata are cached.
+`from_dict` checks complete wire values and preserves optional-field presence. Decoded known nested values expose the same attributes as constructed values, such as `connection.gaps[0].reason`. Extension and application bags remain intact and do not acquire effect or attachment authority.
 
 Invalid wire models raise `ValueError`; validation failures carry `result`,
 `diagnostics`, and `raw` attributes. Use `parse_*` when you need the full result on
@@ -246,12 +247,7 @@ objects are validated at the dispatch/parse boundary. Direct dictionary
 mutation, standard-library `json.loads`, TypedDict annotations, and type assertions
 are not SDK validation entrypoints. Re-parse after manually mutating a mapping.
 
-Wire constructors also privately hydrate nested mappings: for example,
-`capability.Capabilities(effects=["modify"], modify={}).modify.input` returns
-`None`, not an attribute error. Already typed child models retain their identity;
-plain nested mappings become typed models after the constructor's single cached
-validation pass. Family queries include all generated per-occurrence capability
-models, such as `capability.ToolBeforeCapabilities`.
+Nested model attributes expose declared protocol fields. For example, `capability.Capabilities(effects=["modify"], modify={}).modify.input` is `None` when that grant is absent. Family queries are available on generic and per-occurrence capability models.
 
 Constructor aliases cannot silently overwrite wire keys. Supplying both
 `tool_name=` and `toolName=` raises `TypeError`, even if the values agree. For
@@ -267,6 +263,8 @@ Use `Attachment.from_bytes(data)` for immutable Python `bytes`, or
 `Attachment.lazy(async_loader, aclose=async_cleanup)` to defer reading. Put
 `attachment` directly in an attachment part's `body`. Named `Hooks` methods
 accept both dictionary inputs and typed event inputs with the same owner.
+For a custom `OwnedContentSource`, use the host-only `content.OwnedAttachment(source)` wrapper in an attachment part's body. This wrapper does not read the source and is not a wire value. The SDK transfers and closes its source under the same invocation ownership rules.
+
 Metadata belongs on the part. See the runnable
 [file attachment example](examples/file_attachment.py).
 
@@ -297,9 +295,9 @@ matched subscriptions, including observers. One attachment owner is read once
 for multiple subscribers. Metadata, omit, and unmatched selections do not read
 or upload its bytes. Result reads and metadata-only delivery require no uploader.
 
-Only confirmed receipts are cached, for the exact attachment owner and backend
+Only confirmed receipts are reused, for the exact attachment owner and backend
 ID/subscription index. An uncalled interceptor receives a settled observation
-with its cached reference after denial or stop. Upload failures are handled by
+with its confirmed reference after denial or stop. Upload failures are handled by
 the affected subscription's failure policy when its delivery is reached; they
 do not prevent independent destinations from preparing their uploads. An upload
 can commit even if an earlier interceptor later removes the attachment or halts
@@ -315,3 +313,11 @@ not retained.
 
 Attachments are the sole byte owners. Binary/file editing is not supported.
 Results are invocation-local, not session archives.
+
+### Advanced validation and dispatch
+
+`runtime.Validator` validates bundled canonical schemas and structural codecs. It does not establish request correlation, effect grants, host approval, or permission to execute. Use `Hooks` for complete interception admission.
+
+`server.hooks.Engine` is the framework-neutral backend dispatcher. Supply an explicit validator or static harness manifest when needed. Engine callbacks return protocol effects; the receiving harness validates authority and settles them atomically.
+
+Host session counters (`turns`, `modelRequests`, `toolCalls`, `inputTokens`, `outputTokens`, and extra counter names) are exact nonnegative integers. The SDK preserves supplied values and does not infer counters from events.

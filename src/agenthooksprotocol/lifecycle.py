@@ -3,8 +3,11 @@
 from copy import deepcopy
 from hashlib import sha256
 from threading import RLock
-from .runtime import ProtocolError, apply_response, validate_intercept_response
+from .runtime import ProtocolError, _apply_response, _validate_intercept_response
 from .lineage import TaskLineage
+
+
+__all__ = ["Lifecycle"]
 
 
 class Lifecycle:
@@ -15,9 +18,13 @@ class Lifecycle:
         native_authorize=None,
         native_approve=None,
         include_staged=False,
+        validate_operation=None,
+        validate_candidate=None,
     ):
         self.validator = validator
         self.include_staged = include_staged
+        self.validate_operation = validate_operation
+        self.validate_candidate = validate_candidate
         self.native_authorize = native_authorize
         self.native_approve = native_approve
         self.accepting = {}
@@ -37,7 +44,6 @@ class Lifecycle:
                 raise ProtocolError("Retry changed logical request")
 
     def receive(self, request, response):
-        validate_intercept_response(self.validator, request, response)
         with self.lock:
             ident = request["id"]
             if (
@@ -48,7 +54,17 @@ class Lifecycle:
                 or ident in self.staged
             ):
                 return False
-            self.staged[ident] = deepcopy(response)
+            if "error" in response:
+                _validate_intercept_response(self.validator, request, response)
+            self.validator.validate("intercept-response", response)
+            try:
+                staged = _validate_intercept_response(self.validator, request, response)
+            except ProtocolError:
+                # Acquisition is not admission. Preserve a structurally valid
+                # reply for contextual rejection at acceptance; cancellation
+                # may retire it without ever applying its effects.
+                staged = response
+            self.staged[ident] = deepcopy(staged)
             return True
 
     def cancel(self, ident):
@@ -86,13 +102,15 @@ class Lifecycle:
             self.accepting[ident] = token
             request, response = deepcopy(self.pending[ident]), deepcopy(response)
         try:
-            state = apply_response(
+            state = _apply_response(
                 request,
                 response,
                 self.validator,
                 native_authorize=self.native_authorize,
                 native_approve=self.native_approve,
                 include_staged=self.include_staged,
+                validate_operation=self.validate_operation,
+                validate_candidate=self.validate_candidate,
                 content=content,
             )
         except BaseException:
@@ -224,7 +242,7 @@ class ContentStore:
         )
         params = notification["params"]
         with self.lock:
-            for item in content_items(params["event"]):
+            for item in _content_items(params["event"]):
                 self.validator.validate("content-item", item)
                 if "body" not in item:
                     continue
@@ -234,7 +252,7 @@ class ContentStore:
                     raise ProtocolError("Unauthorized or uncommitted content reference")
 
 
-def content_items(value):
+def _content_items(value):
     """Enumerate canonical part slots, never opaque host JSON."""
     from ._content import normalized_content_slots, normalized_values
 
@@ -242,7 +260,7 @@ def content_items(value):
     yield from normalized_values(value, paths)
 
 
-def dispatch_observations(event, subscriptions, called, prepare, notify):
+def _dispatch_observations(event, subscriptions, called, prepare, notify):
     """Deliver a settled boundary as one caller-owned synchronous operation.
 
     Subscriptions are the matching, authorized subscriptions. ``called`` contains

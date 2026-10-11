@@ -15,6 +15,7 @@ from . import ContentSelection as Selection
 from . import ContentSelectionText as Text
 from . import ContentUpload as Upload
 from . import ContentUploadReceipt as UploadReceipt
+from . import ContentSelectionValue as Value
 from . import ContentSelectionVideo as Video
 
 __all__ = [
@@ -34,5 +35,6 @@ __all__ = [
     "Text",
     "Upload",
     "UploadReceipt",
+    "Value",
     "Video",
 ]

@@ -67,13 +67,13 @@ async def main() -> None:
         # Only this reference belongs in an event; the receipt confirms upload.
         body_reference = reference(receipt)
         assert set(body_reference) == {"ref"}
-        assert store.blobs[("upload-principal", receipt["ref"])] == data
+        assert store.blobs[("upload-principal", receipt.ref)] == data
         assert reads == 1
         print(
             json.dumps(
                 {
-                    "size": receipt["size"],
-                    "sha256": receipt["sha256"],
+                    "size": receipt.size,
+                    "sha256": receipt.sha256,
                     "verified": True,
                     "committed": True,
                     "bodyReads": reads,

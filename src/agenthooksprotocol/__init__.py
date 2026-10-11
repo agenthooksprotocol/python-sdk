@@ -33,11 +33,18 @@ from .content import (
     OwnedContentSource as OwnedContentSource,
     ContentSources as ContentSources,
 )
-from .codec import Codec as Codec, IdentityCodec as IdentityCodec
+from .codec import (
+    ValueCodecs as ValueCodecs,
+    Codec as Codec,
+    IdentityCodec as IdentityCodec,
+    Candidate as Candidate,
+)
 from .runtime import (
     ProtocolError as ProtocolError,
     OperationCancelledError as OperationCancelledError,
 )
+
+wire = generated
 
 __all__ = list(_model_names) + [
     "Attachment",
@@ -65,6 +72,9 @@ __all__ = list(_model_names) + [
     "PendingInvocation",
     "ProtocolError",
     "Codec",
+    "ValueCodecs",
+    "Candidate",
     "IdentityCodec",
     "generated",
+    "wire",
 ]

@@ -70,9 +70,25 @@ ParseResult: TypeAlias = ParseSuccess[T] | ParseFailure
 SCHEMA_REVISION: Final[str] = "draft"
 PROTOCOL_VERSION: Final[str] = "draft"
 
+# Source: schema/draft/effect.schema.json#/$defs/AllowEffect
+_AllowEffectKnownFields = TypedDict(
+    "_AllowEffectKnownFields", {"type": Required[Literal["allow"]]}, total=False
+)
+AllowEffect: TypeAlias = (
+    _AllowEffectKnownFields | JsonObject
+)  # permits additional JSON fields
+
+# Source: schema/draft/effect.schema.json#/$defs/AskEffect
+_AskEffectKnownFields = TypedDict(
+    "_AskEffectKnownFields", {"type": Required[Literal["ask"]]}, total=False
+)
+AskEffect: TypeAlias = (
+    _AskEffectKnownFields | JsonObject
+)  # permits additional JSON fields
+
 # Source: schema/draft/content-item.schema.json#/$defs/attachmentBodyPart
-AttachmentBodyPart = TypedDict(
-    "AttachmentBodyPart",
+_AttachmentBodyPartKnownFields = TypedDict(
+    "_AttachmentBodyPartKnownFields",
     {
         "body": Required["ContentReference"],
         "category": NotRequired[str],
@@ -84,15 +100,21 @@ AttachmentBodyPart = TypedDict(
     },
     total=False,
 )
+AttachmentBodyPart: TypeAlias = (
+    _AttachmentBodyPartKnownFields | JsonObject
+)  # permits additional JSON fields
 
 # Source: schema/draft/content-item.schema.json#/$defs/attachmentGapPart
-_AttachmentGapPartField1GapModel = TypedDict(
-    "_AttachmentGapPartField1GapModel",
+__AttachmentGapPartField1GapModelKnownFields = TypedDict(
+    "__AttachmentGapPartField1GapModelKnownFields",
     {"path": NotRequired[str], "reason": Required[str]},
     total=False,
 )
-AttachmentGapPart = TypedDict(
-    "AttachmentGapPart",
+_AttachmentGapPartField1GapModel: TypeAlias = (
+    __AttachmentGapPartField1GapModelKnownFields | JsonObject
+)  # permits additional JSON fields
+_AttachmentGapPartKnownFields = TypedDict(
+    "_AttachmentGapPartKnownFields",
     {
         "category": NotRequired[str],
         "gap": Required[_AttachmentGapPartField1GapModel],
@@ -106,10 +128,13 @@ AttachmentGapPart = TypedDict(
     },
     total=False,
 )
+AttachmentGapPart: TypeAlias = (
+    _AttachmentGapPartKnownFields | JsonObject
+)  # permits additional JSON fields
 
 # Source: schema/draft/content-item.schema.json#/$defs/attachmentMetadataPart
-AttachmentMetadataPart = TypedDict(
-    "AttachmentMetadataPart",
+_AttachmentMetadataPartKnownFields = TypedDict(
+    "_AttachmentMetadataPartKnownFields",
     {
         "category": NotRequired[str],
         "id": Required[str],
@@ -122,10 +147,13 @@ AttachmentMetadataPart = TypedDict(
     },
     total=False,
 )
+AttachmentMetadataPart: TypeAlias = (
+    _AttachmentMetadataPartKnownFields | JsonObject
+)  # permits additional JSON fields
 
 # Source: schema/draft/content-item.schema.json#/$defs/attachmentOmittedPart
-AttachmentOmittedPart = TypedDict(
-    "AttachmentOmittedPart",
+_AttachmentOmittedPartKnownFields = TypedDict(
+    "_AttachmentOmittedPartKnownFields",
     {
         "category": NotRequired[str],
         "id": Required[str],
@@ -138,6 +166,9 @@ AttachmentOmittedPart = TypedDict(
     },
     total=False,
 )
+AttachmentOmittedPart: TypeAlias = (
+    _AttachmentOmittedPartKnownFields | JsonObject
+)  # permits additional JSON fields
 
 # Source: schema/draft/registration.schema.json#/$defs/authentication
 __AuthenticationBearerModelKnownFields = TypedDict(
@@ -186,8 +217,8 @@ _BackendKnownFields = TypedDict(
 Backend: TypeAlias = _BackendKnownFields | JsonObject  # permits additional JSON fields
 
 # Source: schema/draft/content-item.schema.json#/$defs/message
-CanonicalMessage = TypedDict(
-    "CanonicalMessage",
+_CanonicalMessageKnownFields = TypedDict(
+    "_CanonicalMessageKnownFields",
     {
         "id": Required[str],
         "parts": Required[list["ContentItem"]],
@@ -196,6 +227,9 @@ CanonicalMessage = TypedDict(
     },
     total=False,
 )
+CanonicalMessage: TypeAlias = (
+    _CanonicalMessageKnownFields | JsonObject
+)  # permits additional JSON fields
 
 # Source: schema/draft/content-item.schema.json#/$defs/messages
 CanonicalMessages: TypeAlias = list["CanonicalMessage"]
@@ -538,8 +572,8 @@ _ConfigChangeAfterEventField12ChangeField0McpServersItemModel: TypeAlias = (
     __ConfigChangeAfterEventField12ChangeField0McpServersItemModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-_ConfigChangeAfterEventField12ChangeModel = TypedDict(
-    "_ConfigChangeAfterEventField12ChangeModel",
+__ConfigChangeAfterEventField12ChangeModelKnownFields = TypedDict(
+    "__ConfigChangeAfterEventField12ChangeModelKnownFields",
     {
         "mcpServers": NotRequired[
             list[_ConfigChangeAfterEventField12ChangeField0McpServersItemModel]
@@ -552,6 +586,9 @@ _ConfigChangeAfterEventField12ChangeModel = TypedDict(
     },
     total=False,
 )
+_ConfigChangeAfterEventField12ChangeModel: TypeAlias = (
+    __ConfigChangeAfterEventField12ChangeModelKnownFields | JsonObject
+)  # permits additional JSON fields
 _ConfigChangeAfterEventKnownFields = TypedDict(
     "_ConfigChangeAfterEventKnownFields",
     {
@@ -776,6 +813,11 @@ ConfigChangeBeforeCapabilities: TypeAlias = (
     _ConfigChangeBeforeCapabilitiesKnownFields | JsonObject
 )  # permits additional JSON fields
 
+# Source: schema/draft/intercept-response.schema.json#/$defs/ConfigChangeBeforeEffect
+ConfigChangeBeforeEffect: TypeAlias = Union[
+    "DenyEffect", "MessageEffect", UnknownVariant
+]
+
 # Source: schema/draft/catalogue-event.schema.json#/$defs/config.change.before
 __ConfigChangeBeforeEventField1GapsItemModelKnownFields = TypedDict(
     "__ConfigChangeBeforeEventField1GapsItemModelKnownFields",
@@ -793,8 +835,8 @@ __ConfigChangeBeforeEventField10TurnModelKnownFields = TypedDict(
 _ConfigChangeBeforeEventField10TurnModel: TypeAlias = (
     __ConfigChangeBeforeEventField10TurnModelKnownFields | JsonObject
 )  # permits additional JSON fields
-_ConfigChangeBeforeEventField12ChangeModel = TypedDict(
-    "_ConfigChangeBeforeEventField12ChangeModel",
+__ConfigChangeBeforeEventField12ChangeModelKnownFields = TypedDict(
+    "__ConfigChangeBeforeEventField12ChangeModelKnownFields",
     {
         "path": NotRequired[str],
         "scope": Required[str],
@@ -804,6 +846,9 @@ _ConfigChangeBeforeEventField12ChangeModel = TypedDict(
     },
     total=False,
 )
+_ConfigChangeBeforeEventField12ChangeModel: TypeAlias = (
+    __ConfigChangeBeforeEventField12ChangeModelKnownFields | JsonObject
+)  # permits additional JSON fields
 _ConfigChangeBeforeEventKnownFields = TypedDict(
     "_ConfigChangeBeforeEventKnownFields",
     {
@@ -827,6 +872,32 @@ ConfigChangeBeforeEvent: TypeAlias = (
     _ConfigChangeBeforeEventKnownFields | JsonObject
 )  # permits additional JSON fields
 
+# Source: schema/draft/intercept-response.schema.json#/$defs/ConfigChangeBeforeInterceptResponse
+__ConfigChangeBeforeInterceptResponseField2ResultModelKnownFields = TypedDict(
+    "__ConfigChangeBeforeInterceptResponseField2ResultModelKnownFields",
+    {
+        "effects": NotRequired[list["ConfigChangeBeforeEffect"]],
+        "extensions": NotRequired["Extensions"],
+        "protocolVersion": Required["ProtocolVersion"],
+    },
+    total=False,
+)
+_ConfigChangeBeforeInterceptResponseField2ResultModel: TypeAlias = (
+    __ConfigChangeBeforeInterceptResponseField2ResultModelKnownFields | JsonObject
+)  # permits additional JSON fields
+_ConfigChangeBeforeInterceptResponseKnownFields = TypedDict(
+    "_ConfigChangeBeforeInterceptResponseKnownFields",
+    {
+        "id": Required["JsonRpcResponseId"],
+        "jsonrpc": Required[Literal["2.0"]],
+        "result": Required[_ConfigChangeBeforeInterceptResponseField2ResultModel],
+    },
+    total=False,
+)
+ConfigChangeBeforeInterceptResponse: TypeAlias = (
+    _ConfigChangeBeforeInterceptResponseKnownFields | JsonObject
+)  # permits additional JSON fields
+
 # Source: schema/draft/content-item.schema.json#
 ContentItem: TypeAlias = Union[
     "TextBodyPart",
@@ -840,7 +911,12 @@ ContentItem: TypeAlias = Union[
 ]
 
 # Source: schema/draft/content-reference.schema.json#
-ContentReference = TypedDict("ContentReference", {"ref": Required[str]}, total=False)
+_ContentReferenceKnownFields = TypedDict(
+    "_ContentReferenceKnownFields", {"ref": Required[str]}, total=False
+)
+ContentReference: TypeAlias = (
+    _ContentReferenceKnownFields | JsonObject
+)  # permits additional JSON fields
 
 # Source: schema/draft/content-selection.schema.json#
 _ContentSelectionKnownFields = TypedDict(
@@ -857,7 +933,7 @@ _ContentSelectionKnownFields = TypedDict(
     total=False,
 )
 ContentSelection: TypeAlias = (
-    _ContentSelectionKnownFields | JsonObject
+    _ContentSelectionKnownFields | dict[str, OpenString]
 )  # permits additional JSON fields
 
 # Source: schema/draft/content-upload.schema.json#
@@ -876,11 +952,14 @@ ContentUpload: TypeAlias = (
 )  # permits additional JSON fields
 
 # Source: schema/draft/content-upload-receipt.schema.json#
-ContentUploadReceipt = TypedDict(
-    "ContentUploadReceipt",
+_ContentUploadReceiptKnownFields = TypedDict(
+    "_ContentUploadReceiptKnownFields",
     {"ref": Required[str], "sha256": Required[str], "size": Required[int | Decimal]},
     total=False,
 )
+ContentUploadReceipt: TypeAlias = (
+    _ContentUploadReceiptKnownFields | JsonObject
+)  # permits additional JSON fields
 
 # Source: schema/draft/capabilities.schema.json#/$defs/context.compact.after
 __ContextCompactAfterCapabilitiesField1ElicitationField0FormModelKnownFields = (
@@ -1088,8 +1167,54 @@ ContextCompactAfterCapabilities: TypeAlias = (
     _ContextCompactAfterCapabilitiesKnownFields | JsonObject
 )  # permits additional JSON fields
 
+# Source: schema/draft/intercept-response.schema.json#/$defs/ContextCompactAfterEffect
+ContextCompactAfterEffect: TypeAlias = Union[
+    "InjectEffect", "ContextCompactAfterModifyEffect", "MessageEffect", UnknownVariant
+]
+
 # Source: schema/draft/catalogue-event.schema.json#/$defs/context.compact.after
 ContextCompactAfterEvent: TypeAlias = "ExecutionEventContextCompactAfter"
+
+# Source: schema/draft/intercept-response.schema.json#/$defs/ContextCompactAfterInterceptResponse
+__ContextCompactAfterInterceptResponseField2ResultModelKnownFields = TypedDict(
+    "__ContextCompactAfterInterceptResponseField2ResultModelKnownFields",
+    {
+        "effects": NotRequired[list["ContextCompactAfterEffect"]],
+        "extensions": NotRequired["Extensions"],
+        "protocolVersion": Required["ProtocolVersion"],
+    },
+    total=False,
+)
+_ContextCompactAfterInterceptResponseField2ResultModel: TypeAlias = (
+    __ContextCompactAfterInterceptResponseField2ResultModelKnownFields | JsonObject
+)  # permits additional JSON fields
+_ContextCompactAfterInterceptResponseKnownFields = TypedDict(
+    "_ContextCompactAfterInterceptResponseKnownFields",
+    {
+        "id": Required["JsonRpcResponseId"],
+        "jsonrpc": Required[Literal["2.0"]],
+        "result": Required[_ContextCompactAfterInterceptResponseField2ResultModel],
+    },
+    total=False,
+)
+ContextCompactAfterInterceptResponse: TypeAlias = (
+    _ContextCompactAfterInterceptResponseKnownFields | JsonObject
+)  # permits additional JSON fields
+
+# Source: schema/draft/intercept-response.schema.json#/$defs/ContextCompactAfterModifyEffect
+_ContextCompactAfterModifyEffectKnownFields = TypedDict(
+    "_ContextCompactAfterModifyEffectKnownFields",
+    {
+        "operation": Required[Union[Literal["replace"], Literal["merge"]]],
+        "target": Required[Literal["summary"]],
+        "type": Required[Literal["modify"]],
+        "value": Required["TextParts"],
+    },
+    total=False,
+)
+ContextCompactAfterModifyEffect: TypeAlias = (
+    _ContextCompactAfterModifyEffectKnownFields | JsonObject
+)  # permits additional JSON fields
 
 # Source: schema/draft/capabilities.schema.json#/$defs/context.compact.before
 __ContextCompactBeforeCapabilitiesField1ElicitationField0FormModelKnownFields = (
@@ -1301,12 +1426,77 @@ ContextCompactBeforeCapabilities: TypeAlias = (
     _ContextCompactBeforeCapabilitiesKnownFields | JsonObject
 )  # permits additional JSON fields
 
+# Source: schema/draft/intercept-response.schema.json#/$defs/ContextCompactBeforeEffect
+ContextCompactBeforeEffect: TypeAlias = Union[
+    "DenyEffect",
+    "ContextCompactBeforeModifyEffect",
+    "ReturnTextEffect",
+    "InjectEffect",
+    "MessageEffect",
+    UnknownVariant,
+]
+
 # Source: schema/draft/catalogue-event.schema.json#/$defs/context.compact.before
 ContextCompactBeforeEvent: TypeAlias = "ExecutionEventContextCompactBefore"
 
+# Source: schema/draft/intercept-response.schema.json#/$defs/ContextCompactBeforeInterceptResponse
+__ContextCompactBeforeInterceptResponseField2ResultModelKnownFields = TypedDict(
+    "__ContextCompactBeforeInterceptResponseField2ResultModelKnownFields",
+    {
+        "effects": NotRequired[list["ContextCompactBeforeEffect"]],
+        "extensions": NotRequired["Extensions"],
+        "protocolVersion": Required["ProtocolVersion"],
+    },
+    total=False,
+)
+_ContextCompactBeforeInterceptResponseField2ResultModel: TypeAlias = (
+    __ContextCompactBeforeInterceptResponseField2ResultModelKnownFields | JsonObject
+)  # permits additional JSON fields
+_ContextCompactBeforeInterceptResponseKnownFields = TypedDict(
+    "_ContextCompactBeforeInterceptResponseKnownFields",
+    {
+        "id": Required["JsonRpcResponseId"],
+        "jsonrpc": Required[Literal["2.0"]],
+        "result": Required[_ContextCompactBeforeInterceptResponseField2ResultModel],
+    },
+    total=False,
+)
+ContextCompactBeforeInterceptResponse: TypeAlias = (
+    _ContextCompactBeforeInterceptResponseKnownFields | JsonObject
+)  # permits additional JSON fields
+
+# Source: schema/draft/intercept-response.schema.json#/$defs/ContextCompactBeforeModifyEffect
+_ContextCompactBeforeModifyEffectKnownFields = TypedDict(
+    "_ContextCompactBeforeModifyEffectKnownFields",
+    {
+        "operation": Required[Union[Literal["replace"], Literal["merge"]]],
+        "target": Required[Literal["instructions"]],
+        "type": Required[Literal["modify"]],
+        "value": Required["TextParts"],
+    },
+    total=False,
+)
+ContextCompactBeforeModifyEffect: TypeAlias = (
+    _ContextCompactBeforeModifyEffectKnownFields | JsonObject
+)  # permits additional JSON fields
+
+# Source: schema/draft/effect.schema.json#/$defs/ContinueFlowEffect
+_ContinueFlowEffectKnownFields = TypedDict(
+    "_ContinueFlowEffectKnownFields",
+    {
+        "instruction": NotRequired[str],
+        "operation": Required[Literal["continue"]],
+        "type": Required[Literal["flow"]],
+    },
+    total=False,
+)
+ContinueFlowEffect: TypeAlias = (
+    _ContinueFlowEffectKnownFields | JsonObject
+)  # permits additional JSON fields
+
 # Source: schema/draft/deny-effect.schema.json#
-DenyEffect = TypedDict(
-    "DenyEffect",
+_DenyEffectKnownFields = TypedDict(
+    "_DenyEffectKnownFields",
     {
         "code": NotRequired[str],
         "extensions": NotRequired["Extensions"],
@@ -1315,74 +1505,61 @@ DenyEffect = TypedDict(
     },
     total=False,
 )
+DenyEffect: TypeAlias = (
+    _DenyEffectKnownFields | JsonObject
+)  # permits additional JSON fields
 
 # Source: schema/draft/effect.schema.json#
-_EffectAllowModel = TypedDict(
-    "_EffectAllowModel", {"type": Required[Literal["allow"]]}, total=False
-)
-_EffectAskModel = TypedDict(
-    "_EffectAskModel", {"type": Required[Literal["ask"]]}, total=False
-)
-_EffectModifyModel = TypedDict(
-    "_EffectModifyModel",
-    {
-        "operation": Required[OpenString],
-        "target": Required[OpenString],
-        "type": Required[Literal["modify"]],
-        "value": Required[JsonValue],
-    },
-    total=False,
-)
-_EffectMessageModel = TypedDict(
-    "_EffectMessageModel",
-    {"text": Required[str], "type": Required[Literal["message"]]},
-    total=False,
-)
-_EffectReturnModel = TypedDict(
-    "_EffectReturnModel",
-    {"type": Required[Literal["return"]], "value": Required[JsonValue]},
-    total=False,
-)
-_EffectFlowStopModel = TypedDict(
-    "_EffectFlowStopModel",
-    {
-        "operation": Required[Literal["stop"]],
-        "reason": Required[str],
-        "type": Required[Literal["flow"]],
-    },
-    total=False,
-)
-_EffectFlowContinueModel = TypedDict(
-    "_EffectFlowContinueModel",
-    {
-        "instruction": NotRequired[str],
-        "operation": Required[Literal["continue"]],
-        "type": Required[Literal["flow"]],
-    },
-    total=False,
-)
-_EffectInjectAppendContextModel = TypedDict(
-    "_EffectInjectAppendContextModel",
-    {
-        "deliverAt": Required[OpenString],
-        "operation": Required[Literal["append"]],
-        "target": Required[Literal["context"]],
-        "type": Required[Literal["inject"]],
-        "value": Required["CanonicalMessages"],
-    },
-    total=False,
-)
 Effect: TypeAlias = Union[
     "DenyEffect",
-    _EffectAllowModel,
-    _EffectAskModel,
-    _EffectModifyModel,
-    _EffectMessageModel,
-    _EffectReturnModel,
-    _EffectFlowStopModel,
-    _EffectFlowContinueModel,
-    _EffectInjectAppendContextModel,
+    "AllowEffect",
+    "AskEffect",
+    "ModifyMessagesEffect",
+    "ModifyTextEffect",
+    "ModifyWorkspaceEffect",
+    "ModifyFormEffect",
+    "ModifyInputEffect",
+    "MessageEffect",
+    "ReturnToolEffect",
+    "StopFlowEffect",
+    "ContinueFlowEffect",
+    "InjectEffect",
 ]
+
+# Source: schema/draft/intercept-request.schema.json#/$defs/ElicitResultCandidate
+__ElicitResultCandidateField0ProvenanceModelKnownFields = TypedDict(
+    "__ElicitResultCandidateField0ProvenanceModelKnownFields", {}, total=False
+)
+_ElicitResultCandidateField0ProvenanceModel: TypeAlias = (
+    __ElicitResultCandidateField0ProvenanceModelKnownFields | JsonObject
+)  # permits additional JSON fields
+_ElicitResultCandidateKnownFields = TypedDict(
+    "_ElicitResultCandidateKnownFields",
+    {
+        "provenance": NotRequired[_ElicitResultCandidateField0ProvenanceModel],
+        "value": Required["McpElicitationElicitResult"],
+    },
+    total=False,
+)
+ElicitResultCandidate: TypeAlias = (
+    _ElicitResultCandidateKnownFields | JsonObject
+)  # permits additional JSON fields
+
+# Source: schema/draft/intercept-request.schema.json#/$defs/ElicitResultState
+_ElicitResultStateKnownFields = TypedDict(
+    "_ElicitResultStateKnownFields",
+    {
+        "candidate": Required[Union[None, "ElicitResultCandidate"]],
+        "flow": NotRequired[OpenString],
+        "injections": NotRequired[list["InjectEffect"]],
+        "instructions": NotRequired[list[str]],
+        "permission": Required[OpenString],
+    },
+    total=False,
+)
+ElicitResultState: TypeAlias = (
+    _ElicitResultStateKnownFields | JsonObject
+)  # permits additional JSON fields
 
 # Source: schema/draft/event.schema.json#
 Event: TypeAlias = Union[
@@ -1442,8 +1619,8 @@ ExecutionEvent: TypeAlias = Union[
 ]
 
 # Source: schema/draft/execution-event.schema.json#/$defs/attempt
-ExecutionEventAttempt = TypedDict(
-    "ExecutionEventAttempt",
+_ExecutionEventAttemptKnownFields = TypedDict(
+    "_ExecutionEventAttemptKnownFields",
     {
         "id": Required[str],
         "number": Required[int | Decimal],
@@ -1451,10 +1628,13 @@ ExecutionEventAttempt = TypedDict(
     },
     total=False,
 )
+ExecutionEventAttempt: TypeAlias = (
+    _ExecutionEventAttemptKnownFields | JsonObject
+)  # permits additional JSON fields
 
 # Source: schema/draft/execution-event.schema.json#/$defs/attemptUsage
-_ExecutionEventAttemptusageField3CostModel = TypedDict(
-    "_ExecutionEventAttemptusageField3CostModel",
+__ExecutionEventAttemptusageField3CostModelKnownFields = TypedDict(
+    "__ExecutionEventAttemptusageField3CostModelKnownFields",
     {
         "amount": Required[int | float | Decimal],
         "basis": Required[OpenString],
@@ -1462,6 +1642,9 @@ _ExecutionEventAttemptusageField3CostModel = TypedDict(
     },
     total=False,
 )
+_ExecutionEventAttemptusageField3CostModel: TypeAlias = (
+    __ExecutionEventAttemptusageField3CostModelKnownFields | JsonObject
+)  # permits additional JSON fields
 _ExecutionEventAttemptusageKnownFields = TypedDict(
     "_ExecutionEventAttemptusageKnownFields",
     {
@@ -1482,8 +1665,8 @@ ExecutionEventAttemptusage: TypeAlias = (
 )  # permits additional JSON fields
 
 # Source: schema/draft/execution-event.schema.json#/$defs/batch
-ExecutionEventBatch = TypedDict(
-    "ExecutionEventBatch",
+_ExecutionEventBatchKnownFields = TypedDict(
+    "_ExecutionEventBatchKnownFields",
     {
         "callIds": Required[list[str]],
         "id": Required[str],
@@ -1491,6 +1674,9 @@ ExecutionEventBatch = TypedDict(
     },
     total=False,
 )
+ExecutionEventBatch: TypeAlias = (
+    _ExecutionEventBatchKnownFields | JsonObject
+)  # permits additional JSON fields
 
 # Source: schema/draft/execution-event.schema.json#/$defs/context.compact.after
 __ExecutionEventContextCompactAfterField2GapsItemModelKnownFields = TypedDict(
@@ -1501,16 +1687,22 @@ __ExecutionEventContextCompactAfterField2GapsItemModelKnownFields = TypedDict(
 _ExecutionEventContextCompactAfterField2GapsItemModel: TypeAlias = (
     __ExecutionEventContextCompactAfterField2GapsItemModelKnownFields | JsonObject
 )  # permits additional JSON fields
-_ExecutionEventContextCompactAfterField7RemovedItemModel = TypedDict(
-    "_ExecutionEventContextCompactAfterField7RemovedItemModel",
+__ExecutionEventContextCompactAfterField7RemovedItemModelKnownFields = TypedDict(
+    "__ExecutionEventContextCompactAfterField7RemovedItemModelKnownFields",
     {"id": Required[str]},
     total=False,
 )
-_ExecutionEventContextCompactAfterField14TurnModel = TypedDict(
-    "_ExecutionEventContextCompactAfterField14TurnModel",
+_ExecutionEventContextCompactAfterField7RemovedItemModel: TypeAlias = (
+    __ExecutionEventContextCompactAfterField7RemovedItemModelKnownFields | JsonObject
+)  # permits additional JSON fields
+__ExecutionEventContextCompactAfterField14TurnModelKnownFields = TypedDict(
+    "__ExecutionEventContextCompactAfterField14TurnModelKnownFields",
     {"id": Required[str], "synthesized": NotRequired[bool]},
     total=False,
 )
+_ExecutionEventContextCompactAfterField14TurnModel: TypeAlias = (
+    __ExecutionEventContextCompactAfterField14TurnModelKnownFields | JsonObject
+)  # permits additional JSON fields
 _ExecutionEventContextCompactAfterKnownFields = TypedDict(
     "_ExecutionEventContextCompactAfterKnownFields",
     {
@@ -1550,11 +1742,14 @@ __ExecutionEventContextCompactBeforeField1GapsItemModelKnownFields = TypedDict(
 _ExecutionEventContextCompactBeforeField1GapsItemModel: TypeAlias = (
     __ExecutionEventContextCompactBeforeField1GapsItemModelKnownFields | JsonObject
 )  # permits additional JSON fields
-_ExecutionEventContextCompactBeforeField13TurnModel = TypedDict(
-    "_ExecutionEventContextCompactBeforeField13TurnModel",
+__ExecutionEventContextCompactBeforeField13TurnModelKnownFields = TypedDict(
+    "__ExecutionEventContextCompactBeforeField13TurnModelKnownFields",
     {"id": Required[str], "synthesized": NotRequired[bool]},
     total=False,
 )
+_ExecutionEventContextCompactBeforeField13TurnModel: TypeAlias = (
+    __ExecutionEventContextCompactBeforeField13TurnModelKnownFields | JsonObject
+)  # permits additional JSON fields
 _ExecutionEventContextCompactBeforeKnownFields = TypedDict(
     "_ExecutionEventContextCompactBeforeKnownFields",
     {
@@ -1583,8 +1778,8 @@ ExecutionEventContextCompactBefore: TypeAlias = (
 )  # permits additional JSON fields
 
 # Source: schema/draft/execution-event.schema.json#/$defs/error
-ExecutionEventError = TypedDict(
-    "ExecutionEventError",
+_ExecutionEventErrorKnownFields = TypedDict(
+    "_ExecutionEventErrorKnownFields",
     {
         "class": Required[str],
         "code": NotRequired[str],
@@ -1594,23 +1789,32 @@ ExecutionEventError = TypedDict(
     },
     total=False,
 )
+ExecutionEventError: TypeAlias = (
+    _ExecutionEventErrorKnownFields | JsonObject
+)  # permits additional JSON fields
 
 # Source: schema/draft/execution-event.schema.json#/$defs/execution
-_ExecutionEventExecutionExecutedModel = TypedDict(
-    "_ExecutionEventExecutionExecutedModel",
+__ExecutionEventExecutionExecutedModelKnownFields = TypedDict(
+    "__ExecutionEventExecutionExecutedModelKnownFields",
     {"status": Required[Literal["executed"]]},
     total=False,
 )
-_ExecutionEventExecutionSkippedSuppliedResultModel = TypedDict(
-    "_ExecutionEventExecutionSkippedSuppliedResultModel",
+_ExecutionEventExecutionExecutedModel: TypeAlias = (
+    __ExecutionEventExecutionExecutedModelKnownFields | JsonObject
+)  # permits additional JSON fields
+__ExecutionEventExecutionSkippedSuppliedResultModelKnownFields = TypedDict(
+    "__ExecutionEventExecutionSkippedSuppliedResultModelKnownFields",
     {
         "reason": Required[Literal["supplied_result"]],
         "status": Required[Literal["skipped"]],
     },
     total=False,
 )
-_ExecutionEventExecutionSkippedPolicyModel = TypedDict(
-    "_ExecutionEventExecutionSkippedPolicyModel",
+_ExecutionEventExecutionSkippedSuppliedResultModel: TypeAlias = (
+    __ExecutionEventExecutionSkippedSuppliedResultModelKnownFields | JsonObject
+)  # permits additional JSON fields
+__ExecutionEventExecutionSkippedPolicyModelKnownFields = TypedDict(
+    "__ExecutionEventExecutionSkippedPolicyModelKnownFields",
     {
         "detail": NotRequired[str],
         "reason": Required[Literal["policy"]],
@@ -1618,8 +1822,11 @@ _ExecutionEventExecutionSkippedPolicyModel = TypedDict(
     },
     total=False,
 )
-_ExecutionEventExecutionSkippedCancelledModel = TypedDict(
-    "_ExecutionEventExecutionSkippedCancelledModel",
+_ExecutionEventExecutionSkippedPolicyModel: TypeAlias = (
+    __ExecutionEventExecutionSkippedPolicyModelKnownFields | JsonObject
+)  # permits additional JSON fields
+__ExecutionEventExecutionSkippedCancelledModelKnownFields = TypedDict(
+    "__ExecutionEventExecutionSkippedCancelledModelKnownFields",
     {
         "detail": NotRequired[str],
         "reason": Required[Literal["cancelled"]],
@@ -1627,8 +1834,11 @@ _ExecutionEventExecutionSkippedCancelledModel = TypedDict(
     },
     total=False,
 )
-_ExecutionEventExecutionSkippedTimeoutModel = TypedDict(
-    "_ExecutionEventExecutionSkippedTimeoutModel",
+_ExecutionEventExecutionSkippedCancelledModel: TypeAlias = (
+    __ExecutionEventExecutionSkippedCancelledModelKnownFields | JsonObject
+)  # permits additional JSON fields
+__ExecutionEventExecutionSkippedTimeoutModelKnownFields = TypedDict(
+    "__ExecutionEventExecutionSkippedTimeoutModelKnownFields",
     {
         "detail": NotRequired[str],
         "reason": Required[Literal["timeout"]],
@@ -1636,8 +1846,11 @@ _ExecutionEventExecutionSkippedTimeoutModel = TypedDict(
     },
     total=False,
 )
-_ExecutionEventExecutionSkippedOtherModel = TypedDict(
-    "_ExecutionEventExecutionSkippedOtherModel",
+_ExecutionEventExecutionSkippedTimeoutModel: TypeAlias = (
+    __ExecutionEventExecutionSkippedTimeoutModelKnownFields | JsonObject
+)  # permits additional JSON fields
+__ExecutionEventExecutionSkippedOtherModelKnownFields = TypedDict(
+    "__ExecutionEventExecutionSkippedOtherModelKnownFields",
     {
         "detail": NotRequired[str],
         "reason": Required[Literal["other"]],
@@ -1645,6 +1858,9 @@ _ExecutionEventExecutionSkippedOtherModel = TypedDict(
     },
     total=False,
 )
+_ExecutionEventExecutionSkippedOtherModel: TypeAlias = (
+    __ExecutionEventExecutionSkippedOtherModelKnownFields | JsonObject
+)  # permits additional JSON fields
 ExecutionEventExecution: TypeAlias = Union[
     _ExecutionEventExecutionExecutedModel,
     _ExecutionEventExecutionSkippedSuppliedResultModel,
@@ -1655,8 +1871,8 @@ ExecutionEventExecution: TypeAlias = Union[
 ]
 
 # Source: schema/draft/execution-event.schema.json#/$defs/fileChange
-ExecutionEventFilechange = TypedDict(
-    "ExecutionEventFilechange",
+_ExecutionEventFilechangeKnownFields = TypedDict(
+    "_ExecutionEventFilechangeKnownFields",
     {
         "after": NotRequired["ContentItem"],
         "before": NotRequired["ContentItem"],
@@ -1666,15 +1882,21 @@ ExecutionEventFilechange = TypedDict(
     },
     total=False,
 )
+ExecutionEventFilechange: TypeAlias = (
+    _ExecutionEventFilechangeKnownFields | JsonObject
+)  # permits additional JSON fields
 
 # Source: schema/draft/execution-event.schema.json#/$defs/mcp
-_ExecutionEventMcpField0ConnectionHttpField0GapsItemModel = TypedDict(
-    "_ExecutionEventMcpField0ConnectionHttpField0GapsItemModel",
+__ExecutionEventMcpField0ConnectionHttpField0GapsItemModelKnownFields = TypedDict(
+    "__ExecutionEventMcpField0ConnectionHttpField0GapsItemModelKnownFields",
     {"path": Required[str], "reason": Required[str]},
     total=False,
 )
-_ExecutionEventMcpField0ConnectionHttpModel = TypedDict(
-    "_ExecutionEventMcpField0ConnectionHttpModel",
+_ExecutionEventMcpField0ConnectionHttpField0GapsItemModel: TypeAlias = (
+    __ExecutionEventMcpField0ConnectionHttpField0GapsItemModelKnownFields | JsonObject
+)  # permits additional JSON fields
+__ExecutionEventMcpField0ConnectionHttpModelKnownFields = TypedDict(
+    "__ExecutionEventMcpField0ConnectionHttpModelKnownFields",
     {
         "gaps": NotRequired[
             list[_ExecutionEventMcpField0ConnectionHttpField0GapsItemModel]
@@ -1684,13 +1906,19 @@ _ExecutionEventMcpField0ConnectionHttpModel = TypedDict(
     },
     total=False,
 )
-_ExecutionEventMcpField0ConnectionSseField0GapsItemModel = TypedDict(
-    "_ExecutionEventMcpField0ConnectionSseField0GapsItemModel",
+_ExecutionEventMcpField0ConnectionHttpModel: TypeAlias = (
+    __ExecutionEventMcpField0ConnectionHttpModelKnownFields | JsonObject
+)  # permits additional JSON fields
+__ExecutionEventMcpField0ConnectionSseField0GapsItemModelKnownFields = TypedDict(
+    "__ExecutionEventMcpField0ConnectionSseField0GapsItemModelKnownFields",
     {"path": Required[str], "reason": Required[str]},
     total=False,
 )
-_ExecutionEventMcpField0ConnectionSseModel = TypedDict(
-    "_ExecutionEventMcpField0ConnectionSseModel",
+_ExecutionEventMcpField0ConnectionSseField0GapsItemModel: TypeAlias = (
+    __ExecutionEventMcpField0ConnectionSseField0GapsItemModelKnownFields | JsonObject
+)  # permits additional JSON fields
+__ExecutionEventMcpField0ConnectionSseModelKnownFields = TypedDict(
+    "__ExecutionEventMcpField0ConnectionSseModelKnownFields",
     {
         "gaps": NotRequired[
             list[_ExecutionEventMcpField0ConnectionSseField0GapsItemModel]
@@ -1700,13 +1928,19 @@ _ExecutionEventMcpField0ConnectionSseModel = TypedDict(
     },
     total=False,
 )
-_ExecutionEventMcpField0ConnectionStdioField3GapsItemModel = TypedDict(
-    "_ExecutionEventMcpField0ConnectionStdioField3GapsItemModel",
+_ExecutionEventMcpField0ConnectionSseModel: TypeAlias = (
+    __ExecutionEventMcpField0ConnectionSseModelKnownFields | JsonObject
+)  # permits additional JSON fields
+__ExecutionEventMcpField0ConnectionStdioField3GapsItemModelKnownFields = TypedDict(
+    "__ExecutionEventMcpField0ConnectionStdioField3GapsItemModelKnownFields",
     {"path": Required[str], "reason": Required[str]},
     total=False,
 )
-_ExecutionEventMcpField0ConnectionStdioModel = TypedDict(
-    "_ExecutionEventMcpField0ConnectionStdioModel",
+_ExecutionEventMcpField0ConnectionStdioField3GapsItemModel: TypeAlias = (
+    __ExecutionEventMcpField0ConnectionStdioField3GapsItemModelKnownFields | JsonObject
+)  # permits additional JSON fields
+__ExecutionEventMcpField0ConnectionStdioModelKnownFields = TypedDict(
+    "__ExecutionEventMcpField0ConnectionStdioModelKnownFields",
     {
         "args": NotRequired[list[str]],
         "command": NotRequired[str],
@@ -1718,13 +1952,20 @@ _ExecutionEventMcpField0ConnectionStdioModel = TypedDict(
     },
     total=False,
 )
-_ExecutionEventMcpField0ConnectionCustomTransportField2GapsItemModel = TypedDict(
-    "_ExecutionEventMcpField0ConnectionCustomTransportField2GapsItemModel",
+_ExecutionEventMcpField0ConnectionStdioModel: TypeAlias = (
+    __ExecutionEventMcpField0ConnectionStdioModelKnownFields | JsonObject
+)  # permits additional JSON fields
+__ExecutionEventMcpField0ConnectionCustomTransportField2GapsItemModelKnownFields = TypedDict(
+    "__ExecutionEventMcpField0ConnectionCustomTransportField2GapsItemModelKnownFields",
     {"path": Required[str], "reason": Required[str]},
     total=False,
 )
-_ExecutionEventMcpField0ConnectionCustomTransportModel = TypedDict(
-    "_ExecutionEventMcpField0ConnectionCustomTransportModel",
+_ExecutionEventMcpField0ConnectionCustomTransportField2GapsItemModel: TypeAlias = (
+    __ExecutionEventMcpField0ConnectionCustomTransportField2GapsItemModelKnownFields
+    | JsonObject
+)  # permits additional JSON fields
+__ExecutionEventMcpField0ConnectionCustomTransportModelKnownFields = TypedDict(
+    "__ExecutionEventMcpField0ConnectionCustomTransportModelKnownFields",
     {
         "address": NotRequired[str],
         "addressForm": NotRequired[str],
@@ -1735,13 +1976,19 @@ _ExecutionEventMcpField0ConnectionCustomTransportModel = TypedDict(
     },
     total=False,
 )
-_ExecutionEventMcpField2ServerModel = TypedDict(
-    "_ExecutionEventMcpField2ServerModel",
+_ExecutionEventMcpField0ConnectionCustomTransportModel: TypeAlias = (
+    __ExecutionEventMcpField0ConnectionCustomTransportModelKnownFields | JsonObject
+)  # permits additional JSON fields
+__ExecutionEventMcpField2ServerModelKnownFields = TypedDict(
+    "__ExecutionEventMcpField2ServerModelKnownFields",
     {"id": Required[str], "name": NotRequired[str]},
     total=False,
 )
-ExecutionEventMcp = TypedDict(
-    "ExecutionEventMcp",
+_ExecutionEventMcpField2ServerModel: TypeAlias = (
+    __ExecutionEventMcpField2ServerModelKnownFields | JsonObject
+)  # permits additional JSON fields
+_ExecutionEventMcpKnownFields = TypedDict(
+    "_ExecutionEventMcpKnownFields",
     {
         "connection": Required[
             Union[
@@ -1758,11 +2005,19 @@ ExecutionEventMcp = TypedDict(
     },
     total=False,
 )
+ExecutionEventMcp: TypeAlias = (
+    _ExecutionEventMcpKnownFields | JsonObject
+)  # permits additional JSON fields
 
 # Source: schema/draft/execution-event.schema.json#/$defs/model
-ExecutionEventModel = TypedDict(
-    "ExecutionEventModel", {"id": Required[str], "provider": Required[str]}, total=False
+_ExecutionEventModelKnownFields = TypedDict(
+    "_ExecutionEventModelKnownFields",
+    {"id": Required[str], "provider": Required[str]},
+    total=False,
 )
+ExecutionEventModel: TypeAlias = (
+    _ExecutionEventModelKnownFields | JsonObject
+)  # permits additional JSON fields
 
 # Source: schema/draft/execution-event.schema.json#/$defs/model.error
 __ExecutionEventModelErrorField2ExecutionExecutedModelKnownFields = TypedDict(
@@ -1842,11 +2097,14 @@ __ExecutionEventModelErrorField4GapsItemModelKnownFields = TypedDict(
 _ExecutionEventModelErrorField4GapsItemModel: TypeAlias = (
     __ExecutionEventModelErrorField4GapsItemModelKnownFields | JsonObject
 )  # permits additional JSON fields
-_ExecutionEventModelErrorField16TurnModel = TypedDict(
-    "_ExecutionEventModelErrorField16TurnModel",
+__ExecutionEventModelErrorField16TurnModelKnownFields = TypedDict(
+    "__ExecutionEventModelErrorField16TurnModelKnownFields",
     {"id": Required[str], "synthesized": NotRequired[bool]},
     total=False,
 )
+_ExecutionEventModelErrorField16TurnModel: TypeAlias = (
+    __ExecutionEventModelErrorField16TurnModelKnownFields | JsonObject
+)  # permits additional JSON fields
 _ExecutionEventModelErrorKnownFields = TypedDict(
     "_ExecutionEventModelErrorKnownFields",
     {
@@ -1900,11 +2158,14 @@ __ExecutionEventModelRequestBeforeField7ParamsModelKnownFields = TypedDict(
 _ExecutionEventModelRequestBeforeField7ParamsModel: TypeAlias = (
     __ExecutionEventModelRequestBeforeField7ParamsModelKnownFields | JsonObject
 )  # permits additional JSON fields
-_ExecutionEventModelRequestBeforeField13TurnModel = TypedDict(
-    "_ExecutionEventModelRequestBeforeField13TurnModel",
+__ExecutionEventModelRequestBeforeField13TurnModelKnownFields = TypedDict(
+    "__ExecutionEventModelRequestBeforeField13TurnModelKnownFields",
     {"id": Required[str], "synthesized": NotRequired[bool]},
     total=False,
 )
+_ExecutionEventModelRequestBeforeField13TurnModel: TypeAlias = (
+    __ExecutionEventModelRequestBeforeField13TurnModelKnownFields | JsonObject
+)  # permits additional JSON fields
 _ExecutionEventModelRequestBeforeKnownFields = TypedDict(
     "_ExecutionEventModelRequestBeforeKnownFields",
     {
@@ -1939,11 +2200,14 @@ __ExecutionEventModelResponseAfterField4GapsItemModelKnownFields = TypedDict(
 _ExecutionEventModelResponseAfterField4GapsItemModel: TypeAlias = (
     __ExecutionEventModelResponseAfterField4GapsItemModelKnownFields | JsonObject
 )  # permits additional JSON fields
-_ExecutionEventModelResponseAfterField15TurnModel = TypedDict(
-    "_ExecutionEventModelResponseAfterField15TurnModel",
+__ExecutionEventModelResponseAfterField15TurnModelKnownFields = TypedDict(
+    "__ExecutionEventModelResponseAfterField15TurnModelKnownFields",
     {"id": Required[str], "synthesized": NotRequired[bool]},
     total=False,
 )
+_ExecutionEventModelResponseAfterField15TurnModel: TypeAlias = (
+    __ExecutionEventModelResponseAfterField15TurnModelKnownFields | JsonObject
+)  # permits additional JSON fields
 _ExecutionEventModelResponseAfterKnownFields = TypedDict(
     "_ExecutionEventModelResponseAfterKnownFields",
     {
@@ -1981,11 +2245,14 @@ __ExecutionEventModelSwitchAfterField2GapsItemModelKnownFields = TypedDict(
 _ExecutionEventModelSwitchAfterField2GapsItemModel: TypeAlias = (
     __ExecutionEventModelSwitchAfterField2GapsItemModelKnownFields | JsonObject
 )  # permits additional JSON fields
-_ExecutionEventModelSwitchAfterField13TurnModel = TypedDict(
-    "_ExecutionEventModelSwitchAfterField13TurnModel",
+__ExecutionEventModelSwitchAfterField13TurnModelKnownFields = TypedDict(
+    "__ExecutionEventModelSwitchAfterField13TurnModelKnownFields",
     {"id": Required[str], "synthesized": NotRequired[bool]},
     total=False,
 )
+_ExecutionEventModelSwitchAfterField13TurnModel: TypeAlias = (
+    __ExecutionEventModelSwitchAfterField13TurnModelKnownFields | JsonObject
+)  # permits additional JSON fields
 _ExecutionEventModelSwitchAfterKnownFields = TypedDict(
     "_ExecutionEventModelSwitchAfterKnownFields",
     {
@@ -2020,8 +2287,8 @@ __ExecutionEventModelSwitchBeforeField2GapsItemModelKnownFields = TypedDict(
 _ExecutionEventModelSwitchBeforeField2GapsItemModel: TypeAlias = (
     __ExecutionEventModelSwitchBeforeField2GapsItemModelKnownFields | JsonObject
 )  # permits additional JSON fields
-_ExecutionEventModelSwitchBeforeField7PricingModel = TypedDict(
-    "_ExecutionEventModelSwitchBeforeField7PricingModel",
+__ExecutionEventModelSwitchBeforeField7PricingModelKnownFields = TypedDict(
+    "__ExecutionEventModelSwitchBeforeField7PricingModelKnownFields",
     {
         "currency": Required[str],
         "inputPerMillionTokens": NotRequired[int | float | Decimal],
@@ -2029,11 +2296,17 @@ _ExecutionEventModelSwitchBeforeField7PricingModel = TypedDict(
     },
     total=False,
 )
-_ExecutionEventModelSwitchBeforeField14TurnModel = TypedDict(
-    "_ExecutionEventModelSwitchBeforeField14TurnModel",
+_ExecutionEventModelSwitchBeforeField7PricingModel: TypeAlias = (
+    __ExecutionEventModelSwitchBeforeField7PricingModelKnownFields | JsonObject
+)  # permits additional JSON fields
+__ExecutionEventModelSwitchBeforeField14TurnModelKnownFields = TypedDict(
+    "__ExecutionEventModelSwitchBeforeField14TurnModelKnownFields",
     {"id": Required[str], "synthesized": NotRequired[bool]},
     total=False,
 )
+_ExecutionEventModelSwitchBeforeField14TurnModel: TypeAlias = (
+    __ExecutionEventModelSwitchBeforeField14TurnModelKnownFields | JsonObject
+)  # permits additional JSON fields
 _ExecutionEventModelSwitchBeforeKnownFields = TypedDict(
     "_ExecutionEventModelSwitchBeforeKnownFields",
     {
@@ -2061,11 +2334,14 @@ ExecutionEventModelSwitchBefore: TypeAlias = (
 )  # permits additional JSON fields
 
 # Source: schema/draft/execution-event.schema.json#/$defs/tokenCounts
-ExecutionEventTokencounts = TypedDict(
-    "ExecutionEventTokencounts",
+_ExecutionEventTokencountsKnownFields = TypedDict(
+    "_ExecutionEventTokencountsKnownFields",
     {"after": NotRequired[int | Decimal], "before": NotRequired[int | Decimal]},
     total=False,
 )
+ExecutionEventTokencounts: TypeAlias = (
+    _ExecutionEventTokencountsKnownFields | JsonObject
+)  # permits additional JSON fields
 
 # Source: schema/draft/execution-event.schema.json#/$defs/tool
 __ExecutionEventToolField0InputModelKnownFields = TypedDict(
@@ -2074,8 +2350,8 @@ __ExecutionEventToolField0InputModelKnownFields = TypedDict(
 _ExecutionEventToolField0InputModel: TypeAlias = (
     __ExecutionEventToolField0InputModelKnownFields | JsonObject
 )  # permits additional JSON fields
-ExecutionEventTool = TypedDict(
-    "ExecutionEventTool",
+_ExecutionEventToolKnownFields = TypedDict(
+    "_ExecutionEventToolKnownFields",
     {
         "input": Required[_ExecutionEventToolField0InputModel],
         "kind": NotRequired[str],
@@ -2085,20 +2361,29 @@ ExecutionEventTool = TypedDict(
     },
     total=False,
 )
+ExecutionEventTool: TypeAlias = (
+    _ExecutionEventToolKnownFields | JsonObject
+)  # permits additional JSON fields
 
 # Source: schema/draft/execution-event.schema.json#/$defs/tool.batch.after
-_ExecutionEventToolBatchAfterField0BatchModel = TypedDict(
-    "_ExecutionEventToolBatchAfterField0BatchModel",
+__ExecutionEventToolBatchAfterField0BatchModelKnownFields = TypedDict(
+    "__ExecutionEventToolBatchAfterField0BatchModelKnownFields",
     {"id": Required[str], "synthesized": NotRequired[bool]},
     total=False,
 )
-_ExecutionEventToolBatchAfterField1CallsItemField1CallModel = TypedDict(
-    "_ExecutionEventToolBatchAfterField1CallsItemField1CallModel",
+_ExecutionEventToolBatchAfterField0BatchModel: TypeAlias = (
+    __ExecutionEventToolBatchAfterField0BatchModelKnownFields | JsonObject
+)  # permits additional JSON fields
+__ExecutionEventToolBatchAfterField1CallsItemField1CallModelKnownFields = TypedDict(
+    "__ExecutionEventToolBatchAfterField1CallsItemField1CallModelKnownFields",
     {"id": Required[str], "synthesized": NotRequired[bool]},
     total=False,
 )
-_ExecutionEventToolBatchAfterField1CallsItemModel = TypedDict(
-    "_ExecutionEventToolBatchAfterField1CallsItemModel",
+_ExecutionEventToolBatchAfterField1CallsItemField1CallModel: TypeAlias = (
+    __ExecutionEventToolBatchAfterField1CallsItemField1CallModelKnownFields | JsonObject
+)  # permits additional JSON fields
+__ExecutionEventToolBatchAfterField1CallsItemModelKnownFields = TypedDict(
+    "__ExecutionEventToolBatchAfterField1CallsItemModelKnownFields",
     {
         "batch": NotRequired["ExecutionEventBatch"],
         "call": Required[_ExecutionEventToolBatchAfterField1CallsItemField1CallModel],
@@ -2109,6 +2394,9 @@ _ExecutionEventToolBatchAfterField1CallsItemModel = TypedDict(
     },
     total=False,
 )
+_ExecutionEventToolBatchAfterField1CallsItemModel: TypeAlias = (
+    __ExecutionEventToolBatchAfterField1CallsItemModelKnownFields | JsonObject
+)  # permits additional JSON fields
 __ExecutionEventToolBatchAfterField3GapsItemModelKnownFields = TypedDict(
     "__ExecutionEventToolBatchAfterField3GapsItemModelKnownFields",
     {"path": Required[str], "reason": Required[str]},
@@ -2117,11 +2405,14 @@ __ExecutionEventToolBatchAfterField3GapsItemModelKnownFields = TypedDict(
 _ExecutionEventToolBatchAfterField3GapsItemModel: TypeAlias = (
     __ExecutionEventToolBatchAfterField3GapsItemModelKnownFields | JsonObject
 )  # permits additional JSON fields
-_ExecutionEventToolBatchAfterField12TurnModel = TypedDict(
-    "_ExecutionEventToolBatchAfterField12TurnModel",
+__ExecutionEventToolBatchAfterField12TurnModelKnownFields = TypedDict(
+    "__ExecutionEventToolBatchAfterField12TurnModelKnownFields",
     {"id": Required[str], "synthesized": NotRequired[bool]},
     total=False,
 )
+_ExecutionEventToolBatchAfterField12TurnModel: TypeAlias = (
+    __ExecutionEventToolBatchAfterField12TurnModelKnownFields | JsonObject
+)  # permits additional JSON fields
 _ExecutionEventToolBatchAfterKnownFields = TypedDict(
     "_ExecutionEventToolBatchAfterKnownFields",
     {
@@ -2147,11 +2438,14 @@ ExecutionEventToolBatchAfter: TypeAlias = (
 )  # permits additional JSON fields
 
 # Source: schema/draft/execution-event.schema.json#/$defs/tool.permission.request
-_ExecutionEventToolPermissionRequestField1CallModel = TypedDict(
-    "_ExecutionEventToolPermissionRequestField1CallModel",
+__ExecutionEventToolPermissionRequestField1CallModelKnownFields = TypedDict(
+    "__ExecutionEventToolPermissionRequestField1CallModelKnownFields",
     {"id": Required[str], "synthesized": NotRequired[bool]},
     total=False,
 )
+_ExecutionEventToolPermissionRequestField1CallModel: TypeAlias = (
+    __ExecutionEventToolPermissionRequestField1CallModelKnownFields | JsonObject
+)  # permits additional JSON fields
 __ExecutionEventToolPermissionRequestField3GapsItemModelKnownFields = TypedDict(
     "__ExecutionEventToolPermissionRequestField3GapsItemModelKnownFields",
     {"path": Required[str], "reason": Required[str]},
@@ -2169,11 +2463,14 @@ _ExecutionEventToolPermissionRequestField12SuggestionsItemModel: TypeAlias = (
     __ExecutionEventToolPermissionRequestField12SuggestionsItemModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-_ExecutionEventToolPermissionRequestField16TurnModel = TypedDict(
-    "_ExecutionEventToolPermissionRequestField16TurnModel",
+__ExecutionEventToolPermissionRequestField16TurnModelKnownFields = TypedDict(
+    "__ExecutionEventToolPermissionRequestField16TurnModelKnownFields",
     {"id": Required[str], "synthesized": NotRequired[bool]},
     total=False,
 )
+_ExecutionEventToolPermissionRequestField16TurnModel: TypeAlias = (
+    __ExecutionEventToolPermissionRequestField16TurnModelKnownFields | JsonObject
+)  # permits additional JSON fields
 _ExecutionEventToolPermissionRequestKnownFields = TypedDict(
     "_ExecutionEventToolPermissionRequestKnownFields",
     {
@@ -2207,11 +2504,14 @@ ExecutionEventToolPermissionRequest: TypeAlias = (
 )  # permits additional JSON fields
 
 # Source: schema/draft/execution-event.schema.json#/$defs/tool.permission.resolved
-_ExecutionEventToolPermissionResolvedField1CallModel = TypedDict(
-    "_ExecutionEventToolPermissionResolvedField1CallModel",
+__ExecutionEventToolPermissionResolvedField1CallModelKnownFields = TypedDict(
+    "__ExecutionEventToolPermissionResolvedField1CallModelKnownFields",
     {"id": Required[str], "synthesized": NotRequired[bool]},
     total=False,
 )
+_ExecutionEventToolPermissionResolvedField1CallModel: TypeAlias = (
+    __ExecutionEventToolPermissionResolvedField1CallModelKnownFields | JsonObject
+)  # permits additional JSON fields
 __ExecutionEventToolPermissionResolvedField5GapsItemModelKnownFields = TypedDict(
     "__ExecutionEventToolPermissionResolvedField5GapsItemModelKnownFields",
     {"path": Required[str], "reason": Required[str]},
@@ -2220,11 +2520,14 @@ __ExecutionEventToolPermissionResolvedField5GapsItemModelKnownFields = TypedDict
 _ExecutionEventToolPermissionResolvedField5GapsItemModel: TypeAlias = (
     __ExecutionEventToolPermissionResolvedField5GapsItemModelKnownFields | JsonObject
 )  # permits additional JSON fields
-_ExecutionEventToolPermissionResolvedField16TurnModel = TypedDict(
-    "_ExecutionEventToolPermissionResolvedField16TurnModel",
+__ExecutionEventToolPermissionResolvedField16TurnModelKnownFields = TypedDict(
+    "__ExecutionEventToolPermissionResolvedField16TurnModelKnownFields",
     {"id": Required[str], "synthesized": NotRequired[bool]},
     total=False,
 )
+_ExecutionEventToolPermissionResolvedField16TurnModel: TypeAlias = (
+    __ExecutionEventToolPermissionResolvedField16TurnModelKnownFields | JsonObject
+)  # permits additional JSON fields
 _ExecutionEventToolPermissionResolvedKnownFields = TypedDict(
     "_ExecutionEventToolPermissionResolvedKnownFields",
     {
@@ -2256,11 +2559,14 @@ ExecutionEventToolPermissionResolved: TypeAlias = (
 )  # permits additional JSON fields
 
 # Source: schema/draft/execution-event.schema.json#/$defs/tool.progress
-_ExecutionEventToolProgressField2CallModel = TypedDict(
-    "_ExecutionEventToolProgressField2CallModel",
+__ExecutionEventToolProgressField2CallModelKnownFields = TypedDict(
+    "__ExecutionEventToolProgressField2CallModelKnownFields",
     {"id": Required[str], "synthesized": NotRequired[bool]},
     total=False,
 )
+_ExecutionEventToolProgressField2CallModel: TypeAlias = (
+    __ExecutionEventToolProgressField2CallModelKnownFields | JsonObject
+)  # permits additional JSON fields
 __ExecutionEventToolProgressField4GapsItemModelKnownFields = TypedDict(
     "__ExecutionEventToolProgressField4GapsItemModelKnownFields",
     {"path": Required[str], "reason": Required[str]},
@@ -2269,11 +2575,14 @@ __ExecutionEventToolProgressField4GapsItemModelKnownFields = TypedDict(
 _ExecutionEventToolProgressField4GapsItemModel: TypeAlias = (
     __ExecutionEventToolProgressField4GapsItemModelKnownFields | JsonObject
 )  # permits additional JSON fields
-_ExecutionEventToolProgressField16TurnModel = TypedDict(
-    "_ExecutionEventToolProgressField16TurnModel",
+__ExecutionEventToolProgressField16TurnModelKnownFields = TypedDict(
+    "__ExecutionEventToolProgressField16TurnModelKnownFields",
     {"id": Required[str], "synthesized": NotRequired[bool]},
     total=False,
 )
+_ExecutionEventToolProgressField16TurnModel: TypeAlias = (
+    __ExecutionEventToolProgressField16TurnModelKnownFields | JsonObject
+)  # permits additional JSON fields
 _ExecutionEventToolProgressKnownFields = TypedDict(
     "_ExecutionEventToolProgressKnownFields",
     {
@@ -2311,16 +2620,22 @@ __ExecutionEventTurnEndField3GapsItemModelKnownFields = TypedDict(
 _ExecutionEventTurnEndField3GapsItemModel: TypeAlias = (
     __ExecutionEventTurnEndField3GapsItemModelKnownFields | JsonObject
 )  # permits additional JSON fields
-_ExecutionEventTurnEndField6LastAssistantItemModel = TypedDict(
-    "_ExecutionEventTurnEndField6LastAssistantItemModel",
+__ExecutionEventTurnEndField6LastAssistantItemModelKnownFields = TypedDict(
+    "__ExecutionEventTurnEndField6LastAssistantItemModelKnownFields",
     {"id": Required[str], "synthesized": NotRequired[bool]},
     total=False,
 )
-_ExecutionEventTurnEndField14TurnModel = TypedDict(
-    "_ExecutionEventTurnEndField14TurnModel",
+_ExecutionEventTurnEndField6LastAssistantItemModel: TypeAlias = (
+    __ExecutionEventTurnEndField6LastAssistantItemModelKnownFields | JsonObject
+)  # permits additional JSON fields
+__ExecutionEventTurnEndField14TurnModelKnownFields = TypedDict(
+    "__ExecutionEventTurnEndField14TurnModelKnownFields",
     {"id": Required[str], "synthesized": NotRequired[bool]},
     total=False,
 )
+_ExecutionEventTurnEndField14TurnModel: TypeAlias = (
+    __ExecutionEventTurnEndField14TurnModelKnownFields | JsonObject
+)  # permits additional JSON fields
 _ExecutionEventTurnEndKnownFields = TypedDict(
     "_ExecutionEventTurnEndKnownFields",
     {
@@ -2359,16 +2674,22 @@ __ExecutionEventTurnFinishBeforeField2GapsItemModelKnownFields = TypedDict(
 _ExecutionEventTurnFinishBeforeField2GapsItemModel: TypeAlias = (
     __ExecutionEventTurnFinishBeforeField2GapsItemModelKnownFields | JsonObject
 )  # permits additional JSON fields
-_ExecutionEventTurnFinishBeforeField5LastAssistantItemModel = TypedDict(
-    "_ExecutionEventTurnFinishBeforeField5LastAssistantItemModel",
+__ExecutionEventTurnFinishBeforeField5LastAssistantItemModelKnownFields = TypedDict(
+    "__ExecutionEventTurnFinishBeforeField5LastAssistantItemModelKnownFields",
     {"id": Required[str], "synthesized": NotRequired[bool]},
     total=False,
 )
-_ExecutionEventTurnFinishBeforeField13TurnModel = TypedDict(
-    "_ExecutionEventTurnFinishBeforeField13TurnModel",
+_ExecutionEventTurnFinishBeforeField5LastAssistantItemModel: TypeAlias = (
+    __ExecutionEventTurnFinishBeforeField5LastAssistantItemModelKnownFields | JsonObject
+)  # permits additional JSON fields
+__ExecutionEventTurnFinishBeforeField13TurnModelKnownFields = TypedDict(
+    "__ExecutionEventTurnFinishBeforeField13TurnModelKnownFields",
     {"id": Required[str], "synthesized": NotRequired[bool]},
     total=False,
 )
+_ExecutionEventTurnFinishBeforeField13TurnModel: TypeAlias = (
+    __ExecutionEventTurnFinishBeforeField13TurnModelKnownFields | JsonObject
+)  # permits additional JSON fields
 _ExecutionEventTurnFinishBeforeKnownFields = TypedDict(
     "_ExecutionEventTurnFinishBeforeKnownFields",
     {
@@ -2406,16 +2727,22 @@ __ExecutionEventTurnProgressField3GapsItemModelKnownFields = TypedDict(
 _ExecutionEventTurnProgressField3GapsItemModel: TypeAlias = (
     __ExecutionEventTurnProgressField3GapsItemModelKnownFields | JsonObject
 )  # permits additional JSON fields
-_ExecutionEventTurnProgressField5ItemModel = TypedDict(
-    "_ExecutionEventTurnProgressField5ItemModel",
+__ExecutionEventTurnProgressField5ItemModelKnownFields = TypedDict(
+    "__ExecutionEventTurnProgressField5ItemModelKnownFields",
     {"id": Required[str], "synthesized": NotRequired[bool]},
     total=False,
 )
-_ExecutionEventTurnProgressField13TurnModel = TypedDict(
-    "_ExecutionEventTurnProgressField13TurnModel",
+_ExecutionEventTurnProgressField5ItemModel: TypeAlias = (
+    __ExecutionEventTurnProgressField5ItemModelKnownFields | JsonObject
+)  # permits additional JSON fields
+__ExecutionEventTurnProgressField13TurnModelKnownFields = TypedDict(
+    "__ExecutionEventTurnProgressField13TurnModelKnownFields",
     {"id": Required[str], "synthesized": NotRequired[bool]},
     total=False,
 )
+_ExecutionEventTurnProgressField13TurnModel: TypeAlias = (
+    __ExecutionEventTurnProgressField13TurnModelKnownFields | JsonObject
+)  # permits additional JSON fields
 _ExecutionEventTurnProgressKnownFields = TypedDict(
     "_ExecutionEventTurnProgressKnownFields",
     {
@@ -2450,11 +2777,14 @@ __ExecutionEventTurnStartField2GapsItemModelKnownFields = TypedDict(
 _ExecutionEventTurnStartField2GapsItemModel: TypeAlias = (
     __ExecutionEventTurnStartField2GapsItemModelKnownFields | JsonObject
 )  # permits additional JSON fields
-_ExecutionEventTurnStartField12TurnModel = TypedDict(
-    "_ExecutionEventTurnStartField12TurnModel",
+__ExecutionEventTurnStartField12TurnModelKnownFields = TypedDict(
+    "__ExecutionEventTurnStartField12TurnModelKnownFields",
     {"id": Required[str], "synthesized": NotRequired[bool]},
     total=False,
 )
+_ExecutionEventTurnStartField12TurnModel: TypeAlias = (
+    __ExecutionEventTurnStartField12TurnModelKnownFields | JsonObject
+)  # permits additional JSON fields
 _ExecutionEventTurnStartKnownFields = TypedDict(
     "_ExecutionEventTurnStartKnownFields",
     {
@@ -2480,8 +2810,8 @@ ExecutionEventTurnStart: TypeAlias = (
 )  # permits additional JSON fields
 
 # Source: schema/draft/execution-event.schema.json#/$defs/turnUsage
-_ExecutionEventTurnusageField3CostModel = TypedDict(
-    "_ExecutionEventTurnusageField3CostModel",
+__ExecutionEventTurnusageField3CostModelKnownFields = TypedDict(
+    "__ExecutionEventTurnusageField3CostModelKnownFields",
     {
         "amount": Required[int | float | Decimal],
         "basis": Required[OpenString],
@@ -2489,6 +2819,9 @@ _ExecutionEventTurnusageField3CostModel = TypedDict(
     },
     total=False,
 )
+_ExecutionEventTurnusageField3CostModel: TypeAlias = (
+    __ExecutionEventTurnusageField3CostModelKnownFields | JsonObject
+)  # permits additional JSON fields
 _ExecutionEventTurnusageKnownFields = TypedDict(
     "_ExecutionEventTurnusageKnownFields",
     {
@@ -2509,8 +2842,8 @@ ExecutionEventTurnusage: TypeAlias = (
 )  # permits additional JSON fields
 
 # Source: schema/draft/execution-event.schema.json#/$defs/usage
-_ExecutionEventUsageField3CostModel = TypedDict(
-    "_ExecutionEventUsageField3CostModel",
+__ExecutionEventUsageField3CostModelKnownFields = TypedDict(
+    "__ExecutionEventUsageField3CostModelKnownFields",
     {
         "amount": Required[int | float | Decimal],
         "basis": Required[OpenString],
@@ -2518,8 +2851,11 @@ _ExecutionEventUsageField3CostModel = TypedDict(
     },
     total=False,
 )
-ExecutionEventUsage = TypedDict(
-    "ExecutionEventUsage",
+_ExecutionEventUsageField3CostModel: TypeAlias = (
+    __ExecutionEventUsageField3CostModelKnownFields | JsonObject
+)  # permits additional JSON fields
+_ExecutionEventUsageKnownFields = TypedDict(
+    "_ExecutionEventUsageKnownFields",
     {
         "cacheReadTokens": NotRequired[int | Decimal],
         "cacheWriteTokens": NotRequired[int | Decimal],
@@ -2533,6 +2869,9 @@ ExecutionEventUsage = TypedDict(
     },
     total=False,
 )
+ExecutionEventUsage: TypeAlias = (
+    _ExecutionEventUsageKnownFields | JsonObject
+)  # permits additional JSON fields
 
 # Source: schema/draft/extensions.schema.json#
 _ExtensionsKnownFields = TypedDict("_ExtensionsKnownFields", {}, total=False)
@@ -2542,6 +2881,12 @@ Extensions: TypeAlias = (
 
 # Source: schema/draft/catalogue-event.schema.json#/$defs/file.changed
 FileChangedEvent: TypeAlias = "TaskWorkspaceEventFileChanged"
+
+# Source: schema/draft/mcp-elicitation.schema.json#/$defs/FormAnswerValue
+FormAnswerValue: TypeAlias = Union[str, int | float | Decimal, bool, list[str]]
+
+# Source: schema/draft/mcp-elicitation.schema.json#/$defs/FormAnswers
+FormAnswers: TypeAlias = dict[str, "FormAnswerValue"]
 
 # Source: schema/draft/catalogue-event.schema.json#/$defs/hook.failure
 __HookFailureEventField1GapsItemModelKnownFields = TypedDict(
@@ -2560,8 +2905,8 @@ __HookFailureEventField9TurnModelKnownFields = TypedDict(
 _HookFailureEventField9TurnModel: TypeAlias = (
     __HookFailureEventField9TurnModelKnownFields | JsonObject
 )  # permits additional JSON fields
-_HookFailureEventField11FailureModel = TypedDict(
-    "_HookFailureEventField11FailureModel",
+__HookFailureEventField11FailureModelKnownFields = TypedDict(
+    "__HookFailureEventField11FailureModelKnownFields",
     {
         "backendId": Required[str],
         "policy": Required[OpenString],
@@ -2569,6 +2914,9 @@ _HookFailureEventField11FailureModel = TypedDict(
     },
     total=False,
 )
+_HookFailureEventField11FailureModel: TypeAlias = (
+    __HookFailureEventField11FailureModelKnownFields | JsonObject
+)  # permits additional JSON fields
 _HookFailureEventKnownFields = TypedDict(
     "_HookFailureEventKnownFields",
     {
@@ -2602,6 +2950,22 @@ HttpTransport: TypeAlias = (
     _HttpTransportKnownFields | JsonObject
 )  # permits additional JSON fields
 
+# Source: schema/draft/effect.schema.json#/$defs/InjectEffect
+_InjectEffectKnownFields = TypedDict(
+    "_InjectEffectKnownFields",
+    {
+        "deliverAt": Required[OpenString],
+        "operation": Required[Literal["append"]],
+        "target": Required[Literal["context"]],
+        "type": Required[Literal["inject"]],
+        "value": Required["CanonicalMessages"],
+    },
+    total=False,
+)
+InjectEffect: TypeAlias = (
+    _InjectEffectKnownFields | JsonObject
+)  # permits additional JSON fields
+
 # Source: schema/draft/interaction-event.schema.json#
 InteractionEvent: TypeAlias = Union[
     "InteractionEventConfigChangeBefore",
@@ -2625,8 +2989,8 @@ _InteractionEventConfigChangeAfterField0ChangeField0McpServersItemModel: TypeAli
     __InteractionEventConfigChangeAfterField0ChangeField0McpServersItemModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-_InteractionEventConfigChangeAfterField0ChangeModel = TypedDict(
-    "_InteractionEventConfigChangeAfterField0ChangeModel",
+__InteractionEventConfigChangeAfterField0ChangeModelKnownFields = TypedDict(
+    "__InteractionEventConfigChangeAfterField0ChangeModelKnownFields",
     {
         "mcpServers": NotRequired[
             list[
@@ -2641,6 +3005,9 @@ _InteractionEventConfigChangeAfterField0ChangeModel = TypedDict(
     },
     total=False,
 )
+_InteractionEventConfigChangeAfterField0ChangeModel: TypeAlias = (
+    __InteractionEventConfigChangeAfterField0ChangeModelKnownFields | JsonObject
+)  # permits additional JSON fields
 _InteractionEventConfigChangeAfterKnownFields = TypedDict(
     "_InteractionEventConfigChangeAfterKnownFields",
     {
@@ -2654,8 +3021,8 @@ InteractionEventConfigChangeAfter: TypeAlias = (
 )  # permits additional JSON fields
 
 # Source: schema/draft/interaction-event.schema.json#/$defs/config.change.before
-_InteractionEventConfigChangeBeforeField0ChangeModel = TypedDict(
-    "_InteractionEventConfigChangeBeforeField0ChangeModel",
+__InteractionEventConfigChangeBeforeField0ChangeModelKnownFields = TypedDict(
+    "__InteractionEventConfigChangeBeforeField0ChangeModelKnownFields",
     {
         "path": NotRequired[str],
         "scope": Required[str],
@@ -2665,6 +3032,9 @@ _InteractionEventConfigChangeBeforeField0ChangeModel = TypedDict(
     },
     total=False,
 )
+_InteractionEventConfigChangeBeforeField0ChangeModel: TypeAlias = (
+    __InteractionEventConfigChangeBeforeField0ChangeModelKnownFields | JsonObject
+)  # permits additional JSON fields
 _InteractionEventConfigChangeBeforeKnownFields = TypedDict(
     "_InteractionEventConfigChangeBeforeKnownFields",
     {
@@ -2678,8 +3048,8 @@ InteractionEventConfigChangeBefore: TypeAlias = (
 )  # permits additional JSON fields
 
 # Source: schema/draft/interaction-event.schema.json#/$defs/hook.failure
-_InteractionEventHookFailureField0FailureModel = TypedDict(
-    "_InteractionEventHookFailureField0FailureModel",
+__InteractionEventHookFailureField0FailureModelKnownFields = TypedDict(
+    "__InteractionEventHookFailureField0FailureModelKnownFields",
     {
         "backendId": Required[str],
         "policy": Required[OpenString],
@@ -2687,6 +3057,9 @@ _InteractionEventHookFailureField0FailureModel = TypedDict(
     },
     total=False,
 )
+_InteractionEventHookFailureField0FailureModel: TypeAlias = (
+    __InteractionEventHookFailureField0FailureModelKnownFields | JsonObject
+)  # permits additional JSON fields
 _InteractionEventHookFailureKnownFields = TypedDict(
     "_InteractionEventHookFailureKnownFields",
     {
@@ -2701,8 +3074,8 @@ InteractionEventHookFailure: TypeAlias = (
 )  # permits additional JSON fields
 
 # Source: schema/draft/interaction-event.schema.json#/$defs/user.attention
-_InteractionEventUserAttentionField0AttentionModel = TypedDict(
-    "_InteractionEventUserAttentionField0AttentionModel",
+__InteractionEventUserAttentionField0AttentionModelKnownFields = TypedDict(
+    "__InteractionEventUserAttentionField0AttentionModelKnownFields",
     {
         "kind": Required[str],
         "message": Required["TextParts"],
@@ -2710,6 +3083,9 @@ _InteractionEventUserAttentionField0AttentionModel = TypedDict(
     },
     total=False,
 )
+_InteractionEventUserAttentionField0AttentionModel: TypeAlias = (
+    __InteractionEventUserAttentionField0AttentionModelKnownFields | JsonObject
+)  # permits additional JSON fields
 _InteractionEventUserAttentionKnownFields = TypedDict(
     "_InteractionEventUserAttentionKnownFields",
     {
@@ -2723,8 +3099,8 @@ InteractionEventUserAttention: TypeAlias = (
 )  # permits additional JSON fields
 
 # Source: schema/draft/interaction-event.schema.json#/$defs/user.elicitation.request
-_InteractionEventUserElicitationRequestField0ElicitationModel = TypedDict(
-    "_InteractionEventUserElicitationRequestField0ElicitationModel",
+__InteractionEventUserElicitationRequestField0ElicitationModelKnownFields = TypedDict(
+    "__InteractionEventUserElicitationRequestField0ElicitationModelKnownFields",
     {
         "mode": Required[OpenString],
         "request": NotRequired["TextPart"],
@@ -2732,6 +3108,10 @@ _InteractionEventUserElicitationRequestField0ElicitationModel = TypedDict(
     },
     total=False,
 )
+_InteractionEventUserElicitationRequestField0ElicitationModel: TypeAlias = (
+    __InteractionEventUserElicitationRequestField0ElicitationModelKnownFields
+    | JsonObject
+)  # permits additional JSON fields
 _InteractionEventUserElicitationRequestKnownFields = TypedDict(
     "_InteractionEventUserElicitationRequestKnownFields",
     {
@@ -2747,8 +3127,8 @@ InteractionEventUserElicitationRequest: TypeAlias = (
 )  # permits additional JSON fields
 
 # Source: schema/draft/interaction-event.schema.json#/$defs/user.elicitation.result
-_InteractionEventUserElicitationResultField0ElicitationModel = TypedDict(
-    "_InteractionEventUserElicitationResultField0ElicitationModel",
+__InteractionEventUserElicitationResultField0ElicitationModelKnownFields = TypedDict(
+    "__InteractionEventUserElicitationResultField0ElicitationModelKnownFields",
     {
         "action": Required[OpenString],
         "mode": Required[OpenString],
@@ -2757,6 +3137,10 @@ _InteractionEventUserElicitationResultField0ElicitationModel = TypedDict(
     },
     total=False,
 )
+_InteractionEventUserElicitationResultField0ElicitationModel: TypeAlias = (
+    __InteractionEventUserElicitationResultField0ElicitationModelKnownFields
+    | JsonObject
+)  # permits additional JSON fields
 _InteractionEventUserElicitationResultKnownFields = TypedDict(
     "_InteractionEventUserElicitationResultKnownFields",
     {
@@ -2786,8 +3170,8 @@ _InteractionEventUserMessageInboundField0MessageField1MessagesItemModel: TypeAli
     __InteractionEventUserMessageInboundField0MessageField1MessagesItemModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-_InteractionEventUserMessageInboundField0MessageModel = TypedDict(
-    "_InteractionEventUserMessageInboundField0MessageModel",
+__InteractionEventUserMessageInboundField0MessageModelKnownFields = TypedDict(
+    "__InteractionEventUserMessageInboundField0MessageModelKnownFields",
     {
         "channel": Required[str],
         "messages": Required[
@@ -2799,6 +3183,9 @@ _InteractionEventUserMessageInboundField0MessageModel = TypedDict(
     },
     total=False,
 )
+_InteractionEventUserMessageInboundField0MessageModel: TypeAlias = (
+    __InteractionEventUserMessageInboundField0MessageModelKnownFields | JsonObject
+)  # permits additional JSON fields
 _InteractionEventUserMessageInboundKnownFields = TypedDict(
     "_InteractionEventUserMessageInboundKnownFields",
     {
@@ -2826,8 +3213,8 @@ _InteractionEventUserMessageOutboundField0MessageField1MessagesItemModel: TypeAl
     __InteractionEventUserMessageOutboundField0MessageField1MessagesItemModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-_InteractionEventUserMessageOutboundField0MessageModel = TypedDict(
-    "_InteractionEventUserMessageOutboundField0MessageModel",
+__InteractionEventUserMessageOutboundField0MessageModelKnownFields = TypedDict(
+    "__InteractionEventUserMessageOutboundField0MessageModelKnownFields",
     {
         "channel": Required[str],
         "messages": Required[
@@ -2838,6 +3225,9 @@ _InteractionEventUserMessageOutboundField0MessageModel = TypedDict(
     },
     total=False,
 )
+_InteractionEventUserMessageOutboundField0MessageModel: TypeAlias = (
+    __InteractionEventUserMessageOutboundField0MessageModelKnownFields | JsonObject
+)  # permits additional JSON fields
 _InteractionEventUserMessageOutboundKnownFields = TypedDict(
     "_InteractionEventUserMessageOutboundKnownFields",
     {
@@ -2854,7 +3244,7 @@ InteractionEventUserMessageOutbound: TypeAlias = (
 __InterceptDenyResponseField2ResultModelKnownFields = TypedDict(
     "__InterceptDenyResponseField2ResultModelKnownFields",
     {
-        "effects": Required[list["DenyEffect"]],
+        "effects": NotRequired[list["Effect"]],
         "extensions": NotRequired["Extensions"],
         "protocolVersion": Required["ProtocolVersion"],
     },
@@ -2880,7 +3270,7 @@ InterceptDenyResponse: TypeAlias = (
 __InterceptNoEffectResponseField2ResultModelKnownFields = TypedDict(
     "__InterceptNoEffectResponseField2ResultModelKnownFields",
     {
-        "effects": Required[list[JsonValue]],
+        "effects": NotRequired[list["Effect"]],
         "extensions": NotRequired["Extensions"],
         "protocolVersion": Required["ProtocolVersion"],
     },
@@ -3146,7 +3536,7 @@ __InterceptRequestField3ParamsField4StateModelKnownFields = TypedDict(
             ]
         ],
         "flow": NotRequired[OpenString],
-        "injections": NotRequired[list[JsonValue]],
+        "injections": NotRequired[list["InjectEffect"]],
         "instructions": NotRequired[list[str]],
         "permission": Required[OpenString],
     },
@@ -3187,7 +3577,7 @@ InterceptRequest: TypeAlias = (
 __InterceptResponseField2ResultModelKnownFields = TypedDict(
     "__InterceptResponseField2ResultModelKnownFields",
     {
-        "effects": Required[list["Effect"]],
+        "effects": NotRequired[list["Effect"]],
         "extensions": NotRequired["Extensions"],
         "protocolVersion": Required["ProtocolVersion"],
     },
@@ -3340,8 +3730,8 @@ JsonRpcSuccessResponse: TypeAlias = (
 )  # permits additional JSON fields
 
 # Source: schema/draft/mcp-elicitation.schema.json#/$defs/BooleanSchema
-McpElicitationBooleanSchema = TypedDict(
-    "McpElicitationBooleanSchema",
+_McpElicitationBooleanSchemaKnownFields = TypedDict(
+    "_McpElicitationBooleanSchemaKnownFields",
     {
         "default": NotRequired[bool],
         "description": NotRequired[str],
@@ -3350,6 +3740,9 @@ McpElicitationBooleanSchema = TypedDict(
     },
     total=False,
 )
+McpElicitationBooleanSchema: TypeAlias = (
+    _McpElicitationBooleanSchemaKnownFields | JsonObject
+)  # permits additional JSON fields
 
 # Source: schema/draft/mcp-elicitation.schema.json#/$defs/ElicitRequestFormParams
 __McpElicitationElicitRequestFormParamsField0MetaModelKnownFields = TypedDict(
@@ -3358,29 +3751,27 @@ __McpElicitationElicitRequestFormParamsField0MetaModelKnownFields = TypedDict(
     total=False,
 )
 _McpElicitationElicitRequestFormParamsField0MetaModel: TypeAlias = (
-    __McpElicitationElicitRequestFormParamsField0MetaModelKnownFields | JsonObject
+    __McpElicitationElicitRequestFormParamsField0MetaModelKnownFields
+    | dict[str, JsonValue]
 )  # permits additional JSON fields
-__McpElicitationElicitRequestFormParamsField3RequestedSchemaField1PropertiesModelKnownFields = TypedDict(
-    "__McpElicitationElicitRequestFormParamsField3RequestedSchemaField1PropertiesModelKnownFields",
-    {},
-    total=False,
+__McpElicitationElicitRequestFormParamsField3RequestedSchemaModelKnownFields = (
+    TypedDict(
+        "__McpElicitationElicitRequestFormParamsField3RequestedSchemaModelKnownFields",
+        {
+            "$schema": NotRequired[str],
+            "properties": Required[
+                dict[str, "McpElicitationPrimitiveSchemaDefinition"]
+            ],
+            "required": NotRequired[list[str]],
+            "type": Required[Literal["object"]],
+        },
+        total=False,
+    )
 )
-_McpElicitationElicitRequestFormParamsField3RequestedSchemaField1PropertiesModel: TypeAlias = (
-    __McpElicitationElicitRequestFormParamsField3RequestedSchemaField1PropertiesModelKnownFields
+_McpElicitationElicitRequestFormParamsField3RequestedSchemaModel: TypeAlias = (
+    __McpElicitationElicitRequestFormParamsField3RequestedSchemaModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-_McpElicitationElicitRequestFormParamsField3RequestedSchemaModel = TypedDict(
-    "_McpElicitationElicitRequestFormParamsField3RequestedSchemaModel",
-    {
-        "$schema": NotRequired[str],
-        "properties": Required[
-            _McpElicitationElicitRequestFormParamsField3RequestedSchemaField1PropertiesModel
-        ],
-        "required": NotRequired[list[str]],
-        "type": Required[Literal["object"]],
-    },
-    total=False,
-)
 _McpElicitationElicitRequestFormParamsKnownFields = TypedDict(
     "_McpElicitationElicitRequestFormParamsKnownFields",
     {
@@ -3410,7 +3801,8 @@ __McpElicitationElicitRequestURLParamsField0MetaModelKnownFields = TypedDict(
     total=False,
 )
 _McpElicitationElicitRequestURLParamsField0MetaModel: TypeAlias = (
-    __McpElicitationElicitRequestURLParamsField0MetaModelKnownFields | JsonObject
+    __McpElicitationElicitRequestURLParamsField0MetaModelKnownFields
+    | dict[str, JsonValue]
 )  # permits additional JSON fields
 _McpElicitationElicitRequestURLParamsKnownFields = TypedDict(
     "_McpElicitationElicitRequestURLParamsKnownFields",
@@ -3429,24 +3821,12 @@ McpElicitationElicitRequestURLParams: TypeAlias = (
 )  # permits additional JSON fields
 
 # Source: schema/draft/mcp-elicitation.schema.json#/$defs/ElicitResult
-__McpElicitationElicitResultField0MetaModelKnownFields = TypedDict(
-    "__McpElicitationElicitResultField0MetaModelKnownFields", {}, total=False
-)
-_McpElicitationElicitResultField0MetaModel: TypeAlias = (
-    __McpElicitationElicitResultField0MetaModelKnownFields | JsonObject
-)  # permits additional JSON fields
-__McpElicitationElicitResultField2ContentModelKnownFields = TypedDict(
-    "__McpElicitationElicitResultField2ContentModelKnownFields", {}, total=False
-)
-_McpElicitationElicitResultField2ContentModel: TypeAlias = (
-    __McpElicitationElicitResultField2ContentModelKnownFields | JsonObject
-)  # permits additional JSON fields
 _McpElicitationElicitResultKnownFields = TypedDict(
     "_McpElicitationElicitResultKnownFields",
     {
-        "_meta": NotRequired[_McpElicitationElicitResultField0MetaModel],
+        "_meta": NotRequired[dict[str, JsonValue]],
         "action": Required[OpenString],
-        "content": NotRequired[_McpElicitationElicitResultField2ContentModel],
+        "content": NotRequired["FormAnswers"],
     },
     total=False,
 )
@@ -3455,8 +3835,8 @@ McpElicitationElicitResult: TypeAlias = (
 )  # permits additional JSON fields
 
 # Source: schema/draft/mcp-elicitation.schema.json#/$defs/LegacyTitledEnumSchema
-McpElicitationLegacyTitledEnumSchema = TypedDict(
-    "McpElicitationLegacyTitledEnumSchema",
+_McpElicitationLegacyTitledEnumSchemaKnownFields = TypedDict(
+    "_McpElicitationLegacyTitledEnumSchemaKnownFields",
     {
         "default": NotRequired[str],
         "description": NotRequired[str],
@@ -3467,10 +3847,13 @@ McpElicitationLegacyTitledEnumSchema = TypedDict(
     },
     total=False,
 )
+McpElicitationLegacyTitledEnumSchema: TypeAlias = (
+    _McpElicitationLegacyTitledEnumSchemaKnownFields | JsonObject
+)  # permits additional JSON fields
 
 # Source: schema/draft/mcp-elicitation.schema.json#/$defs/NumberSchema
-McpElicitationNumberSchema = TypedDict(
-    "McpElicitationNumberSchema",
+_McpElicitationNumberSchemaKnownFields = TypedDict(
+    "_McpElicitationNumberSchemaKnownFields",
     {
         "default": NotRequired[int | float | Decimal],
         "description": NotRequired[str],
@@ -3481,6 +3864,9 @@ McpElicitationNumberSchema = TypedDict(
     },
     total=False,
 )
+McpElicitationNumberSchema: TypeAlias = (
+    _McpElicitationNumberSchemaKnownFields | JsonObject
+)  # permits additional JSON fields
 
 # Source: schema/draft/mcp-elicitation.schema.json#/$defs/PrimitiveSchemaDefinition
 McpElicitationPrimitiveSchemaDefinition: TypeAlias = Union[
@@ -3504,8 +3890,8 @@ McpElicitationRequest: TypeAlias = "McpElicitationElicitRequestParams"
 McpElicitationResult: TypeAlias = "McpElicitationElicitResult"
 
 # Source: schema/draft/mcp-elicitation.schema.json#/$defs/StringSchema
-McpElicitationStringSchema = TypedDict(
-    "McpElicitationStringSchema",
+_McpElicitationStringSchemaKnownFields = TypedDict(
+    "_McpElicitationStringSchemaKnownFields",
     {
         "default": NotRequired[str],
         "description": NotRequired[str],
@@ -3517,6 +3903,9 @@ McpElicitationStringSchema = TypedDict(
     },
     total=False,
 )
+McpElicitationStringSchema: TypeAlias = (
+    _McpElicitationStringSchemaKnownFields | JsonObject
+)  # permits additional JSON fields
 
 # Source: schema/draft/mcp-elicitation.schema.json#/$defs/TaskMetadata
 _McpElicitationTaskMetadataKnownFields = TypedDict(
@@ -3529,13 +3918,17 @@ McpElicitationTaskMetadata: TypeAlias = (
 )  # permits additional JSON fields
 
 # Source: schema/draft/mcp-elicitation.schema.json#/$defs/TitledMultiSelectEnumSchema
-_McpElicitationTitledMultiSelectEnumSchemaField2ItemsField0AnyOfItemModel = TypedDict(
-    "_McpElicitationTitledMultiSelectEnumSchemaField2ItemsField0AnyOfItemModel",
+__McpElicitationTitledMultiSelectEnumSchemaField2ItemsField0AnyOfItemModelKnownFields = TypedDict(
+    "__McpElicitationTitledMultiSelectEnumSchemaField2ItemsField0AnyOfItemModelKnownFields",
     {"const": Required[str], "title": Required[str]},
     total=False,
 )
-_McpElicitationTitledMultiSelectEnumSchemaField2ItemsModel = TypedDict(
-    "_McpElicitationTitledMultiSelectEnumSchemaField2ItemsModel",
+_McpElicitationTitledMultiSelectEnumSchemaField2ItemsField0AnyOfItemModel: TypeAlias = (
+    __McpElicitationTitledMultiSelectEnumSchemaField2ItemsField0AnyOfItemModelKnownFields
+    | JsonObject
+)  # permits additional JSON fields
+__McpElicitationTitledMultiSelectEnumSchemaField2ItemsModelKnownFields = TypedDict(
+    "__McpElicitationTitledMultiSelectEnumSchemaField2ItemsModelKnownFields",
     {
         "anyOf": Required[
             list[
@@ -3545,8 +3938,11 @@ _McpElicitationTitledMultiSelectEnumSchemaField2ItemsModel = TypedDict(
     },
     total=False,
 )
-McpElicitationTitledMultiSelectEnumSchema = TypedDict(
-    "McpElicitationTitledMultiSelectEnumSchema",
+_McpElicitationTitledMultiSelectEnumSchemaField2ItemsModel: TypeAlias = (
+    __McpElicitationTitledMultiSelectEnumSchemaField2ItemsModelKnownFields | JsonObject
+)  # permits additional JSON fields
+_McpElicitationTitledMultiSelectEnumSchemaKnownFields = TypedDict(
+    "_McpElicitationTitledMultiSelectEnumSchemaKnownFields",
     {
         "default": NotRequired[list[str]],
         "description": NotRequired[str],
@@ -3558,15 +3954,22 @@ McpElicitationTitledMultiSelectEnumSchema = TypedDict(
     },
     total=False,
 )
+McpElicitationTitledMultiSelectEnumSchema: TypeAlias = (
+    _McpElicitationTitledMultiSelectEnumSchemaKnownFields | JsonObject
+)  # permits additional JSON fields
 
 # Source: schema/draft/mcp-elicitation.schema.json#/$defs/TitledSingleSelectEnumSchema
-_McpElicitationTitledSingleSelectEnumSchemaField2OneOfItemModel = TypedDict(
-    "_McpElicitationTitledSingleSelectEnumSchemaField2OneOfItemModel",
+__McpElicitationTitledSingleSelectEnumSchemaField2OneOfItemModelKnownFields = TypedDict(
+    "__McpElicitationTitledSingleSelectEnumSchemaField2OneOfItemModelKnownFields",
     {"const": Required[str], "title": Required[str]},
     total=False,
 )
-McpElicitationTitledSingleSelectEnumSchema = TypedDict(
-    "McpElicitationTitledSingleSelectEnumSchema",
+_McpElicitationTitledSingleSelectEnumSchemaField2OneOfItemModel: TypeAlias = (
+    __McpElicitationTitledSingleSelectEnumSchemaField2OneOfItemModelKnownFields
+    | JsonObject
+)  # permits additional JSON fields
+_McpElicitationTitledSingleSelectEnumSchemaKnownFields = TypedDict(
+    "_McpElicitationTitledSingleSelectEnumSchemaKnownFields",
     {
         "default": NotRequired[str],
         "description": NotRequired[str],
@@ -3578,15 +3981,22 @@ McpElicitationTitledSingleSelectEnumSchema = TypedDict(
     },
     total=False,
 )
+McpElicitationTitledSingleSelectEnumSchema: TypeAlias = (
+    _McpElicitationTitledSingleSelectEnumSchemaKnownFields | JsonObject
+)  # permits additional JSON fields
 
 # Source: schema/draft/mcp-elicitation.schema.json#/$defs/UntitledMultiSelectEnumSchema
-_McpElicitationUntitledMultiSelectEnumSchemaField2ItemsModel = TypedDict(
-    "_McpElicitationUntitledMultiSelectEnumSchemaField2ItemsModel",
+__McpElicitationUntitledMultiSelectEnumSchemaField2ItemsModelKnownFields = TypedDict(
+    "__McpElicitationUntitledMultiSelectEnumSchemaField2ItemsModelKnownFields",
     {"enum": Required[list[str]], "type": Required[Literal["string"]]},
     total=False,
 )
-McpElicitationUntitledMultiSelectEnumSchema = TypedDict(
-    "McpElicitationUntitledMultiSelectEnumSchema",
+_McpElicitationUntitledMultiSelectEnumSchemaField2ItemsModel: TypeAlias = (
+    __McpElicitationUntitledMultiSelectEnumSchemaField2ItemsModelKnownFields
+    | JsonObject
+)  # permits additional JSON fields
+_McpElicitationUntitledMultiSelectEnumSchemaKnownFields = TypedDict(
+    "_McpElicitationUntitledMultiSelectEnumSchemaKnownFields",
     {
         "default": NotRequired[list[str]],
         "description": NotRequired[str],
@@ -3598,10 +4008,13 @@ McpElicitationUntitledMultiSelectEnumSchema = TypedDict(
     },
     total=False,
 )
+McpElicitationUntitledMultiSelectEnumSchema: TypeAlias = (
+    _McpElicitationUntitledMultiSelectEnumSchemaKnownFields | JsonObject
+)  # permits additional JSON fields
 
 # Source: schema/draft/mcp-elicitation.schema.json#/$defs/UntitledSingleSelectEnumSchema
-McpElicitationUntitledSingleSelectEnumSchema = TypedDict(
-    "McpElicitationUntitledSingleSelectEnumSchema",
+_McpElicitationUntitledSingleSelectEnumSchemaKnownFields = TypedDict(
+    "_McpElicitationUntitledSingleSelectEnumSchemaKnownFields",
     {
         "default": NotRequired[str],
         "description": NotRequired[str],
@@ -3611,6 +4024,54 @@ McpElicitationUntitledSingleSelectEnumSchema = TypedDict(
     },
     total=False,
 )
+McpElicitationUntitledSingleSelectEnumSchema: TypeAlias = (
+    _McpElicitationUntitledSingleSelectEnumSchemaKnownFields | JsonObject
+)  # permits additional JSON fields
+
+# Source: schema/draft/effect.schema.json#/$defs/MessageEffect
+_MessageEffectKnownFields = TypedDict(
+    "_MessageEffectKnownFields",
+    {"text": Required[str], "type": Required[Literal["message"]]},
+    total=False,
+)
+MessageEffect: TypeAlias = (
+    _MessageEffectKnownFields | JsonObject
+)  # permits additional JSON fields
+
+# Source: schema/draft/intercept-request.schema.json#/$defs/MessagesCandidate
+__MessagesCandidateField0ProvenanceModelKnownFields = TypedDict(
+    "__MessagesCandidateField0ProvenanceModelKnownFields", {}, total=False
+)
+_MessagesCandidateField0ProvenanceModel: TypeAlias = (
+    __MessagesCandidateField0ProvenanceModelKnownFields | JsonObject
+)  # permits additional JSON fields
+_MessagesCandidateKnownFields = TypedDict(
+    "_MessagesCandidateKnownFields",
+    {
+        "provenance": NotRequired[_MessagesCandidateField0ProvenanceModel],
+        "value": Required["CanonicalMessages"],
+    },
+    total=False,
+)
+MessagesCandidate: TypeAlias = (
+    _MessagesCandidateKnownFields | JsonObject
+)  # permits additional JSON fields
+
+# Source: schema/draft/intercept-request.schema.json#/$defs/MessagesState
+_MessagesStateKnownFields = TypedDict(
+    "_MessagesStateKnownFields",
+    {
+        "candidate": Required[Union[None, "MessagesCandidate"]],
+        "flow": NotRequired[OpenString],
+        "injections": NotRequired[list["InjectEffect"]],
+        "instructions": NotRequired[list[str]],
+        "permission": Required[OpenString],
+    },
+    total=False,
+)
+MessagesState: TypeAlias = (
+    _MessagesStateKnownFields | JsonObject
+)  # permits additional JSON fields
 
 # Source: schema/draft/catalogue-event.schema.json#/$defs/model.error
 ModelErrorEvent: TypeAlias = "ExecutionEventModelError"
@@ -3816,8 +4277,60 @@ ModelRequestBeforeCapabilities: TypeAlias = (
     _ModelRequestBeforeCapabilitiesKnownFields | JsonObject
 )  # permits additional JSON fields
 
+# Source: schema/draft/intercept-response.schema.json#/$defs/ModelRequestBeforeEffect
+ModelRequestBeforeEffect: TypeAlias = Union[
+    "DenyEffect",
+    "ModelRequestBeforeModifyEffect",
+    "InjectEffect",
+    "ReturnMessagesEffect",
+    "StopFlowEffect",
+    "MessageEffect",
+    UnknownVariant,
+]
+
 # Source: schema/draft/catalogue-event.schema.json#/$defs/model.request.before
 ModelRequestBeforeEvent: TypeAlias = "ExecutionEventModelRequestBefore"
+
+# Source: schema/draft/intercept-response.schema.json#/$defs/ModelRequestBeforeInterceptResponse
+__ModelRequestBeforeInterceptResponseField2ResultModelKnownFields = TypedDict(
+    "__ModelRequestBeforeInterceptResponseField2ResultModelKnownFields",
+    {
+        "effects": NotRequired[list["ModelRequestBeforeEffect"]],
+        "extensions": NotRequired["Extensions"],
+        "protocolVersion": Required["ProtocolVersion"],
+    },
+    total=False,
+)
+_ModelRequestBeforeInterceptResponseField2ResultModel: TypeAlias = (
+    __ModelRequestBeforeInterceptResponseField2ResultModelKnownFields | JsonObject
+)  # permits additional JSON fields
+_ModelRequestBeforeInterceptResponseKnownFields = TypedDict(
+    "_ModelRequestBeforeInterceptResponseKnownFields",
+    {
+        "id": Required["JsonRpcResponseId"],
+        "jsonrpc": Required[Literal["2.0"]],
+        "result": Required[_ModelRequestBeforeInterceptResponseField2ResultModel],
+    },
+    total=False,
+)
+ModelRequestBeforeInterceptResponse: TypeAlias = (
+    _ModelRequestBeforeInterceptResponseKnownFields | JsonObject
+)  # permits additional JSON fields
+
+# Source: schema/draft/intercept-response.schema.json#/$defs/ModelRequestBeforeModifyEffect
+_ModelRequestBeforeModifyEffectKnownFields = TypedDict(
+    "_ModelRequestBeforeModifyEffectKnownFields",
+    {
+        "operation": Required[Union[Literal["replace"], Literal["merge"]]],
+        "target": Required[Literal["request"]],
+        "type": Required[Literal["modify"]],
+        "value": Required["CanonicalMessages"],
+    },
+    total=False,
+)
+ModelRequestBeforeModifyEffect: TypeAlias = (
+    _ModelRequestBeforeModifyEffectKnownFields | JsonObject
+)  # permits additional JSON fields
 
 # Source: schema/draft/capabilities.schema.json#/$defs/model.response.after
 __ModelResponseAfterCapabilitiesField1ElicitationField0FormModelKnownFields = TypedDict(
@@ -4020,8 +4533,54 @@ ModelResponseAfterCapabilities: TypeAlias = (
     _ModelResponseAfterCapabilitiesKnownFields | JsonObject
 )  # permits additional JSON fields
 
+# Source: schema/draft/intercept-response.schema.json#/$defs/ModelResponseAfterEffect
+ModelResponseAfterEffect: TypeAlias = Union[
+    "ModelResponseAfterModifyEffect", "StopFlowEffect", "MessageEffect", UnknownVariant
+]
+
 # Source: schema/draft/catalogue-event.schema.json#/$defs/model.response.after
 ModelResponseAfterEvent: TypeAlias = "ExecutionEventModelResponseAfter"
+
+# Source: schema/draft/intercept-response.schema.json#/$defs/ModelResponseAfterInterceptResponse
+__ModelResponseAfterInterceptResponseField2ResultModelKnownFields = TypedDict(
+    "__ModelResponseAfterInterceptResponseField2ResultModelKnownFields",
+    {
+        "effects": NotRequired[list["ModelResponseAfterEffect"]],
+        "extensions": NotRequired["Extensions"],
+        "protocolVersion": Required["ProtocolVersion"],
+    },
+    total=False,
+)
+_ModelResponseAfterInterceptResponseField2ResultModel: TypeAlias = (
+    __ModelResponseAfterInterceptResponseField2ResultModelKnownFields | JsonObject
+)  # permits additional JSON fields
+_ModelResponseAfterInterceptResponseKnownFields = TypedDict(
+    "_ModelResponseAfterInterceptResponseKnownFields",
+    {
+        "id": Required["JsonRpcResponseId"],
+        "jsonrpc": Required[Literal["2.0"]],
+        "result": Required[_ModelResponseAfterInterceptResponseField2ResultModel],
+    },
+    total=False,
+)
+ModelResponseAfterInterceptResponse: TypeAlias = (
+    _ModelResponseAfterInterceptResponseKnownFields | JsonObject
+)  # permits additional JSON fields
+
+# Source: schema/draft/intercept-response.schema.json#/$defs/ModelResponseAfterModifyEffect
+_ModelResponseAfterModifyEffectKnownFields = TypedDict(
+    "_ModelResponseAfterModifyEffectKnownFields",
+    {
+        "operation": Required[Union[Literal["replace"], Literal["merge"]]],
+        "target": Required[Literal["response"]],
+        "type": Required[Literal["modify"]],
+        "value": Required["CanonicalMessages"],
+    },
+    total=False,
+)
+ModelResponseAfterModifyEffect: TypeAlias = (
+    _ModelResponseAfterModifyEffectKnownFields | JsonObject
+)  # permits additional JSON fields
 
 # Source: schema/draft/catalogue-event.schema.json#/$defs/model.switch.after
 ModelSwitchAfterEvent: TypeAlias = "ExecutionEventModelSwitchAfter"
@@ -4223,11 +4782,131 @@ ModelSwitchBeforeCapabilities: TypeAlias = (
     _ModelSwitchBeforeCapabilitiesKnownFields | JsonObject
 )  # permits additional JSON fields
 
+# Source: schema/draft/intercept-response.schema.json#/$defs/ModelSwitchBeforeEffect
+ModelSwitchBeforeEffect: TypeAlias = Union[
+    "DenyEffect", "StopFlowEffect", "MessageEffect", UnknownVariant
+]
+
 # Source: schema/draft/catalogue-event.schema.json#/$defs/model.switch.before
 ModelSwitchBeforeEvent: TypeAlias = "ExecutionEventModelSwitchBefore"
 
+# Source: schema/draft/intercept-response.schema.json#/$defs/ModelSwitchBeforeInterceptResponse
+__ModelSwitchBeforeInterceptResponseField2ResultModelKnownFields = TypedDict(
+    "__ModelSwitchBeforeInterceptResponseField2ResultModelKnownFields",
+    {
+        "effects": NotRequired[list["ModelSwitchBeforeEffect"]],
+        "extensions": NotRequired["Extensions"],
+        "protocolVersion": Required["ProtocolVersion"],
+    },
+    total=False,
+)
+_ModelSwitchBeforeInterceptResponseField2ResultModel: TypeAlias = (
+    __ModelSwitchBeforeInterceptResponseField2ResultModelKnownFields | JsonObject
+)  # permits additional JSON fields
+_ModelSwitchBeforeInterceptResponseKnownFields = TypedDict(
+    "_ModelSwitchBeforeInterceptResponseKnownFields",
+    {
+        "id": Required["JsonRpcResponseId"],
+        "jsonrpc": Required[Literal["2.0"]],
+        "result": Required[_ModelSwitchBeforeInterceptResponseField2ResultModel],
+    },
+    total=False,
+)
+ModelSwitchBeforeInterceptResponse: TypeAlias = (
+    _ModelSwitchBeforeInterceptResponseKnownFields | JsonObject
+)  # permits additional JSON fields
+
 # Source: schema/draft/content-item.schema.json#/$defs/modelVisibleItem
 ModelVisibleItem: TypeAlias = "CanonicalMessage"
+
+# Source: schema/draft/effect.schema.json#/$defs/ModifyFormEffect
+_ModifyFormEffectKnownFields = TypedDict(
+    "_ModifyFormEffectKnownFields",
+    {
+        "operation": Required[Union[Literal["replace"], Literal["merge"]]],
+        "target": Required[Literal["content"]],
+        "type": Required[Literal["modify"]],
+        "value": Required["FormAnswers"],
+    },
+    total=False,
+)
+ModifyFormEffect: TypeAlias = (
+    _ModifyFormEffectKnownFields | JsonObject
+)  # permits additional JSON fields
+
+# Source: schema/draft/effect.schema.json#/$defs/ModifyInputEffect
+__ModifyInputEffectField3ValueModelKnownFields = TypedDict(
+    "__ModifyInputEffectField3ValueModelKnownFields", {}, total=False
+)
+_ModifyInputEffectField3ValueModel: TypeAlias = (
+    __ModifyInputEffectField3ValueModelKnownFields | JsonObject
+)  # permits additional JSON fields
+_ModifyInputEffectKnownFields = TypedDict(
+    "_ModifyInputEffectKnownFields",
+    {
+        "operation": Required[Union[Literal["replace"], Literal["merge"]]],
+        "target": Required[Literal["input"]],
+        "type": Required[Literal["modify"]],
+        "value": Required[_ModifyInputEffectField3ValueModel],
+    },
+    total=False,
+)
+ModifyInputEffect: TypeAlias = (
+    _ModifyInputEffectKnownFields | JsonObject
+)  # permits additional JSON fields
+
+# Source: schema/draft/effect.schema.json#/$defs/ModifyMessagesEffect
+_ModifyMessagesEffectKnownFields = TypedDict(
+    "_ModifyMessagesEffectKnownFields",
+    {
+        "operation": Required[Union[Literal["replace"], Literal["merge"]]],
+        "target": Required[
+            Union[
+                Literal["prompt"],
+                Literal["request"],
+                Literal["response"],
+                Literal["output"],
+                Literal["content"],
+            ]
+        ],
+        "type": Required[Literal["modify"]],
+        "value": Required["CanonicalMessages"],
+    },
+    total=False,
+)
+ModifyMessagesEffect: TypeAlias = (
+    _ModifyMessagesEffectKnownFields | JsonObject
+)  # permits additional JSON fields
+
+# Source: schema/draft/effect.schema.json#/$defs/ModifyTextEffect
+_ModifyTextEffectKnownFields = TypedDict(
+    "_ModifyTextEffectKnownFields",
+    {
+        "operation": Required[Union[Literal["replace"], Literal["merge"]]],
+        "target": Required[Union[Literal["instructions"], Literal["summary"]]],
+        "type": Required[Literal["modify"]],
+        "value": Required["TextParts"],
+    },
+    total=False,
+)
+ModifyTextEffect: TypeAlias = (
+    _ModifyTextEffectKnownFields | JsonObject
+)  # permits additional JSON fields
+
+# Source: schema/draft/effect.schema.json#/$defs/ModifyWorkspaceEffect
+_ModifyWorkspaceEffectKnownFields = TypedDict(
+    "_ModifyWorkspaceEffectKnownFields",
+    {
+        "operation": Required[Union[Literal["replace"], Literal["merge"]]],
+        "target": Required[Literal["workspace"]],
+        "type": Required[Literal["modify"]],
+        "value": Required["WorkspaceChange"],
+    },
+    total=False,
+)
+ModifyWorkspaceEffect: TypeAlias = (
+    _ModifyWorkspaceEffectKnownFields | JsonObject
+)  # permits additional JSON fields
 
 # Source: schema/draft/common.schema.json#/$defs/native
 NativeEvent: TypeAlias = JsonValue
@@ -4312,6 +4991,49 @@ RegistrationContentreceiver: TypeAlias = (
     _RegistrationContentreceiverKnownFields | JsonObject
 )  # permits additional JSON fields
 
+# Source: schema/draft/effect.schema.json#/$defs/ReturnElicitResultEffect
+_ReturnElicitResultEffectKnownFields = TypedDict(
+    "_ReturnElicitResultEffectKnownFields",
+    {
+        "type": Required[Literal["return"]],
+        "value": Required["McpElicitationElicitResult"],
+    },
+    total=False,
+)
+ReturnElicitResultEffect: TypeAlias = (
+    _ReturnElicitResultEffectKnownFields | JsonObject
+)  # permits additional JSON fields
+
+# Source: schema/draft/effect.schema.json#/$defs/ReturnMessagesEffect
+_ReturnMessagesEffectKnownFields = TypedDict(
+    "_ReturnMessagesEffectKnownFields",
+    {"type": Required[Literal["return"]], "value": Required["CanonicalMessages"]},
+    total=False,
+)
+ReturnMessagesEffect: TypeAlias = (
+    _ReturnMessagesEffectKnownFields | JsonObject
+)  # permits additional JSON fields
+
+# Source: schema/draft/effect.schema.json#/$defs/ReturnTextEffect
+_ReturnTextEffectKnownFields = TypedDict(
+    "_ReturnTextEffectKnownFields",
+    {"type": Required[Literal["return"]], "value": Required["TextParts"]},
+    total=False,
+)
+ReturnTextEffect: TypeAlias = (
+    _ReturnTextEffectKnownFields | JsonObject
+)  # permits additional JSON fields
+
+# Source: schema/draft/effect.schema.json#/$defs/ReturnToolEffect
+_ReturnToolEffectKnownFields = TypedDict(
+    "_ReturnToolEffectKnownFields",
+    {"type": Required[Literal["return"]], "value": Required[JsonValue]},
+    total=False,
+)
+ReturnToolEffect: TypeAlias = (
+    _ReturnToolEffectKnownFields | JsonObject
+)  # permits additional JSON fields
+
 # Source: schema/draft/registration.schema.json#/$defs/reverseDns
 ReverseDnsName: TypeAlias = str
 
@@ -4328,6 +5050,7 @@ _SessionKnownFields = TypedDict(
     "_SessionKnownFields",
     {
         "agent": NotRequired[_SessionField0AgentModel],
+        "counters": NotRequired["SessionCounters"],
         "cwd": NotRequired[str],
         "id": Required[str],
         "model": NotRequired[str],
@@ -4338,13 +5061,23 @@ _SessionKnownFields = TypedDict(
 )
 Session: TypeAlias = _SessionKnownFields | JsonObject  # permits additional JSON fields
 
-# Source: schema/draft/session-end.schema.json#
-__SessionEndEventField0CountersModelKnownFields = TypedDict(
-    "__SessionEndEventField0CountersModelKnownFields", {}, total=False
+# Source: schema/draft/common.schema.json#/$defs/SessionCounters
+_SessionCountersKnownFields = TypedDict(
+    "_SessionCountersKnownFields",
+    {
+        "inputTokens": NotRequired[int | Decimal],
+        "modelRequests": NotRequired[int | Decimal],
+        "outputTokens": NotRequired[int | Decimal],
+        "toolCalls": NotRequired[int | Decimal],
+        "turns": NotRequired[int | Decimal],
+    },
+    total=False,
 )
-_SessionEndEventField0CountersModel: TypeAlias = (
-    __SessionEndEventField0CountersModelKnownFields | JsonObject
+SessionCounters: TypeAlias = (
+    _SessionCountersKnownFields | dict[str, int | Decimal]
 )  # permits additional JSON fields
+
+# Source: schema/draft/session-end.schema.json#
 __SessionEndEventField2GapsItemModelKnownFields = TypedDict(
     "__SessionEndEventField2GapsItemModelKnownFields",
     {"path": Required[str], "reason": Required[str]},
@@ -4364,7 +5097,7 @@ _SessionEndEventField13TurnModel: TypeAlias = (
 _SessionEndEventKnownFields = TypedDict(
     "_SessionEndEventKnownFields",
     {
-        "counters": NotRequired[_SessionEndEventField0CountersModel],
+        "counters": NotRequired[dict[str, int | Decimal]],
         "extensions": NotRequired["Extensions"],
         "gaps": NotRequired[list[_SessionEndEventField2GapsItemModel]],
         "id": Required[str],
@@ -4555,6 +5288,9 @@ SessionStartCapabilities: TypeAlias = (
     _SessionStartCapabilitiesKnownFields | JsonObject
 )  # permits additional JSON fields
 
+# Source: schema/draft/intercept-response.schema.json#/$defs/SessionStartEffect
+SessionStartEffect: TypeAlias = Union["InjectEffect", "MessageEffect", UnknownVariant]
+
 # Source: schema/draft/session-start.schema.json#
 __SessionStartEventField1GapsItemModelKnownFields = TypedDict(
     "__SessionStartEventField1GapsItemModelKnownFields",
@@ -4564,16 +5300,22 @@ __SessionStartEventField1GapsItemModelKnownFields = TypedDict(
 _SessionStartEventField1GapsItemModel: TypeAlias = (
     __SessionStartEventField1GapsItemModelKnownFields | JsonObject
 )  # permits additional JSON fields
-_SessionStartEventField2HarnessModel = TypedDict(
-    "_SessionStartEventField2HarnessModel",
+__SessionStartEventField2HarnessModelKnownFields = TypedDict(
+    "__SessionStartEventField2HarnessModelKnownFields",
     {"name": Required[str], "version": Required[str]},
     total=False,
 )
-_SessionStartEventField9ResumedFromModel = TypedDict(
-    "_SessionStartEventField9ResumedFromModel",
+_SessionStartEventField2HarnessModel: TypeAlias = (
+    __SessionStartEventField2HarnessModelKnownFields | JsonObject
+)  # permits additional JSON fields
+__SessionStartEventField9ResumedFromModelKnownFields = TypedDict(
+    "__SessionStartEventField9ResumedFromModelKnownFields",
     {"id": Required[str], "synthesized": NotRequired[bool]},
     total=False,
 )
+_SessionStartEventField9ResumedFromModel: TypeAlias = (
+    __SessionStartEventField9ResumedFromModelKnownFields | JsonObject
+)  # permits additional JSON fields
 __SessionStartEventField15TurnModelKnownFields = TypedDict(
     "__SessionStartEventField15TurnModelKnownFields",
     {"id": Required[str], "synthesized": NotRequired[bool]},
@@ -4607,6 +5349,32 @@ _SessionStartEventKnownFields = TypedDict(
 )
 SessionStartEvent: TypeAlias = (
     _SessionStartEventKnownFields | JsonObject
+)  # permits additional JSON fields
+
+# Source: schema/draft/intercept-response.schema.json#/$defs/SessionStartInterceptResponse
+__SessionStartInterceptResponseField2ResultModelKnownFields = TypedDict(
+    "__SessionStartInterceptResponseField2ResultModelKnownFields",
+    {
+        "effects": NotRequired[list["SessionStartEffect"]],
+        "extensions": NotRequired["Extensions"],
+        "protocolVersion": Required["ProtocolVersion"],
+    },
+    total=False,
+)
+_SessionStartInterceptResponseField2ResultModel: TypeAlias = (
+    __SessionStartInterceptResponseField2ResultModelKnownFields | JsonObject
+)  # permits additional JSON fields
+_SessionStartInterceptResponseKnownFields = TypedDict(
+    "_SessionStartInterceptResponseKnownFields",
+    {
+        "id": Required["JsonRpcResponseId"],
+        "jsonrpc": Required[Literal["2.0"]],
+        "result": Required[_SessionStartInterceptResponseField2ResultModel],
+    },
+    total=False,
+)
+SessionStartInterceptResponse: TypeAlias = (
+    _SessionStartInterceptResponseKnownFields | JsonObject
 )  # permits additional JSON fields
 
 # Source: schema/draft/capabilities-response.schema.json#/allOf/1/properties/result/properties/manifest
@@ -4684,6 +5452,20 @@ _StdioTransportKnownFields = TypedDict(
 )
 StdioTransport: TypeAlias = (
     _StdioTransportKnownFields | JsonObject
+)  # permits additional JSON fields
+
+# Source: schema/draft/effect.schema.json#/$defs/StopFlowEffect
+_StopFlowEffectKnownFields = TypedDict(
+    "_StopFlowEffectKnownFields",
+    {
+        "operation": Required[Literal["stop"]],
+        "reason": Required[str],
+        "type": Required[Literal["flow"]],
+    },
+    total=False,
+)
+StopFlowEffect: TypeAlias = (
+    _StopFlowEffectKnownFields | JsonObject
 )  # permits additional JSON fields
 
 # Source: schema/draft/catalogue-event.schema.json#/$defs/task.change.after
@@ -4878,8 +5660,37 @@ TaskChangeBeforeCapabilities: TypeAlias = (
     _TaskChangeBeforeCapabilitiesKnownFields | JsonObject
 )  # permits additional JSON fields
 
+# Source: schema/draft/intercept-response.schema.json#/$defs/TaskChangeBeforeEffect
+TaskChangeBeforeEffect: TypeAlias = Union["DenyEffect", "MessageEffect", UnknownVariant]
+
 # Source: schema/draft/catalogue-event.schema.json#/$defs/task.change.before
 TaskChangeBeforeEvent: TypeAlias = "TaskWorkspaceEventTaskChangeBefore"
+
+# Source: schema/draft/intercept-response.schema.json#/$defs/TaskChangeBeforeInterceptResponse
+__TaskChangeBeforeInterceptResponseField2ResultModelKnownFields = TypedDict(
+    "__TaskChangeBeforeInterceptResponseField2ResultModelKnownFields",
+    {
+        "effects": NotRequired[list["TaskChangeBeforeEffect"]],
+        "extensions": NotRequired["Extensions"],
+        "protocolVersion": Required["ProtocolVersion"],
+    },
+    total=False,
+)
+_TaskChangeBeforeInterceptResponseField2ResultModel: TypeAlias = (
+    __TaskChangeBeforeInterceptResponseField2ResultModelKnownFields | JsonObject
+)  # permits additional JSON fields
+_TaskChangeBeforeInterceptResponseKnownFields = TypedDict(
+    "_TaskChangeBeforeInterceptResponseKnownFields",
+    {
+        "id": Required["JsonRpcResponseId"],
+        "jsonrpc": Required[Literal["2.0"]],
+        "result": Required[_TaskChangeBeforeInterceptResponseField2ResultModel],
+    },
+    total=False,
+)
+TaskChangeBeforeInterceptResponse: TypeAlias = (
+    _TaskChangeBeforeInterceptResponseKnownFields | JsonObject
+)  # permits additional JSON fields
 
 # Source: schema/draft/task-workspace-event.schema.json#
 TaskWorkspaceEvent: TypeAlias = Union[
@@ -4892,8 +5703,8 @@ TaskWorkspaceEvent: TypeAlias = Union[
 ]
 
 # Source: schema/draft/task-workspace-event.schema.json#/$defs/file.changed
-_TaskWorkspaceEventFileChangedField0ChangesItemModel = TypedDict(
-    "_TaskWorkspaceEventFileChangedField0ChangesItemModel",
+__TaskWorkspaceEventFileChangedField0ChangesItemModelKnownFields = TypedDict(
+    "__TaskWorkspaceEventFileChangedField0ChangesItemModelKnownFields",
     {
         "after": NotRequired["ContentItem"],
         "agentCaused": Required[bool],
@@ -4903,6 +5714,9 @@ _TaskWorkspaceEventFileChangedField0ChangesItemModel = TypedDict(
     },
     total=False,
 )
+_TaskWorkspaceEventFileChangedField0ChangesItemModel: TypeAlias = (
+    __TaskWorkspaceEventFileChangedField0ChangesItemModelKnownFields | JsonObject
+)  # permits additional JSON fields
 __TaskWorkspaceEventFileChangedField2GapsItemModelKnownFields = TypedDict(
     "__TaskWorkspaceEventFileChangedField2GapsItemModelKnownFields",
     {"path": Required[str], "reason": Required[str]},
@@ -4969,8 +5783,8 @@ _TaskWorkspaceEventTaskChangeAfterField9TaskField4PriorModel: TypeAlias = (
     __TaskWorkspaceEventTaskChangeAfterField9TaskField4PriorModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-_TaskWorkspaceEventTaskChangeAfterField9TaskModel = TypedDict(
-    "_TaskWorkspaceEventTaskChangeAfterField9TaskModel",
+__TaskWorkspaceEventTaskChangeAfterField9TaskModelKnownFields = TypedDict(
+    "__TaskWorkspaceEventTaskChangeAfterField9TaskModelKnownFields",
     {
         "change": Required[
             _TaskWorkspaceEventTaskChangeAfterField9TaskField0ChangeModel
@@ -4985,6 +5799,9 @@ _TaskWorkspaceEventTaskChangeAfterField9TaskModel = TypedDict(
     },
     total=False,
 )
+_TaskWorkspaceEventTaskChangeAfterField9TaskModel: TypeAlias = (
+    __TaskWorkspaceEventTaskChangeAfterField9TaskModelKnownFields | JsonObject
+)  # permits additional JSON fields
 __TaskWorkspaceEventTaskChangeAfterField11TurnModelKnownFields = TypedDict(
     "__TaskWorkspaceEventTaskChangeAfterField11TurnModelKnownFields",
     {"id": Required[str], "synthesized": NotRequired[bool]},
@@ -5045,8 +5862,8 @@ _TaskWorkspaceEventTaskChangeBeforeField9TaskField4PriorModel: TypeAlias = (
     __TaskWorkspaceEventTaskChangeBeforeField9TaskField4PriorModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-_TaskWorkspaceEventTaskChangeBeforeField9TaskModel = TypedDict(
-    "_TaskWorkspaceEventTaskChangeBeforeField9TaskModel",
+__TaskWorkspaceEventTaskChangeBeforeField9TaskModelKnownFields = TypedDict(
+    "__TaskWorkspaceEventTaskChangeBeforeField9TaskModelKnownFields",
     {
         "change": Required[
             _TaskWorkspaceEventTaskChangeBeforeField9TaskField0ChangeModel
@@ -5061,6 +5878,9 @@ _TaskWorkspaceEventTaskChangeBeforeField9TaskModel = TypedDict(
     },
     total=False,
 )
+_TaskWorkspaceEventTaskChangeBeforeField9TaskModel: TypeAlias = (
+    __TaskWorkspaceEventTaskChangeBeforeField9TaskModelKnownFields | JsonObject
+)  # permits additional JSON fields
 __TaskWorkspaceEventTaskChangeBeforeField11TurnModelKnownFields = TypedDict(
     "__TaskWorkspaceEventTaskChangeBeforeField11TurnModelKnownFields",
     {"id": Required[str], "synthesized": NotRequired[bool]},
@@ -5111,30 +5931,20 @@ __TaskWorkspaceEventWorkspaceChangeAfterField10TurnModelKnownFields = TypedDict(
 _TaskWorkspaceEventWorkspaceChangeAfterField10TurnModel: TypeAlias = (
     __TaskWorkspaceEventWorkspaceChangeAfterField10TurnModelKnownFields | JsonObject
 )  # permits additional JSON fields
-_TaskWorkspaceEventWorkspaceChangeAfterField12WorkspaceField0ChangeModel = TypedDict(
-    "_TaskWorkspaceEventWorkspaceChangeAfterField12WorkspaceField0ChangeModel",
-    {"cwd": NotRequired[str], "workspaceRoots": NotRequired[list[str]]},
-    total=False,
-)
-_TaskWorkspaceEventWorkspaceChangeAfterField12WorkspaceField2PriorModel = TypedDict(
-    "_TaskWorkspaceEventWorkspaceChangeAfterField12WorkspaceField2PriorModel",
-    {"cwd": NotRequired[str], "workspaceRoots": NotRequired[list[str]]},
-    total=False,
-)
-_TaskWorkspaceEventWorkspaceChangeAfterField12WorkspaceModel = TypedDict(
-    "_TaskWorkspaceEventWorkspaceChangeAfterField12WorkspaceModel",
+__TaskWorkspaceEventWorkspaceChangeAfterField12WorkspaceModelKnownFields = TypedDict(
+    "__TaskWorkspaceEventWorkspaceChangeAfterField12WorkspaceModelKnownFields",
     {
-        "change": Required[
-            _TaskWorkspaceEventWorkspaceChangeAfterField12WorkspaceField0ChangeModel
-        ],
+        "change": Required["WorkspaceChange"],
         "kind": Required[OpenString],
-        "prior": NotRequired[
-            _TaskWorkspaceEventWorkspaceChangeAfterField12WorkspaceField2PriorModel
-        ],
+        "prior": NotRequired["WorkspaceChange"],
         "reason": NotRequired[str],
     },
     total=False,
 )
+_TaskWorkspaceEventWorkspaceChangeAfterField12WorkspaceModel: TypeAlias = (
+    __TaskWorkspaceEventWorkspaceChangeAfterField12WorkspaceModelKnownFields
+    | JsonObject
+)  # permits additional JSON fields
 _TaskWorkspaceEventWorkspaceChangeAfterKnownFields = TypedDict(
     "_TaskWorkspaceEventWorkspaceChangeAfterKnownFields",
     {
@@ -5179,30 +5989,20 @@ __TaskWorkspaceEventWorkspaceChangeBeforeField10TurnModelKnownFields = TypedDict
 _TaskWorkspaceEventWorkspaceChangeBeforeField10TurnModel: TypeAlias = (
     __TaskWorkspaceEventWorkspaceChangeBeforeField10TurnModelKnownFields | JsonObject
 )  # permits additional JSON fields
-_TaskWorkspaceEventWorkspaceChangeBeforeField12WorkspaceField0ChangeModel = TypedDict(
-    "_TaskWorkspaceEventWorkspaceChangeBeforeField12WorkspaceField0ChangeModel",
-    {"cwd": NotRequired[str], "workspaceRoots": NotRequired[list[str]]},
-    total=False,
-)
-_TaskWorkspaceEventWorkspaceChangeBeforeField12WorkspaceField2PriorModel = TypedDict(
-    "_TaskWorkspaceEventWorkspaceChangeBeforeField12WorkspaceField2PriorModel",
-    {"cwd": NotRequired[str], "workspaceRoots": NotRequired[list[str]]},
-    total=False,
-)
-_TaskWorkspaceEventWorkspaceChangeBeforeField12WorkspaceModel = TypedDict(
-    "_TaskWorkspaceEventWorkspaceChangeBeforeField12WorkspaceModel",
+__TaskWorkspaceEventWorkspaceChangeBeforeField12WorkspaceModelKnownFields = TypedDict(
+    "__TaskWorkspaceEventWorkspaceChangeBeforeField12WorkspaceModelKnownFields",
     {
-        "change": Required[
-            _TaskWorkspaceEventWorkspaceChangeBeforeField12WorkspaceField0ChangeModel
-        ],
+        "change": Required["WorkspaceChange"],
         "kind": Required[OpenString],
-        "prior": NotRequired[
-            _TaskWorkspaceEventWorkspaceChangeBeforeField12WorkspaceField2PriorModel
-        ],
+        "prior": NotRequired["WorkspaceChange"],
         "reason": NotRequired[str],
     },
     total=False,
 )
+_TaskWorkspaceEventWorkspaceChangeBeforeField12WorkspaceModel: TypeAlias = (
+    __TaskWorkspaceEventWorkspaceChangeBeforeField12WorkspaceModelKnownFields
+    | JsonObject
+)  # permits additional JSON fields
 _TaskWorkspaceEventWorkspaceChangeBeforeKnownFields = TypedDict(
     "_TaskWorkspaceEventWorkspaceChangeBeforeKnownFields",
     {
@@ -5231,8 +6031,8 @@ TaskWorkspaceEventWorkspaceChangeBefore: TypeAlias = (
 )  # permits additional JSON fields
 
 # Source: schema/draft/content-item.schema.json#/$defs/textBodyPart
-TextBodyPart = TypedDict(
-    "TextBodyPart",
+_TextBodyPartKnownFields = TypedDict(
+    "_TextBodyPartKnownFields",
     {
         "category": NotRequired[str],
         "id": Required[str],
@@ -5244,15 +6044,40 @@ TextBodyPart = TypedDict(
     },
     total=False,
 )
+TextBodyPart: TypeAlias = (
+    _TextBodyPartKnownFields | JsonObject
+)  # permits additional JSON fields
+
+# Source: schema/draft/intercept-request.schema.json#/$defs/TextCandidate
+__TextCandidateField0ProvenanceModelKnownFields = TypedDict(
+    "__TextCandidateField0ProvenanceModelKnownFields", {}, total=False
+)
+_TextCandidateField0ProvenanceModel: TypeAlias = (
+    __TextCandidateField0ProvenanceModelKnownFields | JsonObject
+)  # permits additional JSON fields
+_TextCandidateKnownFields = TypedDict(
+    "_TextCandidateKnownFields",
+    {
+        "provenance": NotRequired[_TextCandidateField0ProvenanceModel],
+        "value": Required["TextParts"],
+    },
+    total=False,
+)
+TextCandidate: TypeAlias = (
+    _TextCandidateKnownFields | JsonObject
+)  # permits additional JSON fields
 
 # Source: schema/draft/content-item.schema.json#/$defs/textGapPart
-_TextGapPartField1GapModel = TypedDict(
-    "_TextGapPartField1GapModel",
+__TextGapPartField1GapModelKnownFields = TypedDict(
+    "__TextGapPartField1GapModelKnownFields",
     {"path": NotRequired[str], "reason": Required[str]},
     total=False,
 )
-TextGapPart = TypedDict(
-    "TextGapPart",
+_TextGapPartField1GapModel: TypeAlias = (
+    __TextGapPartField1GapModelKnownFields | JsonObject
+)  # permits additional JSON fields
+_TextGapPartKnownFields = TypedDict(
+    "_TextGapPartKnownFields",
     {
         "category": NotRequired[str],
         "gap": Required[_TextGapPartField1GapModel],
@@ -5266,10 +6091,13 @@ TextGapPart = TypedDict(
     },
     total=False,
 )
+TextGapPart: TypeAlias = (
+    _TextGapPartKnownFields | JsonObject
+)  # permits additional JSON fields
 
 # Source: schema/draft/content-item.schema.json#/$defs/textMetadataPart
-TextMetadataPart = TypedDict(
-    "TextMetadataPart",
+_TextMetadataPartKnownFields = TypedDict(
+    "_TextMetadataPartKnownFields",
     {
         "category": NotRequired[str],
         "id": Required[str],
@@ -5282,10 +6110,13 @@ TextMetadataPart = TypedDict(
     },
     total=False,
 )
+TextMetadataPart: TypeAlias = (
+    _TextMetadataPartKnownFields | JsonObject
+)  # permits additional JSON fields
 
 # Source: schema/draft/content-item.schema.json#/$defs/textOmittedPart
-TextOmittedPart = TypedDict(
-    "TextOmittedPart",
+_TextOmittedPartKnownFields = TypedDict(
+    "_TextOmittedPartKnownFields",
     {
         "category": NotRequired[str],
         "id": Required[str],
@@ -5298,6 +6129,9 @@ TextOmittedPart = TypedDict(
     },
     total=False,
 )
+TextOmittedPart: TypeAlias = (
+    _TextOmittedPartKnownFields | JsonObject
+)  # permits additional JSON fields
 
 # Source: schema/draft/content-item.schema.json#/$defs/textPart
 TextPart: TypeAlias = Union[
@@ -5306,6 +6140,22 @@ TextPart: TypeAlias = Union[
 
 # Source: schema/draft/content-item.schema.json#/$defs/textParts
 TextParts: TypeAlias = list["TextPart"]
+
+# Source: schema/draft/intercept-request.schema.json#/$defs/TextState
+_TextStateKnownFields = TypedDict(
+    "_TextStateKnownFields",
+    {
+        "candidate": Required[Union[None, "TextCandidate"]],
+        "flow": NotRequired[OpenString],
+        "injections": NotRequired[list["InjectEffect"]],
+        "instructions": NotRequired[list[str]],
+        "permission": Required[OpenString],
+    },
+    total=False,
+)
+TextState: TypeAlias = (
+    _TextStateKnownFields | JsonObject
+)  # permits additional JSON fields
 
 # Source: schema/draft/capabilities.schema.json#/$defs/tool.after
 __ToolAfterCapabilitiesField1ElicitationField0FormModelKnownFields = TypedDict(
@@ -5471,12 +6321,24 @@ ToolAfterCapabilities: TypeAlias = (
     _ToolAfterCapabilitiesKnownFields | JsonObject
 )  # permits additional JSON fields
 
+# Source: schema/draft/intercept-response.schema.json#/$defs/ToolAfterEffect
+ToolAfterEffect: TypeAlias = Union[
+    "ToolAfterModifyEffect",
+    "InjectEffect",
+    "StopFlowEffect",
+    "ContinueFlowEffect",
+    "MessageEffect",
+]
+
 # Source: schema/draft/tool-after.schema.json#
-_ToolAfterEventField1CallModel = TypedDict(
-    "_ToolAfterEventField1CallModel",
+__ToolAfterEventField1CallModelKnownFields = TypedDict(
+    "__ToolAfterEventField1CallModelKnownFields",
     {"id": Required[str], "synthesized": NotRequired[bool]},
     total=False,
 )
+_ToolAfterEventField1CallModel: TypeAlias = (
+    __ToolAfterEventField1CallModelKnownFields | JsonObject
+)  # permits additional JSON fields
 __ToolAfterEventField7GapsItemModelKnownFields = TypedDict(
     "__ToolAfterEventField7GapsItemModelKnownFields",
     {"path": Required[str], "reason": Required[str]},
@@ -5522,6 +6384,47 @@ _ToolAfterEventKnownFields = TypedDict(
 )
 ToolAfterEvent: TypeAlias = (
     _ToolAfterEventKnownFields | JsonObject
+)  # permits additional JSON fields
+
+# Source: schema/draft/intercept-response.schema.json#/$defs/ToolAfterInterceptResponse
+__ToolAfterInterceptResponseField2ResultModelKnownFields = TypedDict(
+    "__ToolAfterInterceptResponseField2ResultModelKnownFields",
+    {
+        "effects": NotRequired[list["ToolAfterEffect"]],
+        "extensions": NotRequired["Extensions"],
+        "protocolVersion": Required["ProtocolVersion"],
+    },
+    total=False,
+)
+_ToolAfterInterceptResponseField2ResultModel: TypeAlias = (
+    __ToolAfterInterceptResponseField2ResultModelKnownFields | JsonObject
+)  # permits additional JSON fields
+_ToolAfterInterceptResponseKnownFields = TypedDict(
+    "_ToolAfterInterceptResponseKnownFields",
+    {
+        "id": Required["JsonRpcResponseId"],
+        "jsonrpc": Required[Literal["2.0"]],
+        "result": Required[_ToolAfterInterceptResponseField2ResultModel],
+    },
+    total=False,
+)
+ToolAfterInterceptResponse: TypeAlias = (
+    _ToolAfterInterceptResponseKnownFields | JsonObject
+)  # permits additional JSON fields
+
+# Source: schema/draft/intercept-response.schema.json#/$defs/ToolAfterModifyEffect
+_ToolAfterModifyEffectKnownFields = TypedDict(
+    "_ToolAfterModifyEffectKnownFields",
+    {
+        "operation": Required[Union[Literal["replace"], Literal["merge"]]],
+        "target": Required[Literal["output"]],
+        "type": Required[Literal["modify"]],
+        "value": Required["CanonicalMessages"],
+    },
+    total=False,
+)
+ToolAfterModifyEffect: TypeAlias = (
+    _ToolAfterModifyEffectKnownFields | JsonObject
 )  # permits additional JSON fields
 
 # Source: schema/draft/capabilities.schema.json#/$defs/tool.batch.after
@@ -5701,8 +6604,39 @@ ToolBatchAfterCapabilities: TypeAlias = (
     _ToolBatchAfterCapabilitiesKnownFields | JsonObject
 )  # permits additional JSON fields
 
+# Source: schema/draft/intercept-response.schema.json#/$defs/ToolBatchAfterEffect
+ToolBatchAfterEffect: TypeAlias = Union[
+    "StopFlowEffect", "InjectEffect", "MessageEffect", UnknownVariant
+]
+
 # Source: schema/draft/catalogue-event.schema.json#/$defs/tool.batch.after
 ToolBatchAfterEvent: TypeAlias = "ExecutionEventToolBatchAfter"
+
+# Source: schema/draft/intercept-response.schema.json#/$defs/ToolBatchAfterInterceptResponse
+__ToolBatchAfterInterceptResponseField2ResultModelKnownFields = TypedDict(
+    "__ToolBatchAfterInterceptResponseField2ResultModelKnownFields",
+    {
+        "effects": NotRequired[list["ToolBatchAfterEffect"]],
+        "extensions": NotRequired["Extensions"],
+        "protocolVersion": Required["ProtocolVersion"],
+    },
+    total=False,
+)
+_ToolBatchAfterInterceptResponseField2ResultModel: TypeAlias = (
+    __ToolBatchAfterInterceptResponseField2ResultModelKnownFields | JsonObject
+)  # permits additional JSON fields
+_ToolBatchAfterInterceptResponseKnownFields = TypedDict(
+    "_ToolBatchAfterInterceptResponseKnownFields",
+    {
+        "id": Required["JsonRpcResponseId"],
+        "jsonrpc": Required[Literal["2.0"]],
+        "result": Required[_ToolBatchAfterInterceptResponseField2ResultModel],
+    },
+    total=False,
+)
+ToolBatchAfterInterceptResponse: TypeAlias = (
+    _ToolBatchAfterInterceptResponseKnownFields | JsonObject
+)  # permits additional JSON fields
 
 # Source: schema/draft/capabilities.schema.json#/$defs/tool.before
 __ToolBeforeCapabilitiesField1ElicitationField0FormModelKnownFields = TypedDict(
@@ -5870,12 +6804,28 @@ ToolBeforeCapabilities: TypeAlias = (
     _ToolBeforeCapabilitiesKnownFields | JsonObject
 )  # permits additional JSON fields
 
+# Source: schema/draft/intercept-response.schema.json#/$defs/ToolBeforeEffect
+ToolBeforeEffect: TypeAlias = Union[
+    "DenyEffect",
+    "AllowEffect",
+    "AskEffect",
+    "ToolBeforeModifyEffect",
+    "InjectEffect",
+    "StopFlowEffect",
+    "ReturnToolEffect",
+    "MessageEffect",
+    UnknownVariant,
+]
+
 # Source: schema/draft/tool-before.schema.json#
-_ToolBeforeEventField1CallModel = TypedDict(
-    "_ToolBeforeEventField1CallModel",
+__ToolBeforeEventField1CallModelKnownFields = TypedDict(
+    "__ToolBeforeEventField1CallModelKnownFields",
     {"id": Required[str], "synthesized": NotRequired[bool]},
     total=False,
 )
+_ToolBeforeEventField1CallModel: TypeAlias = (
+    __ToolBeforeEventField1CallModelKnownFields | JsonObject
+)  # permits additional JSON fields
 __ToolBeforeEventField3GapsItemModelKnownFields = TypedDict(
     "__ToolBeforeEventField3GapsItemModelKnownFields",
     {"path": Required[str], "reason": Required[str]},
@@ -5916,6 +6866,72 @@ _ToolBeforeEventKnownFields = TypedDict(
 )
 ToolBeforeEvent: TypeAlias = (
     _ToolBeforeEventKnownFields | JsonObject
+)  # permits additional JSON fields
+
+# Source: schema/draft/intercept-response.schema.json#/$defs/ToolBeforeInterceptResponse
+__ToolBeforeInterceptResponseField2ResultModelKnownFields = TypedDict(
+    "__ToolBeforeInterceptResponseField2ResultModelKnownFields",
+    {
+        "effects": NotRequired[list["ToolBeforeEffect"]],
+        "extensions": NotRequired["Extensions"],
+        "protocolVersion": Required["ProtocolVersion"],
+    },
+    total=False,
+)
+_ToolBeforeInterceptResponseField2ResultModel: TypeAlias = (
+    __ToolBeforeInterceptResponseField2ResultModelKnownFields | JsonObject
+)  # permits additional JSON fields
+_ToolBeforeInterceptResponseKnownFields = TypedDict(
+    "_ToolBeforeInterceptResponseKnownFields",
+    {
+        "id": Required["JsonRpcResponseId"],
+        "jsonrpc": Required[Literal["2.0"]],
+        "result": Required[_ToolBeforeInterceptResponseField2ResultModel],
+    },
+    total=False,
+)
+ToolBeforeInterceptResponse: TypeAlias = (
+    _ToolBeforeInterceptResponseKnownFields | JsonObject
+)  # permits additional JSON fields
+
+# Source: schema/draft/intercept-response.schema.json#/$defs/ToolBeforeModifyEffect
+__ToolBeforeModifyEffectField3ValueModelKnownFields = TypedDict(
+    "__ToolBeforeModifyEffectField3ValueModelKnownFields", {}, total=False
+)
+_ToolBeforeModifyEffectField3ValueModel: TypeAlias = (
+    __ToolBeforeModifyEffectField3ValueModelKnownFields | JsonObject
+)  # permits additional JSON fields
+_ToolBeforeModifyEffectKnownFields = TypedDict(
+    "_ToolBeforeModifyEffectKnownFields",
+    {
+        "operation": Required[Union[Literal["replace"], Literal["merge"]]],
+        "target": Required[Literal["input"]],
+        "type": Required[Literal["modify"]],
+        "value": Required[_ToolBeforeModifyEffectField3ValueModel],
+    },
+    total=False,
+)
+ToolBeforeModifyEffect: TypeAlias = (
+    _ToolBeforeModifyEffectKnownFields | JsonObject
+)  # permits additional JSON fields
+
+# Source: schema/draft/intercept-request.schema.json#/$defs/ToolCandidate
+__ToolCandidateField0ProvenanceModelKnownFields = TypedDict(
+    "__ToolCandidateField0ProvenanceModelKnownFields", {}, total=False
+)
+_ToolCandidateField0ProvenanceModel: TypeAlias = (
+    __ToolCandidateField0ProvenanceModelKnownFields | JsonObject
+)  # permits additional JSON fields
+_ToolCandidateKnownFields = TypedDict(
+    "_ToolCandidateKnownFields",
+    {
+        "provenance": NotRequired[_ToolCandidateField0ProvenanceModel],
+        "value": Required[JsonValue],
+    },
+    total=False,
+)
+ToolCandidate: TypeAlias = (
+    _ToolCandidateKnownFields | JsonObject
 )  # permits additional JSON fields
 
 # Source: schema/draft/capabilities.schema.json#/$defs/tool.permission.request
@@ -6132,14 +7148,87 @@ ToolPermissionRequestCapabilities: TypeAlias = (
     _ToolPermissionRequestCapabilitiesKnownFields | JsonObject
 )  # permits additional JSON fields
 
+# Source: schema/draft/intercept-response.schema.json#/$defs/ToolPermissionRequestEffect
+ToolPermissionRequestEffect: TypeAlias = Union[
+    "AllowEffect",
+    "DenyEffect",
+    "ToolPermissionRequestModifyEffect",
+    "StopFlowEffect",
+    "MessageEffect",
+    UnknownVariant,
+]
+
 # Source: schema/draft/catalogue-event.schema.json#/$defs/tool.permission.request
 ToolPermissionRequestEvent: TypeAlias = "ExecutionEventToolPermissionRequest"
+
+# Source: schema/draft/intercept-response.schema.json#/$defs/ToolPermissionRequestInterceptResponse
+__ToolPermissionRequestInterceptResponseField2ResultModelKnownFields = TypedDict(
+    "__ToolPermissionRequestInterceptResponseField2ResultModelKnownFields",
+    {
+        "effects": NotRequired[list["ToolPermissionRequestEffect"]],
+        "extensions": NotRequired["Extensions"],
+        "protocolVersion": Required["ProtocolVersion"],
+    },
+    total=False,
+)
+_ToolPermissionRequestInterceptResponseField2ResultModel: TypeAlias = (
+    __ToolPermissionRequestInterceptResponseField2ResultModelKnownFields | JsonObject
+)  # permits additional JSON fields
+_ToolPermissionRequestInterceptResponseKnownFields = TypedDict(
+    "_ToolPermissionRequestInterceptResponseKnownFields",
+    {
+        "id": Required["JsonRpcResponseId"],
+        "jsonrpc": Required[Literal["2.0"]],
+        "result": Required[_ToolPermissionRequestInterceptResponseField2ResultModel],
+    },
+    total=False,
+)
+ToolPermissionRequestInterceptResponse: TypeAlias = (
+    _ToolPermissionRequestInterceptResponseKnownFields | JsonObject
+)  # permits additional JSON fields
+
+# Source: schema/draft/intercept-response.schema.json#/$defs/ToolPermissionRequestModifyEffect
+__ToolPermissionRequestModifyEffectField3ValueModelKnownFields = TypedDict(
+    "__ToolPermissionRequestModifyEffectField3ValueModelKnownFields", {}, total=False
+)
+_ToolPermissionRequestModifyEffectField3ValueModel: TypeAlias = (
+    __ToolPermissionRequestModifyEffectField3ValueModelKnownFields | JsonObject
+)  # permits additional JSON fields
+_ToolPermissionRequestModifyEffectKnownFields = TypedDict(
+    "_ToolPermissionRequestModifyEffectKnownFields",
+    {
+        "operation": Required[Union[Literal["replace"], Literal["merge"]]],
+        "target": Required[Literal["input"]],
+        "type": Required[Literal["modify"]],
+        "value": Required[_ToolPermissionRequestModifyEffectField3ValueModel],
+    },
+    total=False,
+)
+ToolPermissionRequestModifyEffect: TypeAlias = (
+    _ToolPermissionRequestModifyEffectKnownFields | JsonObject
+)  # permits additional JSON fields
 
 # Source: schema/draft/catalogue-event.schema.json#/$defs/tool.permission.resolved
 ToolPermissionResolvedEvent: TypeAlias = "ExecutionEventToolPermissionResolved"
 
 # Source: schema/draft/catalogue-event.schema.json#/$defs/tool.progress
 ToolProgressEvent: TypeAlias = "ExecutionEventToolProgress"
+
+# Source: schema/draft/intercept-request.schema.json#/$defs/ToolState
+_ToolStateKnownFields = TypedDict(
+    "_ToolStateKnownFields",
+    {
+        "candidate": Required[Union[None, "ToolCandidate"]],
+        "flow": NotRequired[OpenString],
+        "injections": NotRequired[list["InjectEffect"]],
+        "instructions": NotRequired[list[str]],
+        "permission": Required[OpenString],
+    },
+    total=False,
+)
+ToolState: TypeAlias = (
+    _ToolStateKnownFields | JsonObject
+)  # permits additional JSON fields
 
 # Source: schema/draft/catalogue-event.schema.json#/$defs/turn.end
 TurnEndEvent: TypeAlias = "ExecutionEventTurnEnd"
@@ -6333,8 +7422,57 @@ TurnFinishBeforeCapabilities: TypeAlias = (
     _TurnFinishBeforeCapabilitiesKnownFields | JsonObject
 )  # permits additional JSON fields
 
+# Source: schema/draft/intercept-response.schema.json#/$defs/TurnFinishBeforeEffect
+TurnFinishBeforeEffect: TypeAlias = Union[
+    "TurnFinishBeforeModifyEffect",
+    "StopFlowEffect",
+    "ContinueFlowEffect",
+    "MessageEffect",
+]
+
 # Source: schema/draft/catalogue-event.schema.json#/$defs/turn.finish.before
 TurnFinishBeforeEvent: TypeAlias = "ExecutionEventTurnFinishBefore"
+
+# Source: schema/draft/intercept-response.schema.json#/$defs/TurnFinishBeforeInterceptResponse
+__TurnFinishBeforeInterceptResponseField2ResultModelKnownFields = TypedDict(
+    "__TurnFinishBeforeInterceptResponseField2ResultModelKnownFields",
+    {
+        "effects": NotRequired[list["TurnFinishBeforeEffect"]],
+        "extensions": NotRequired["Extensions"],
+        "protocolVersion": Required["ProtocolVersion"],
+    },
+    total=False,
+)
+_TurnFinishBeforeInterceptResponseField2ResultModel: TypeAlias = (
+    __TurnFinishBeforeInterceptResponseField2ResultModelKnownFields | JsonObject
+)  # permits additional JSON fields
+_TurnFinishBeforeInterceptResponseKnownFields = TypedDict(
+    "_TurnFinishBeforeInterceptResponseKnownFields",
+    {
+        "id": Required["JsonRpcResponseId"],
+        "jsonrpc": Required[Literal["2.0"]],
+        "result": Required[_TurnFinishBeforeInterceptResponseField2ResultModel],
+    },
+    total=False,
+)
+TurnFinishBeforeInterceptResponse: TypeAlias = (
+    _TurnFinishBeforeInterceptResponseKnownFields | JsonObject
+)  # permits additional JSON fields
+
+# Source: schema/draft/intercept-response.schema.json#/$defs/TurnFinishBeforeModifyEffect
+_TurnFinishBeforeModifyEffectKnownFields = TypedDict(
+    "_TurnFinishBeforeModifyEffectKnownFields",
+    {
+        "operation": Required[Union[Literal["replace"], Literal["merge"]]],
+        "target": Required[Literal["response"]],
+        "type": Required[Literal["modify"]],
+        "value": Required["CanonicalMessages"],
+    },
+    total=False,
+)
+TurnFinishBeforeModifyEffect: TypeAlias = (
+    _TurnFinishBeforeModifyEffectKnownFields | JsonObject
+)  # permits additional JSON fields
 
 # Source: schema/draft/catalogue-event.schema.json#/$defs/turn.progress
 TurnProgressEvent: TypeAlias = "ExecutionEventTurnProgress"
@@ -6503,8 +7641,59 @@ TurnStartCapabilities: TypeAlias = (
     _TurnStartCapabilitiesKnownFields | JsonObject
 )  # permits additional JSON fields
 
+# Source: schema/draft/intercept-response.schema.json#/$defs/TurnStartEffect
+TurnStartEffect: TypeAlias = Union[
+    "DenyEffect",
+    "TurnStartModifyEffect",
+    "InjectEffect",
+    "StopFlowEffect",
+    "MessageEffect",
+    UnknownVariant,
+]
+
 # Source: schema/draft/catalogue-event.schema.json#/$defs/turn.start
 TurnStartEvent: TypeAlias = "ExecutionEventTurnStart"
+
+# Source: schema/draft/intercept-response.schema.json#/$defs/TurnStartInterceptResponse
+__TurnStartInterceptResponseField2ResultModelKnownFields = TypedDict(
+    "__TurnStartInterceptResponseField2ResultModelKnownFields",
+    {
+        "effects": NotRequired[list["TurnStartEffect"]],
+        "extensions": NotRequired["Extensions"],
+        "protocolVersion": Required["ProtocolVersion"],
+    },
+    total=False,
+)
+_TurnStartInterceptResponseField2ResultModel: TypeAlias = (
+    __TurnStartInterceptResponseField2ResultModelKnownFields | JsonObject
+)  # permits additional JSON fields
+_TurnStartInterceptResponseKnownFields = TypedDict(
+    "_TurnStartInterceptResponseKnownFields",
+    {
+        "id": Required["JsonRpcResponseId"],
+        "jsonrpc": Required[Literal["2.0"]],
+        "result": Required[_TurnStartInterceptResponseField2ResultModel],
+    },
+    total=False,
+)
+TurnStartInterceptResponse: TypeAlias = (
+    _TurnStartInterceptResponseKnownFields | JsonObject
+)  # permits additional JSON fields
+
+# Source: schema/draft/intercept-response.schema.json#/$defs/TurnStartModifyEffect
+_TurnStartModifyEffectKnownFields = TypedDict(
+    "_TurnStartModifyEffectKnownFields",
+    {
+        "operation": Required[Union[Literal["replace"], Literal["merge"]]],
+        "target": Required[Literal["prompt"]],
+        "type": Required[Literal["modify"]],
+        "value": Required["CanonicalMessages"],
+    },
+    total=False,
+)
+TurnStartModifyEffect: TypeAlias = (
+    _TurnStartModifyEffectKnownFields | JsonObject
+)  # permits additional JSON fields
 
 # Source: schema/draft/catalogue-event.schema.json#/$defs/user.attention
 __UserAttentionEventField1GapsItemModelKnownFields = TypedDict(
@@ -6523,8 +7712,8 @@ __UserAttentionEventField10TurnModelKnownFields = TypedDict(
 _UserAttentionEventField10TurnModel: TypeAlias = (
     __UserAttentionEventField10TurnModelKnownFields | JsonObject
 )  # permits additional JSON fields
-_UserAttentionEventField12AttentionModel = TypedDict(
-    "_UserAttentionEventField12AttentionModel",
+__UserAttentionEventField12AttentionModelKnownFields = TypedDict(
+    "__UserAttentionEventField12AttentionModelKnownFields",
     {
         "kind": Required[str],
         "message": Required["TextParts"],
@@ -6532,6 +7721,9 @@ _UserAttentionEventField12AttentionModel = TypedDict(
     },
     total=False,
 )
+_UserAttentionEventField12AttentionModel: TypeAlias = (
+    __UserAttentionEventField12AttentionModelKnownFields | JsonObject
+)  # permits additional JSON fields
 _UserAttentionEventKnownFields = TypedDict(
     "_UserAttentionEventKnownFields",
     {
@@ -6769,6 +7961,11 @@ UserElicitationRequestCapabilities: TypeAlias = (
     _UserElicitationRequestCapabilitiesKnownFields | JsonObject
 )  # permits additional JSON fields
 
+# Source: schema/draft/intercept-response.schema.json#/$defs/UserElicitationRequestEffect
+UserElicitationRequestEffect: TypeAlias = Union[
+    "DenyEffect", "ReturnElicitResultEffect", "MessageEffect", UnknownVariant
+]
+
 # Source: schema/draft/catalogue-event.schema.json#/$defs/user.elicitation.request
 __UserElicitationRequestEventField1GapsItemModelKnownFields = TypedDict(
     "__UserElicitationRequestEventField1GapsItemModelKnownFields",
@@ -6786,8 +7983,8 @@ __UserElicitationRequestEventField10TurnModelKnownFields = TypedDict(
 _UserElicitationRequestEventField10TurnModel: TypeAlias = (
     __UserElicitationRequestEventField10TurnModelKnownFields | JsonObject
 )  # permits additional JSON fields
-_UserElicitationRequestEventField12ElicitationModel = TypedDict(
-    "_UserElicitationRequestEventField12ElicitationModel",
+__UserElicitationRequestEventField12ElicitationModelKnownFields = TypedDict(
+    "__UserElicitationRequestEventField12ElicitationModelKnownFields",
     {
         "mode": Required[OpenString],
         "request": NotRequired["TextPart"],
@@ -6795,6 +7992,9 @@ _UserElicitationRequestEventField12ElicitationModel = TypedDict(
     },
     total=False,
 )
+_UserElicitationRequestEventField12ElicitationModel: TypeAlias = (
+    __UserElicitationRequestEventField12ElicitationModelKnownFields | JsonObject
+)  # permits additional JSON fields
 _UserElicitationRequestEventKnownFields = TypedDict(
     "_UserElicitationRequestEventKnownFields",
     {
@@ -6816,6 +8016,32 @@ _UserElicitationRequestEventKnownFields = TypedDict(
 )
 UserElicitationRequestEvent: TypeAlias = (
     _UserElicitationRequestEventKnownFields | JsonObject
+)  # permits additional JSON fields
+
+# Source: schema/draft/intercept-response.schema.json#/$defs/UserElicitationRequestInterceptResponse
+__UserElicitationRequestInterceptResponseField2ResultModelKnownFields = TypedDict(
+    "__UserElicitationRequestInterceptResponseField2ResultModelKnownFields",
+    {
+        "effects": NotRequired[list["UserElicitationRequestEffect"]],
+        "extensions": NotRequired["Extensions"],
+        "protocolVersion": Required["ProtocolVersion"],
+    },
+    total=False,
+)
+_UserElicitationRequestInterceptResponseField2ResultModel: TypeAlias = (
+    __UserElicitationRequestInterceptResponseField2ResultModelKnownFields | JsonObject
+)  # permits additional JSON fields
+_UserElicitationRequestInterceptResponseKnownFields = TypedDict(
+    "_UserElicitationRequestInterceptResponseKnownFields",
+    {
+        "id": Required["JsonRpcResponseId"],
+        "jsonrpc": Required[Literal["2.0"]],
+        "result": Required[_UserElicitationRequestInterceptResponseField2ResultModel],
+    },
+    total=False,
+)
+UserElicitationRequestInterceptResponse: TypeAlias = (
+    _UserElicitationRequestInterceptResponseKnownFields | JsonObject
 )  # permits additional JSON fields
 
 # Source: schema/draft/capabilities.schema.json#/$defs/user.elicitation.result
@@ -7032,6 +8258,11 @@ UserElicitationResultCapabilities: TypeAlias = (
     _UserElicitationResultCapabilitiesKnownFields | JsonObject
 )  # permits additional JSON fields
 
+# Source: schema/draft/intercept-response.schema.json#/$defs/UserElicitationResultEffect
+UserElicitationResultEffect: TypeAlias = Union[
+    "UserElicitationResultModifyEffect", "MessageEffect", UnknownVariant
+]
+
 # Source: schema/draft/catalogue-event.schema.json#/$defs/user.elicitation.result
 __UserElicitationResultEventField1GapsItemModelKnownFields = TypedDict(
     "__UserElicitationResultEventField1GapsItemModelKnownFields",
@@ -7049,8 +8280,8 @@ __UserElicitationResultEventField10TurnModelKnownFields = TypedDict(
 _UserElicitationResultEventField10TurnModel: TypeAlias = (
     __UserElicitationResultEventField10TurnModelKnownFields | JsonObject
 )  # permits additional JSON fields
-_UserElicitationResultEventField12ElicitationModel = TypedDict(
-    "_UserElicitationResultEventField12ElicitationModel",
+__UserElicitationResultEventField12ElicitationModelKnownFields = TypedDict(
+    "__UserElicitationResultEventField12ElicitationModelKnownFields",
     {
         "action": Required[OpenString],
         "mode": Required[OpenString],
@@ -7059,6 +8290,9 @@ _UserElicitationResultEventField12ElicitationModel = TypedDict(
     },
     total=False,
 )
+_UserElicitationResultEventField12ElicitationModel: TypeAlias = (
+    __UserElicitationResultEventField12ElicitationModelKnownFields | JsonObject
+)  # permits additional JSON fields
 _UserElicitationResultEventKnownFields = TypedDict(
     "_UserElicitationResultEventKnownFields",
     {
@@ -7080,6 +8314,47 @@ _UserElicitationResultEventKnownFields = TypedDict(
 )
 UserElicitationResultEvent: TypeAlias = (
     _UserElicitationResultEventKnownFields | JsonObject
+)  # permits additional JSON fields
+
+# Source: schema/draft/intercept-response.schema.json#/$defs/UserElicitationResultInterceptResponse
+__UserElicitationResultInterceptResponseField2ResultModelKnownFields = TypedDict(
+    "__UserElicitationResultInterceptResponseField2ResultModelKnownFields",
+    {
+        "effects": NotRequired[list["UserElicitationResultEffect"]],
+        "extensions": NotRequired["Extensions"],
+        "protocolVersion": Required["ProtocolVersion"],
+    },
+    total=False,
+)
+_UserElicitationResultInterceptResponseField2ResultModel: TypeAlias = (
+    __UserElicitationResultInterceptResponseField2ResultModelKnownFields | JsonObject
+)  # permits additional JSON fields
+_UserElicitationResultInterceptResponseKnownFields = TypedDict(
+    "_UserElicitationResultInterceptResponseKnownFields",
+    {
+        "id": Required["JsonRpcResponseId"],
+        "jsonrpc": Required[Literal["2.0"]],
+        "result": Required[_UserElicitationResultInterceptResponseField2ResultModel],
+    },
+    total=False,
+)
+UserElicitationResultInterceptResponse: TypeAlias = (
+    _UserElicitationResultInterceptResponseKnownFields | JsonObject
+)  # permits additional JSON fields
+
+# Source: schema/draft/intercept-response.schema.json#/$defs/UserElicitationResultModifyEffect
+_UserElicitationResultModifyEffectKnownFields = TypedDict(
+    "_UserElicitationResultModifyEffectKnownFields",
+    {
+        "operation": Required[Union[Literal["replace"], Literal["merge"]]],
+        "target": Required[Literal["content"]],
+        "type": Required[Literal["modify"]],
+        "value": Required["FormAnswers"],
+    },
+    total=False,
+)
+UserElicitationResultModifyEffect: TypeAlias = (
+    _UserElicitationResultModifyEffectKnownFields | JsonObject
 )  # permits additional JSON fields
 
 # Source: schema/draft/capabilities.schema.json#/$defs/user.message.inbound
@@ -7283,6 +8558,11 @@ UserMessageInboundCapabilities: TypeAlias = (
     _UserMessageInboundCapabilitiesKnownFields | JsonObject
 )  # permits additional JSON fields
 
+# Source: schema/draft/intercept-response.schema.json#/$defs/UserMessageInboundEffect
+UserMessageInboundEffect: TypeAlias = Union[
+    "DenyEffect", "UserMessageInboundModifyEffect", "MessageEffect", UnknownVariant
+]
+
 # Source: schema/draft/catalogue-event.schema.json#/$defs/user.message.inbound
 __UserMessageInboundEventField1GapsItemModelKnownFields = TypedDict(
     "__UserMessageInboundEventField1GapsItemModelKnownFields",
@@ -7314,8 +8594,8 @@ _UserMessageInboundEventField12MessageField1MessagesItemModel: TypeAlias = (
     __UserMessageInboundEventField12MessageField1MessagesItemModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-_UserMessageInboundEventField12MessageModel = TypedDict(
-    "_UserMessageInboundEventField12MessageModel",
+__UserMessageInboundEventField12MessageModelKnownFields = TypedDict(
+    "__UserMessageInboundEventField12MessageModelKnownFields",
     {
         "channel": Required[str],
         "messages": Required[
@@ -7325,6 +8605,9 @@ _UserMessageInboundEventField12MessageModel = TypedDict(
     },
     total=False,
 )
+_UserMessageInboundEventField12MessageModel: TypeAlias = (
+    __UserMessageInboundEventField12MessageModelKnownFields | JsonObject
+)  # permits additional JSON fields
 _UserMessageInboundEventKnownFields = TypedDict(
     "_UserMessageInboundEventKnownFields",
     {
@@ -7346,6 +8629,47 @@ _UserMessageInboundEventKnownFields = TypedDict(
 )
 UserMessageInboundEvent: TypeAlias = (
     _UserMessageInboundEventKnownFields | JsonObject
+)  # permits additional JSON fields
+
+# Source: schema/draft/intercept-response.schema.json#/$defs/UserMessageInboundInterceptResponse
+__UserMessageInboundInterceptResponseField2ResultModelKnownFields = TypedDict(
+    "__UserMessageInboundInterceptResponseField2ResultModelKnownFields",
+    {
+        "effects": NotRequired[list["UserMessageInboundEffect"]],
+        "extensions": NotRequired["Extensions"],
+        "protocolVersion": Required["ProtocolVersion"],
+    },
+    total=False,
+)
+_UserMessageInboundInterceptResponseField2ResultModel: TypeAlias = (
+    __UserMessageInboundInterceptResponseField2ResultModelKnownFields | JsonObject
+)  # permits additional JSON fields
+_UserMessageInboundInterceptResponseKnownFields = TypedDict(
+    "_UserMessageInboundInterceptResponseKnownFields",
+    {
+        "id": Required["JsonRpcResponseId"],
+        "jsonrpc": Required[Literal["2.0"]],
+        "result": Required[_UserMessageInboundInterceptResponseField2ResultModel],
+    },
+    total=False,
+)
+UserMessageInboundInterceptResponse: TypeAlias = (
+    _UserMessageInboundInterceptResponseKnownFields | JsonObject
+)  # permits additional JSON fields
+
+# Source: schema/draft/intercept-response.schema.json#/$defs/UserMessageInboundModifyEffect
+_UserMessageInboundModifyEffectKnownFields = TypedDict(
+    "_UserMessageInboundModifyEffectKnownFields",
+    {
+        "operation": Required[Union[Literal["replace"], Literal["merge"]]],
+        "target": Required[Literal["prompt"]],
+        "type": Required[Literal["modify"]],
+        "value": Required["CanonicalMessages"],
+    },
+    total=False,
+)
+UserMessageInboundModifyEffect: TypeAlias = (
+    _UserMessageInboundModifyEffectKnownFields | JsonObject
 )  # permits additional JSON fields
 
 # Source: schema/draft/capabilities.schema.json#/$defs/user.message.outbound
@@ -7554,6 +8878,11 @@ UserMessageOutboundCapabilities: TypeAlias = (
     _UserMessageOutboundCapabilitiesKnownFields | JsonObject
 )  # permits additional JSON fields
 
+# Source: schema/draft/intercept-response.schema.json#/$defs/UserMessageOutboundEffect
+UserMessageOutboundEffect: TypeAlias = Union[
+    "DenyEffect", "UserMessageOutboundModifyEffect", "MessageEffect", UnknownVariant
+]
+
 # Source: schema/draft/catalogue-event.schema.json#/$defs/user.message.outbound
 __UserMessageOutboundEventField1GapsItemModelKnownFields = TypedDict(
     "__UserMessageOutboundEventField1GapsItemModelKnownFields",
@@ -7585,8 +8914,8 @@ _UserMessageOutboundEventField12MessageField1MessagesItemModel: TypeAlias = (
     __UserMessageOutboundEventField12MessageField1MessagesItemModelKnownFields
     | JsonObject
 )  # permits additional JSON fields
-_UserMessageOutboundEventField12MessageModel = TypedDict(
-    "_UserMessageOutboundEventField12MessageModel",
+__UserMessageOutboundEventField12MessageModelKnownFields = TypedDict(
+    "__UserMessageOutboundEventField12MessageModelKnownFields",
     {
         "channel": Required[str],
         "messages": Required[
@@ -7595,6 +8924,9 @@ _UserMessageOutboundEventField12MessageModel = TypedDict(
     },
     total=False,
 )
+_UserMessageOutboundEventField12MessageModel: TypeAlias = (
+    __UserMessageOutboundEventField12MessageModelKnownFields | JsonObject
+)  # permits additional JSON fields
 _UserMessageOutboundEventKnownFields = TypedDict(
     "_UserMessageOutboundEventKnownFields",
     {
@@ -7618,6 +8950,47 @@ UserMessageOutboundEvent: TypeAlias = (
     _UserMessageOutboundEventKnownFields | JsonObject
 )  # permits additional JSON fields
 
+# Source: schema/draft/intercept-response.schema.json#/$defs/UserMessageOutboundInterceptResponse
+__UserMessageOutboundInterceptResponseField2ResultModelKnownFields = TypedDict(
+    "__UserMessageOutboundInterceptResponseField2ResultModelKnownFields",
+    {
+        "effects": NotRequired[list["UserMessageOutboundEffect"]],
+        "extensions": NotRequired["Extensions"],
+        "protocolVersion": Required["ProtocolVersion"],
+    },
+    total=False,
+)
+_UserMessageOutboundInterceptResponseField2ResultModel: TypeAlias = (
+    __UserMessageOutboundInterceptResponseField2ResultModelKnownFields | JsonObject
+)  # permits additional JSON fields
+_UserMessageOutboundInterceptResponseKnownFields = TypedDict(
+    "_UserMessageOutboundInterceptResponseKnownFields",
+    {
+        "id": Required["JsonRpcResponseId"],
+        "jsonrpc": Required[Literal["2.0"]],
+        "result": Required[_UserMessageOutboundInterceptResponseField2ResultModel],
+    },
+    total=False,
+)
+UserMessageOutboundInterceptResponse: TypeAlias = (
+    _UserMessageOutboundInterceptResponseKnownFields | JsonObject
+)  # permits additional JSON fields
+
+# Source: schema/draft/intercept-response.schema.json#/$defs/UserMessageOutboundModifyEffect
+_UserMessageOutboundModifyEffectKnownFields = TypedDict(
+    "_UserMessageOutboundModifyEffectKnownFields",
+    {
+        "operation": Required[Union[Literal["replace"], Literal["merge"]]],
+        "target": Required[Literal["content"]],
+        "type": Required[Literal["modify"]],
+        "value": Required["CanonicalMessages"],
+    },
+    total=False,
+)
+UserMessageOutboundModifyEffect: TypeAlias = (
+    _UserMessageOutboundModifyEffectKnownFields | JsonObject
+)  # permits additional JSON fields
+
 # Source: schema/draft/schema.json#
 WireMessage: TypeAlias = Union[
     "InterceptRequest",
@@ -7627,6 +9000,16 @@ WireMessage: TypeAlias = Union[
     "CapabilitiesRequest",
     "CapabilitiesResponse",
 ]
+
+# Source: schema/draft/task-workspace-event.schema.json#/$defs/WorkspaceChange
+_WorkspaceChangeKnownFields = TypedDict(
+    "_WorkspaceChangeKnownFields",
+    {"cwd": NotRequired[str], "workspaceRoots": NotRequired[list[str]]},
+    total=False,
+)
+WorkspaceChange: TypeAlias = (
+    _WorkspaceChangeKnownFields | JsonObject
+)  # permits additional JSON fields
 
 # Source: schema/draft/catalogue-event.schema.json#/$defs/workspace.change.after
 WorkspaceChangeAfterEvent: TypeAlias = "TaskWorkspaceEventWorkspaceChangeAfter"
@@ -7845,11 +9228,57 @@ WorkspaceChangeBeforeCapabilities: TypeAlias = (
     _WorkspaceChangeBeforeCapabilitiesKnownFields | JsonObject
 )  # permits additional JSON fields
 
+# Source: schema/draft/intercept-response.schema.json#/$defs/WorkspaceChangeBeforeEffect
+WorkspaceChangeBeforeEffect: TypeAlias = Union[
+    "DenyEffect", "WorkspaceChangeBeforeModifyEffect", "MessageEffect", UnknownVariant
+]
+
 # Source: schema/draft/catalogue-event.schema.json#/$defs/workspace.change.before
 WorkspaceChangeBeforeEvent: TypeAlias = "TaskWorkspaceEventWorkspaceChangeBefore"
 
+# Source: schema/draft/intercept-response.schema.json#/$defs/WorkspaceChangeBeforeInterceptResponse
+__WorkspaceChangeBeforeInterceptResponseField2ResultModelKnownFields = TypedDict(
+    "__WorkspaceChangeBeforeInterceptResponseField2ResultModelKnownFields",
+    {
+        "effects": NotRequired[list["WorkspaceChangeBeforeEffect"]],
+        "extensions": NotRequired["Extensions"],
+        "protocolVersion": Required["ProtocolVersion"],
+    },
+    total=False,
+)
+_WorkspaceChangeBeforeInterceptResponseField2ResultModel: TypeAlias = (
+    __WorkspaceChangeBeforeInterceptResponseField2ResultModelKnownFields | JsonObject
+)  # permits additional JSON fields
+_WorkspaceChangeBeforeInterceptResponseKnownFields = TypedDict(
+    "_WorkspaceChangeBeforeInterceptResponseKnownFields",
+    {
+        "id": Required["JsonRpcResponseId"],
+        "jsonrpc": Required[Literal["2.0"]],
+        "result": Required[_WorkspaceChangeBeforeInterceptResponseField2ResultModel],
+    },
+    total=False,
+)
+WorkspaceChangeBeforeInterceptResponse: TypeAlias = (
+    _WorkspaceChangeBeforeInterceptResponseKnownFields | JsonObject
+)  # permits additional JSON fields
+
+# Source: schema/draft/intercept-response.schema.json#/$defs/WorkspaceChangeBeforeModifyEffect
+_WorkspaceChangeBeforeModifyEffectKnownFields = TypedDict(
+    "_WorkspaceChangeBeforeModifyEffectKnownFields",
+    {
+        "operation": Required[Union[Literal["replace"], Literal["merge"]]],
+        "target": Required[Literal["workspace"]],
+        "type": Required[Literal["modify"]],
+        "value": Required["WorkspaceChange"],
+    },
+    total=False,
+)
+WorkspaceChangeBeforeModifyEffect: TypeAlias = (
+    _WorkspaceChangeBeforeModifyEffectKnownFields | JsonObject
+)  # permits additional JSON fields
+
 _SCHEMAS: dict[str, _SchemaNode] = json.loads(
-    '{"AttachmentBodyPart":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[["sha256"],["size"]],"kind":"object","properties":[{"required":true,"shape":{"kind":"ref","name":"ContentReference"},"wire_name":"body"},{"required":false,"shape":{"kind":"string"},"wire_name":"category"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":true,"shape":{"kind":"literal","value":"attachment"},"wire_name":"kind"},{"required":true,"shape":{"kind":"string"},"wire_name":"mediaType"},{"required":true,"shape":{"kind":"literal","value":"body"},"wire_name":"selection"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"AttachmentGapPart":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"category"},{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"wire_name":"gap"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":true,"shape":{"kind":"literal","value":"attachment"},"wire_name":"kind"},{"required":true,"shape":{"kind":"string"},"wire_name":"mediaType"},{"required":true,"shape":{"kind":"literal","value":"body"},"wire_name":"selection"},{"required":false,"shape":{"kind":"string"},"wire_name":"sha256"},{"required":false,"shape":{"kind":"integer"},"wire_name":"size"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"AttachmentMetadataPart":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"category"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":true,"shape":{"kind":"literal","value":"attachment"},"wire_name":"kind"},{"required":true,"shape":{"kind":"string"},"wire_name":"mediaType"},{"required":true,"shape":{"kind":"literal","value":"metadata"},"wire_name":"selection"},{"required":false,"shape":{"kind":"string"},"wire_name":"sha256"},{"required":false,"shape":{"kind":"integer"},"wire_name":"size"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"AttachmentOmittedPart":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"category"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":true,"shape":{"kind":"literal","value":"attachment"},"wire_name":"kind"},{"required":true,"shape":{"kind":"string"},"wire_name":"mediaType"},{"required":true,"shape":{"kind":"literal","value":"omit"},"wire_name":"selection"},{"required":false,"shape":{"kind":"string"},"wire_name":"sha256"},{"required":false,"shape":{"kind":"integer"},"wire_name":"size"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"Authentication":{"kind":"union","mode":"anyOf","variants":[{"kind":"intersection","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"tokenEnv"},{"required":false,"shape":{"kind":"string"},"wire_name":"tokenRef"},{"required":true,"shape":{"kind":"literal","value":"bearer"},"wire_name":"type"}]},{"kind":"union","mode":"oneOf","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[["tokenRef"]],"kind":"object","properties":[{"required":true,"shape":{"kind":"any"},"wire_name":"tokenEnv"}]},{"additional":{"kind":"allowed"},"forbidden_property_sets":[["tokenEnv"]],"kind":"object","properties":[{"required":true,"shape":{"kind":"any"},"wire_name":"tokenRef"}]}]}]},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"clientId"},{"required":false,"shape":{"kind":"string"},"wire_name":"clientSecretRef"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["authorization_code_pkce","client_credentials"]},"wire_name":"flow"},{"required":true,"shape":{"kind":"string"},"wire_name":"issuer"},{"required":true,"shape":{"kind":"string"},"wire_name":"resource"},{"required":false,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"scopes"},{"required":true,"shape":{"kind":"literal","value":"oauth"},"wire_name":"type"}]}]},"Backend":{"additional":{"kind":"allowed"},"forbidden_property_sets":[["contentReceiver"]],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"Authentication"},"wire_name":"authentication"},{"required":true,"shape":{"kind":"ref","name":"ReverseDnsName"},"wire_name":"id"},{"required":true,"shape":{"items":{"discriminator":"mode","kind":"union","mode":"oneOf","variants":[{"kind":"ref","name":"InterceptSubscription"},{"kind":"ref","name":"ObserveSubscription"}]},"kind":"array"},"wire_name":"subscriptions"},{"required":true,"shape":{"discriminator":"type","kind":"union","mode":"oneOf","variants":[{"kind":"ref","name":"StdioTransport"},{"kind":"ref","name":"HttpTransport"}]},"wire_name":"transport"}]},"CanonicalMessage":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":true,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"parts"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["system","developer","user","assistant","tool"]},"wire_name":"role"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"CanonicalMessages":{"items":{"kind":"ref","name":"CanonicalMessage"},"kind":"array"},"Capabilities":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"items":{"kind":"union","mode":"anyOf","variants":[{"kind":"enum","open_strings":true,"values":["deny","allow","ask","modify","message","return","flow","inject"]},{"kind":"string"}]},"kind":"array"},"wire_name":"effects"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"form"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"url"}]},"wire_name":"elicitation"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"integer"},"wire_name":"continuationCount"},{"required":false,"shape":{"kind":"integer"},"wire_name":"maxContinuations"},{"required":true,"shape":{"items":{"kind":"enum","open_strings":true,"values":["stop","continue"]},"kind":"array"},"wire_name":"operations"},{"required":false,"shape":{"kind":"integer"},"wire_name":"remainingContinuations"}]},"wire_name":"flow"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":true},"wire_name":"append"},{"required":true,"shape":{"items":{"kind":"enum","open_strings":true,"values":["now","next_turn"]},"kind":"array"},"wire_name":"deliverAt"}]},"wire_name":"context"}]},"wire_name":"inject"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"intersection","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"boolean"},"wire_name":"merge"},{"required":true,"shape":{"kind":"boolean"},"wire_name":"replace"}]},{"kind":"union","mode":"anyOf","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":true},"wire_name":"replace"}]},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":true},"wire_name":"merge"}]}]}]},"wire_name":"content"},{"required":false,"shape":{"kind":"intersection","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"boolean"},"wire_name":"merge"},{"required":true,"shape":{"kind":"boolean"},"wire_name":"replace"}]},{"kind":"union","mode":"anyOf","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":true},"wire_name":"replace"}]},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":true},"wire_name":"merge"}]}]}]},"wire_name":"input"},{"required":false,"shape":{"kind":"intersection","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"boolean"},"wire_name":"merge"},{"required":true,"shape":{"kind":"boolean"},"wire_name":"replace"}]},{"kind":"union","mode":"anyOf","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":true},"wire_name":"replace"}]},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":true},"wire_name":"merge"}]}]}]},"wire_name":"instructions"},{"required":false,"shape":{"kind":"intersection","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"boolean"},"wire_name":"merge"},{"required":true,"shape":{"kind":"boolean"},"wire_name":"replace"}]},{"kind":"union","mode":"anyOf","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":true},"wire_name":"replace"}]},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":true},"wire_name":"merge"}]}]}]},"wire_name":"output"},{"required":false,"shape":{"kind":"intersection","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"boolean"},"wire_name":"merge"},{"required":true,"shape":{"kind":"boolean"},"wire_name":"replace"}]},{"kind":"union","mode":"anyOf","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":true},"wire_name":"replace"}]},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":true},"wire_name":"merge"}]}]}]},"wire_name":"prompt"},{"required":false,"shape":{"kind":"intersection","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"boolean"},"wire_name":"merge"},{"required":true,"shape":{"kind":"boolean"},"wire_name":"replace"}]},{"kind":"union","mode":"anyOf","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":true},"wire_name":"replace"}]},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":true},"wire_name":"merge"}]}]}]},"wire_name":"request"},{"required":false,"shape":{"kind":"intersection","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"boolean"},"wire_name":"merge"},{"required":true,"shape":{"kind":"boolean"},"wire_name":"replace"}]},{"kind":"union","mode":"anyOf","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":true},"wire_name":"replace"}]},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":true},"wire_name":"merge"}]}]}]},"wire_name":"response"},{"required":false,"shape":{"kind":"intersection","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"boolean"},"wire_name":"merge"},{"required":true,"shape":{"kind":"boolean"},"wire_name":"replace"}]},{"kind":"union","mode":"anyOf","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":true},"wire_name":"replace"}]},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":true},"wire_name":"merge"}]}]}]},"wire_name":"summary"},{"required":false,"shape":{"kind":"intersection","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"boolean"},"wire_name":"merge"},{"required":true,"shape":{"kind":"boolean"},"wire_name":"replace"}]},{"kind":"union","mode":"anyOf","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":true},"wire_name":"replace"}]},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":true},"wire_name":"merge"}]}]}]},"wire_name":"workspace"}]},"wire_name":"modify"}]},"CapabilitiesRequest":{"kind":"intersection","variants":[{"kind":"ref","name":"JsonRpcRequest"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":"hooks/capabilities"},"wire_name":"method"},{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"ref","name":"ProtocolVersion"},"wire_name":"protocolVersion"}]},"wire_name":"params"}]}]},"CapabilitiesResponse":{"kind":"intersection","variants":[{"kind":"ref","name":"JsonRpcSuccessResponse"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[["effects"]],"kind":"object","properties":[{"required":true,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[["identity"]],"kind":"object","properties":[{"required":true,"shape":{"items":{"kind":"enum","open_strings":true,"values":["bearer","oauth"]},"kind":"array"},"wire_name":"authentication"},{"required":true,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"contentCategories"},{"required":true,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"correlationIdentityFields"},{"required":true,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"Capabilities"},"wire_name":"capabilities"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["tool.before","tool.after","session.start","session.end","config.change.before","config.change.after","turn.start","turn.finish.before","turn.end","turn.progress","model.request.before","model.response.after","model.error","model.switch.before","model.switch.after","tool.permission.request","tool.permission.resolved","tool.progress","tool.batch.after","context.compact.before","context.compact.after","task.change.before","task.change.after","user.attention","user.elicitation.request","user.elicitation.result","user.message.inbound","user.message.outbound","workspace.change.before","workspace.change.after","file.changed","hook.failure"]},"wire_name":"event"},{"required":true,"shape":{"items":{"kind":"enum","open_strings":true,"values":["observe","intercept"]},"kind":"array"},"wire_name":"modes"}]},"kind":"array"},"wire_name":"events"},{"required":true,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"integer"},"wire_name":"maxContinuations"},{"required":false,"shape":{"kind":"integer"},"wire_name":"maxTimeoutMs"},{"required":false,"shape":{"kind":"integer"},"wire_name":"maxUploadBytes"},{"required":false,"shape":{"kind":"integer"},"wire_name":"minTimeoutMs"}]},"wire_name":"limits"},{"required":true,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"boolean"},"wire_name":"disableable"},{"required":true,"shape":{"items":{"kind":"enum","open_strings":true,"values":["user","project","managed"]},"kind":"array"},"wire_name":"scopes"}]},"wire_name":"managedPolicy"},{"required":true,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"toolPaths"},{"required":true,"shape":{"items":{"kind":"enum","open_strings":true,"values":["http","stdio","in_process"]},"kind":"array"},"wire_name":"transports"}]},"wire_name":"manifest"},{"required":true,"shape":{"kind":"ref","name":"ProtocolVersion"},"wire_name":"protocolVersion"}]},"wire_name":"result"}]}]},"CatalogueEvent":{"discriminator":"type","kind":"union","mode":"oneOf","variants":[{"kind":"ref","name":"ConfigChangeBeforeEvent"},{"kind":"ref","name":"ConfigChangeAfterEvent"},{"kind":"ref","name":"TurnStartEvent"},{"kind":"ref","name":"TurnFinishBeforeEvent"},{"kind":"ref","name":"TurnEndEvent"},{"kind":"ref","name":"TurnProgressEvent"},{"kind":"ref","name":"ModelRequestBeforeEvent"},{"kind":"ref","name":"ModelResponseAfterEvent"},{"kind":"ref","name":"ModelErrorEvent"},{"kind":"ref","name":"ModelSwitchBeforeEvent"},{"kind":"ref","name":"ModelSwitchAfterEvent"},{"kind":"ref","name":"ToolPermissionRequestEvent"},{"kind":"ref","name":"ToolPermissionResolvedEvent"},{"kind":"ref","name":"ToolProgressEvent"},{"kind":"ref","name":"ToolBatchAfterEvent"},{"kind":"ref","name":"ContextCompactBeforeEvent"},{"kind":"ref","name":"ContextCompactAfterEvent"},{"kind":"ref","name":"TaskChangeBeforeEvent"},{"kind":"ref","name":"TaskChangeAfterEvent"},{"kind":"ref","name":"UserAttentionEvent"},{"kind":"ref","name":"UserElicitationRequestEvent"},{"kind":"ref","name":"UserElicitationResultEvent"},{"kind":"ref","name":"UserMessageInboundEvent"},{"kind":"ref","name":"UserMessageOutboundEvent"},{"kind":"ref","name":"WorkspaceChangeBeforeEvent"},{"kind":"ref","name":"WorkspaceChangeAfterEvent"},{"kind":"ref","name":"FileChangedEvent"},{"kind":"ref","name":"HookFailureEvent"}]},"ConfigChangeAfterEvent":{"kind":"intersection","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"config.change.after"},"wire_name":"type"}]},{"kind":"ref","name":"InteractionEventConfigChangeAfter"}]},"ConfigChangeBeforeCapabilities":{"kind":"intersection","variants":[{"kind":"ref","name":"Capabilities"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["deny","message"]},"kind":"array"},"wire_name":"effects"}]}]},"ConfigChangeBeforeEvent":{"kind":"intersection","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"config.change.before"},"wire_name":"type"}]},{"kind":"ref","name":"InteractionEventConfigChangeBefore"}]},"ContentItem":{"kind":"union","mode":"oneOf","variants":[{"kind":"ref","name":"TextBodyPart"},{"kind":"ref","name":"TextGapPart"},{"kind":"ref","name":"TextMetadataPart"},{"kind":"ref","name":"TextOmittedPart"},{"kind":"ref","name":"AttachmentBodyPart"},{"kind":"ref","name":"AttachmentGapPart"},{"kind":"ref","name":"AttachmentMetadataPart"},{"kind":"ref","name":"AttachmentOmittedPart"}]},"ContentReference":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[["sha256"],["size"]],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"ref"}]},"ContentSelection":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"enum","open_strings":true,"values":["body","metadata","omit"]},"wire_name":"audio"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["body","metadata","omit"]},"wire_name":"default"},{"required":false,"shape":{"kind":"enum","open_strings":true,"values":["body","metadata","omit"]},"wire_name":"files"},{"required":false,"shape":{"kind":"enum","open_strings":true,"values":["body","metadata","omit"]},"wire_name":"images"},{"required":false,"shape":{"kind":"enum","open_strings":true,"values":["body","metadata","omit"]},"wire_name":"reasoning"},{"required":false,"shape":{"kind":"enum","open_strings":true,"values":["body","metadata","omit"]},"wire_name":"text"},{"required":false,"shape":{"kind":"enum","open_strings":true,"values":["body","metadata","omit"]},"wire_name":"video"}]},"ContentUpload":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"Authentication"},"wire_name":"auth"},{"required":true,"shape":{"kind":"string"},"wire_name":"endpoint"},{"required":true,"shape":{"kind":"integer"},"wire_name":"maxBytes"},{"required":true,"shape":{"kind":"integer"},"wire_name":"timeoutMs"}]},"ContentUploadReceipt":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"ref"},{"required":true,"shape":{"kind":"string"},"wire_name":"sha256"},{"required":true,"shape":{"kind":"integer"},"wire_name":"size"}]},"ContextCompactAfterCapabilities":{"kind":"intersection","variants":[{"kind":"ref","name":"Capabilities"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["inject","modify","message"]},"kind":"array"},"wire_name":"effects"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"modify"}]}]},"ContextCompactAfterEvent":{"kind":"ref","name":"ExecutionEventContextCompactAfter"},"ContextCompactBeforeCapabilities":{"kind":"intersection","variants":[{"kind":"ref","name":"Capabilities"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["deny","modify","return","inject","message"]},"kind":"array"},"wire_name":"effects"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"modify"}]}]},"ContextCompactBeforeEvent":{"kind":"ref","name":"ExecutionEventContextCompactBefore"},"DenyEffect":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"code"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"},{"required":true,"shape":{"kind":"literal","value":"deny"},"wire_name":"type"}]},"Effect":{"kind":"union","mode":"oneOf","variants":[{"kind":"ref","name":"DenyEffect"},{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":"allow"},"wire_name":"type"}]},{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":"ask"},"wire_name":"type"}]},{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["replace","merge"]},"wire_name":"operation"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["input","output","prompt","request","response","content","instructions","summary","workspace"]},"wire_name":"target"},{"required":true,"shape":{"kind":"literal","value":"modify"},"wire_name":"type"},{"required":true,"shape":{"kind":"any"},"wire_name":"value"}]},{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"text"},{"required":true,"shape":{"kind":"literal","value":"message"},"wire_name":"type"}]},{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":"return"},"wire_name":"type"},{"required":true,"shape":{"kind":"any"},"wire_name":"value"}]},{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":"stop"},"wire_name":"operation"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"},{"required":true,"shape":{"kind":"literal","value":"flow"},"wire_name":"type"}]},{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"instruction"},{"required":true,"shape":{"kind":"literal","value":"continue"},"wire_name":"operation"},{"required":true,"shape":{"kind":"literal","value":"flow"},"wire_name":"type"}]},{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["now","next_turn"]},"wire_name":"deliverAt"},{"required":true,"shape":{"kind":"literal","value":"append"},"wire_name":"operation"},{"required":true,"shape":{"kind":"literal","value":"context"},"wire_name":"target"},{"required":true,"shape":{"kind":"literal","value":"inject"},"wire_name":"type"},{"required":true,"shape":{"kind":"ref","name":"CanonicalMessages"},"wire_name":"value"}]}]},"Event":{"discriminator":"type","kind":"union","mode":"oneOf","variants":[{"kind":"ref","name":"ToolBeforeEvent"},{"kind":"ref","name":"ToolAfterEvent"},{"kind":"ref","name":"SessionStartEvent"},{"kind":"ref","name":"SessionEndEvent"},{"kind":"ref","name":"ConfigChangeBeforeEvent"},{"kind":"ref","name":"ConfigChangeAfterEvent"},{"kind":"ref","name":"TurnStartEvent"},{"kind":"ref","name":"TurnFinishBeforeEvent"},{"kind":"ref","name":"TurnEndEvent"},{"kind":"ref","name":"TurnProgressEvent"},{"kind":"ref","name":"ModelRequestBeforeEvent"},{"kind":"ref","name":"ModelResponseAfterEvent"},{"kind":"ref","name":"ModelErrorEvent"},{"kind":"ref","name":"ModelSwitchBeforeEvent"},{"kind":"ref","name":"ModelSwitchAfterEvent"},{"kind":"ref","name":"ToolPermissionRequestEvent"},{"kind":"ref","name":"ToolPermissionResolvedEvent"},{"kind":"ref","name":"ToolProgressEvent"},{"kind":"ref","name":"ToolBatchAfterEvent"},{"kind":"ref","name":"ContextCompactBeforeEvent"},{"kind":"ref","name":"ContextCompactAfterEvent"},{"kind":"ref","name":"TaskChangeBeforeEvent"},{"kind":"ref","name":"TaskChangeAfterEvent"},{"kind":"ref","name":"UserAttentionEvent"},{"kind":"ref","name":"UserElicitationRequestEvent"},{"kind":"ref","name":"UserElicitationResultEvent"},{"kind":"ref","name":"UserMessageInboundEvent"},{"kind":"ref","name":"UserMessageOutboundEvent"},{"kind":"ref","name":"WorkspaceChangeBeforeEvent"},{"kind":"ref","name":"WorkspaceChangeAfterEvent"},{"kind":"ref","name":"FileChangedEvent"},{"kind":"ref","name":"HookFailureEvent"}]},"ExecutionEvent":{"discriminator":"type","kind":"union","mode":"oneOf","variants":[{"kind":"ref","name":"ExecutionEventTurnStart"},{"kind":"ref","name":"ExecutionEventTurnFinishBefore"},{"kind":"ref","name":"ExecutionEventTurnEnd"},{"kind":"ref","name":"ExecutionEventTurnProgress"},{"kind":"ref","name":"ExecutionEventModelRequestBefore"},{"kind":"ref","name":"ExecutionEventModelResponseAfter"},{"kind":"ref","name":"ExecutionEventModelError"},{"kind":"ref","name":"ExecutionEventModelSwitchBefore"},{"kind":"ref","name":"ExecutionEventModelSwitchAfter"},{"kind":"ref","name":"ExecutionEventToolPermissionRequest"},{"kind":"ref","name":"ExecutionEventToolPermissionResolved"},{"kind":"ref","name":"ExecutionEventToolProgress"},{"kind":"ref","name":"ExecutionEventToolBatchAfter"},{"kind":"ref","name":"ExecutionEventContextCompactBefore"},{"kind":"ref","name":"ExecutionEventContextCompactAfter"}]},"ExecutionEventAttempt":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":true,"shape":{"kind":"integer"},"wire_name":"number"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"ExecutionEventAttemptusage":{"kind":"intersection","variants":[{"kind":"ref","name":"ExecutionEventUsage"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"literal","value":"amount"},"wire_name":"kind"},{"required":false,"shape":{"kind":"enum","open_strings":true,"values":["provider","estimate"]},"wire_name":"provenance"},{"required":false,"shape":{"kind":"literal","value":"attempt"},"wire_name":"scope"}]}]},"ExecutionEventBatch":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"callIds"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"ExecutionEventContextCompactAfter":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"ref","name":"ExecutionEventExecution"},"wire_name":"execution"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"items":{"kind":"ref","name":"ModelVisibleItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":true,"shape":{"items":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"}]},"kind":"array"},"wire_name":"removed"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":true,"shape":{"kind":"ref","name":"TextParts"},"wire_name":"summary"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":false,"shape":{"kind":"ref","name":"ExecutionEventTokencounts"},"wire_name":"tokenCounts"},{"required":false,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"context.compact.after"},"wire_name":"type"}]},"ExecutionEventContextCompactBefore":{"kind":"intersection","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"ref","name":"TextParts"},"wire_name":"instructions"},{"required":true,"shape":{"items":{"kind":"ref","name":"ModelVisibleItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":false,"shape":{"kind":"ref","name":"ExecutionEventTokencounts"},"wire_name":"tokenCounts"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["auto","manual","hook"]},"wire_name":"trigger"},{"required":false,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"context.compact.before"},"wire_name":"type"}]},{"kind":"any"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"any"},"wire_name":"tokenCounts"}]}]},"ExecutionEventError":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"class"},{"required":false,"shape":{"kind":"string"},"wire_name":"code"},{"required":true,"shape":{"kind":"string"},"wire_name":"message"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"union","mode":"oneOf","variants":[{"kind":"string"},{"kind":"integer"}]},"wire_name":"status"}]},"ExecutionEventExecution":{"kind":"union","mode":"oneOf","variants":[{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":"executed"},"wire_name":"status"}]},{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":"supplied_result"},"wire_name":"reason"},{"required":true,"shape":{"kind":"literal","value":"skipped"},"wire_name":"status"}]},{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"detail"},{"required":true,"shape":{"kind":"literal","value":"policy"},"wire_name":"reason"},{"required":true,"shape":{"kind":"literal","value":"skipped"},"wire_name":"status"}]},{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"detail"},{"required":true,"shape":{"kind":"literal","value":"cancelled"},"wire_name":"reason"},{"required":true,"shape":{"kind":"literal","value":"skipped"},"wire_name":"status"}]},{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"detail"},{"required":true,"shape":{"kind":"literal","value":"timeout"},"wire_name":"reason"},{"required":true,"shape":{"kind":"literal","value":"skipped"},"wire_name":"status"}]},{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"detail"},{"required":true,"shape":{"kind":"literal","value":"other"},"wire_name":"reason"},{"required":true,"shape":{"kind":"literal","value":"skipped"},"wire_name":"status"}]}]},"ExecutionEventFilechange":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"ContentItem"},"wire_name":"after"},{"required":false,"shape":{"kind":"ref","name":"ContentItem"},"wire_name":"before"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["created","modified","deleted","moved"]},"wire_name":"change"},{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":false,"shape":{"kind":"string"},"wire_name":"previousPath"}]},"ExecutionEventMcp":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"discriminator":"transport","kind":"union","mode":"oneOf","variants":[{"kind":"intersection","variants":[{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"literal","value":"http"},"wire_name":"transport"},{"required":false,"shape":{"kind":"string"},"wire_name":"url"}]},{"kind":"union","mode":"anyOf","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"any"},"wire_name":"url"}]},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"any"},"wire_name":"gaps"}]}]}]},{"kind":"intersection","variants":[{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"literal","value":"sse"},"wire_name":"transport"},{"required":false,"shape":{"kind":"string"},"wire_name":"url"}]},{"kind":"union","mode":"anyOf","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"any"},"wire_name":"url"}]},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"any"},"wire_name":"gaps"}]}]}]},{"kind":"intersection","variants":[{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"args"},{"required":false,"shape":{"kind":"string"},"wire_name":"command"},{"required":false,"shape":{"kind":"string"},"wire_name":"cwd"},{"required":false,"shape":{"items":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"literal","value":"stdio"},"wire_name":"transport"}]},{"kind":"union","mode":"anyOf","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"any"},"wire_name":"command"}]},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"any"},"wire_name":"gaps"}]}]},{"kind":"union","mode":"anyOf","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"any"},"wire_name":"args"}]},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"any"},"wire_name":"gaps"}]}]},{"kind":"union","mode":"anyOf","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"any"},"wire_name":"cwd"}]},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"any"},"wire_name":"gaps"}]}]}]},{"kind":"intersection","variants":[{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"address"},{"required":false,"shape":{"kind":"string"},"wire_name":"addressForm"},{"required":false,"shape":{"items":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"transport"}]},{"kind":"union","mode":"anyOf","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"any"},"wire_name":"addressForm"}]},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"any"},"wire_name":"gaps"}]}]},{"kind":"union","mode":"anyOf","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"any"},"wire_name":"address"}]},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"any"},"wire_name":"gaps"}]}]}]}]},"wire_name":"connection"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["runtime","inferred"]},"wire_name":"provenance"},{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"string"},"wire_name":"name"}]},"wire_name":"server"},{"required":true,"shape":{"kind":"string"},"wire_name":"toolName"}]},"ExecutionEventModel":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":true,"shape":{"kind":"string"},"wire_name":"provider"}]},"ExecutionEventModelError":{"additional":{"kind":"allowed"},"forbidden_property_sets":[["finishReason"]],"kind":"object","properties":[{"required":true,"shape":{"kind":"ref","name":"ExecutionEventAttempt"},"wire_name":"attempt"},{"required":true,"shape":{"kind":"ref","name":"ExecutionEventError"},"wire_name":"error"},{"required":true,"shape":{"kind":"intersection","variants":[{"kind":"ref","name":"ExecutionEventExecution"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"literal","value":"executed"},"wire_name":"status"}]}]},"wire_name":"execution"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"number"},"wire_name":"latencyMs"},{"required":true,"shape":{"kind":"ref","name":"ExecutionEventModel"},"wire_name":"model"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":false,"shape":{"kind":"string"},"wire_name":"recovery"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":false,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"model.error"},"wire_name":"type"},{"required":false,"shape":{"kind":"ref","name":"ExecutionEventAttemptusage"},"wire_name":"usage"}]},"ExecutionEventModelRequestBefore":{"additional":{"kind":"allowed"},"forbidden_property_sets":[["error"],["execution"],["finishReason"],["latencyMs"],["usage"]],"kind":"object","properties":[{"required":true,"shape":{"kind":"ref","name":"ExecutionEventAttempt"},"wire_name":"attempt"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":true,"shape":{"items":{"kind":"ref","name":"ModelVisibleItem"},"kind":"array"},"wire_name":"items"},{"required":true,"shape":{"kind":"ref","name":"ExecutionEventModel"},"wire_name":"model"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":true,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"params"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":false,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"model.request.before"},"wire_name":"type"}]},"ExecutionEventModelResponseAfter":{"additional":{"kind":"allowed"},"forbidden_property_sets":[["error"]],"kind":"object","properties":[{"required":true,"shape":{"kind":"ref","name":"ExecutionEventAttempt"},"wire_name":"attempt"},{"required":true,"shape":{"kind":"ref","name":"ExecutionEventExecution"},"wire_name":"execution"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":true,"shape":{"kind":"string"},"wire_name":"finishReason"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":true,"shape":{"items":{"kind":"ref","name":"ModelVisibleItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"number"},"wire_name":"latencyMs"},{"required":true,"shape":{"kind":"ref","name":"ExecutionEventModel"},"wire_name":"model"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":false,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"model.response.after"},"wire_name":"type"},{"required":false,"shape":{"kind":"ref","name":"ExecutionEventAttemptusage"},"wire_name":"usage"}]},"ExecutionEventModelSwitchAfter":{"additional":{"kind":"allowed"},"forbidden_property_sets":[["proposed"]],"kind":"object","properties":[{"required":true,"shape":{"kind":"ref","name":"ExecutionEventModel"},"wire_name":"current"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":true,"shape":{"kind":"ref","name":"ExecutionEventModel"},"wire_name":"previous"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":false,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"model.switch.after"},"wire_name":"type"}]},"ExecutionEventModelSwitchBefore":{"additional":{"kind":"allowed"},"forbidden_property_sets":[["previous"]],"kind":"object","properties":[{"required":true,"shape":{"kind":"ref","name":"ExecutionEventModel"},"wire_name":"current"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":false,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"currency"},{"required":false,"shape":{"kind":"number"},"wire_name":"inputPerMillionTokens"},{"required":false,"shape":{"kind":"number"},"wire_name":"outputPerMillionTokens"}]},"wire_name":"pricing"},{"required":true,"shape":{"kind":"ref","name":"ExecutionEventModel"},"wire_name":"proposed"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":false,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"model.switch.before"},"wire_name":"type"}]},"ExecutionEventTokencounts":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"integer"},"wire_name":"after"},{"required":false,"shape":{"kind":"integer"},"wire_name":"before"}]},"ExecutionEventTool":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"input"},{"required":false,"shape":{"kind":"string"},"wire_name":"kind"},{"required":false,"shape":{"kind":"ref","name":"ExecutionEventMcp"},"wire_name":"mcp"},{"required":true,"shape":{"kind":"string"},"wire_name":"name"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["native","mcp"]},"wire_name":"origin"}]},"ExecutionEventToolBatchAfter":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"batch"},{"required":true,"shape":{"items":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"ExecutionEventBatch"},"wire_name":"batch"},{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"call"},{"required":true,"shape":{"kind":"ref","name":"ExecutionEventExecution"},"wire_name":"execution"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["ok","error","denied","cancelled","timeout"]},"wire_name":"outcome"},{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"ref","name":"ExecutionEventTool"},"wire_name":"tool"}]},"kind":"array"},"wire_name":"calls"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":false,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"tool.batch.after"},"wire_name":"type"}]},"ExecutionEventToolPermissionRequest":{"additional":{"kind":"allowed"},"forbidden_property_sets":[["decidedBy"],["decision"],["execution"],["outcome"]],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"ExecutionEventBatch"},"wire_name":"batch"},{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"call"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"boolean"},"wire_name":"sandboxBypass"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":true,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"kind":"array"},"wire_name":"suggestions"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":true,"shape":{"kind":"ref","name":"ExecutionEventTool"},"wire_name":"tool"},{"required":false,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"tool.permission.request"},"wire_name":"type"}]},"ExecutionEventToolPermissionResolved":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"ExecutionEventBatch"},"wire_name":"batch"},{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"call"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["user","policy","hook","auto","classifier"]},"wire_name":"decidedBy"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["allow","deny"]},"wire_name":"decision"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":true,"shape":{"kind":"ref","name":"ExecutionEventTool"},"wire_name":"tool"},{"required":false,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"tool.permission.resolved"},"wire_name":"type"}]},"ExecutionEventToolProgress":{"additional":{"kind":"allowed"},"forbidden_property_sets":[["execution"],["outcome"]],"kind":"object","properties":[{"required":true,"shape":{"kind":"boolean"},"wire_name":"backgrounded"},{"required":false,"shape":{"kind":"ref","name":"ExecutionEventBatch"},"wire_name":"batch"},{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"call"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":true,"shape":{"kind":"ref","name":"ModelVisibleItem"},"wire_name":"partialOutput"},{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":true,"shape":{"kind":"ref","name":"ExecutionEventTool"},"wire_name":"tool"},{"required":false,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"tool.progress"},"wire_name":"type"}]},"ExecutionEventTurnEnd":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"integer"},"wire_name":"continuationCount"},{"required":false,"shape":{"kind":"ref","name":"ExecutionEventError"},"wire_name":"error"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":true,"shape":{"items":{"kind":"ref","name":"ModelVisibleItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"lastAssistantItem"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["completed","failed","cancelled","max_iterations"]},"wire_name":"outcome"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"turn.end"},"wire_name":"type"},{"required":false,"shape":{"kind":"ref","name":"ExecutionEventTurnusage"},"wire_name":"usage"}]},"ExecutionEventTurnFinishBefore":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"integer"},"wire_name":"continuationCount"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":true,"shape":{"items":{"kind":"ref","name":"ModelVisibleItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"lastAssistantItem"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["completed","failed","cancelled","max_iterations"]},"wire_name":"outcome"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"turn.finish.before"},"wire_name":"type"},{"required":false,"shape":{"kind":"ref","name":"ExecutionEventTurnusage"},"wire_name":"usage"}]},"ExecutionEventTurnProgress":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"ref","name":"ModelVisibleItem"},"wire_name":"delta"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":true,"shape":{"kind":"boolean"},"wire_name":"final"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"item"},{"required":false,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"turn.progress"},"wire_name":"type"}]},"ExecutionEventTurnStart":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"expandedFrom"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":true,"shape":{"items":{"kind":"ref","name":"ModelVisibleItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["user","continuation","hook","external"]},"wire_name":"trigger"},{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"turn.start"},"wire_name":"type"}]},"ExecutionEventTurnusage":{"kind":"intersection","variants":[{"kind":"ref","name":"ExecutionEventUsage"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"literal","value":"total"},"wire_name":"kind"},{"required":false,"shape":{"kind":"literal","value":"turn"},"wire_name":"scope"}]}]},"ExecutionEventUsage":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"integer"},"wire_name":"cacheReadTokens"},{"required":false,"shape":{"kind":"integer"},"wire_name":"cacheWriteTokens"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["complete","partial","unknown"]},"wire_name":"completeness"},{"required":false,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"number"},"wire_name":"amount"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["billed","reported","estimated"]},"wire_name":"basis"},{"required":true,"shape":{"kind":"string"},"wire_name":"currency"}]},"wire_name":"cost"},{"required":false,"shape":{"kind":"integer"},"wire_name":"inputTokens"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["amount","total"]},"wire_name":"kind"},{"required":false,"shape":{"kind":"integer"},"wire_name":"outputTokens"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["provider","estimate","mixed"]},"wire_name":"provenance"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["attempt","turn"]},"wire_name":"scope"}]},"Extensions":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"FileChangedEvent":{"kind":"ref","name":"TaskWorkspaceEventFileChanged"},"HookFailureEvent":{"kind":"intersection","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"hook.failure"},"wire_name":"type"}]},{"kind":"ref","name":"InteractionEventHookFailure"}]},"HttpTransport":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":"http"},"wire_name":"type"},{"required":true,"shape":{"kind":"string"},"wire_name":"url"}]},"InteractionEvent":{"discriminator":"type","kind":"union","mode":"oneOf","variants":[{"kind":"ref","name":"InteractionEventConfigChangeBefore"},{"kind":"ref","name":"InteractionEventConfigChangeAfter"},{"kind":"ref","name":"InteractionEventUserAttention"},{"kind":"ref","name":"InteractionEventUserElicitationRequest"},{"kind":"ref","name":"InteractionEventUserElicitationResult"},{"kind":"ref","name":"InteractionEventUserMessageInbound"},{"kind":"ref","name":"InteractionEventUserMessageOutbound"},{"kind":"ref","name":"InteractionEventHookFailure"}]},"InteractionEventConfigChangeAfter":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"kind":"array"},"wire_name":"mcpServers"},{"required":false,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"scope"},{"required":true,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"settings"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":true,"shape":{"kind":"string"},"wire_name":"summary"}]},"wire_name":"change"},{"required":true,"shape":{"kind":"literal","value":"config.change.after"},"wire_name":"type"}]},"InteractionEventConfigChangeBefore":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"scope"},{"required":true,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"settings"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":true,"shape":{"kind":"string"},"wire_name":"summary"}]},"wire_name":"change"},{"required":true,"shape":{"kind":"literal","value":"config.change.before"},"wire_name":"type"}]},"InteractionEventHookFailure":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"backendId"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["fail-open","fail-closed"]},"wire_name":"policy"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"wire_name":"failure"},{"required":true,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":true,"shape":{"kind":"literal","value":"hook.failure"},"wire_name":"type"}]},"InteractionEventUserAttention":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"kind"},{"required":true,"shape":{"kind":"ref","name":"TextParts"},"wire_name":"message"},{"required":true,"shape":{"kind":"ref","name":"TextParts"},"wire_name":"title"}]},"wire_name":"attention"},{"required":true,"shape":{"kind":"literal","value":"user.attention"},"wire_name":"type"}]},"InteractionEventUserElicitationRequest":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["form","url"]},"wire_name":"mode"},{"required":false,"shape":{"kind":"ref","name":"TextPart"},"wire_name":"request"},{"required":true,"shape":{"kind":"string"},"wire_name":"server"}]},"wire_name":"elicitation"},{"required":true,"shape":{"kind":"literal","value":"user.elicitation.request"},"wire_name":"type"}]},"InteractionEventUserElicitationResult":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["accept","decline","cancel"]},"wire_name":"action"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["form","url"]},"wire_name":"mode"},{"required":false,"shape":{"kind":"ref","name":"TextPart"},"wire_name":"result"},{"required":true,"shape":{"kind":"string"},"wire_name":"server"}]},"wire_name":"elicitation"},{"required":true,"shape":{"kind":"literal","value":"user.elicitation.result"},"wire_name":"type"}]},"InteractionEventUserMessageInbound":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"channel"},{"required":true,"shape":{"items":{"kind":"intersection","variants":[{"kind":"ref","name":"CanonicalMessage"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"literal","value":"user"},"wire_name":"role"}]}]},"kind":"array"},"wire_name":"messages"},{"required":true,"shape":{"kind":"string"},"wire_name":"sender"}]},"wire_name":"message"},{"required":true,"shape":{"kind":"literal","value":"user.message.inbound"},"wire_name":"type"}]},"InteractionEventUserMessageOutbound":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"channel"},{"required":true,"shape":{"items":{"kind":"intersection","variants":[{"kind":"ref","name":"CanonicalMessage"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"literal","value":"assistant"},"wire_name":"role"}]}]},"kind":"array"},"wire_name":"messages"}]},"wire_name":"message"},{"required":true,"shape":{"kind":"literal","value":"user.message.outbound"},"wire_name":"type"}]},"InterceptDenyResponse":{"kind":"intersection","variants":[{"kind":"ref","name":"JsonRpcSuccessResponse"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"items":{"kind":"ref","name":"DenyEffect"},"kind":"array"},"wire_name":"effects"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":true,"shape":{"kind":"ref","name":"ProtocolVersion"},"wire_name":"protocolVersion"}]},"wire_name":"result"}]}]},"InterceptNoEffectResponse":{"kind":"intersection","variants":[{"kind":"ref","name":"JsonRpcSuccessResponse"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"items":{"kind":"any"},"kind":"array"},"wire_name":"effects"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":true,"shape":{"kind":"ref","name":"ProtocolVersion"},"wire_name":"protocolVersion"}]},"wire_name":"result"}]}]},"InterceptRequest":{"kind":"intersection","variants":[{"kind":"ref","name":"JsonRpcRequest"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":"hooks/intercept"},"wire_name":"method"},{"required":true,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"intersection","variants":[{"kind":"ref","name":"Capabilities"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"any"},"wire_name":"flow"}]}]},"wire_name":"capabilities"},{"required":true,"shape":{"kind":"intersection","variants":[{"kind":"ref","name":"Event"},{"discriminator":"type","kind":"union","mode":"oneOf","variants":[{"kind":"ref","name":"ToolBeforeEvent"},{"kind":"ref","name":"ToolAfterEvent"},{"kind":"ref","name":"SessionStartEvent"},{"kind":"ref","name":"ConfigChangeBeforeEvent"},{"kind":"ref","name":"TurnStartEvent"},{"kind":"ref","name":"TurnFinishBeforeEvent"},{"kind":"ref","name":"ModelRequestBeforeEvent"},{"kind":"ref","name":"ModelSwitchBeforeEvent"},{"kind":"ref","name":"ToolPermissionRequestEvent"},{"kind":"ref","name":"ToolBatchAfterEvent"},{"kind":"ref","name":"ContextCompactBeforeEvent"},{"kind":"ref","name":"ContextCompactAfterEvent"},{"kind":"ref","name":"TaskChangeBeforeEvent"},{"kind":"ref","name":"UserElicitationRequestEvent"},{"kind":"ref","name":"UserElicitationResultEvent"},{"kind":"ref","name":"UserMessageInboundEvent"},{"kind":"ref","name":"UserMessageOutboundEvent"},{"kind":"ref","name":"WorkspaceChangeBeforeEvent"},{"kind":"ref","name":"ModelResponseAfterEvent"},{"kind":"intersection","variants":[{"kind":"ref","name":"SessionEndEvent"},{"kind":"never"}]},{"kind":"intersection","variants":[{"kind":"ref","name":"ConfigChangeAfterEvent"},{"kind":"never"}]},{"kind":"intersection","variants":[{"kind":"ref","name":"TurnEndEvent"},{"kind":"never"}]},{"kind":"intersection","variants":[{"kind":"ref","name":"TurnProgressEvent"},{"kind":"never"}]},{"kind":"intersection","variants":[{"kind":"ref","name":"ModelErrorEvent"},{"kind":"never"}]},{"kind":"intersection","variants":[{"kind":"ref","name":"ModelSwitchAfterEvent"},{"kind":"never"}]},{"kind":"intersection","variants":[{"kind":"ref","name":"ToolPermissionResolvedEvent"},{"kind":"never"}]},{"kind":"intersection","variants":[{"kind":"ref","name":"ToolProgressEvent"},{"kind":"never"}]},{"kind":"intersection","variants":[{"kind":"ref","name":"TaskChangeAfterEvent"},{"kind":"never"}]},{"kind":"intersection","variants":[{"kind":"ref","name":"UserAttentionEvent"},{"kind":"never"}]},{"kind":"intersection","variants":[{"kind":"ref","name":"WorkspaceChangeAfterEvent"},{"kind":"never"}]},{"kind":"intersection","variants":[{"kind":"ref","name":"FileChangedEvent"},{"kind":"never"}]},{"kind":"intersection","variants":[{"kind":"ref","name":"HookFailureEvent"},{"kind":"never"}]}]}]},"wire_name":"event"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":true,"shape":{"kind":"ref","name":"ProtocolVersion"},"wire_name":"protocolVersion"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"union","mode":"anyOf","variants":[{"kind":"null"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"provenance"},{"required":true,"shape":{"kind":"any"},"wire_name":"value"}]}]},"wire_name":"candidate"},{"required":false,"shape":{"kind":"enum","open_strings":true,"values":["none","stop","continue"]},"wire_name":"flow"},{"required":false,"shape":{"items":{"kind":"any"},"kind":"array"},"wire_name":"injections"},{"required":false,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"instructions"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["none","allow","ask","deny"]},"wire_name":"permission"}]},"wire_name":"state"}]},"wire_name":"params"}]}]},"InterceptResponse":{"kind":"intersection","variants":[{"kind":"ref","name":"JsonRpcSuccessResponse"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[["manifest"]],"kind":"object","properties":[{"required":true,"shape":{"items":{"kind":"ref","name":"Effect"},"kind":"array"},"wire_name":"effects"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":true,"shape":{"kind":"ref","name":"ProtocolVersion"},"wire_name":"protocolVersion"}]},"wire_name":"result"}]}]},"InterceptSubscription":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"ref","name":"ContentSelection"},"wire_name":"content"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"disableable"},{"required":true,"shape":{"items":{"kind":"union","mode":"anyOf","variants":[{"kind":"enum","open_strings":true,"values":["tool.before","tool.after","session.start","config.change.before","turn.start","turn.finish.before","model.request.before","model.switch.before","tool.permission.request","tool.batch.after","context.compact.before","context.compact.after","task.change.before","user.elicitation.request","user.elicitation.result","user.message.inbound","user.message.outbound","workspace.change.before","model.response.after"]},{"kind":"string"}]},"kind":"array"},"wire_name":"events"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["fail-open","fail-closed"]},"wire_name":"failurePolicy"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"paths"},{"required":false,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"toolKinds"}]},"wire_name":"filters"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"includeNative"},{"required":true,"shape":{"kind":"literal","value":"intercept"},"wire_name":"mode"},{"required":false,"shape":{"kind":"enum","open_strings":true,"values":["managed","project","user"]},"wire_name":"scope"},{"required":true,"shape":{"kind":"integer"},"wire_name":"timeoutMs"},{"required":false,"shape":{"kind":"ref","name":"ContentUpload"},"wire_name":"upload"}]},"JsonRpcErrorResponse":{"additional":{"kind":"allowed"},"forbidden_property_sets":[["result"]],"kind":"object","properties":[{"required":true,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"integer"},"wire_name":"code"},{"required":false,"shape":{"kind":"any"},"wire_name":"data"},{"required":true,"shape":{"kind":"string"},"wire_name":"message"}]},"wire_name":"error"},{"required":true,"shape":{"kind":"ref","name":"JsonRpcResponseId"},"wire_name":"id"},{"required":true,"shape":{"kind":"literal","value":"2.0"},"wire_name":"jsonrpc"}]},"JsonRpcId":{"kind":"union","mode":"anyOf","variants":[{"kind":"string"},{"kind":"integer"}]},"JsonRpcMessage":{"kind":"union","mode":"oneOf","variants":[{"kind":"ref","name":"JsonRpcRequest"},{"kind":"ref","name":"JsonRpcNotification"},{"kind":"ref","name":"JsonRpcSuccessResponse"},{"kind":"ref","name":"JsonRpcErrorResponse"}]},"JsonRpcNotification":{"additional":{"kind":"allowed"},"forbidden_property_sets":[["id"]],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":"2.0"},"wire_name":"jsonrpc"},{"required":true,"shape":{"kind":"string"},"wire_name":"method"},{"required":true,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"params"}]},"JsonRpcRequest":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"ref","name":"JsonRpcId"},"wire_name":"id"},{"required":true,"shape":{"kind":"literal","value":"2.0"},"wire_name":"jsonrpc"},{"required":true,"shape":{"kind":"string"},"wire_name":"method"},{"required":true,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"params"}]},"JsonRpcResponseId":{"kind":"union","mode":"anyOf","variants":[{"kind":"ref","name":"JsonRpcId"},{"kind":"null"}]},"JsonRpcSuccessResponse":{"additional":{"kind":"allowed"},"forbidden_property_sets":[["error"]],"kind":"object","properties":[{"required":true,"shape":{"kind":"ref","name":"JsonRpcResponseId"},"wire_name":"id"},{"required":true,"shape":{"kind":"literal","value":"2.0"},"wire_name":"jsonrpc"},{"required":true,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"result"}]},"McpElicitationBooleanSchema":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"boolean"},"wire_name":"default"},{"required":false,"shape":{"kind":"string"},"wire_name":"description"},{"required":false,"shape":{"kind":"string"},"wire_name":"title"},{"required":true,"shape":{"kind":"literal","value":"boolean"},"wire_name":"type"}]},"McpElicitationElicitRequestFormParams":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"McpElicitationProgressToken"},"wire_name":"progressToken"}]},"wire_name":"_meta"},{"required":true,"shape":{"kind":"string"},"wire_name":"message"},{"required":false,"shape":{"kind":"literal","value":"form"},"wire_name":"mode"},{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"$schema"},{"required":true,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"properties"},{"required":false,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"required"},{"required":true,"shape":{"kind":"literal","value":"object"},"wire_name":"type"}]},"wire_name":"requestedSchema"},{"required":false,"shape":{"kind":"ref","name":"McpElicitationTaskMetadata"},"wire_name":"task"}]},"McpElicitationElicitRequestParams":{"kind":"union","mode":"anyOf","variants":[{"kind":"ref","name":"McpElicitationElicitRequestURLParams"},{"kind":"ref","name":"McpElicitationElicitRequestFormParams"}]},"McpElicitationElicitRequestURLParams":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"McpElicitationProgressToken"},"wire_name":"progressToken"}]},"wire_name":"_meta"},{"required":true,"shape":{"kind":"string"},"wire_name":"elicitationId"},{"required":true,"shape":{"kind":"string"},"wire_name":"message"},{"required":true,"shape":{"kind":"literal","value":"url"},"wire_name":"mode"},{"required":false,"shape":{"kind":"ref","name":"McpElicitationTaskMetadata"},"wire_name":"task"},{"required":true,"shape":{"kind":"string"},"wire_name":"url"}]},"McpElicitationElicitResult":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"_meta"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["accept","cancel","decline"]},"wire_name":"action"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"content"}]},"McpElicitationLegacyTitledEnumSchema":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"default"},{"required":false,"shape":{"kind":"string"},"wire_name":"description"},{"required":true,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"enum"},{"required":false,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"enumNames"},{"required":false,"shape":{"kind":"string"},"wire_name":"title"},{"required":true,"shape":{"kind":"literal","value":"string"},"wire_name":"type"}]},"McpElicitationNumberSchema":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"number"},"wire_name":"default"},{"required":false,"shape":{"kind":"string"},"wire_name":"description"},{"required":false,"shape":{"kind":"number"},"wire_name":"maximum"},{"required":false,"shape":{"kind":"number"},"wire_name":"minimum"},{"required":false,"shape":{"kind":"string"},"wire_name":"title"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["integer","number"]},"wire_name":"type"}]},"McpElicitationPrimitiveSchemaDefinition":{"kind":"union","mode":"anyOf","variants":[{"kind":"ref","name":"McpElicitationStringSchema"},{"kind":"ref","name":"McpElicitationNumberSchema"},{"kind":"ref","name":"McpElicitationBooleanSchema"},{"kind":"ref","name":"McpElicitationUntitledSingleSelectEnumSchema"},{"kind":"ref","name":"McpElicitationTitledSingleSelectEnumSchema"},{"kind":"ref","name":"McpElicitationUntitledMultiSelectEnumSchema"},{"kind":"ref","name":"McpElicitationTitledMultiSelectEnumSchema"},{"kind":"ref","name":"McpElicitationLegacyTitledEnumSchema"}]},"McpElicitationProgressToken":{"kind":"union","mode":"anyOf","variants":[{"kind":"string"},{"kind":"number"}]},"McpElicitationRequest":{"kind":"ref","name":"McpElicitationElicitRequestParams"},"McpElicitationResult":{"kind":"ref","name":"McpElicitationElicitResult"},"McpElicitationStringSchema":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"default"},{"required":false,"shape":{"kind":"string"},"wire_name":"description"},{"required":false,"shape":{"kind":"enum","open_strings":true,"values":["date","date-time","email","uri"]},"wire_name":"format"},{"required":false,"shape":{"kind":"number"},"wire_name":"maxLength"},{"required":false,"shape":{"kind":"number"},"wire_name":"minLength"},{"required":false,"shape":{"kind":"string"},"wire_name":"title"},{"required":true,"shape":{"kind":"literal","value":"string"},"wire_name":"type"}]},"McpElicitationTaskMetadata":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"number"},"wire_name":"ttl"}]},"McpElicitationTitledMultiSelectEnumSchema":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"default"},{"required":false,"shape":{"kind":"string"},"wire_name":"description"},{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"items":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"const"},{"required":true,"shape":{"kind":"string"},"wire_name":"title"}]},"kind":"array"},"wire_name":"anyOf"}]},"wire_name":"items"},{"required":false,"shape":{"kind":"number"},"wire_name":"maxItems"},{"required":false,"shape":{"kind":"number"},"wire_name":"minItems"},{"required":false,"shape":{"kind":"string"},"wire_name":"title"},{"required":true,"shape":{"kind":"literal","value":"array"},"wire_name":"type"}]},"McpElicitationTitledSingleSelectEnumSchema":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"default"},{"required":false,"shape":{"kind":"string"},"wire_name":"description"},{"required":true,"shape":{"items":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"const"},{"required":true,"shape":{"kind":"string"},"wire_name":"title"}]},"kind":"array"},"wire_name":"oneOf"},{"required":false,"shape":{"kind":"string"},"wire_name":"title"},{"required":true,"shape":{"kind":"literal","value":"string"},"wire_name":"type"}]},"McpElicitationUntitledMultiSelectEnumSchema":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"default"},{"required":false,"shape":{"kind":"string"},"wire_name":"description"},{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"enum"},{"required":true,"shape":{"kind":"literal","value":"string"},"wire_name":"type"}]},"wire_name":"items"},{"required":false,"shape":{"kind":"number"},"wire_name":"maxItems"},{"required":false,"shape":{"kind":"number"},"wire_name":"minItems"},{"required":false,"shape":{"kind":"string"},"wire_name":"title"},{"required":true,"shape":{"kind":"literal","value":"array"},"wire_name":"type"}]},"McpElicitationUntitledSingleSelectEnumSchema":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"default"},{"required":false,"shape":{"kind":"string"},"wire_name":"description"},{"required":true,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"enum"},{"required":false,"shape":{"kind":"string"},"wire_name":"title"},{"required":true,"shape":{"kind":"literal","value":"string"},"wire_name":"type"}]},"ModelErrorEvent":{"kind":"ref","name":"ExecutionEventModelError"},"ModelRequestBeforeCapabilities":{"kind":"intersection","variants":[{"kind":"ref","name":"Capabilities"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["deny","modify","inject","return","flow","message"]},"kind":"array"},"wire_name":"effects"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["stop"]},"kind":"array"},"wire_name":"operations"}]},"wire_name":"flow"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"modify"}]}]},"ModelRequestBeforeEvent":{"kind":"ref","name":"ExecutionEventModelRequestBefore"},"ModelResponseAfterCapabilities":{"kind":"intersection","variants":[{"kind":"ref","name":"Capabilities"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["modify","flow","message"]},"kind":"array"},"wire_name":"effects"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["stop"]},"kind":"array"},"wire_name":"operations"}]},"wire_name":"flow"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"modify"}]}]},"ModelResponseAfterEvent":{"kind":"ref","name":"ExecutionEventModelResponseAfter"},"ModelSwitchAfterEvent":{"kind":"ref","name":"ExecutionEventModelSwitchAfter"},"ModelSwitchBeforeCapabilities":{"kind":"intersection","variants":[{"kind":"ref","name":"Capabilities"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["deny","flow","message"]},"kind":"array"},"wire_name":"effects"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["stop"]},"kind":"array"},"wire_name":"operations"}]},"wire_name":"flow"}]}]},"ModelSwitchBeforeEvent":{"kind":"ref","name":"ExecutionEventModelSwitchBefore"},"ModelVisibleItem":{"kind":"ref","name":"CanonicalMessage"},"NativeEvent":{"kind":"any"},"ObserveNotification":{"kind":"intersection","variants":[{"kind":"ref","name":"JsonRpcNotification"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"literal","value":"hooks/observe"},"wire_name":"method"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"ref","name":"Event"},"wire_name":"event"},{"required":true,"shape":{"kind":"ref","name":"ProtocolVersion"},"wire_name":"protocolVersion"}]},"wire_name":"params"}]}]},"ObserveSubscription":{"additional":{"kind":"allowed"},"forbidden_property_sets":[["failurePolicy"],["timeoutMs"]],"kind":"object","properties":[{"required":true,"shape":{"kind":"ref","name":"ContentSelection"},"wire_name":"content"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"disableable"},{"required":true,"shape":{"items":{"kind":"union","mode":"anyOf","variants":[{"kind":"enum","open_strings":true,"values":["tool.before","tool.after","session.start","session.end","config.change.before","config.change.after","turn.start","turn.finish.before","turn.end","turn.progress","model.request.before","model.response.after","model.error","model.switch.before","model.switch.after","tool.permission.request","tool.permission.resolved","tool.progress","tool.batch.after","context.compact.before","context.compact.after","task.change.before","task.change.after","user.attention","user.elicitation.request","user.elicitation.result","user.message.inbound","user.message.outbound","workspace.change.before","workspace.change.after","file.changed","hook.failure"]},{"kind":"string"}]},"kind":"array"},"wire_name":"events"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"paths"},{"required":false,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"toolKinds"}]},"wire_name":"filters"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"includeNative"},{"required":true,"shape":{"kind":"literal","value":"observe"},"wire_name":"mode"},{"required":false,"shape":{"kind":"enum","open_strings":true,"values":["managed","project","user"]},"wire_name":"scope"},{"required":false,"shape":{"kind":"ref","name":"ContentUpload"},"wire_name":"upload"}]},"ProtocolVersion":{"kind":"literal","value":"draft"},"Registration":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"items":{"kind":"ref","name":"Backend"},"kind":"array"},"wire_name":"hooks"},{"required":true,"shape":{"kind":"ref","name":"ProtocolVersion"},"wire_name":"protocolVersion"}]},"RegistrationContentreceiver":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"Authentication"},"wire_name":"authentication"},{"required":true,"shape":{"kind":"integer"},"wire_name":"maxBytes"},{"required":true,"shape":{"kind":"integer"},"wire_name":"timeoutMs"},{"required":true,"shape":{"kind":"string"},"wire_name":"url"}]},"ReverseDnsName":{"kind":"string"},"Session":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"string"},"wire_name":"type"}]},"wire_name":"agent"},{"required":false,"shape":{"kind":"string"},"wire_name":"cwd"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"string"},"wire_name":"model"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":false,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"workspaceRoots"}]},"SessionEndEvent":{"additional":{"kind":"allowed"},"forbidden_property_sets":[["tool"]],"kind":"object","properties":[{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"counters"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["completed","cancelled","error","unknown"]},"wire_name":"outcome"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"},{"required":true,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"session.end"},"wire_name":"type"}]},"SessionStartCapabilities":{"kind":"intersection","variants":[{"kind":"ref","name":"Capabilities"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["inject","message"]},"kind":"array"},"wire_name":"effects"}]}]},"SessionStartEvent":{"additional":{"kind":"allowed"},"forbidden_property_sets":[["outcome"],["tool"]],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"name"},{"required":true,"shape":{"kind":"string"},"wire_name":"version"}]},"wire_name":"harness"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":true,"shape":{"items":{"kind":"ref","name":"ModelVisibleItem"},"kind":"array"},"wire_name":"items"},{"required":true,"shape":{"kind":"ref","name":"StaticCapabilityManifest"},"wire_name":"manifest"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":true,"shape":{"kind":"string"},"wire_name":"permissionMode"},{"required":false,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"resumedFrom"},{"required":true,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["startup","resume","clear","compact","fork"]},"wire_name":"trigger"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"session.start"},"wire_name":"type"}]},"StaticCapabilityManifest":{"additional":{"kind":"allowed"},"forbidden_property_sets":[["identity"]],"kind":"object","properties":[{"required":true,"shape":{"items":{"kind":"enum","open_strings":true,"values":["bearer","oauth"]},"kind":"array"},"wire_name":"authentication"},{"required":true,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"contentCategories"},{"required":true,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"correlationIdentityFields"},{"required":true,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"Capabilities"},"wire_name":"capabilities"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["tool.before","tool.after","session.start","session.end","config.change.before","config.change.after","turn.start","turn.finish.before","turn.end","turn.progress","model.request.before","model.response.after","model.error","model.switch.before","model.switch.after","tool.permission.request","tool.permission.resolved","tool.progress","tool.batch.after","context.compact.before","context.compact.after","task.change.before","task.change.after","user.attention","user.elicitation.request","user.elicitation.result","user.message.inbound","user.message.outbound","workspace.change.before","workspace.change.after","file.changed","hook.failure"]},"wire_name":"event"},{"required":true,"shape":{"items":{"kind":"enum","open_strings":true,"values":["observe","intercept"]},"kind":"array"},"wire_name":"modes"}]},"kind":"array"},"wire_name":"events"},{"required":true,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"integer"},"wire_name":"maxContinuations"},{"required":false,"shape":{"kind":"integer"},"wire_name":"maxTimeoutMs"},{"required":false,"shape":{"kind":"integer"},"wire_name":"maxUploadBytes"},{"required":false,"shape":{"kind":"integer"},"wire_name":"minTimeoutMs"}]},"wire_name":"limits"},{"required":true,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"boolean"},"wire_name":"disableable"},{"required":true,"shape":{"items":{"kind":"enum","open_strings":true,"values":["user","project","managed"]},"kind":"array"},"wire_name":"scopes"}]},"wire_name":"managedPolicy"},{"required":true,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"toolPaths"},{"required":true,"shape":{"items":{"kind":"enum","open_strings":true,"values":["http","stdio","in_process"]},"kind":"array"},"wire_name":"transports"}]},"StdioTransport":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"args"},{"required":true,"shape":{"kind":"string"},"wire_name":"command"},{"required":false,"shape":{"kind":"string"},"wire_name":"cwd"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["persistent","per_event"]},"wire_name":"lifecycle"},{"required":true,"shape":{"kind":"literal","value":"stdio"},"wire_name":"type"}]},"TaskChangeAfterEvent":{"kind":"ref","name":"TaskWorkspaceEventTaskChangeAfter"},"TaskChangeBeforeCapabilities":{"kind":"intersection","variants":[{"kind":"ref","name":"Capabilities"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["deny","message"]},"kind":"array"},"wire_name":"effects"}]}]},"TaskChangeBeforeEvent":{"kind":"ref","name":"TaskWorkspaceEventTaskChangeBefore"},"TaskWorkspaceEvent":{"discriminator":"type","kind":"union","mode":"oneOf","variants":[{"kind":"ref","name":"TaskWorkspaceEventTaskChangeBefore"},{"kind":"ref","name":"TaskWorkspaceEventTaskChangeAfter"},{"kind":"ref","name":"TaskWorkspaceEventWorkspaceChangeBefore"},{"kind":"ref","name":"TaskWorkspaceEventWorkspaceChangeAfter"},{"kind":"ref","name":"TaskWorkspaceEventFileChanged"}]},"TaskWorkspaceEventFileChanged":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"items":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"ContentItem"},"wire_name":"after"},{"required":true,"shape":{"kind":"boolean"},"wire_name":"agentCaused"},{"required":false,"shape":{"kind":"ref","name":"ContentItem"},"wire_name":"before"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["create","update","remove"]},"wire_name":"operation"},{"required":true,"shape":{"kind":"string"},"wire_name":"path"}]},"kind":"array"},"wire_name":"changes"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"file.changed"},"wire_name":"type"}]},"TaskWorkspaceEventTaskChangeAfter":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"change"},{"required":false,"shape":{"kind":"string"},"wire_name":"description"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["create","update","remove"]},"wire_name":"operation"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"prior"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"task"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"task.change.after"},"wire_name":"type"}]},"TaskWorkspaceEventTaskChangeBefore":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"change"},{"required":false,"shape":{"kind":"string"},"wire_name":"description"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["create","update","remove"]},"wire_name":"operation"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"prior"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"task"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"task.change.before"},"wire_name":"type"}]},"TaskWorkspaceEventWorkspaceChangeAfter":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"workspace.change.after"},"wire_name":"type"},{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"cwd"},{"required":false,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"workspaceRoots"}]},"wire_name":"change"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["cwd","roots","switch"]},"wire_name":"kind"},{"required":false,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"cwd"},{"required":false,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"workspaceRoots"}]},"wire_name":"prior"},{"required":false,"shape":{"kind":"string"},"wire_name":"reason"}]},"wire_name":"workspace"}]},"TaskWorkspaceEventWorkspaceChangeBefore":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"workspace.change.before"},"wire_name":"type"},{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"cwd"},{"required":false,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"workspaceRoots"}]},"wire_name":"change"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["cwd","roots","switch"]},"wire_name":"kind"},{"required":false,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"cwd"},{"required":false,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"workspaceRoots"}]},"wire_name":"prior"},{"required":false,"shape":{"kind":"string"},"wire_name":"reason"}]},"wire_name":"workspace"}]},"TextBodyPart":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[["sha256"],["size"]],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"category"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":true,"shape":{"kind":"literal","value":"text"},"wire_name":"kind"},{"required":true,"shape":{"kind":"literal","value":"text/plain"},"wire_name":"mediaType"},{"required":true,"shape":{"kind":"literal","value":"body"},"wire_name":"selection"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"text"}]},"TextGapPart":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"category"},{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"wire_name":"gap"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":true,"shape":{"kind":"literal","value":"text"},"wire_name":"kind"},{"required":true,"shape":{"kind":"literal","value":"text/plain"},"wire_name":"mediaType"},{"required":true,"shape":{"kind":"literal","value":"body"},"wire_name":"selection"},{"required":false,"shape":{"kind":"string"},"wire_name":"sha256"},{"required":false,"shape":{"kind":"integer"},"wire_name":"size"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"TextMetadataPart":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"category"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":true,"shape":{"kind":"literal","value":"text"},"wire_name":"kind"},{"required":true,"shape":{"kind":"literal","value":"text/plain"},"wire_name":"mediaType"},{"required":true,"shape":{"kind":"literal","value":"metadata"},"wire_name":"selection"},{"required":false,"shape":{"kind":"string"},"wire_name":"sha256"},{"required":false,"shape":{"kind":"integer"},"wire_name":"size"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"TextOmittedPart":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"category"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":true,"shape":{"kind":"literal","value":"text"},"wire_name":"kind"},{"required":true,"shape":{"kind":"literal","value":"text/plain"},"wire_name":"mediaType"},{"required":true,"shape":{"kind":"literal","value":"omit"},"wire_name":"selection"},{"required":false,"shape":{"kind":"string"},"wire_name":"sha256"},{"required":false,"shape":{"kind":"integer"},"wire_name":"size"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"TextPart":{"kind":"union","mode":"oneOf","variants":[{"kind":"ref","name":"TextBodyPart"},{"kind":"ref","name":"TextGapPart"},{"kind":"ref","name":"TextMetadataPart"},{"kind":"ref","name":"TextOmittedPart"}]},"TextParts":{"items":{"kind":"ref","name":"TextPart"},"kind":"array"},"ToolAfterCapabilities":{"kind":"intersection","variants":[{"kind":"ref","name":"Capabilities"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["modify","inject","flow","message"]},"kind":"array"},"wire_name":"effects"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["stop","continue"]},"kind":"array"},"wire_name":"operations"}]},"wire_name":"flow"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"modify"}]}]},"ToolAfterEvent":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"ExecutionEventBatch"},"wire_name":"batch"},{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"call"},{"required":false,"shape":{"kind":"number"},"wire_name":"durationMs"},{"required":false,"shape":{"kind":"ref","name":"ExecutionEventError"},"wire_name":"error"},{"required":true,"shape":{"kind":"ref","name":"ExecutionEventExecution"},"wire_name":"execution"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"kind":"ref","name":"ExecutionEventFilechange"},"kind":"array"},"wire_name":"fileChanges"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":true,"shape":{"items":{"kind":"ref","name":"ModelVisibleItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["ok","error","denied","cancelled","timeout"]},"wire_name":"outcome"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":true,"shape":{"kind":"ref","name":"ExecutionEventTool"},"wire_name":"tool"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"tool.after"},"wire_name":"type"}]},"ToolBatchAfterCapabilities":{"kind":"intersection","variants":[{"kind":"ref","name":"Capabilities"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["flow","inject","message"]},"kind":"array"},"wire_name":"effects"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["stop"]},"kind":"array"},"wire_name":"operations"}]},"wire_name":"flow"}]}]},"ToolBatchAfterEvent":{"kind":"ref","name":"ExecutionEventToolBatchAfter"},"ToolBeforeCapabilities":{"kind":"intersection","variants":[{"kind":"ref","name":"Capabilities"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["deny","allow","ask","modify","inject","flow","return","message"]},"kind":"array"},"wire_name":"effects"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["stop"]},"kind":"array"},"wire_name":"operations"}]},"wire_name":"flow"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"modify"}]}]},"ToolBeforeEvent":{"additional":{"kind":"allowed"},"forbidden_property_sets":[["durationMs"],["execution"],["fileChanges"],["outcome"]],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"ExecutionEventBatch"},"wire_name":"batch"},{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"call"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":true,"shape":{"kind":"ref","name":"ExecutionEventTool"},"wire_name":"tool"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"tool.before"},"wire_name":"type"}]},"ToolPermissionRequestCapabilities":{"kind":"intersection","variants":[{"kind":"ref","name":"Capabilities"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["allow","deny","modify","flow","message"]},"kind":"array"},"wire_name":"effects"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["stop"]},"kind":"array"},"wire_name":"operations"}]},"wire_name":"flow"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"modify"}]}]},"ToolPermissionRequestEvent":{"kind":"ref","name":"ExecutionEventToolPermissionRequest"},"ToolPermissionResolvedEvent":{"kind":"ref","name":"ExecutionEventToolPermissionResolved"},"ToolProgressEvent":{"kind":"ref","name":"ExecutionEventToolProgress"},"TurnEndEvent":{"kind":"ref","name":"ExecutionEventTurnEnd"},"TurnFinishBeforeCapabilities":{"kind":"intersection","variants":[{"kind":"ref","name":"Capabilities"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["modify","flow","message"]},"kind":"array"},"wire_name":"effects"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["stop","continue"]},"kind":"array"},"wire_name":"operations"}]},"wire_name":"flow"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"modify"}]}]},"TurnFinishBeforeEvent":{"kind":"ref","name":"ExecutionEventTurnFinishBefore"},"TurnProgressEvent":{"kind":"ref","name":"ExecutionEventTurnProgress"},"TurnStartCapabilities":{"kind":"intersection","variants":[{"kind":"ref","name":"Capabilities"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["deny","modify","inject","flow","message"]},"kind":"array"},"wire_name":"effects"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["stop"]},"kind":"array"},"wire_name":"operations"}]},"wire_name":"flow"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"modify"}]}]},"TurnStartEvent":{"kind":"ref","name":"ExecutionEventTurnStart"},"UserAttentionEvent":{"kind":"intersection","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"user.attention"},"wire_name":"type"}]},{"kind":"ref","name":"InteractionEventUserAttention"}]},"UserElicitationRequestCapabilities":{"kind":"intersection","variants":[{"kind":"ref","name":"Capabilities"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["deny","return","message"]},"kind":"array"},"wire_name":"effects"}]}]},"UserElicitationRequestEvent":{"kind":"intersection","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"user.elicitation.request"},"wire_name":"type"}]},{"kind":"ref","name":"InteractionEventUserElicitationRequest"}]},"UserElicitationResultCapabilities":{"kind":"intersection","variants":[{"kind":"ref","name":"Capabilities"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["modify","message"]},"kind":"array"},"wire_name":"effects"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"modify"}]}]},"UserElicitationResultEvent":{"kind":"intersection","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"user.elicitation.result"},"wire_name":"type"}]},{"kind":"ref","name":"InteractionEventUserElicitationResult"}]},"UserMessageInboundCapabilities":{"kind":"intersection","variants":[{"kind":"ref","name":"Capabilities"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["deny","modify","message"]},"kind":"array"},"wire_name":"effects"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"modify"}]}]},"UserMessageInboundEvent":{"kind":"intersection","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"user.message.inbound"},"wire_name":"type"}]},{"kind":"ref","name":"InteractionEventUserMessageInbound"}]},"UserMessageOutboundCapabilities":{"kind":"intersection","variants":[{"kind":"ref","name":"Capabilities"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["deny","modify","message"]},"kind":"array"},"wire_name":"effects"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"modify"}]}]},"UserMessageOutboundEvent":{"kind":"intersection","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"user.message.outbound"},"wire_name":"type"}]},{"kind":"ref","name":"InteractionEventUserMessageOutbound"}]},"WireMessage":{"kind":"union","mode":"oneOf","variants":[{"kind":"ref","name":"InterceptRequest"},{"kind":"ref","name":"InterceptResponse"},{"kind":"ref","name":"JsonRpcErrorResponse"},{"kind":"ref","name":"ObserveNotification"},{"kind":"ref","name":"CapabilitiesRequest"},{"kind":"ref","name":"CapabilitiesResponse"}]},"WorkspaceChangeAfterEvent":{"kind":"ref","name":"TaskWorkspaceEventWorkspaceChangeAfter"},"WorkspaceChangeBeforeCapabilities":{"kind":"intersection","variants":[{"kind":"ref","name":"Capabilities"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["deny","modify","message"]},"kind":"array"},"wire_name":"effects"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"modify"}]}]},"WorkspaceChangeBeforeEvent":{"kind":"ref","name":"TaskWorkspaceEventWorkspaceChangeBefore"}}',
+    '{"AllowEffect":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":"allow"},"wire_name":"type"}]},"AskEffect":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":"ask"},"wire_name":"type"}]},"AttachmentBodyPart":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[["sha256"],["size"]],"kind":"object","properties":[{"required":true,"shape":{"kind":"ref","name":"ContentReference"},"wire_name":"body"},{"required":false,"shape":{"kind":"string"},"wire_name":"category"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":true,"shape":{"kind":"literal","value":"attachment"},"wire_name":"kind"},{"required":true,"shape":{"kind":"string"},"wire_name":"mediaType"},{"required":true,"shape":{"kind":"literal","value":"body"},"wire_name":"selection"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"AttachmentGapPart":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"category"},{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"wire_name":"gap"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":true,"shape":{"kind":"literal","value":"attachment"},"wire_name":"kind"},{"required":true,"shape":{"kind":"string"},"wire_name":"mediaType"},{"required":true,"shape":{"kind":"literal","value":"body"},"wire_name":"selection"},{"required":false,"shape":{"kind":"string"},"wire_name":"sha256"},{"required":false,"shape":{"kind":"boundedInteger","minimum":0},"wire_name":"size"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"AttachmentMetadataPart":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"category"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":true,"shape":{"kind":"literal","value":"attachment"},"wire_name":"kind"},{"required":true,"shape":{"kind":"string"},"wire_name":"mediaType"},{"required":true,"shape":{"kind":"literal","value":"metadata"},"wire_name":"selection"},{"required":false,"shape":{"kind":"string"},"wire_name":"sha256"},{"required":false,"shape":{"kind":"boundedInteger","minimum":0},"wire_name":"size"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"AttachmentOmittedPart":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"category"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":true,"shape":{"kind":"literal","value":"attachment"},"wire_name":"kind"},{"required":true,"shape":{"kind":"string"},"wire_name":"mediaType"},{"required":true,"shape":{"kind":"literal","value":"omit"},"wire_name":"selection"},{"required":false,"shape":{"kind":"string"},"wire_name":"sha256"},{"required":false,"shape":{"kind":"boundedInteger","minimum":0},"wire_name":"size"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"Authentication":{"kind":"union","mode":"anyOf","variants":[{"kind":"intersection","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"tokenEnv"},{"required":false,"shape":{"kind":"string"},"wire_name":"tokenRef"},{"required":true,"shape":{"kind":"literal","value":"bearer"},"wire_name":"type"}]},{"kind":"union","mode":"oneOf","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[["tokenRef"]],"kind":"object","properties":[{"required":true,"shape":{"kind":"any"},"wire_name":"tokenEnv"}]},{"additional":{"kind":"allowed"},"forbidden_property_sets":[["tokenEnv"]],"kind":"object","properties":[{"required":true,"shape":{"kind":"any"},"wire_name":"tokenRef"}]}]}]},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"clientId"},{"required":false,"shape":{"kind":"string"},"wire_name":"clientSecretRef"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["authorization_code_pkce","client_credentials"]},"wire_name":"flow"},{"required":true,"shape":{"kind":"string"},"wire_name":"issuer"},{"required":true,"shape":{"kind":"string"},"wire_name":"resource"},{"required":false,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"scopes"},{"required":true,"shape":{"kind":"literal","value":"oauth"},"wire_name":"type"}]}]},"Backend":{"additional":{"kind":"allowed"},"forbidden_property_sets":[["contentReceiver"]],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"Authentication"},"wire_name":"authentication"},{"required":true,"shape":{"kind":"ref","name":"ReverseDnsName"},"wire_name":"id"},{"required":true,"shape":{"items":{"discriminator":"mode","kind":"union","mode":"oneOf","variants":[{"kind":"ref","name":"InterceptSubscription"},{"kind":"ref","name":"ObserveSubscription"}]},"kind":"array"},"wire_name":"subscriptions"},{"required":true,"shape":{"discriminator":"type","kind":"union","mode":"oneOf","variants":[{"kind":"ref","name":"StdioTransport"},{"kind":"ref","name":"HttpTransport"}]},"wire_name":"transport"}]},"CanonicalMessage":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":true,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"parts"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["system","developer","user","assistant","tool"]},"wire_name":"role"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"CanonicalMessages":{"items":{"kind":"ref","name":"CanonicalMessage"},"kind":"array"},"Capabilities":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"items":{"kind":"union","mode":"anyOf","variants":[{"kind":"enum","open_strings":true,"values":["deny","allow","ask","modify","message","return","flow","inject"]},{"kind":"string"}]},"kind":"array"},"wire_name":"effects"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"form"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"url"}]},"wire_name":"elicitation"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"boundedInteger","minimum":0},"wire_name":"continuationCount"},{"required":false,"shape":{"kind":"boundedInteger","minimum":0},"wire_name":"maxContinuations"},{"required":true,"shape":{"items":{"kind":"enum","open_strings":true,"values":["stop","continue"]},"kind":"array"},"wire_name":"operations"},{"required":false,"shape":{"kind":"boundedInteger","minimum":0},"wire_name":"remainingContinuations"}]},"wire_name":"flow"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":true},"wire_name":"append"},{"required":true,"shape":{"items":{"kind":"enum","open_strings":true,"values":["now","next_turn"]},"kind":"array"},"wire_name":"deliverAt"}]},"wire_name":"context"}]},"wire_name":"inject"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"intersection","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"boolean"},"wire_name":"merge"},{"required":true,"shape":{"kind":"boolean"},"wire_name":"replace"}]},{"kind":"union","mode":"anyOf","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":true},"wire_name":"replace"}]},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":true},"wire_name":"merge"}]}]}]},"wire_name":"content"},{"required":false,"shape":{"kind":"intersection","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"boolean"},"wire_name":"merge"},{"required":true,"shape":{"kind":"boolean"},"wire_name":"replace"}]},{"kind":"union","mode":"anyOf","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":true},"wire_name":"replace"}]},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":true},"wire_name":"merge"}]}]}]},"wire_name":"input"},{"required":false,"shape":{"kind":"intersection","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"boolean"},"wire_name":"merge"},{"required":true,"shape":{"kind":"boolean"},"wire_name":"replace"}]},{"kind":"union","mode":"anyOf","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":true},"wire_name":"replace"}]},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":true},"wire_name":"merge"}]}]}]},"wire_name":"instructions"},{"required":false,"shape":{"kind":"intersection","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"boolean"},"wire_name":"merge"},{"required":true,"shape":{"kind":"boolean"},"wire_name":"replace"}]},{"kind":"union","mode":"anyOf","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":true},"wire_name":"replace"}]},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":true},"wire_name":"merge"}]}]}]},"wire_name":"output"},{"required":false,"shape":{"kind":"intersection","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"boolean"},"wire_name":"merge"},{"required":true,"shape":{"kind":"boolean"},"wire_name":"replace"}]},{"kind":"union","mode":"anyOf","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":true},"wire_name":"replace"}]},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":true},"wire_name":"merge"}]}]}]},"wire_name":"prompt"},{"required":false,"shape":{"kind":"intersection","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"boolean"},"wire_name":"merge"},{"required":true,"shape":{"kind":"boolean"},"wire_name":"replace"}]},{"kind":"union","mode":"anyOf","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":true},"wire_name":"replace"}]},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":true},"wire_name":"merge"}]}]}]},"wire_name":"request"},{"required":false,"shape":{"kind":"intersection","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"boolean"},"wire_name":"merge"},{"required":true,"shape":{"kind":"boolean"},"wire_name":"replace"}]},{"kind":"union","mode":"anyOf","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":true},"wire_name":"replace"}]},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":true},"wire_name":"merge"}]}]}]},"wire_name":"response"},{"required":false,"shape":{"kind":"intersection","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"boolean"},"wire_name":"merge"},{"required":true,"shape":{"kind":"boolean"},"wire_name":"replace"}]},{"kind":"union","mode":"anyOf","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":true},"wire_name":"replace"}]},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":true},"wire_name":"merge"}]}]}]},"wire_name":"summary"},{"required":false,"shape":{"kind":"intersection","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"boolean"},"wire_name":"merge"},{"required":true,"shape":{"kind":"boolean"},"wire_name":"replace"}]},{"kind":"union","mode":"anyOf","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":true},"wire_name":"replace"}]},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":true},"wire_name":"merge"}]}]}]},"wire_name":"workspace"}]},"wire_name":"modify"}]},"CapabilitiesRequest":{"kind":"intersection","variants":[{"kind":"ref","name":"JsonRpcRequest"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":"hooks/capabilities"},"wire_name":"method"},{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"ref","name":"ProtocolVersion"},"wire_name":"protocolVersion"}]},"wire_name":"params"}]}]},"CapabilitiesResponse":{"kind":"intersection","variants":[{"kind":"ref","name":"JsonRpcSuccessResponse"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[["effects"]],"kind":"object","properties":[{"required":true,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[["identity"]],"kind":"object","properties":[{"required":true,"shape":{"items":{"kind":"enum","open_strings":true,"values":["bearer","oauth"]},"kind":"array"},"wire_name":"authentication"},{"required":true,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"contentCategories"},{"required":true,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"correlationIdentityFields"},{"required":true,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"Capabilities"},"wire_name":"capabilities"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["tool.before","tool.after","session.start","session.end","config.change.before","config.change.after","turn.start","turn.finish.before","turn.end","turn.progress","model.request.before","model.response.after","model.error","model.switch.before","model.switch.after","tool.permission.request","tool.permission.resolved","tool.progress","tool.batch.after","context.compact.before","context.compact.after","task.change.before","task.change.after","user.attention","user.elicitation.request","user.elicitation.result","user.message.inbound","user.message.outbound","workspace.change.before","workspace.change.after","file.changed","hook.failure"]},"wire_name":"event"},{"required":true,"shape":{"items":{"kind":"enum","open_strings":true,"values":["observe","intercept"]},"kind":"array"},"wire_name":"modes"}]},"kind":"array"},"wire_name":"events"},{"required":true,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"boundedInteger","minimum":0},"wire_name":"maxContinuations"},{"required":false,"shape":{"kind":"boundedInteger","minimum":0},"wire_name":"maxTimeoutMs"},{"required":false,"shape":{"kind":"boundedInteger","minimum":0},"wire_name":"maxUploadBytes"},{"required":false,"shape":{"kind":"boundedInteger","minimum":0},"wire_name":"minTimeoutMs"}]},"wire_name":"limits"},{"required":true,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"boolean"},"wire_name":"disableable"},{"required":true,"shape":{"items":{"kind":"enum","open_strings":true,"values":["user","project","managed"]},"kind":"array"},"wire_name":"scopes"}]},"wire_name":"managedPolicy"},{"required":true,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"toolPaths"},{"required":true,"shape":{"items":{"kind":"enum","open_strings":true,"values":["http","stdio","in_process"]},"kind":"array"},"wire_name":"transports"}]},"wire_name":"manifest"},{"required":true,"shape":{"kind":"ref","name":"ProtocolVersion"},"wire_name":"protocolVersion"}]},"wire_name":"result"}]}]},"CatalogueEvent":{"discriminator":"type","kind":"union","mode":"oneOf","variants":[{"kind":"ref","name":"ConfigChangeBeforeEvent"},{"kind":"ref","name":"ConfigChangeAfterEvent"},{"kind":"ref","name":"TurnStartEvent"},{"kind":"ref","name":"TurnFinishBeforeEvent"},{"kind":"ref","name":"TurnEndEvent"},{"kind":"ref","name":"TurnProgressEvent"},{"kind":"ref","name":"ModelRequestBeforeEvent"},{"kind":"ref","name":"ModelResponseAfterEvent"},{"kind":"ref","name":"ModelErrorEvent"},{"kind":"ref","name":"ModelSwitchBeforeEvent"},{"kind":"ref","name":"ModelSwitchAfterEvent"},{"kind":"ref","name":"ToolPermissionRequestEvent"},{"kind":"ref","name":"ToolPermissionResolvedEvent"},{"kind":"ref","name":"ToolProgressEvent"},{"kind":"ref","name":"ToolBatchAfterEvent"},{"kind":"ref","name":"ContextCompactBeforeEvent"},{"kind":"ref","name":"ContextCompactAfterEvent"},{"kind":"ref","name":"TaskChangeBeforeEvent"},{"kind":"ref","name":"TaskChangeAfterEvent"},{"kind":"ref","name":"UserAttentionEvent"},{"kind":"ref","name":"UserElicitationRequestEvent"},{"kind":"ref","name":"UserElicitationResultEvent"},{"kind":"ref","name":"UserMessageInboundEvent"},{"kind":"ref","name":"UserMessageOutboundEvent"},{"kind":"ref","name":"WorkspaceChangeBeforeEvent"},{"kind":"ref","name":"WorkspaceChangeAfterEvent"},{"kind":"ref","name":"FileChangedEvent"},{"kind":"ref","name":"HookFailureEvent"}]},"ConfigChangeAfterEvent":{"kind":"intersection","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"config.change.after"},"wire_name":"type"}]},{"kind":"ref","name":"InteractionEventConfigChangeAfter"}]},"ConfigChangeBeforeCapabilities":{"kind":"intersection","variants":[{"kind":"ref","name":"Capabilities"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["deny","message"]},"kind":"array"},"wire_name":"effects"}]}]},"ConfigChangeBeforeEffect":{"discriminator":"type","kind":"union","mode":"oneOf","variants":[{"kind":"ref","name":"DenyEffect"},{"kind":"ref","name":"MessageEffect"}]},"ConfigChangeBeforeEvent":{"kind":"intersection","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"config.change.before"},"wire_name":"type"}]},{"kind":"ref","name":"InteractionEventConfigChangeBefore"}]},"ConfigChangeBeforeInterceptResponse":{"kind":"intersection","variants":[{"kind":"ref","name":"JsonRpcSuccessResponse"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[["manifest"]],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"ref","name":"ConfigChangeBeforeEffect"},"kind":"array"},"wire_name":"effects"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":true,"shape":{"kind":"ref","name":"ProtocolVersion"},"wire_name":"protocolVersion"}]},"wire_name":"result"}]}]},"ContentItem":{"kind":"union","mode":"oneOf","variants":[{"kind":"ref","name":"TextBodyPart"},{"kind":"ref","name":"TextGapPart"},{"kind":"ref","name":"TextMetadataPart"},{"kind":"ref","name":"TextOmittedPart"},{"kind":"ref","name":"AttachmentBodyPart"},{"kind":"ref","name":"AttachmentGapPart"},{"kind":"ref","name":"AttachmentMetadataPart"},{"kind":"ref","name":"AttachmentOmittedPart"}]},"ContentReference":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[["sha256"],["size"]],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"ref"}]},"ContentSelection":{"additional":{"kind":"typed","shape":{"kind":"enum","open_strings":true,"values":["body","metadata","omit"]}},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"enum","open_strings":true,"values":["body","metadata","omit"]},"wire_name":"audio"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["body","metadata","omit"]},"wire_name":"default"},{"required":false,"shape":{"kind":"enum","open_strings":true,"values":["body","metadata","omit"]},"wire_name":"files"},{"required":false,"shape":{"kind":"enum","open_strings":true,"values":["body","metadata","omit"]},"wire_name":"images"},{"required":false,"shape":{"kind":"enum","open_strings":true,"values":["body","metadata","omit"]},"wire_name":"reasoning"},{"required":false,"shape":{"kind":"enum","open_strings":true,"values":["body","metadata","omit"]},"wire_name":"text"},{"required":false,"shape":{"kind":"enum","open_strings":true,"values":["body","metadata","omit"]},"wire_name":"video"}]},"ContentUpload":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"Authentication"},"wire_name":"auth"},{"required":true,"shape":{"kind":"string"},"wire_name":"endpoint"},{"required":true,"shape":{"kind":"boundedInteger","minimum":0},"wire_name":"maxBytes"},{"required":true,"shape":{"kind":"boundedInteger","minimum":1},"wire_name":"timeoutMs"}]},"ContentUploadReceipt":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"ref"},{"required":true,"shape":{"kind":"string"},"wire_name":"sha256"},{"required":true,"shape":{"kind":"boundedInteger","minimum":0},"wire_name":"size"}]},"ContextCompactAfterCapabilities":{"kind":"intersection","variants":[{"kind":"ref","name":"Capabilities"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["inject","modify","message"]},"kind":"array"},"wire_name":"effects"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"modify"}]}]},"ContextCompactAfterEffect":{"discriminator":"type","kind":"union","mode":"oneOf","variants":[{"kind":"ref","name":"InjectEffect"},{"kind":"ref","name":"ContextCompactAfterModifyEffect"},{"kind":"ref","name":"MessageEffect"}]},"ContextCompactAfterEvent":{"kind":"ref","name":"ExecutionEventContextCompactAfter"},"ContextCompactAfterInterceptResponse":{"kind":"intersection","variants":[{"kind":"ref","name":"JsonRpcSuccessResponse"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[["manifest"]],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"ref","name":"ContextCompactAfterEffect"},"kind":"array"},"wire_name":"effects"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":true,"shape":{"kind":"ref","name":"ProtocolVersion"},"wire_name":"protocolVersion"}]},"wire_name":"result"}]}]},"ContextCompactAfterModifyEffect":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"union","mode":"oneOf","variants":[{"kind":"literal","value":"replace"},{"kind":"literal","value":"merge"}]},"wire_name":"operation"},{"required":true,"shape":{"kind":"literal","value":"summary"},"wire_name":"target"},{"required":true,"shape":{"kind":"literal","value":"modify"},"wire_name":"type"},{"required":true,"shape":{"kind":"ref","name":"TextParts"},"wire_name":"value"}]},"ContextCompactBeforeCapabilities":{"kind":"intersection","variants":[{"kind":"ref","name":"Capabilities"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["deny","modify","return","inject","message"]},"kind":"array"},"wire_name":"effects"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"modify"}]}]},"ContextCompactBeforeEffect":{"discriminator":"type","kind":"union","mode":"oneOf","variants":[{"kind":"ref","name":"DenyEffect"},{"kind":"ref","name":"ContextCompactBeforeModifyEffect"},{"kind":"ref","name":"ReturnTextEffect"},{"kind":"ref","name":"InjectEffect"},{"kind":"ref","name":"MessageEffect"}]},"ContextCompactBeforeEvent":{"kind":"ref","name":"ExecutionEventContextCompactBefore"},"ContextCompactBeforeInterceptResponse":{"kind":"intersection","variants":[{"kind":"ref","name":"JsonRpcSuccessResponse"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[["manifest"]],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"ref","name":"ContextCompactBeforeEffect"},"kind":"array"},"wire_name":"effects"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":true,"shape":{"kind":"ref","name":"ProtocolVersion"},"wire_name":"protocolVersion"}]},"wire_name":"result"}]}]},"ContextCompactBeforeModifyEffect":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"union","mode":"oneOf","variants":[{"kind":"literal","value":"replace"},{"kind":"literal","value":"merge"}]},"wire_name":"operation"},{"required":true,"shape":{"kind":"literal","value":"instructions"},"wire_name":"target"},{"required":true,"shape":{"kind":"literal","value":"modify"},"wire_name":"type"},{"required":true,"shape":{"kind":"ref","name":"TextParts"},"wire_name":"value"}]},"ContinueFlowEffect":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"instruction"},{"required":true,"shape":{"kind":"literal","value":"continue"},"wire_name":"operation"},{"required":true,"shape":{"kind":"literal","value":"flow"},"wire_name":"type"}]},"DenyEffect":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"code"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"},{"required":true,"shape":{"kind":"literal","value":"deny"},"wire_name":"type"}]},"Effect":{"kind":"union","mode":"oneOf","variants":[{"kind":"ref","name":"DenyEffect"},{"kind":"ref","name":"AllowEffect"},{"kind":"ref","name":"AskEffect"},{"kind":"ref","name":"ModifyMessagesEffect"},{"kind":"ref","name":"ModifyTextEffect"},{"kind":"ref","name":"ModifyWorkspaceEffect"},{"kind":"ref","name":"ModifyFormEffect"},{"kind":"ref","name":"ModifyInputEffect"},{"kind":"ref","name":"MessageEffect"},{"kind":"ref","name":"ReturnToolEffect"},{"kind":"ref","name":"StopFlowEffect"},{"kind":"ref","name":"ContinueFlowEffect"},{"kind":"ref","name":"InjectEffect"}]},"ElicitResultCandidate":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"provenance"},{"required":true,"shape":{"kind":"ref","name":"McpElicitationElicitResult"},"wire_name":"value"}]},"ElicitResultState":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"union","mode":"anyOf","variants":[{"kind":"null"},{"kind":"ref","name":"ElicitResultCandidate"}]},"wire_name":"candidate"},{"required":false,"shape":{"kind":"enum","open_strings":true,"values":["none","stop","continue"]},"wire_name":"flow"},{"required":false,"shape":{"items":{"kind":"ref","name":"InjectEffect"},"kind":"array"},"wire_name":"injections"},{"required":false,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"instructions"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["none","allow","ask","deny"]},"wire_name":"permission"}]},"Event":{"discriminator":"type","kind":"union","mode":"oneOf","variants":[{"kind":"ref","name":"ToolBeforeEvent"},{"kind":"ref","name":"ToolAfterEvent"},{"kind":"ref","name":"SessionStartEvent"},{"kind":"ref","name":"SessionEndEvent"},{"kind":"ref","name":"ConfigChangeBeforeEvent"},{"kind":"ref","name":"ConfigChangeAfterEvent"},{"kind":"ref","name":"TurnStartEvent"},{"kind":"ref","name":"TurnFinishBeforeEvent"},{"kind":"ref","name":"TurnEndEvent"},{"kind":"ref","name":"TurnProgressEvent"},{"kind":"ref","name":"ModelRequestBeforeEvent"},{"kind":"ref","name":"ModelResponseAfterEvent"},{"kind":"ref","name":"ModelErrorEvent"},{"kind":"ref","name":"ModelSwitchBeforeEvent"},{"kind":"ref","name":"ModelSwitchAfterEvent"},{"kind":"ref","name":"ToolPermissionRequestEvent"},{"kind":"ref","name":"ToolPermissionResolvedEvent"},{"kind":"ref","name":"ToolProgressEvent"},{"kind":"ref","name":"ToolBatchAfterEvent"},{"kind":"ref","name":"ContextCompactBeforeEvent"},{"kind":"ref","name":"ContextCompactAfterEvent"},{"kind":"ref","name":"TaskChangeBeforeEvent"},{"kind":"ref","name":"TaskChangeAfterEvent"},{"kind":"ref","name":"UserAttentionEvent"},{"kind":"ref","name":"UserElicitationRequestEvent"},{"kind":"ref","name":"UserElicitationResultEvent"},{"kind":"ref","name":"UserMessageInboundEvent"},{"kind":"ref","name":"UserMessageOutboundEvent"},{"kind":"ref","name":"WorkspaceChangeBeforeEvent"},{"kind":"ref","name":"WorkspaceChangeAfterEvent"},{"kind":"ref","name":"FileChangedEvent"},{"kind":"ref","name":"HookFailureEvent"}]},"ExecutionEvent":{"discriminator":"type","kind":"union","mode":"oneOf","variants":[{"kind":"ref","name":"ExecutionEventTurnStart"},{"kind":"ref","name":"ExecutionEventTurnFinishBefore"},{"kind":"ref","name":"ExecutionEventTurnEnd"},{"kind":"ref","name":"ExecutionEventTurnProgress"},{"kind":"ref","name":"ExecutionEventModelRequestBefore"},{"kind":"ref","name":"ExecutionEventModelResponseAfter"},{"kind":"ref","name":"ExecutionEventModelError"},{"kind":"ref","name":"ExecutionEventModelSwitchBefore"},{"kind":"ref","name":"ExecutionEventModelSwitchAfter"},{"kind":"ref","name":"ExecutionEventToolPermissionRequest"},{"kind":"ref","name":"ExecutionEventToolPermissionResolved"},{"kind":"ref","name":"ExecutionEventToolProgress"},{"kind":"ref","name":"ExecutionEventToolBatchAfter"},{"kind":"ref","name":"ExecutionEventContextCompactBefore"},{"kind":"ref","name":"ExecutionEventContextCompactAfter"}]},"ExecutionEventAttempt":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":true,"shape":{"kind":"boundedInteger","minimum":1},"wire_name":"number"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"ExecutionEventAttemptusage":{"kind":"intersection","variants":[{"kind":"ref","name":"ExecutionEventUsage"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"literal","value":"amount"},"wire_name":"kind"},{"required":false,"shape":{"kind":"enum","open_strings":true,"values":["provider","estimate"]},"wire_name":"provenance"},{"required":false,"shape":{"kind":"literal","value":"attempt"},"wire_name":"scope"}]}]},"ExecutionEventBatch":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"callIds"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"ExecutionEventContextCompactAfter":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"ref","name":"ExecutionEventExecution"},"wire_name":"execution"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"items":{"kind":"ref","name":"ModelVisibleItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":true,"shape":{"items":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"}]},"kind":"array"},"wire_name":"removed"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":true,"shape":{"kind":"ref","name":"TextParts"},"wire_name":"summary"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":false,"shape":{"kind":"ref","name":"ExecutionEventTokencounts"},"wire_name":"tokenCounts"},{"required":false,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"context.compact.after"},"wire_name":"type"}]},"ExecutionEventContextCompactBefore":{"kind":"intersection","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"ref","name":"TextParts"},"wire_name":"instructions"},{"required":true,"shape":{"items":{"kind":"ref","name":"ModelVisibleItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":false,"shape":{"kind":"ref","name":"ExecutionEventTokencounts"},"wire_name":"tokenCounts"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["auto","manual","hook"]},"wire_name":"trigger"},{"required":false,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"context.compact.before"},"wire_name":"type"}]},{"kind":"any"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"any"},"wire_name":"tokenCounts"}]}]},"ExecutionEventError":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"class"},{"required":false,"shape":{"kind":"string"},"wire_name":"code"},{"required":true,"shape":{"kind":"string"},"wire_name":"message"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"union","mode":"oneOf","variants":[{"kind":"string"},{"kind":"integer"}]},"wire_name":"status"}]},"ExecutionEventExecution":{"kind":"union","mode":"oneOf","variants":[{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":"executed"},"wire_name":"status"}]},{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":"supplied_result"},"wire_name":"reason"},{"required":true,"shape":{"kind":"literal","value":"skipped"},"wire_name":"status"}]},{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"detail"},{"required":true,"shape":{"kind":"literal","value":"policy"},"wire_name":"reason"},{"required":true,"shape":{"kind":"literal","value":"skipped"},"wire_name":"status"}]},{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"detail"},{"required":true,"shape":{"kind":"literal","value":"cancelled"},"wire_name":"reason"},{"required":true,"shape":{"kind":"literal","value":"skipped"},"wire_name":"status"}]},{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"detail"},{"required":true,"shape":{"kind":"literal","value":"timeout"},"wire_name":"reason"},{"required":true,"shape":{"kind":"literal","value":"skipped"},"wire_name":"status"}]},{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"detail"},{"required":true,"shape":{"kind":"literal","value":"other"},"wire_name":"reason"},{"required":true,"shape":{"kind":"literal","value":"skipped"},"wire_name":"status"}]}]},"ExecutionEventFilechange":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"ContentItem"},"wire_name":"after"},{"required":false,"shape":{"kind":"ref","name":"ContentItem"},"wire_name":"before"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["created","modified","deleted","moved"]},"wire_name":"change"},{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":false,"shape":{"kind":"string"},"wire_name":"previousPath"}]},"ExecutionEventMcp":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"discriminator":"transport","kind":"union","mode":"oneOf","variants":[{"kind":"intersection","variants":[{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"literal","value":"http"},"wire_name":"transport"},{"required":false,"shape":{"kind":"string"},"wire_name":"url"}]},{"kind":"union","mode":"anyOf","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"any"},"wire_name":"url"}]},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"any"},"wire_name":"gaps"}]}]}]},{"kind":"intersection","variants":[{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"literal","value":"sse"},"wire_name":"transport"},{"required":false,"shape":{"kind":"string"},"wire_name":"url"}]},{"kind":"union","mode":"anyOf","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"any"},"wire_name":"url"}]},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"any"},"wire_name":"gaps"}]}]}]},{"kind":"intersection","variants":[{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"args"},{"required":false,"shape":{"kind":"string"},"wire_name":"command"},{"required":false,"shape":{"kind":"string"},"wire_name":"cwd"},{"required":false,"shape":{"items":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"literal","value":"stdio"},"wire_name":"transport"}]},{"kind":"union","mode":"anyOf","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"any"},"wire_name":"command"}]},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"any"},"wire_name":"gaps"}]}]},{"kind":"union","mode":"anyOf","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"any"},"wire_name":"args"}]},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"any"},"wire_name":"gaps"}]}]},{"kind":"union","mode":"anyOf","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"any"},"wire_name":"cwd"}]},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"any"},"wire_name":"gaps"}]}]}]},{"kind":"intersection","variants":[{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"address"},{"required":false,"shape":{"kind":"string"},"wire_name":"addressForm"},{"required":false,"shape":{"items":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"transport"}]},{"kind":"union","mode":"anyOf","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"any"},"wire_name":"addressForm"}]},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"any"},"wire_name":"gaps"}]}]},{"kind":"union","mode":"anyOf","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"any"},"wire_name":"address"}]},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"any"},"wire_name":"gaps"}]}]}]}]},"wire_name":"connection"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["runtime","inferred"]},"wire_name":"provenance"},{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"string"},"wire_name":"name"}]},"wire_name":"server"},{"required":true,"shape":{"kind":"string"},"wire_name":"toolName"}]},"ExecutionEventModel":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":true,"shape":{"kind":"string"},"wire_name":"provider"}]},"ExecutionEventModelError":{"additional":{"kind":"allowed"},"forbidden_property_sets":[["finishReason"]],"kind":"object","properties":[{"required":true,"shape":{"kind":"ref","name":"ExecutionEventAttempt"},"wire_name":"attempt"},{"required":true,"shape":{"kind":"ref","name":"ExecutionEventError"},"wire_name":"error"},{"required":true,"shape":{"kind":"intersection","variants":[{"kind":"ref","name":"ExecutionEventExecution"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"literal","value":"executed"},"wire_name":"status"}]}]},"wire_name":"execution"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"number"},"wire_name":"latencyMs"},{"required":true,"shape":{"kind":"ref","name":"ExecutionEventModel"},"wire_name":"model"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":false,"shape":{"kind":"string"},"wire_name":"recovery"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":false,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"model.error"},"wire_name":"type"},{"required":false,"shape":{"kind":"ref","name":"ExecutionEventAttemptusage"},"wire_name":"usage"}]},"ExecutionEventModelRequestBefore":{"additional":{"kind":"allowed"},"forbidden_property_sets":[["error"],["execution"],["finishReason"],["latencyMs"],["usage"]],"kind":"object","properties":[{"required":true,"shape":{"kind":"ref","name":"ExecutionEventAttempt"},"wire_name":"attempt"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":true,"shape":{"items":{"kind":"ref","name":"ModelVisibleItem"},"kind":"array"},"wire_name":"items"},{"required":true,"shape":{"kind":"ref","name":"ExecutionEventModel"},"wire_name":"model"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":true,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"params"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":false,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"model.request.before"},"wire_name":"type"}]},"ExecutionEventModelResponseAfter":{"additional":{"kind":"allowed"},"forbidden_property_sets":[["error"]],"kind":"object","properties":[{"required":true,"shape":{"kind":"ref","name":"ExecutionEventAttempt"},"wire_name":"attempt"},{"required":true,"shape":{"kind":"ref","name":"ExecutionEventExecution"},"wire_name":"execution"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":true,"shape":{"kind":"string"},"wire_name":"finishReason"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":true,"shape":{"items":{"kind":"ref","name":"ModelVisibleItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"number"},"wire_name":"latencyMs"},{"required":true,"shape":{"kind":"ref","name":"ExecutionEventModel"},"wire_name":"model"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":false,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"model.response.after"},"wire_name":"type"},{"required":false,"shape":{"kind":"ref","name":"ExecutionEventAttemptusage"},"wire_name":"usage"}]},"ExecutionEventModelSwitchAfter":{"additional":{"kind":"allowed"},"forbidden_property_sets":[["proposed"]],"kind":"object","properties":[{"required":true,"shape":{"kind":"ref","name":"ExecutionEventModel"},"wire_name":"current"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":true,"shape":{"kind":"ref","name":"ExecutionEventModel"},"wire_name":"previous"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":false,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"model.switch.after"},"wire_name":"type"}]},"ExecutionEventModelSwitchBefore":{"additional":{"kind":"allowed"},"forbidden_property_sets":[["previous"]],"kind":"object","properties":[{"required":true,"shape":{"kind":"ref","name":"ExecutionEventModel"},"wire_name":"current"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":false,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"currency"},{"required":false,"shape":{"kind":"number"},"wire_name":"inputPerMillionTokens"},{"required":false,"shape":{"kind":"number"},"wire_name":"outputPerMillionTokens"}]},"wire_name":"pricing"},{"required":true,"shape":{"kind":"ref","name":"ExecutionEventModel"},"wire_name":"proposed"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":false,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"model.switch.before"},"wire_name":"type"}]},"ExecutionEventTokencounts":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"boundedInteger","minimum":0},"wire_name":"after"},{"required":false,"shape":{"kind":"boundedInteger","minimum":0},"wire_name":"before"}]},"ExecutionEventTool":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"input"},{"required":false,"shape":{"kind":"string"},"wire_name":"kind"},{"required":false,"shape":{"kind":"ref","name":"ExecutionEventMcp"},"wire_name":"mcp"},{"required":true,"shape":{"kind":"string"},"wire_name":"name"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["native","mcp"]},"wire_name":"origin"}]},"ExecutionEventToolBatchAfter":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"batch"},{"required":true,"shape":{"items":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"ExecutionEventBatch"},"wire_name":"batch"},{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"call"},{"required":true,"shape":{"kind":"ref","name":"ExecutionEventExecution"},"wire_name":"execution"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["ok","error","denied","cancelled","timeout"]},"wire_name":"outcome"},{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"ref","name":"ExecutionEventTool"},"wire_name":"tool"}]},"kind":"array"},"wire_name":"calls"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":false,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"tool.batch.after"},"wire_name":"type"}]},"ExecutionEventToolPermissionRequest":{"additional":{"kind":"allowed"},"forbidden_property_sets":[["decidedBy"],["decision"],["execution"],["outcome"]],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"ExecutionEventBatch"},"wire_name":"batch"},{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"call"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"boolean"},"wire_name":"sandboxBypass"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":true,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"kind":"array"},"wire_name":"suggestions"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":true,"shape":{"kind":"ref","name":"ExecutionEventTool"},"wire_name":"tool"},{"required":false,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"tool.permission.request"},"wire_name":"type"}]},"ExecutionEventToolPermissionResolved":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"ExecutionEventBatch"},"wire_name":"batch"},{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"call"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["user","policy","hook","auto","classifier"]},"wire_name":"decidedBy"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["allow","deny"]},"wire_name":"decision"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":true,"shape":{"kind":"ref","name":"ExecutionEventTool"},"wire_name":"tool"},{"required":false,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"tool.permission.resolved"},"wire_name":"type"}]},"ExecutionEventToolProgress":{"additional":{"kind":"allowed"},"forbidden_property_sets":[["execution"],["outcome"]],"kind":"object","properties":[{"required":true,"shape":{"kind":"boolean"},"wire_name":"backgrounded"},{"required":false,"shape":{"kind":"ref","name":"ExecutionEventBatch"},"wire_name":"batch"},{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"call"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":true,"shape":{"kind":"ref","name":"ModelVisibleItem"},"wire_name":"partialOutput"},{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":true,"shape":{"kind":"ref","name":"ExecutionEventTool"},"wire_name":"tool"},{"required":false,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"tool.progress"},"wire_name":"type"}]},"ExecutionEventTurnEnd":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"boundedInteger","minimum":0},"wire_name":"continuationCount"},{"required":false,"shape":{"kind":"ref","name":"ExecutionEventError"},"wire_name":"error"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":true,"shape":{"items":{"kind":"ref","name":"ModelVisibleItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"lastAssistantItem"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["completed","failed","cancelled","max_iterations"]},"wire_name":"outcome"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"turn.end"},"wire_name":"type"},{"required":false,"shape":{"kind":"ref","name":"ExecutionEventTurnusage"},"wire_name":"usage"}]},"ExecutionEventTurnFinishBefore":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"boundedInteger","minimum":0},"wire_name":"continuationCount"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":true,"shape":{"items":{"kind":"ref","name":"ModelVisibleItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"lastAssistantItem"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["completed","failed","cancelled","max_iterations"]},"wire_name":"outcome"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"turn.finish.before"},"wire_name":"type"},{"required":false,"shape":{"kind":"ref","name":"ExecutionEventTurnusage"},"wire_name":"usage"}]},"ExecutionEventTurnProgress":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"ref","name":"ModelVisibleItem"},"wire_name":"delta"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":true,"shape":{"kind":"boolean"},"wire_name":"final"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"item"},{"required":false,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"turn.progress"},"wire_name":"type"}]},"ExecutionEventTurnStart":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"expandedFrom"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":true,"shape":{"items":{"kind":"ref","name":"ModelVisibleItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["user","continuation","hook","external"]},"wire_name":"trigger"},{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"turn.start"},"wire_name":"type"}]},"ExecutionEventTurnusage":{"kind":"intersection","variants":[{"kind":"ref","name":"ExecutionEventUsage"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"literal","value":"total"},"wire_name":"kind"},{"required":false,"shape":{"kind":"literal","value":"turn"},"wire_name":"scope"}]}]},"ExecutionEventUsage":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"boundedInteger","minimum":0},"wire_name":"cacheReadTokens"},{"required":false,"shape":{"kind":"boundedInteger","minimum":0},"wire_name":"cacheWriteTokens"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["complete","partial","unknown"]},"wire_name":"completeness"},{"required":false,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"number"},"wire_name":"amount"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["billed","reported","estimated"]},"wire_name":"basis"},{"required":true,"shape":{"kind":"string"},"wire_name":"currency"}]},"wire_name":"cost"},{"required":false,"shape":{"kind":"boundedInteger","minimum":0},"wire_name":"inputTokens"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["amount","total"]},"wire_name":"kind"},{"required":false,"shape":{"kind":"boundedInteger","minimum":0},"wire_name":"outputTokens"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["provider","estimate","mixed"]},"wire_name":"provenance"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["attempt","turn"]},"wire_name":"scope"}]},"Extensions":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"FileChangedEvent":{"kind":"ref","name":"TaskWorkspaceEventFileChanged"},"FormAnswerValue":{"kind":"union","mode":"anyOf","variants":[{"kind":"string"},{"kind":"number"},{"kind":"boolean"},{"items":{"kind":"string"},"kind":"array"}]},"FormAnswers":{"additional":{"kind":"typed","shape":{"kind":"ref","name":"FormAnswerValue"}},"forbidden_property_sets":[],"kind":"object","properties":[]},"HookFailureEvent":{"kind":"intersection","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"hook.failure"},"wire_name":"type"}]},{"kind":"ref","name":"InteractionEventHookFailure"}]},"HttpTransport":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":"http"},"wire_name":"type"},{"required":true,"shape":{"kind":"string"},"wire_name":"url"}]},"InjectEffect":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["now","next_turn"]},"wire_name":"deliverAt"},{"required":true,"shape":{"kind":"literal","value":"append"},"wire_name":"operation"},{"required":true,"shape":{"kind":"literal","value":"context"},"wire_name":"target"},{"required":true,"shape":{"kind":"literal","value":"inject"},"wire_name":"type"},{"required":true,"shape":{"kind":"ref","name":"CanonicalMessages"},"wire_name":"value"}]},"InteractionEvent":{"discriminator":"type","kind":"union","mode":"oneOf","variants":[{"kind":"ref","name":"InteractionEventConfigChangeBefore"},{"kind":"ref","name":"InteractionEventConfigChangeAfter"},{"kind":"ref","name":"InteractionEventUserAttention"},{"kind":"ref","name":"InteractionEventUserElicitationRequest"},{"kind":"ref","name":"InteractionEventUserElicitationResult"},{"kind":"ref","name":"InteractionEventUserMessageInbound"},{"kind":"ref","name":"InteractionEventUserMessageOutbound"},{"kind":"ref","name":"InteractionEventHookFailure"}]},"InteractionEventConfigChangeAfter":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"kind":"array"},"wire_name":"mcpServers"},{"required":false,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"scope"},{"required":true,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"settings"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":true,"shape":{"kind":"string"},"wire_name":"summary"}]},"wire_name":"change"},{"required":true,"shape":{"kind":"literal","value":"config.change.after"},"wire_name":"type"}]},"InteractionEventConfigChangeBefore":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"scope"},{"required":true,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"settings"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":true,"shape":{"kind":"string"},"wire_name":"summary"}]},"wire_name":"change"},{"required":true,"shape":{"kind":"literal","value":"config.change.before"},"wire_name":"type"}]},"InteractionEventHookFailure":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"backendId"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["fail-open","fail-closed"]},"wire_name":"policy"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"wire_name":"failure"},{"required":true,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":true,"shape":{"kind":"literal","value":"hook.failure"},"wire_name":"type"}]},"InteractionEventUserAttention":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"kind"},{"required":true,"shape":{"kind":"ref","name":"TextParts"},"wire_name":"message"},{"required":true,"shape":{"kind":"ref","name":"TextParts"},"wire_name":"title"}]},"wire_name":"attention"},{"required":true,"shape":{"kind":"literal","value":"user.attention"},"wire_name":"type"}]},"InteractionEventUserElicitationRequest":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["form","url"]},"wire_name":"mode"},{"required":false,"shape":{"kind":"ref","name":"TextPart"},"wire_name":"request"},{"required":true,"shape":{"kind":"string"},"wire_name":"server"}]},"wire_name":"elicitation"},{"required":true,"shape":{"kind":"literal","value":"user.elicitation.request"},"wire_name":"type"}]},"InteractionEventUserElicitationResult":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["accept","decline","cancel"]},"wire_name":"action"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["form","url"]},"wire_name":"mode"},{"required":false,"shape":{"kind":"ref","name":"TextPart"},"wire_name":"result"},{"required":true,"shape":{"kind":"string"},"wire_name":"server"}]},"wire_name":"elicitation"},{"required":true,"shape":{"kind":"literal","value":"user.elicitation.result"},"wire_name":"type"}]},"InteractionEventUserMessageInbound":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"channel"},{"required":true,"shape":{"items":{"kind":"intersection","variants":[{"kind":"ref","name":"CanonicalMessage"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"literal","value":"user"},"wire_name":"role"}]}]},"kind":"array"},"wire_name":"messages"},{"required":true,"shape":{"kind":"string"},"wire_name":"sender"}]},"wire_name":"message"},{"required":true,"shape":{"kind":"literal","value":"user.message.inbound"},"wire_name":"type"}]},"InteractionEventUserMessageOutbound":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"channel"},{"required":true,"shape":{"items":{"kind":"intersection","variants":[{"kind":"ref","name":"CanonicalMessage"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"literal","value":"assistant"},"wire_name":"role"}]}]},"kind":"array"},"wire_name":"messages"}]},"wire_name":"message"},{"required":true,"shape":{"kind":"literal","value":"user.message.outbound"},"wire_name":"type"}]},"InterceptDenyResponse":{"kind":"intersection","variants":[{"kind":"ref","name":"JsonRpcSuccessResponse"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"ref","name":"Effect"},"kind":"array"},"wire_name":"effects"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":true,"shape":{"kind":"ref","name":"ProtocolVersion"},"wire_name":"protocolVersion"}]},"wire_name":"result"}]}]},"InterceptNoEffectResponse":{"kind":"intersection","variants":[{"kind":"ref","name":"JsonRpcSuccessResponse"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"ref","name":"Effect"},"kind":"array"},"wire_name":"effects"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":true,"shape":{"kind":"ref","name":"ProtocolVersion"},"wire_name":"protocolVersion"}]},"wire_name":"result"}]}]},"InterceptRequest":{"kind":"intersection","variants":[{"kind":"ref","name":"JsonRpcRequest"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":"hooks/intercept"},"wire_name":"method"},{"required":true,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"intersection","variants":[{"kind":"ref","name":"Capabilities"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"any"},"wire_name":"flow"}]}]},"wire_name":"capabilities"},{"required":true,"shape":{"kind":"intersection","variants":[{"kind":"ref","name":"Event"},{"discriminator":"type","kind":"union","mode":"oneOf","variants":[{"kind":"ref","name":"ToolBeforeEvent"},{"kind":"ref","name":"ToolAfterEvent"},{"kind":"ref","name":"SessionStartEvent"},{"kind":"ref","name":"ConfigChangeBeforeEvent"},{"kind":"ref","name":"TurnStartEvent"},{"kind":"ref","name":"TurnFinishBeforeEvent"},{"kind":"ref","name":"ModelRequestBeforeEvent"},{"kind":"ref","name":"ModelSwitchBeforeEvent"},{"kind":"ref","name":"ToolPermissionRequestEvent"},{"kind":"ref","name":"ToolBatchAfterEvent"},{"kind":"ref","name":"ContextCompactBeforeEvent"},{"kind":"ref","name":"ContextCompactAfterEvent"},{"kind":"ref","name":"TaskChangeBeforeEvent"},{"kind":"ref","name":"UserElicitationRequestEvent"},{"kind":"ref","name":"UserElicitationResultEvent"},{"kind":"ref","name":"UserMessageInboundEvent"},{"kind":"ref","name":"UserMessageOutboundEvent"},{"kind":"ref","name":"WorkspaceChangeBeforeEvent"},{"kind":"ref","name":"ModelResponseAfterEvent"},{"kind":"intersection","variants":[{"kind":"ref","name":"SessionEndEvent"},{"kind":"never"}]},{"kind":"intersection","variants":[{"kind":"ref","name":"ConfigChangeAfterEvent"},{"kind":"never"}]},{"kind":"intersection","variants":[{"kind":"ref","name":"TurnEndEvent"},{"kind":"never"}]},{"kind":"intersection","variants":[{"kind":"ref","name":"TurnProgressEvent"},{"kind":"never"}]},{"kind":"intersection","variants":[{"kind":"ref","name":"ModelErrorEvent"},{"kind":"never"}]},{"kind":"intersection","variants":[{"kind":"ref","name":"ModelSwitchAfterEvent"},{"kind":"never"}]},{"kind":"intersection","variants":[{"kind":"ref","name":"ToolPermissionResolvedEvent"},{"kind":"never"}]},{"kind":"intersection","variants":[{"kind":"ref","name":"ToolProgressEvent"},{"kind":"never"}]},{"kind":"intersection","variants":[{"kind":"ref","name":"TaskChangeAfterEvent"},{"kind":"never"}]},{"kind":"intersection","variants":[{"kind":"ref","name":"UserAttentionEvent"},{"kind":"never"}]},{"kind":"intersection","variants":[{"kind":"ref","name":"WorkspaceChangeAfterEvent"},{"kind":"never"}]},{"kind":"intersection","variants":[{"kind":"ref","name":"FileChangedEvent"},{"kind":"never"}]},{"kind":"intersection","variants":[{"kind":"ref","name":"HookFailureEvent"},{"kind":"never"}]}]}]},"wire_name":"event"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":true,"shape":{"kind":"ref","name":"ProtocolVersion"},"wire_name":"protocolVersion"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"union","mode":"anyOf","variants":[{"kind":"null"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"provenance"},{"required":true,"shape":{"kind":"any"},"wire_name":"value"}]}]},"wire_name":"candidate"},{"required":false,"shape":{"kind":"enum","open_strings":true,"values":["none","stop","continue"]},"wire_name":"flow"},{"required":false,"shape":{"items":{"kind":"ref","name":"InjectEffect"},"kind":"array"},"wire_name":"injections"},{"required":false,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"instructions"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["none","allow","ask","deny"]},"wire_name":"permission"}]},"wire_name":"state"}]},"wire_name":"params"}]}]},"InterceptResponse":{"kind":"intersection","variants":[{"kind":"ref","name":"JsonRpcSuccessResponse"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[["manifest"]],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"ref","name":"Effect"},"kind":"array"},"wire_name":"effects"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":true,"shape":{"kind":"ref","name":"ProtocolVersion"},"wire_name":"protocolVersion"}]},"wire_name":"result"}]}]},"InterceptSubscription":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"ref","name":"ContentSelection"},"wire_name":"content"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"disableable"},{"required":true,"shape":{"items":{"kind":"union","mode":"anyOf","variants":[{"kind":"enum","open_strings":true,"values":["tool.before","tool.after","session.start","config.change.before","turn.start","turn.finish.before","model.request.before","model.switch.before","tool.permission.request","tool.batch.after","context.compact.before","context.compact.after","task.change.before","user.elicitation.request","user.elicitation.result","user.message.inbound","user.message.outbound","workspace.change.before","model.response.after"]},{"kind":"string"}]},"kind":"array"},"wire_name":"events"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["fail-open","fail-closed"]},"wire_name":"failurePolicy"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"paths"},{"required":false,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"toolKinds"}]},"wire_name":"filters"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"includeNative"},{"required":true,"shape":{"kind":"literal","value":"intercept"},"wire_name":"mode"},{"required":false,"shape":{"kind":"enum","open_strings":true,"values":["managed","project","user"]},"wire_name":"scope"},{"required":true,"shape":{"kind":"boundedInteger","minimum":1},"wire_name":"timeoutMs"},{"required":false,"shape":{"kind":"ref","name":"ContentUpload"},"wire_name":"upload"}]},"JsonRpcErrorResponse":{"additional":{"kind":"allowed"},"forbidden_property_sets":[["result"]],"kind":"object","properties":[{"required":true,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"integer"},"wire_name":"code"},{"required":false,"shape":{"kind":"any"},"wire_name":"data"},{"required":true,"shape":{"kind":"string"},"wire_name":"message"}]},"wire_name":"error"},{"required":true,"shape":{"kind":"ref","name":"JsonRpcResponseId"},"wire_name":"id"},{"required":true,"shape":{"kind":"literal","value":"2.0"},"wire_name":"jsonrpc"}]},"JsonRpcId":{"kind":"union","mode":"anyOf","variants":[{"kind":"string"},{"kind":"integer"}]},"JsonRpcMessage":{"kind":"union","mode":"oneOf","variants":[{"kind":"ref","name":"JsonRpcRequest"},{"kind":"ref","name":"JsonRpcNotification"},{"kind":"ref","name":"JsonRpcSuccessResponse"},{"kind":"ref","name":"JsonRpcErrorResponse"}]},"JsonRpcNotification":{"additional":{"kind":"allowed"},"forbidden_property_sets":[["id"]],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":"2.0"},"wire_name":"jsonrpc"},{"required":true,"shape":{"kind":"string"},"wire_name":"method"},{"required":true,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"params"}]},"JsonRpcRequest":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"ref","name":"JsonRpcId"},"wire_name":"id"},{"required":true,"shape":{"kind":"literal","value":"2.0"},"wire_name":"jsonrpc"},{"required":true,"shape":{"kind":"string"},"wire_name":"method"},{"required":true,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"params"}]},"JsonRpcResponseId":{"kind":"union","mode":"anyOf","variants":[{"kind":"ref","name":"JsonRpcId"},{"kind":"null"}]},"JsonRpcSuccessResponse":{"additional":{"kind":"allowed"},"forbidden_property_sets":[["error"]],"kind":"object","properties":[{"required":true,"shape":{"kind":"ref","name":"JsonRpcResponseId"},"wire_name":"id"},{"required":true,"shape":{"kind":"literal","value":"2.0"},"wire_name":"jsonrpc"},{"required":true,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"result"}]},"McpElicitationBooleanSchema":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"boolean"},"wire_name":"default"},{"required":false,"shape":{"kind":"string"},"wire_name":"description"},{"required":false,"shape":{"kind":"string"},"wire_name":"title"},{"required":true,"shape":{"kind":"literal","value":"boolean"},"wire_name":"type"}]},"McpElicitationElicitRequestFormParams":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"additional":{"kind":"typed","shape":{"kind":"any"}},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"McpElicitationProgressToken"},"wire_name":"progressToken"}]},"wire_name":"_meta"},{"required":true,"shape":{"kind":"string"},"wire_name":"message"},{"required":false,"shape":{"kind":"literal","value":"form"},"wire_name":"mode"},{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"$schema"},{"required":true,"shape":{"additional":{"kind":"typed","shape":{"kind":"ref","name":"McpElicitationPrimitiveSchemaDefinition"}},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"properties"},{"required":false,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"required"},{"required":true,"shape":{"kind":"literal","value":"object"},"wire_name":"type"}]},"wire_name":"requestedSchema"},{"required":false,"shape":{"kind":"ref","name":"McpElicitationTaskMetadata"},"wire_name":"task"}]},"McpElicitationElicitRequestParams":{"kind":"union","mode":"anyOf","variants":[{"kind":"ref","name":"McpElicitationElicitRequestURLParams"},{"kind":"ref","name":"McpElicitationElicitRequestFormParams"}]},"McpElicitationElicitRequestURLParams":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"additional":{"kind":"typed","shape":{"kind":"any"}},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"McpElicitationProgressToken"},"wire_name":"progressToken"}]},"wire_name":"_meta"},{"required":true,"shape":{"kind":"string"},"wire_name":"elicitationId"},{"required":true,"shape":{"kind":"string"},"wire_name":"message"},{"required":true,"shape":{"kind":"literal","value":"url"},"wire_name":"mode"},{"required":false,"shape":{"kind":"ref","name":"McpElicitationTaskMetadata"},"wire_name":"task"},{"required":true,"shape":{"kind":"string"},"wire_name":"url"}]},"McpElicitationElicitResult":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"additional":{"kind":"typed","shape":{"kind":"any"}},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"_meta"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["accept","cancel","decline"]},"wire_name":"action"},{"required":false,"shape":{"kind":"ref","name":"FormAnswers"},"wire_name":"content"}]},"McpElicitationLegacyTitledEnumSchema":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"default"},{"required":false,"shape":{"kind":"string"},"wire_name":"description"},{"required":true,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"enum"},{"required":false,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"enumNames"},{"required":false,"shape":{"kind":"string"},"wire_name":"title"},{"required":true,"shape":{"kind":"literal","value":"string"},"wire_name":"type"}]},"McpElicitationNumberSchema":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"number"},"wire_name":"default"},{"required":false,"shape":{"kind":"string"},"wire_name":"description"},{"required":false,"shape":{"kind":"number"},"wire_name":"maximum"},{"required":false,"shape":{"kind":"number"},"wire_name":"minimum"},{"required":false,"shape":{"kind":"string"},"wire_name":"title"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["integer","number"]},"wire_name":"type"}]},"McpElicitationPrimitiveSchemaDefinition":{"kind":"union","mode":"anyOf","variants":[{"kind":"ref","name":"McpElicitationStringSchema"},{"kind":"ref","name":"McpElicitationNumberSchema"},{"kind":"ref","name":"McpElicitationBooleanSchema"},{"kind":"ref","name":"McpElicitationUntitledSingleSelectEnumSchema"},{"kind":"ref","name":"McpElicitationTitledSingleSelectEnumSchema"},{"kind":"ref","name":"McpElicitationUntitledMultiSelectEnumSchema"},{"kind":"ref","name":"McpElicitationTitledMultiSelectEnumSchema"},{"kind":"ref","name":"McpElicitationLegacyTitledEnumSchema"}]},"McpElicitationProgressToken":{"kind":"union","mode":"anyOf","variants":[{"kind":"string"},{"kind":"number"}]},"McpElicitationRequest":{"kind":"ref","name":"McpElicitationElicitRequestParams"},"McpElicitationResult":{"kind":"ref","name":"McpElicitationElicitResult"},"McpElicitationStringSchema":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"default"},{"required":false,"shape":{"kind":"string"},"wire_name":"description"},{"required":false,"shape":{"kind":"enum","open_strings":true,"values":["date","date-time","email","uri"]},"wire_name":"format"},{"required":false,"shape":{"kind":"number"},"wire_name":"maxLength"},{"required":false,"shape":{"kind":"number"},"wire_name":"minLength"},{"required":false,"shape":{"kind":"string"},"wire_name":"title"},{"required":true,"shape":{"kind":"literal","value":"string"},"wire_name":"type"}]},"McpElicitationTaskMetadata":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"number"},"wire_name":"ttl"}]},"McpElicitationTitledMultiSelectEnumSchema":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"default"},{"required":false,"shape":{"kind":"string"},"wire_name":"description"},{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"items":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"const"},{"required":true,"shape":{"kind":"string"},"wire_name":"title"}]},"kind":"array"},"wire_name":"anyOf"}]},"wire_name":"items"},{"required":false,"shape":{"kind":"number"},"wire_name":"maxItems"},{"required":false,"shape":{"kind":"number"},"wire_name":"minItems"},{"required":false,"shape":{"kind":"string"},"wire_name":"title"},{"required":true,"shape":{"kind":"literal","value":"array"},"wire_name":"type"}]},"McpElicitationTitledSingleSelectEnumSchema":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"default"},{"required":false,"shape":{"kind":"string"},"wire_name":"description"},{"required":true,"shape":{"items":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"const"},{"required":true,"shape":{"kind":"string"},"wire_name":"title"}]},"kind":"array"},"wire_name":"oneOf"},{"required":false,"shape":{"kind":"string"},"wire_name":"title"},{"required":true,"shape":{"kind":"literal","value":"string"},"wire_name":"type"}]},"McpElicitationUntitledMultiSelectEnumSchema":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"default"},{"required":false,"shape":{"kind":"string"},"wire_name":"description"},{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"enum"},{"required":true,"shape":{"kind":"literal","value":"string"},"wire_name":"type"}]},"wire_name":"items"},{"required":false,"shape":{"kind":"number"},"wire_name":"maxItems"},{"required":false,"shape":{"kind":"number"},"wire_name":"minItems"},{"required":false,"shape":{"kind":"string"},"wire_name":"title"},{"required":true,"shape":{"kind":"literal","value":"array"},"wire_name":"type"}]},"McpElicitationUntitledSingleSelectEnumSchema":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"default"},{"required":false,"shape":{"kind":"string"},"wire_name":"description"},{"required":true,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"enum"},{"required":false,"shape":{"kind":"string"},"wire_name":"title"},{"required":true,"shape":{"kind":"literal","value":"string"},"wire_name":"type"}]},"MessageEffect":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"text"},{"required":true,"shape":{"kind":"literal","value":"message"},"wire_name":"type"}]},"MessagesCandidate":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"provenance"},{"required":true,"shape":{"kind":"ref","name":"CanonicalMessages"},"wire_name":"value"}]},"MessagesState":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"union","mode":"anyOf","variants":[{"kind":"null"},{"kind":"ref","name":"MessagesCandidate"}]},"wire_name":"candidate"},{"required":false,"shape":{"kind":"enum","open_strings":true,"values":["none","stop","continue"]},"wire_name":"flow"},{"required":false,"shape":{"items":{"kind":"ref","name":"InjectEffect"},"kind":"array"},"wire_name":"injections"},{"required":false,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"instructions"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["none","allow","ask","deny"]},"wire_name":"permission"}]},"ModelErrorEvent":{"kind":"ref","name":"ExecutionEventModelError"},"ModelRequestBeforeCapabilities":{"kind":"intersection","variants":[{"kind":"ref","name":"Capabilities"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["deny","modify","inject","return","flow","message"]},"kind":"array"},"wire_name":"effects"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["stop"]},"kind":"array"},"wire_name":"operations"}]},"wire_name":"flow"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"modify"}]}]},"ModelRequestBeforeEffect":{"discriminator":"type","kind":"union","mode":"oneOf","variants":[{"kind":"ref","name":"DenyEffect"},{"kind":"ref","name":"ModelRequestBeforeModifyEffect"},{"kind":"ref","name":"InjectEffect"},{"kind":"ref","name":"ReturnMessagesEffect"},{"kind":"ref","name":"StopFlowEffect"},{"kind":"ref","name":"MessageEffect"}]},"ModelRequestBeforeEvent":{"kind":"ref","name":"ExecutionEventModelRequestBefore"},"ModelRequestBeforeInterceptResponse":{"kind":"intersection","variants":[{"kind":"ref","name":"JsonRpcSuccessResponse"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[["manifest"]],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"ref","name":"ModelRequestBeforeEffect"},"kind":"array"},"wire_name":"effects"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":true,"shape":{"kind":"ref","name":"ProtocolVersion"},"wire_name":"protocolVersion"}]},"wire_name":"result"}]}]},"ModelRequestBeforeModifyEffect":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"union","mode":"oneOf","variants":[{"kind":"literal","value":"replace"},{"kind":"literal","value":"merge"}]},"wire_name":"operation"},{"required":true,"shape":{"kind":"literal","value":"request"},"wire_name":"target"},{"required":true,"shape":{"kind":"literal","value":"modify"},"wire_name":"type"},{"required":true,"shape":{"kind":"ref","name":"CanonicalMessages"},"wire_name":"value"}]},"ModelResponseAfterCapabilities":{"kind":"intersection","variants":[{"kind":"ref","name":"Capabilities"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["modify","flow","message"]},"kind":"array"},"wire_name":"effects"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["stop"]},"kind":"array"},"wire_name":"operations"}]},"wire_name":"flow"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"modify"}]}]},"ModelResponseAfterEffect":{"discriminator":"type","kind":"union","mode":"oneOf","variants":[{"kind":"ref","name":"ModelResponseAfterModifyEffect"},{"kind":"ref","name":"StopFlowEffect"},{"kind":"ref","name":"MessageEffect"}]},"ModelResponseAfterEvent":{"kind":"ref","name":"ExecutionEventModelResponseAfter"},"ModelResponseAfterInterceptResponse":{"kind":"intersection","variants":[{"kind":"ref","name":"JsonRpcSuccessResponse"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[["manifest"]],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"ref","name":"ModelResponseAfterEffect"},"kind":"array"},"wire_name":"effects"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":true,"shape":{"kind":"ref","name":"ProtocolVersion"},"wire_name":"protocolVersion"}]},"wire_name":"result"}]}]},"ModelResponseAfterModifyEffect":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"union","mode":"oneOf","variants":[{"kind":"literal","value":"replace"},{"kind":"literal","value":"merge"}]},"wire_name":"operation"},{"required":true,"shape":{"kind":"literal","value":"response"},"wire_name":"target"},{"required":true,"shape":{"kind":"literal","value":"modify"},"wire_name":"type"},{"required":true,"shape":{"kind":"ref","name":"CanonicalMessages"},"wire_name":"value"}]},"ModelSwitchAfterEvent":{"kind":"ref","name":"ExecutionEventModelSwitchAfter"},"ModelSwitchBeforeCapabilities":{"kind":"intersection","variants":[{"kind":"ref","name":"Capabilities"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["deny","flow","message"]},"kind":"array"},"wire_name":"effects"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["stop"]},"kind":"array"},"wire_name":"operations"}]},"wire_name":"flow"}]}]},"ModelSwitchBeforeEffect":{"discriminator":"type","kind":"union","mode":"oneOf","variants":[{"kind":"ref","name":"DenyEffect"},{"kind":"ref","name":"StopFlowEffect"},{"kind":"ref","name":"MessageEffect"}]},"ModelSwitchBeforeEvent":{"kind":"ref","name":"ExecutionEventModelSwitchBefore"},"ModelSwitchBeforeInterceptResponse":{"kind":"intersection","variants":[{"kind":"ref","name":"JsonRpcSuccessResponse"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[["manifest"]],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"ref","name":"ModelSwitchBeforeEffect"},"kind":"array"},"wire_name":"effects"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":true,"shape":{"kind":"ref","name":"ProtocolVersion"},"wire_name":"protocolVersion"}]},"wire_name":"result"}]}]},"ModelVisibleItem":{"kind":"ref","name":"CanonicalMessage"},"ModifyFormEffect":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"union","mode":"oneOf","variants":[{"kind":"literal","value":"replace"},{"kind":"literal","value":"merge"}]},"wire_name":"operation"},{"required":true,"shape":{"kind":"literal","value":"content"},"wire_name":"target"},{"required":true,"shape":{"kind":"literal","value":"modify"},"wire_name":"type"},{"required":true,"shape":{"kind":"ref","name":"FormAnswers"},"wire_name":"value"}]},"ModifyInputEffect":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"union","mode":"oneOf","variants":[{"kind":"literal","value":"replace"},{"kind":"literal","value":"merge"}]},"wire_name":"operation"},{"required":true,"shape":{"kind":"literal","value":"input"},"wire_name":"target"},{"required":true,"shape":{"kind":"literal","value":"modify"},"wire_name":"type"},{"required":true,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"value"}]},"ModifyMessagesEffect":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"union","mode":"oneOf","variants":[{"kind":"literal","value":"replace"},{"kind":"literal","value":"merge"}]},"wire_name":"operation"},{"required":true,"shape":{"kind":"union","mode":"oneOf","variants":[{"kind":"literal","value":"prompt"},{"kind":"literal","value":"request"},{"kind":"literal","value":"response"},{"kind":"literal","value":"output"},{"kind":"literal","value":"content"}]},"wire_name":"target"},{"required":true,"shape":{"kind":"literal","value":"modify"},"wire_name":"type"},{"required":true,"shape":{"kind":"ref","name":"CanonicalMessages"},"wire_name":"value"}]},"ModifyTextEffect":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"union","mode":"oneOf","variants":[{"kind":"literal","value":"replace"},{"kind":"literal","value":"merge"}]},"wire_name":"operation"},{"required":true,"shape":{"kind":"union","mode":"oneOf","variants":[{"kind":"literal","value":"instructions"},{"kind":"literal","value":"summary"}]},"wire_name":"target"},{"required":true,"shape":{"kind":"literal","value":"modify"},"wire_name":"type"},{"required":true,"shape":{"kind":"ref","name":"TextParts"},"wire_name":"value"}]},"ModifyWorkspaceEffect":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"union","mode":"oneOf","variants":[{"kind":"literal","value":"replace"},{"kind":"literal","value":"merge"}]},"wire_name":"operation"},{"required":true,"shape":{"kind":"literal","value":"workspace"},"wire_name":"target"},{"required":true,"shape":{"kind":"literal","value":"modify"},"wire_name":"type"},{"required":true,"shape":{"kind":"ref","name":"WorkspaceChange"},"wire_name":"value"}]},"NativeEvent":{"kind":"any"},"ObserveNotification":{"kind":"intersection","variants":[{"kind":"ref","name":"JsonRpcNotification"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"literal","value":"hooks/observe"},"wire_name":"method"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"ref","name":"Event"},"wire_name":"event"},{"required":true,"shape":{"kind":"ref","name":"ProtocolVersion"},"wire_name":"protocolVersion"}]},"wire_name":"params"}]}]},"ObserveSubscription":{"additional":{"kind":"allowed"},"forbidden_property_sets":[["failurePolicy"],["timeoutMs"]],"kind":"object","properties":[{"required":true,"shape":{"kind":"ref","name":"ContentSelection"},"wire_name":"content"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"disableable"},{"required":true,"shape":{"items":{"kind":"union","mode":"anyOf","variants":[{"kind":"enum","open_strings":true,"values":["tool.before","tool.after","session.start","session.end","config.change.before","config.change.after","turn.start","turn.finish.before","turn.end","turn.progress","model.request.before","model.response.after","model.error","model.switch.before","model.switch.after","tool.permission.request","tool.permission.resolved","tool.progress","tool.batch.after","context.compact.before","context.compact.after","task.change.before","task.change.after","user.attention","user.elicitation.request","user.elicitation.result","user.message.inbound","user.message.outbound","workspace.change.before","workspace.change.after","file.changed","hook.failure"]},{"kind":"string"}]},"kind":"array"},"wire_name":"events"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"paths"},{"required":false,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"toolKinds"}]},"wire_name":"filters"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"includeNative"},{"required":true,"shape":{"kind":"literal","value":"observe"},"wire_name":"mode"},{"required":false,"shape":{"kind":"enum","open_strings":true,"values":["managed","project","user"]},"wire_name":"scope"},{"required":false,"shape":{"kind":"ref","name":"ContentUpload"},"wire_name":"upload"}]},"ProtocolVersion":{"kind":"literal","value":"draft"},"Registration":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"items":{"kind":"ref","name":"Backend"},"kind":"array"},"wire_name":"hooks"},{"required":true,"shape":{"kind":"ref","name":"ProtocolVersion"},"wire_name":"protocolVersion"}]},"RegistrationContentreceiver":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"Authentication"},"wire_name":"authentication"},{"required":true,"shape":{"kind":"boundedInteger","minimum":1},"wire_name":"maxBytes"},{"required":true,"shape":{"kind":"boundedInteger","minimum":1},"wire_name":"timeoutMs"},{"required":true,"shape":{"kind":"string"},"wire_name":"url"}]},"ReturnElicitResultEffect":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":"return"},"wire_name":"type"},{"required":true,"shape":{"kind":"ref","name":"McpElicitationElicitResult"},"wire_name":"value"}]},"ReturnMessagesEffect":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":"return"},"wire_name":"type"},{"required":true,"shape":{"kind":"ref","name":"CanonicalMessages"},"wire_name":"value"}]},"ReturnTextEffect":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":"return"},"wire_name":"type"},{"required":true,"shape":{"kind":"ref","name":"TextParts"},"wire_name":"value"}]},"ReturnToolEffect":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":"return"},"wire_name":"type"},{"required":true,"shape":{"kind":"any"},"wire_name":"value"}]},"ReverseDnsName":{"kind":"string"},"Session":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"string"},"wire_name":"type"}]},"wire_name":"agent"},{"required":false,"shape":{"kind":"ref","name":"SessionCounters"},"wire_name":"counters"},{"required":false,"shape":{"kind":"string"},"wire_name":"cwd"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"string"},"wire_name":"model"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":false,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"workspaceRoots"}]},"SessionCounters":{"additional":{"kind":"typed","shape":{"kind":"boundedInteger","minimum":0}},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"boundedInteger","minimum":0},"wire_name":"inputTokens"},{"required":false,"shape":{"kind":"boundedInteger","minimum":0},"wire_name":"modelRequests"},{"required":false,"shape":{"kind":"boundedInteger","minimum":0},"wire_name":"outputTokens"},{"required":false,"shape":{"kind":"boundedInteger","minimum":0},"wire_name":"toolCalls"},{"required":false,"shape":{"kind":"boundedInteger","minimum":0},"wire_name":"turns"}]},"SessionEndEvent":{"additional":{"kind":"allowed"},"forbidden_property_sets":[["tool"]],"kind":"object","properties":[{"required":false,"shape":{"additional":{"kind":"typed","shape":{"kind":"boundedInteger","minimum":0}},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"counters"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["completed","cancelled","error","unknown"]},"wire_name":"outcome"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"},{"required":true,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"session.end"},"wire_name":"type"}]},"SessionStartCapabilities":{"kind":"intersection","variants":[{"kind":"ref","name":"Capabilities"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["inject","message"]},"kind":"array"},"wire_name":"effects"}]}]},"SessionStartEffect":{"discriminator":"type","kind":"union","mode":"oneOf","variants":[{"kind":"ref","name":"InjectEffect"},{"kind":"ref","name":"MessageEffect"}]},"SessionStartEvent":{"additional":{"kind":"allowed"},"forbidden_property_sets":[["outcome"],["tool"]],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"name"},{"required":true,"shape":{"kind":"string"},"wire_name":"version"}]},"wire_name":"harness"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":true,"shape":{"items":{"kind":"ref","name":"ModelVisibleItem"},"kind":"array"},"wire_name":"items"},{"required":true,"shape":{"kind":"ref","name":"StaticCapabilityManifest"},"wire_name":"manifest"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":true,"shape":{"kind":"string"},"wire_name":"permissionMode"},{"required":false,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"resumedFrom"},{"required":true,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["startup","resume","clear","compact","fork"]},"wire_name":"trigger"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"session.start"},"wire_name":"type"}]},"SessionStartInterceptResponse":{"kind":"intersection","variants":[{"kind":"ref","name":"JsonRpcSuccessResponse"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[["manifest"]],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"ref","name":"SessionStartEffect"},"kind":"array"},"wire_name":"effects"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":true,"shape":{"kind":"ref","name":"ProtocolVersion"},"wire_name":"protocolVersion"}]},"wire_name":"result"}]}]},"StaticCapabilityManifest":{"additional":{"kind":"allowed"},"forbidden_property_sets":[["identity"]],"kind":"object","properties":[{"required":true,"shape":{"items":{"kind":"enum","open_strings":true,"values":["bearer","oauth"]},"kind":"array"},"wire_name":"authentication"},{"required":true,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"contentCategories"},{"required":true,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"correlationIdentityFields"},{"required":true,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"Capabilities"},"wire_name":"capabilities"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["tool.before","tool.after","session.start","session.end","config.change.before","config.change.after","turn.start","turn.finish.before","turn.end","turn.progress","model.request.before","model.response.after","model.error","model.switch.before","model.switch.after","tool.permission.request","tool.permission.resolved","tool.progress","tool.batch.after","context.compact.before","context.compact.after","task.change.before","task.change.after","user.attention","user.elicitation.request","user.elicitation.result","user.message.inbound","user.message.outbound","workspace.change.before","workspace.change.after","file.changed","hook.failure"]},"wire_name":"event"},{"required":true,"shape":{"items":{"kind":"enum","open_strings":true,"values":["observe","intercept"]},"kind":"array"},"wire_name":"modes"}]},"kind":"array"},"wire_name":"events"},{"required":true,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"boundedInteger","minimum":0},"wire_name":"maxContinuations"},{"required":false,"shape":{"kind":"boundedInteger","minimum":0},"wire_name":"maxTimeoutMs"},{"required":false,"shape":{"kind":"boundedInteger","minimum":0},"wire_name":"maxUploadBytes"},{"required":false,"shape":{"kind":"boundedInteger","minimum":0},"wire_name":"minTimeoutMs"}]},"wire_name":"limits"},{"required":true,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"boolean"},"wire_name":"disableable"},{"required":true,"shape":{"items":{"kind":"enum","open_strings":true,"values":["user","project","managed"]},"kind":"array"},"wire_name":"scopes"}]},"wire_name":"managedPolicy"},{"required":true,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"toolPaths"},{"required":true,"shape":{"items":{"kind":"enum","open_strings":true,"values":["http","stdio","in_process"]},"kind":"array"},"wire_name":"transports"}]},"StdioTransport":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"args"},{"required":true,"shape":{"kind":"string"},"wire_name":"command"},{"required":false,"shape":{"kind":"string"},"wire_name":"cwd"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["persistent","per_event"]},"wire_name":"lifecycle"},{"required":true,"shape":{"kind":"literal","value":"stdio"},"wire_name":"type"}]},"StopFlowEffect":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"literal","value":"stop"},"wire_name":"operation"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"},{"required":true,"shape":{"kind":"literal","value":"flow"},"wire_name":"type"}]},"TaskChangeAfterEvent":{"kind":"ref","name":"TaskWorkspaceEventTaskChangeAfter"},"TaskChangeBeforeCapabilities":{"kind":"intersection","variants":[{"kind":"ref","name":"Capabilities"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["deny","message"]},"kind":"array"},"wire_name":"effects"}]}]},"TaskChangeBeforeEffect":{"discriminator":"type","kind":"union","mode":"oneOf","variants":[{"kind":"ref","name":"DenyEffect"},{"kind":"ref","name":"MessageEffect"}]},"TaskChangeBeforeEvent":{"kind":"ref","name":"TaskWorkspaceEventTaskChangeBefore"},"TaskChangeBeforeInterceptResponse":{"kind":"intersection","variants":[{"kind":"ref","name":"JsonRpcSuccessResponse"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[["manifest"]],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"ref","name":"TaskChangeBeforeEffect"},"kind":"array"},"wire_name":"effects"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":true,"shape":{"kind":"ref","name":"ProtocolVersion"},"wire_name":"protocolVersion"}]},"wire_name":"result"}]}]},"TaskWorkspaceEvent":{"discriminator":"type","kind":"union","mode":"oneOf","variants":[{"kind":"ref","name":"TaskWorkspaceEventTaskChangeBefore"},{"kind":"ref","name":"TaskWorkspaceEventTaskChangeAfter"},{"kind":"ref","name":"TaskWorkspaceEventWorkspaceChangeBefore"},{"kind":"ref","name":"TaskWorkspaceEventWorkspaceChangeAfter"},{"kind":"ref","name":"TaskWorkspaceEventFileChanged"}]},"TaskWorkspaceEventFileChanged":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"items":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"ContentItem"},"wire_name":"after"},{"required":true,"shape":{"kind":"boolean"},"wire_name":"agentCaused"},{"required":false,"shape":{"kind":"ref","name":"ContentItem"},"wire_name":"before"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["create","update","remove"]},"wire_name":"operation"},{"required":true,"shape":{"kind":"string"},"wire_name":"path"}]},"kind":"array"},"wire_name":"changes"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"file.changed"},"wire_name":"type"}]},"TaskWorkspaceEventTaskChangeAfter":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"change"},{"required":false,"shape":{"kind":"string"},"wire_name":"description"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["create","update","remove"]},"wire_name":"operation"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"prior"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"task"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"task.change.after"},"wire_name":"type"}]},"TaskWorkspaceEventTaskChangeBefore":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"change"},{"required":false,"shape":{"kind":"string"},"wire_name":"description"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["create","update","remove"]},"wire_name":"operation"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"prior"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"task"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"task.change.before"},"wire_name":"type"}]},"TaskWorkspaceEventWorkspaceChangeAfter":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"workspace.change.after"},"wire_name":"type"},{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"ref","name":"WorkspaceChange"},"wire_name":"change"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["cwd","roots","switch"]},"wire_name":"kind"},{"required":false,"shape":{"kind":"ref","name":"WorkspaceChange"},"wire_name":"prior"},{"required":false,"shape":{"kind":"string"},"wire_name":"reason"}]},"wire_name":"workspace"}]},"TaskWorkspaceEventWorkspaceChangeBefore":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"workspace.change.before"},"wire_name":"type"},{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"ref","name":"WorkspaceChange"},"wire_name":"change"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["cwd","roots","switch"]},"wire_name":"kind"},{"required":false,"shape":{"kind":"ref","name":"WorkspaceChange"},"wire_name":"prior"},{"required":false,"shape":{"kind":"string"},"wire_name":"reason"}]},"wire_name":"workspace"}]},"TextBodyPart":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[["sha256"],["size"]],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"category"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":true,"shape":{"kind":"literal","value":"text"},"wire_name":"kind"},{"required":true,"shape":{"kind":"literal","value":"text/plain"},"wire_name":"mediaType"},{"required":true,"shape":{"kind":"literal","value":"body"},"wire_name":"selection"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"text"}]},"TextCandidate":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"provenance"},{"required":true,"shape":{"kind":"ref","name":"TextParts"},"wire_name":"value"}]},"TextGapPart":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"category"},{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"wire_name":"gap"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":true,"shape":{"kind":"literal","value":"text"},"wire_name":"kind"},{"required":true,"shape":{"kind":"literal","value":"text/plain"},"wire_name":"mediaType"},{"required":true,"shape":{"kind":"literal","value":"body"},"wire_name":"selection"},{"required":false,"shape":{"kind":"string"},"wire_name":"sha256"},{"required":false,"shape":{"kind":"boundedInteger","minimum":0},"wire_name":"size"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"TextMetadataPart":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"category"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":true,"shape":{"kind":"literal","value":"text"},"wire_name":"kind"},{"required":true,"shape":{"kind":"literal","value":"text/plain"},"wire_name":"mediaType"},{"required":true,"shape":{"kind":"literal","value":"metadata"},"wire_name":"selection"},{"required":false,"shape":{"kind":"string"},"wire_name":"sha256"},{"required":false,"shape":{"kind":"boundedInteger","minimum":0},"wire_name":"size"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"TextOmittedPart":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"category"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":true,"shape":{"kind":"literal","value":"text"},"wire_name":"kind"},{"required":true,"shape":{"kind":"literal","value":"text/plain"},"wire_name":"mediaType"},{"required":true,"shape":{"kind":"literal","value":"omit"},"wire_name":"selection"},{"required":false,"shape":{"kind":"string"},"wire_name":"sha256"},{"required":false,"shape":{"kind":"boundedInteger","minimum":0},"wire_name":"size"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"TextPart":{"kind":"union","mode":"oneOf","variants":[{"kind":"ref","name":"TextBodyPart"},{"kind":"ref","name":"TextGapPart"},{"kind":"ref","name":"TextMetadataPart"},{"kind":"ref","name":"TextOmittedPart"}]},"TextParts":{"items":{"kind":"ref","name":"TextPart"},"kind":"array"},"TextState":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"union","mode":"anyOf","variants":[{"kind":"null"},{"kind":"ref","name":"TextCandidate"}]},"wire_name":"candidate"},{"required":false,"shape":{"kind":"enum","open_strings":true,"values":["none","stop","continue"]},"wire_name":"flow"},{"required":false,"shape":{"items":{"kind":"ref","name":"InjectEffect"},"kind":"array"},"wire_name":"injections"},{"required":false,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"instructions"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["none","allow","ask","deny"]},"wire_name":"permission"}]},"ToolAfterCapabilities":{"kind":"intersection","variants":[{"kind":"ref","name":"Capabilities"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["modify","inject","flow","message"]},"kind":"array"},"wire_name":"effects"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["stop","continue"]},"kind":"array"},"wire_name":"operations"}]},"wire_name":"flow"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"modify"}]}]},"ToolAfterEffect":{"kind":"union","mode":"oneOf","variants":[{"kind":"ref","name":"ToolAfterModifyEffect"},{"kind":"ref","name":"InjectEffect"},{"kind":"ref","name":"StopFlowEffect"},{"kind":"ref","name":"ContinueFlowEffect"},{"kind":"ref","name":"MessageEffect"}]},"ToolAfterEvent":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"ExecutionEventBatch"},"wire_name":"batch"},{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"call"},{"required":false,"shape":{"kind":"number"},"wire_name":"durationMs"},{"required":false,"shape":{"kind":"ref","name":"ExecutionEventError"},"wire_name":"error"},{"required":true,"shape":{"kind":"ref","name":"ExecutionEventExecution"},"wire_name":"execution"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"kind":"ref","name":"ExecutionEventFilechange"},"kind":"array"},"wire_name":"fileChanges"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":true,"shape":{"items":{"kind":"ref","name":"ModelVisibleItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["ok","error","denied","cancelled","timeout"]},"wire_name":"outcome"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":true,"shape":{"kind":"ref","name":"ExecutionEventTool"},"wire_name":"tool"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"tool.after"},"wire_name":"type"}]},"ToolAfterInterceptResponse":{"kind":"intersection","variants":[{"kind":"ref","name":"JsonRpcSuccessResponse"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[["manifest"]],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"ref","name":"ToolAfterEffect"},"kind":"array"},"wire_name":"effects"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":true,"shape":{"kind":"ref","name":"ProtocolVersion"},"wire_name":"protocolVersion"}]},"wire_name":"result"}]}]},"ToolAfterModifyEffect":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"union","mode":"oneOf","variants":[{"kind":"literal","value":"replace"},{"kind":"literal","value":"merge"}]},"wire_name":"operation"},{"required":true,"shape":{"kind":"literal","value":"output"},"wire_name":"target"},{"required":true,"shape":{"kind":"literal","value":"modify"},"wire_name":"type"},{"required":true,"shape":{"kind":"ref","name":"CanonicalMessages"},"wire_name":"value"}]},"ToolBatchAfterCapabilities":{"kind":"intersection","variants":[{"kind":"ref","name":"Capabilities"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["flow","inject","message"]},"kind":"array"},"wire_name":"effects"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["stop"]},"kind":"array"},"wire_name":"operations"}]},"wire_name":"flow"}]}]},"ToolBatchAfterEffect":{"discriminator":"type","kind":"union","mode":"oneOf","variants":[{"kind":"ref","name":"StopFlowEffect"},{"kind":"ref","name":"InjectEffect"},{"kind":"ref","name":"MessageEffect"}]},"ToolBatchAfterEvent":{"kind":"ref","name":"ExecutionEventToolBatchAfter"},"ToolBatchAfterInterceptResponse":{"kind":"intersection","variants":[{"kind":"ref","name":"JsonRpcSuccessResponse"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[["manifest"]],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"ref","name":"ToolBatchAfterEffect"},"kind":"array"},"wire_name":"effects"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":true,"shape":{"kind":"ref","name":"ProtocolVersion"},"wire_name":"protocolVersion"}]},"wire_name":"result"}]}]},"ToolBeforeCapabilities":{"kind":"intersection","variants":[{"kind":"ref","name":"Capabilities"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["deny","allow","ask","modify","inject","flow","return","message"]},"kind":"array"},"wire_name":"effects"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["stop"]},"kind":"array"},"wire_name":"operations"}]},"wire_name":"flow"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"modify"}]}]},"ToolBeforeEffect":{"discriminator":"type","kind":"union","mode":"oneOf","variants":[{"kind":"ref","name":"DenyEffect"},{"kind":"ref","name":"AllowEffect"},{"kind":"ref","name":"AskEffect"},{"kind":"ref","name":"ToolBeforeModifyEffect"},{"kind":"ref","name":"InjectEffect"},{"kind":"ref","name":"StopFlowEffect"},{"kind":"ref","name":"ReturnToolEffect"},{"kind":"ref","name":"MessageEffect"}]},"ToolBeforeEvent":{"additional":{"kind":"allowed"},"forbidden_property_sets":[["durationMs"],["execution"],["fileChanges"],["outcome"]],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"ExecutionEventBatch"},"wire_name":"batch"},{"required":true,"shape":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"call"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":true,"shape":{"kind":"ref","name":"ExecutionEventTool"},"wire_name":"tool"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"tool.before"},"wire_name":"type"}]},"ToolBeforeInterceptResponse":{"kind":"intersection","variants":[{"kind":"ref","name":"JsonRpcSuccessResponse"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[["manifest"]],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"ref","name":"ToolBeforeEffect"},"kind":"array"},"wire_name":"effects"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":true,"shape":{"kind":"ref","name":"ProtocolVersion"},"wire_name":"protocolVersion"}]},"wire_name":"result"}]}]},"ToolBeforeModifyEffect":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"union","mode":"oneOf","variants":[{"kind":"literal","value":"replace"},{"kind":"literal","value":"merge"}]},"wire_name":"operation"},{"required":true,"shape":{"kind":"literal","value":"input"},"wire_name":"target"},{"required":true,"shape":{"kind":"literal","value":"modify"},"wire_name":"type"},{"required":true,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"value"}]},"ToolCandidate":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"provenance"},{"required":true,"shape":{"kind":"any"},"wire_name":"value"}]},"ToolPermissionRequestCapabilities":{"kind":"intersection","variants":[{"kind":"ref","name":"Capabilities"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["allow","deny","modify","flow","message"]},"kind":"array"},"wire_name":"effects"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["stop"]},"kind":"array"},"wire_name":"operations"}]},"wire_name":"flow"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"modify"}]}]},"ToolPermissionRequestEffect":{"discriminator":"type","kind":"union","mode":"oneOf","variants":[{"kind":"ref","name":"AllowEffect"},{"kind":"ref","name":"DenyEffect"},{"kind":"ref","name":"ToolPermissionRequestModifyEffect"},{"kind":"ref","name":"StopFlowEffect"},{"kind":"ref","name":"MessageEffect"}]},"ToolPermissionRequestEvent":{"kind":"ref","name":"ExecutionEventToolPermissionRequest"},"ToolPermissionRequestInterceptResponse":{"kind":"intersection","variants":[{"kind":"ref","name":"JsonRpcSuccessResponse"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[["manifest"]],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"ref","name":"ToolPermissionRequestEffect"},"kind":"array"},"wire_name":"effects"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":true,"shape":{"kind":"ref","name":"ProtocolVersion"},"wire_name":"protocolVersion"}]},"wire_name":"result"}]}]},"ToolPermissionRequestModifyEffect":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"union","mode":"oneOf","variants":[{"kind":"literal","value":"replace"},{"kind":"literal","value":"merge"}]},"wire_name":"operation"},{"required":true,"shape":{"kind":"literal","value":"input"},"wire_name":"target"},{"required":true,"shape":{"kind":"literal","value":"modify"},"wire_name":"type"},{"required":true,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"value"}]},"ToolPermissionResolvedEvent":{"kind":"ref","name":"ExecutionEventToolPermissionResolved"},"ToolProgressEvent":{"kind":"ref","name":"ExecutionEventToolProgress"},"ToolState":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"union","mode":"anyOf","variants":[{"kind":"null"},{"kind":"ref","name":"ToolCandidate"}]},"wire_name":"candidate"},{"required":false,"shape":{"kind":"enum","open_strings":true,"values":["none","stop","continue"]},"wire_name":"flow"},{"required":false,"shape":{"items":{"kind":"ref","name":"InjectEffect"},"kind":"array"},"wire_name":"injections"},{"required":false,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"instructions"},{"required":true,"shape":{"kind":"enum","open_strings":true,"values":["none","allow","ask","deny"]},"wire_name":"permission"}]},"TurnEndEvent":{"kind":"ref","name":"ExecutionEventTurnEnd"},"TurnFinishBeforeCapabilities":{"kind":"intersection","variants":[{"kind":"ref","name":"Capabilities"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["modify","flow","message"]},"kind":"array"},"wire_name":"effects"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["stop","continue"]},"kind":"array"},"wire_name":"operations"}]},"wire_name":"flow"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"modify"}]}]},"TurnFinishBeforeEffect":{"kind":"union","mode":"oneOf","variants":[{"kind":"ref","name":"TurnFinishBeforeModifyEffect"},{"kind":"ref","name":"StopFlowEffect"},{"kind":"ref","name":"ContinueFlowEffect"},{"kind":"ref","name":"MessageEffect"}]},"TurnFinishBeforeEvent":{"kind":"ref","name":"ExecutionEventTurnFinishBefore"},"TurnFinishBeforeInterceptResponse":{"kind":"intersection","variants":[{"kind":"ref","name":"JsonRpcSuccessResponse"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[["manifest"]],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"ref","name":"TurnFinishBeforeEffect"},"kind":"array"},"wire_name":"effects"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":true,"shape":{"kind":"ref","name":"ProtocolVersion"},"wire_name":"protocolVersion"}]},"wire_name":"result"}]}]},"TurnFinishBeforeModifyEffect":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"union","mode":"oneOf","variants":[{"kind":"literal","value":"replace"},{"kind":"literal","value":"merge"}]},"wire_name":"operation"},{"required":true,"shape":{"kind":"literal","value":"response"},"wire_name":"target"},{"required":true,"shape":{"kind":"literal","value":"modify"},"wire_name":"type"},{"required":true,"shape":{"kind":"ref","name":"CanonicalMessages"},"wire_name":"value"}]},"TurnProgressEvent":{"kind":"ref","name":"ExecutionEventTurnProgress"},"TurnStartCapabilities":{"kind":"intersection","variants":[{"kind":"ref","name":"Capabilities"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["deny","modify","inject","flow","message"]},"kind":"array"},"wire_name":"effects"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["stop"]},"kind":"array"},"wire_name":"operations"}]},"wire_name":"flow"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"modify"}]}]},"TurnStartEffect":{"discriminator":"type","kind":"union","mode":"oneOf","variants":[{"kind":"ref","name":"DenyEffect"},{"kind":"ref","name":"TurnStartModifyEffect"},{"kind":"ref","name":"InjectEffect"},{"kind":"ref","name":"StopFlowEffect"},{"kind":"ref","name":"MessageEffect"}]},"TurnStartEvent":{"kind":"ref","name":"ExecutionEventTurnStart"},"TurnStartInterceptResponse":{"kind":"intersection","variants":[{"kind":"ref","name":"JsonRpcSuccessResponse"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[["manifest"]],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"ref","name":"TurnStartEffect"},"kind":"array"},"wire_name":"effects"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":true,"shape":{"kind":"ref","name":"ProtocolVersion"},"wire_name":"protocolVersion"}]},"wire_name":"result"}]}]},"TurnStartModifyEffect":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"union","mode":"oneOf","variants":[{"kind":"literal","value":"replace"},{"kind":"literal","value":"merge"}]},"wire_name":"operation"},{"required":true,"shape":{"kind":"literal","value":"prompt"},"wire_name":"target"},{"required":true,"shape":{"kind":"literal","value":"modify"},"wire_name":"type"},{"required":true,"shape":{"kind":"ref","name":"CanonicalMessages"},"wire_name":"value"}]},"UserAttentionEvent":{"kind":"intersection","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"user.attention"},"wire_name":"type"}]},{"kind":"ref","name":"InteractionEventUserAttention"}]},"UserElicitationRequestCapabilities":{"kind":"intersection","variants":[{"kind":"ref","name":"Capabilities"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["deny","return","message"]},"kind":"array"},"wire_name":"effects"}]}]},"UserElicitationRequestEffect":{"discriminator":"type","kind":"union","mode":"oneOf","variants":[{"kind":"ref","name":"DenyEffect"},{"kind":"ref","name":"ReturnElicitResultEffect"},{"kind":"ref","name":"MessageEffect"}]},"UserElicitationRequestEvent":{"kind":"intersection","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"user.elicitation.request"},"wire_name":"type"}]},{"kind":"ref","name":"InteractionEventUserElicitationRequest"}]},"UserElicitationRequestInterceptResponse":{"kind":"intersection","variants":[{"kind":"ref","name":"JsonRpcSuccessResponse"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[["manifest"]],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"ref","name":"UserElicitationRequestEffect"},"kind":"array"},"wire_name":"effects"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":true,"shape":{"kind":"ref","name":"ProtocolVersion"},"wire_name":"protocolVersion"}]},"wire_name":"result"}]}]},"UserElicitationResultCapabilities":{"kind":"intersection","variants":[{"kind":"ref","name":"Capabilities"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["modify","message"]},"kind":"array"},"wire_name":"effects"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"modify"}]}]},"UserElicitationResultEffect":{"discriminator":"type","kind":"union","mode":"oneOf","variants":[{"kind":"ref","name":"UserElicitationResultModifyEffect"},{"kind":"ref","name":"MessageEffect"}]},"UserElicitationResultEvent":{"kind":"intersection","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"user.elicitation.result"},"wire_name":"type"}]},{"kind":"ref","name":"InteractionEventUserElicitationResult"}]},"UserElicitationResultInterceptResponse":{"kind":"intersection","variants":[{"kind":"ref","name":"JsonRpcSuccessResponse"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[["manifest"]],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"ref","name":"UserElicitationResultEffect"},"kind":"array"},"wire_name":"effects"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":true,"shape":{"kind":"ref","name":"ProtocolVersion"},"wire_name":"protocolVersion"}]},"wire_name":"result"}]}]},"UserElicitationResultModifyEffect":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"union","mode":"oneOf","variants":[{"kind":"literal","value":"replace"},{"kind":"literal","value":"merge"}]},"wire_name":"operation"},{"required":true,"shape":{"kind":"literal","value":"content"},"wire_name":"target"},{"required":true,"shape":{"kind":"literal","value":"modify"},"wire_name":"type"},{"required":true,"shape":{"kind":"ref","name":"FormAnswers"},"wire_name":"value"}]},"UserMessageInboundCapabilities":{"kind":"intersection","variants":[{"kind":"ref","name":"Capabilities"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["deny","modify","message"]},"kind":"array"},"wire_name":"effects"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"modify"}]}]},"UserMessageInboundEffect":{"discriminator":"type","kind":"union","mode":"oneOf","variants":[{"kind":"ref","name":"DenyEffect"},{"kind":"ref","name":"UserMessageInboundModifyEffect"},{"kind":"ref","name":"MessageEffect"}]},"UserMessageInboundEvent":{"kind":"intersection","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"user.message.inbound"},"wire_name":"type"}]},{"kind":"ref","name":"InteractionEventUserMessageInbound"}]},"UserMessageInboundInterceptResponse":{"kind":"intersection","variants":[{"kind":"ref","name":"JsonRpcSuccessResponse"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[["manifest"]],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"ref","name":"UserMessageInboundEffect"},"kind":"array"},"wire_name":"effects"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":true,"shape":{"kind":"ref","name":"ProtocolVersion"},"wire_name":"protocolVersion"}]},"wire_name":"result"}]}]},"UserMessageInboundModifyEffect":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"union","mode":"oneOf","variants":[{"kind":"literal","value":"replace"},{"kind":"literal","value":"merge"}]},"wire_name":"operation"},{"required":true,"shape":{"kind":"literal","value":"prompt"},"wire_name":"target"},{"required":true,"shape":{"kind":"literal","value":"modify"},"wire_name":"type"},{"required":true,"shape":{"kind":"ref","name":"CanonicalMessages"},"wire_name":"value"}]},"UserMessageOutboundCapabilities":{"kind":"intersection","variants":[{"kind":"ref","name":"Capabilities"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["deny","modify","message"]},"kind":"array"},"wire_name":"effects"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"modify"}]}]},"UserMessageOutboundEffect":{"discriminator":"type","kind":"union","mode":"oneOf","variants":[{"kind":"ref","name":"DenyEffect"},{"kind":"ref","name":"UserMessageOutboundModifyEffect"},{"kind":"ref","name":"MessageEffect"}]},"UserMessageOutboundEvent":{"kind":"intersection","variants":[{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":false,"shape":{"items":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"path"},{"required":true,"shape":{"kind":"string"},"wire_name":"reason"}]},"kind":"array"},"wire_name":"gaps"},{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"items":{"kind":"ref","name":"ContentItem"},"kind":"array"},"wire_name":"items"},{"required":false,"shape":{"kind":"ref","name":"NativeEvent"},"wire_name":"native"},{"required":false,"shape":{"kind":"string"},"wire_name":"parentEventId"},{"required":false,"shape":{"kind":"ref","name":"Session"},"wire_name":"session"},{"required":true,"shape":{"kind":"string"},"wire_name":"source"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"},{"required":true,"shape":{"kind":"string"},"wire_name":"time"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"string"},"wire_name":"id"},{"required":false,"shape":{"kind":"boolean"},"wire_name":"synthesized"}]},"wire_name":"turn"},{"required":true,"shape":{"kind":"literal","value":"user.message.outbound"},"wire_name":"type"}]},{"kind":"ref","name":"InteractionEventUserMessageOutbound"}]},"UserMessageOutboundInterceptResponse":{"kind":"intersection","variants":[{"kind":"ref","name":"JsonRpcSuccessResponse"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[["manifest"]],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"ref","name":"UserMessageOutboundEffect"},"kind":"array"},"wire_name":"effects"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":true,"shape":{"kind":"ref","name":"ProtocolVersion"},"wire_name":"protocolVersion"}]},"wire_name":"result"}]}]},"UserMessageOutboundModifyEffect":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"union","mode":"oneOf","variants":[{"kind":"literal","value":"replace"},{"kind":"literal","value":"merge"}]},"wire_name":"operation"},{"required":true,"shape":{"kind":"literal","value":"content"},"wire_name":"target"},{"required":true,"shape":{"kind":"literal","value":"modify"},"wire_name":"type"},{"required":true,"shape":{"kind":"ref","name":"CanonicalMessages"},"wire_name":"value"}]},"WireMessage":{"kind":"union","mode":"oneOf","variants":[{"kind":"ref","name":"InterceptRequest"},{"kind":"ref","name":"InterceptResponse"},{"kind":"ref","name":"JsonRpcErrorResponse"},{"kind":"ref","name":"ObserveNotification"},{"kind":"ref","name":"CapabilitiesRequest"},{"kind":"ref","name":"CapabilitiesResponse"}]},"WorkspaceChange":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"kind":"string"},"wire_name":"cwd"},{"required":false,"shape":{"items":{"kind":"string"},"kind":"array"},"wire_name":"workspaceRoots"}]},"WorkspaceChangeAfterEvent":{"kind":"ref","name":"TaskWorkspaceEventWorkspaceChangeAfter"},"WorkspaceChangeBeforeCapabilities":{"kind":"intersection","variants":[{"kind":"ref","name":"Capabilities"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"enum","open_strings":true,"values":["deny","modify","message"]},"kind":"array"},"wire_name":"effects"},{"required":false,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[]},"wire_name":"modify"}]}]},"WorkspaceChangeBeforeEffect":{"discriminator":"type","kind":"union","mode":"oneOf","variants":[{"kind":"ref","name":"DenyEffect"},{"kind":"ref","name":"WorkspaceChangeBeforeModifyEffect"},{"kind":"ref","name":"MessageEffect"}]},"WorkspaceChangeBeforeEvent":{"kind":"ref","name":"TaskWorkspaceEventWorkspaceChangeBefore"},"WorkspaceChangeBeforeInterceptResponse":{"kind":"intersection","variants":[{"kind":"ref","name":"JsonRpcSuccessResponse"},{"additional":{"kind":"allowed"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"additional":{"kind":"allowed"},"forbidden_property_sets":[["manifest"]],"kind":"object","properties":[{"required":false,"shape":{"items":{"kind":"ref","name":"WorkspaceChangeBeforeEffect"},"kind":"array"},"wire_name":"effects"},{"required":false,"shape":{"kind":"ref","name":"Extensions"},"wire_name":"extensions"},{"required":true,"shape":{"kind":"ref","name":"ProtocolVersion"},"wire_name":"protocolVersion"}]},"wire_name":"result"}]}]},"WorkspaceChangeBeforeModifyEffect":{"additional":{"kind":"forbidden"},"forbidden_property_sets":[],"kind":"object","properties":[{"required":true,"shape":{"kind":"union","mode":"oneOf","variants":[{"kind":"literal","value":"replace"},{"kind":"literal","value":"merge"}]},"wire_name":"operation"},{"required":true,"shape":{"kind":"literal","value":"workspace"},"wire_name":"target"},{"required":true,"shape":{"kind":"literal","value":"modify"},"wire_name":"type"},{"required":true,"shape":{"kind":"ref","name":"WorkspaceChange"},"wire_name":"value"}]}}',
     parse_float=Decimal,
 )
 
@@ -7939,13 +9368,18 @@ def _check_node_impl(
     elif kind == "boolean":
         if type(value) is not bool:
             _error(diagnostics, path, "invalid_type", "Expected boolean")
-    elif kind == "integer":
-        if not _is_integer(value) or abs(value) > 9_007_199_254_740_991:
+    elif kind in ("integer", "boundedInteger"):
+        if not _is_integer(value):
+            _error(diagnostics, path, "invalid_type", "Expected integer")
+        elif kind == "boundedInteger" and (
+            ("minimum" in schema and value < schema["minimum"])
+            or ("maximum" in schema and value > schema["maximum"])
+        ):
             _error(
                 diagnostics,
                 path,
                 "invalid_type",
-                "Expected safely representable integer",
+                "Integer is outside its declared bounds",
             )
     elif kind == "number":
         if not _is_number(value):
@@ -8016,6 +9450,18 @@ def _check_node_impl(
                     diagnostics,
                     cache,
                 )
+        additional = schema["additional"]
+        if additional["kind"] == "typed":
+            known = {property["wire_name"] for property in schema["properties"]}
+            for key, child in value.items():
+                if key not in known:
+                    _check_node(
+                        additional["shape"],
+                        child,
+                        _join_path(path, key),
+                        diagnostics,
+                        cache,
+                    )
     elif kind == "intersection":
         for variant in schema["variants"]:
             _check_node(variant, value, path, diagnostics, cache)

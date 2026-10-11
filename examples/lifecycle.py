@@ -10,8 +10,8 @@ import tempfile
 
 import anyio
 import httpx
-from agenthooksprotocol import Hooks, capability, effect, event, tool
-from agenthooksprotocol.generated import InterceptRequest, ObserveNotification
+from agenthooksprotocol import HookResult, Hooks, capability, effect, event, tool
+from agenthooksprotocol.wire import JsonValue, InterceptRequest, ObserveNotification
 from agenthooksprotocol.server import asgi, hooks
 from agenthooksprotocol.transports.http import HTTPTransport
 
@@ -59,7 +59,7 @@ async def main() -> None:
             },
             transport=HTTPTransport("http://example.test/hooks", client=client),
         ) as harness:
-            results = []
+            results: list[HookResult[JsonValue, JsonValue, JsonValue]] = []
 
             async def deliver() -> None:
                 results.append(await harness.tool_before(input_event()))

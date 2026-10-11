@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 """Offline host fixture. Actual SDK runtime; orchestration is not AHP wire API."""
 
-import json, os, subprocess, sys
+import json
+import os
+import subprocess
+import sys
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from urllib.request import Request
 from agenthooksprotocol.interop import run_fixture_compaction

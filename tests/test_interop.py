@@ -17,7 +17,7 @@ import unittest
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from http.client import HTTPConnection
 from urllib.error import HTTPError, URLError
-from agenthooksprotocol.runtime import Validator, ProtocolError, apply_response
+from agenthooksprotocol.runtime import Validator, ProtocolError, _apply_response
 from agenthooksprotocol.interop import (
     AdapterServer,
     http_json,
@@ -33,7 +33,7 @@ from agenthooksprotocol.interop import (
     wire_request,
 )
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(os.environ.get("AHP_TEST_ROOT", Path(__file__).resolve().parents[2]))
 FIXTURES = ROOT / "agent-hooks-protocol/interop/fixtures"
 
 
@@ -100,7 +100,7 @@ class RuntimeTests(unittest.TestCase):
         self.validator = Validator()
 
     def apply(self, effects, req=None):
-        return apply_response(req or request(), response(effects), self.validator)
+        return _apply_response(req or request(), response(effects), self.validator)
 
     def test_shallow_merge_null_and_return_binding(self):
         actual = self.apply(
@@ -188,7 +188,7 @@ class RuntimeTests(unittest.TestCase):
         bad = response([])
         bad["id"] = "wrong"
         with self.assertRaises(ProtocolError):
-            apply_response(request(), bad, self.validator)
+            _apply_response(request(), bad, self.validator)
 
     def test_strict_json(self):
         for text in ['{"a":1,"a":2}', '{"a":NaN}']:

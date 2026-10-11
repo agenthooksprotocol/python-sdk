@@ -14,6 +14,13 @@ from agenthooksprotocol.auth import (
     EnvironmentAuthProvider,
 )
 from agenthooksprotocol.runtime import ProtocolError
+from test_interop import request as _wire_request
+
+
+def intercept_request():
+    value = _wire_request()
+    value["id"] = value["params"]["event"]["id"] = "same"
+    return value
 
 
 BINDING = {"type": "bearer", "tokenRef": "host/key"}
@@ -45,12 +52,8 @@ class RegistrationAuthTests(unittest.TestCase):
         async def run():
             provider = Provider()
             seen = []
-            message = {
-                "jsonrpc": "2.0",
-                "id": "same",
-                "method": "hooks/intercept",
-                "params": {},
-            }
+            message = intercept_request()
+            original_params = json.loads(json.dumps(message["params"]))
 
             async def handle(request):
                 seen.append(request)
@@ -83,7 +86,7 @@ class RegistrationAuthTests(unittest.TestCase):
                 await transport.request(message)
                 self.assertEqual(len(seen), 2)
                 self.assertEqual(seen[0].content, seen[1].content)
-                self.assertEqual(json.loads(seen[1].content)["params"], {})
+                self.assertEqual(json.loads(seen[1].content)["params"], original_params)
                 self.assertEqual(seen[0].headers["authorization"], "Bearer old-secret")
                 self.assertEqual(seen[1].headers["authorization"], "Bearer new-secret")
                 self.assertNotIn("cookie", seen[0].headers)
@@ -129,9 +132,7 @@ class RegistrationAuthTests(unittest.TestCase):
                         client=client,
                     )
                     with self.assertRaises(ProtocolError):
-                        await getattr(transport, method)(
-                            {"id": "same", "method": "hooks/intercept"}
-                        )
+                        await getattr(transport, method)(intercept_request())
                     self.assertEqual(len(seen), expected)
                     self.assertEqual(len(provider.challenges), expected)
                     self.assertFalse(provider.challenges[-1].retry_allowed)
@@ -168,7 +169,7 @@ class RegistrationAuthTests(unittest.TestCase):
                         auth_provider=provider,
                         client=client,
                     )
-                    await transport.request({"id": "same", "method": "hooks/intercept"})
+                    await transport.request(intercept_request())
                     self.assertNotIn("authorization", seen[0].headers)
                     self.assertEqual(len(provider.challenges), int(reject))
                     if reject:
@@ -227,7 +228,7 @@ class RegistrationAuthTests(unittest.TestCase):
                     "https://event.test", backend=BACKEND, auth_provider=provider
                 )
                 with self.assertRaises(ProtocolError) as error:
-                    await transport.request({"id": "same", "method": "hooks/intercept"})
+                    await transport.request(intercept_request())
                 self.assertNotIn("leaked-secret", str(error.exception))
                 self.assertIsNone(transport._client)
             with self.assertRaises(ProtocolError):
@@ -271,9 +272,7 @@ class RegistrationAuthTests(unittest.TestCase):
                             auth_provider=provider,
                             client=client,
                         )
-                        await transport.request(
-                            {"id": "same", "method": "hooks/intercept"}
-                        )
+                        await transport.request(intercept_request())
             self.assertEqual(
                 seen, ["Bearer environment-secret", "Bearer reference-secret"]
             )
@@ -295,7 +294,7 @@ class RegistrationAuthTests(unittest.TestCase):
                 "https://event.test", backend=BACKEND, auth_provider=Waiting()
             )
             with anyio.move_on_after(0.01) as scope:
-                await transport.request({"id": "same", "method": "hooks/intercept"})
+                await transport.request(intercept_request())
             self.assertTrue(scope.cancelled_caught)
             self.assertTrue(finished.is_set())
             self.assertIsNone(transport._client)
@@ -340,7 +339,7 @@ class RegistrationAuthTests(unittest.TestCase):
                         auth_provider=provider,
                         client=client,
                     )
-                    await transport.request({"id": "same", "method": "hooks/intercept"})
+                    await transport.request(intercept_request())
                 self.assertEqual(provider.contexts[0].binding, binding)
             with self.assertRaises(ProtocolError):
                 AuthenticatedHTTPTransport(
@@ -410,9 +409,7 @@ class RegistrationAuthTests(unittest.TestCase):
                     ),
                 ):
                     with self.assertRaises(BackendRPCError) as error:
-                        await transport.request(
-                            {"id": "same", "method": "hooks/intercept"}
-                        )
+                        await transport.request(intercept_request())
                     self.assertNotIn("backend-secret", str(error.exception))
                     self.assertNotIn("private", str(error.exception))
 
@@ -467,9 +464,7 @@ class RegistrationAuthTests(unittest.TestCase):
                             client=client,
                         )
                         with self.assertRaises(category) as caught:
-                            await transport.request(
-                                {"id": "same", "method": "hooks/intercept"}
-                            )
+                            await transport.request(intercept_request())
                         self.assertIs(type(caught.exception), category)
                         self.assertNotIn(
                             "credential-secret",
@@ -485,7 +480,7 @@ class RegistrationAuthTests(unittest.TestCase):
                 "https://event.test", backend=BACKEND, auth_provider=Broken()
             )
             with self.assertRaises(AuthenticationFailure) as caught:
-                await transport.request({"id": "same", "method": "hooks/intercept"})
+                await transport.request(intercept_request())
             self.assertNotIn(
                 "credential-secret",
                 "".join(traceback.format_exception(caught.exception)),
@@ -546,7 +541,7 @@ class RegistrationAuthTests(unittest.TestCase):
                     client=client,
                 )
                 with self.assertRaises(OperationCancelledError):
-                    await transport.request({"id": "same", "method": "hooks/intercept"})
+                    await transport.request(intercept_request())
                 self.assertEqual(len(calls), 2)
 
         for backend in ("asyncio", "trio"):

@@ -20,7 +20,7 @@ import anyio
 from anyio.abc import ByteReceiveStream, ByteSendStream
 
 from ._json import loads
-from .hooks import Engine, Handler, HTTPError, encode, error
+from .hooks import Engine, Handler, HTTPError, _encode, _error
 
 
 def _pipe_fd(stream):
@@ -105,7 +105,7 @@ def _http_error_response(exc, id):
         and isinstance(body["error"].get("message"), str)
     ):
         return body
-    response = error(-32603, "HTTP handler error", id)
+    response = _error(-32603, "HTTP handler error", id)
     details = {"httpStatus": exc.status}
     try:
         details["body"] = exc.body.decode("utf-8")
@@ -166,9 +166,11 @@ async def serve(
                     else None
                 )
             if result is not None:
-                data = encode(result)
+                data = _encode(result)
                 if len(data) > max_bytes:
-                    data = encode(error(-32603, "Response too large", result.get("id")))
+                    data = _encode(
+                        _error(-32603, "Response too large", result.get("id"))
+                    )
                     if len(data) > max_bytes:
                         raise ValueError("Output limit cannot fit an error response")
                 await sink.send(data + b"\n")

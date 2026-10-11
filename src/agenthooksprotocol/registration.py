@@ -5,7 +5,10 @@ This evaluator does not contact registered endpoints or expose credentials in re
 """
 
 from .runtime import ProtocolError
-from ._models.registration import *
+from ._models.registration import *  # noqa: F403 - canonical registration models
+from ._models.registration import __all__ as _registration_names
+
+__all__ = list(_registration_names) + ["validate_registration", "ProtocolError"]
 
 
 def validate_registration(

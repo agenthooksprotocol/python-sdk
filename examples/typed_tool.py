@@ -13,8 +13,8 @@ from typing import TypedDict
 import anyio
 import httpx
 
-from agenthooksprotocol import Hooks, Permission, capability, effect, event, state, tool
-from agenthooksprotocol.generated import InterceptRequest, JsonObject, JsonValue
+from agenthooksprotocol import HookResult, Hooks, Permission, capability, effect, event, state, tool
+from agenthooksprotocol.wire import InterceptRequest, JsonObject, JsonValue
 from agenthooksprotocol.server import asgi, hooks
 from agenthooksprotocol.transports.http import HTTPTransport
 
@@ -73,7 +73,7 @@ async def main() -> None:
             },
             transport=transport,
         ) as harness:
-            result = await harness.tool_before(
+            result: HookResult[JsonValue, JsonValue, JsonValue] = await harness.tool_before(
                 event.ToolBeforeInput(
                     call_id="call-1",
                     path=tool.Path.NATIVE,

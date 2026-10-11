@@ -124,3 +124,106 @@ from ._models.event import WorkspaceChangeAfterInput as WorkspaceChangeAfterInpu
 from ._models.event import WorkspaceChangeBefore as WorkspaceChangeBefore
 from ._models.event import WorkspaceChangeBeforeEvent as WorkspaceChangeBeforeEvent
 from ._models.event import WorkspaceChangeBeforeInput as WorkspaceChangeBeforeInput
+
+from typing import overload, Any
+from . import _models
+
+
+@overload
+def response_for_event(
+    event: _models.ConfigChangeBeforeEvent,
+    response: _models.ConfigChangeBeforeInterceptResponse,
+) -> _models.ConfigChangeBeforeInterceptResponse: ...
+@overload
+def response_for_event(
+    event: _models.ContextCompactAfterEvent,
+    response: _models.ContextCompactAfterInterceptResponse,
+) -> _models.ContextCompactAfterInterceptResponse: ...
+@overload
+def response_for_event(
+    event: _models.ContextCompactBeforeEvent,
+    response: _models.ContextCompactBeforeInterceptResponse,
+) -> _models.ContextCompactBeforeInterceptResponse: ...
+@overload
+def response_for_event(
+    event: _models.Event, response: _models.InterceptResponse
+) -> _models.InterceptResponse: ...
+@overload
+def response_for_event(
+    event: _models.ModelRequestBeforeEvent,
+    response: _models.ModelRequestBeforeInterceptResponse,
+) -> _models.ModelRequestBeforeInterceptResponse: ...
+@overload
+def response_for_event(
+    event: _models.ModelResponseAfterEvent,
+    response: _models.ModelResponseAfterInterceptResponse,
+) -> _models.ModelResponseAfterInterceptResponse: ...
+@overload
+def response_for_event(
+    event: _models.ModelSwitchBeforeEvent,
+    response: _models.ModelSwitchBeforeInterceptResponse,
+) -> _models.ModelSwitchBeforeInterceptResponse: ...
+@overload
+def response_for_event(
+    event: _models.SessionStartEvent, response: _models.SessionStartInterceptResponse
+) -> _models.SessionStartInterceptResponse: ...
+@overload
+def response_for_event(
+    event: _models.TaskChangeBeforeEvent,
+    response: _models.TaskChangeBeforeInterceptResponse,
+) -> _models.TaskChangeBeforeInterceptResponse: ...
+@overload
+def response_for_event(
+    event: _models.ToolAfterEvent, response: _models.ToolAfterInterceptResponse
+) -> _models.ToolAfterInterceptResponse: ...
+@overload
+def response_for_event(
+    event: _models.ToolBatchAfterEvent,
+    response: _models.ToolBatchAfterInterceptResponse,
+) -> _models.ToolBatchAfterInterceptResponse: ...
+@overload
+def response_for_event(
+    event: _models.ToolBeforeEvent, response: _models.ToolBeforeInterceptResponse
+) -> _models.ToolBeforeInterceptResponse: ...
+@overload
+def response_for_event(
+    event: _models.ToolPermissionRequestEvent,
+    response: _models.ToolPermissionRequestInterceptResponse,
+) -> _models.ToolPermissionRequestInterceptResponse: ...
+@overload
+def response_for_event(
+    event: _models.TurnFinishBeforeEvent,
+    response: _models.TurnFinishBeforeInterceptResponse,
+) -> _models.TurnFinishBeforeInterceptResponse: ...
+@overload
+def response_for_event(
+    event: _models.TurnStartEvent, response: _models.TurnStartInterceptResponse
+) -> _models.TurnStartInterceptResponse: ...
+@overload
+def response_for_event(
+    event: _models.UserElicitationRequestEvent,
+    response: _models.UserElicitationRequestInterceptResponse,
+) -> _models.UserElicitationRequestInterceptResponse: ...
+@overload
+def response_for_event(
+    event: _models.UserElicitationResultEvent,
+    response: _models.UserElicitationResultInterceptResponse,
+) -> _models.UserElicitationResultInterceptResponse: ...
+@overload
+def response_for_event(
+    event: _models.UserMessageInboundEvent,
+    response: _models.UserMessageInboundInterceptResponse,
+) -> _models.UserMessageInboundInterceptResponse: ...
+@overload
+def response_for_event(
+    event: _models.UserMessageOutboundEvent,
+    response: _models.UserMessageOutboundInterceptResponse,
+) -> _models.UserMessageOutboundInterceptResponse: ...
+@overload
+def response_for_event(
+    event: _models.WorkspaceChangeBeforeEvent,
+    response: _models.WorkspaceChangeBeforeInterceptResponse,
+) -> _models.WorkspaceChangeBeforeInterceptResponse: ...
+def response_for_event(event: Any, response: Any) -> Any:
+    """Correlate at type-check time only; does not validate the response."""
+    return response

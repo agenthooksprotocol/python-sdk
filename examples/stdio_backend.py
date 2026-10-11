@@ -2,7 +2,7 @@
 
 import anyio
 from agenthooksprotocol import effect
-from agenthooksprotocol.generated import InterceptRequest, ObserveNotification
+from agenthooksprotocol.wire import InterceptRequest, ObserveNotification
 from agenthooksprotocol.server import hooks, stdio
 
 

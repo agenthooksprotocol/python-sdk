@@ -5,7 +5,8 @@ import unittest
 
 import anyio
 
-from agenthooksprotocol import Attachment, OwnedAttachment
+from agenthooksprotocol import Attachment
+from agenthooksprotocol.content import OwnedAttachment
 from agenthooksprotocol.event import ContextCompactBeforeInput
 from agenthooksprotocol.runtime import ProtocolError
 from test_owned_content_hooks import harness, payload, INSTRUCTIONS

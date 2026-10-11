@@ -7,10 +7,11 @@ Ordinary host authorization and domain validation remain the caller's job.
 
 from __future__ import annotations
 
-from typing import Any, TypeVar
+from typing import Any, Callable, Generic, Mapping, TypeVar, cast
 from types import TracebackType
-from .codec import Codec
+from .codec import ValueCodecs, Codec, Candidate, _decode_preserving
 from .generated import JsonValue
+from .response import ContextualResponse
 from .permission import Permission
 from .diagnostics import Code
 from ._diagnostics import (
@@ -36,8 +37,9 @@ from .runtime import (
     OperationCancelledError,
     ProtocolError,
     Validator,
-    apply_response,
-    json_equal,
+    _apply_response,
+    _json_equal,
+    _merge_effect_value,
 )
 from .lifecycle import Lifecycle
 from .lineage import TaskLineage
@@ -47,6 +49,7 @@ from .attachment import Attachment, AttachmentContents
 from ._content import at, put
 
 T = TypeVar("T")
+Operation = TypeVar("Operation", bound=Callable[..., Any])
 
 
 class HooksClosedError(OperationCancelledError):
@@ -55,7 +58,7 @@ class HooksClosedError(OperationCancelledError):
     code = Code.CANCELLED
 
 
-def _owned_operation(method):
+def _owned_operation(method: Operation) -> Operation:
     @wraps(method)
     async def run(self, *args, **kwargs):
         if method.__name__ == "dispatch":
@@ -79,10 +82,10 @@ def _owned_operation(method):
                     for kind, path in CONTENT_SOURCE_SLOTS.values()
                     if kind == name
                 }
-                from .lifecycle import content_items
+                from .lifecycle import _content_items
                 from ._models import OwnedAttachment
 
-                parts = list(content_items(dict(payload, type=name)))
+                parts = list(_content_items(dict(payload, type=name)))
                 fresh = {
                     owner
                     for part in parts
@@ -241,11 +244,16 @@ def _owned_operation(method):
                 with anyio.CancelScope(shield=True):
                     await sources.aclose()
 
-    return run
+    return cast(Operation, run)
+
+
+InputT = TypeVar("InputT")
+ResultT = TypeVar("ResultT")
+ProvenanceT = TypeVar("ProvenanceT")
 
 
 @dataclass
-class HookResult:
+class HookResult(Generic[InputT, ResultT, ProvenanceT]):
     """Raw committed wire state. Decoding never rolls back accepted effects."""
 
     event: dict[str, Any]
@@ -256,6 +264,41 @@ class HookResult:
     attachments: AttachmentContents = field(
         default_factory=lambda: AttachmentContents({})
     )
+
+    _value_codecs: ValueCodecs = field(default_factory=ValueCodecs, repr=False)
+
+    _contextual_response: ContextualResponse | None = field(default=None, repr=False)
+
+    @property
+    def decoded_input(self) -> InputT:
+        codec = self._value_codecs.input
+        return cast(
+            InputT,
+            self.input if codec is None else _decode_preserving(codec, self.input),
+        )
+
+    @property
+    def decoded_candidate(self) -> Candidate[ResultT, ProvenanceT] | None:
+        candidate = self.candidate
+        if candidate is None:
+            return None
+        value = candidate["value"]
+        provenance = candidate.get("provenance")
+        if self._value_codecs.result is not None:
+            value = _decode_preserving(self._value_codecs.result, value)
+        if self._value_codecs.provenance is not None and "provenance" in candidate:
+            provenance = _decode_preserving(self._value_codecs.provenance, provenance)
+        fields = {
+            key: deepcopy(value)
+            for key, value in candidate.items()
+            if key not in ("value", "provenance")
+        }
+        decoded = Candidate[ResultT, ProvenanceT](
+            value=cast(ResultT, value), additional_properties=fields
+        )
+        if "provenance" in candidate:
+            decoded.provenance = cast(ProvenanceT, provenance)
+        return decoded
 
     async def aclose(self) -> None:
         await self.attachments.aclose()
@@ -323,16 +366,28 @@ class PendingInvocation:
         transport: Any,
         content: ContentContext | None = None,
         owner: Hooks | None = None,
+        value_codecs: ValueCodecs | None = None,
     ) -> None:
         self._owner = owner
         self.request = deepcopy(request)
         self.transport = transport
-        self.lifecycle = Lifecycle(validator, include_staged=True)
+        self.value_codecs = value_codecs or ValueCodecs()
+        self.value_codecs._validate_event(self.request["params"]["event"])
+        self.value_codecs._validate_candidate(
+            self.request["params"].get("state", {}).get("candidate")
+        )
+        self.lifecycle = Lifecycle(
+            validator,
+            include_staged=True,
+            validate_operation=self.value_codecs._validate_event,
+            validate_candidate=self.value_codecs._validate_candidate,
+        )
         self.lifecycle.send(self.request)
         self.content = content
         self._content_bound = content is not None
         self.prepared_content = None
         self.response = None
+        self.contextual_response = None
         self.result = None
         self._scope = None
 
@@ -392,6 +447,9 @@ class PendingInvocation:
         accepted = self.lifecycle.receive(self.request, response)
         if accepted:
             self.response = deepcopy(response)
+            self.contextual_response = deepcopy(
+                self.lifecycle.staged[self.request["id"]]
+            )
         return accepted
 
     def accept(self, *, fallback: bool = False) -> HookResult | None:
@@ -433,6 +491,8 @@ class PendingInvocation:
                 token, state = prepared
                 try:
                     state = await self.prepared_content.finalize(state)
+                    self.value_codecs._validate_event(state["event"])
+                    self.value_codecs._validate_candidate(state.get("candidate"))
                 except OperationCancelledError:
                     raise
                 except TimeoutError:
@@ -484,6 +544,10 @@ class PendingInvocation:
         )
         if self.prepared_content is not None and not fallback:
             self.result.attachments = self.prepared_content.contents(event)
+        self.result._value_codecs = self.value_codecs
+        self.result._contextual_response = (
+            None if fallback else self.contextual_response
+        )
         return self.result
 
     def cancel(self) -> bool:
@@ -795,6 +859,7 @@ class Hooks(BoundaryMixin):
         *,
         transport: Any = None,
         content: ContentContext | None = None,
+        value_codecs: ValueCodecs | None = None,
     ) -> PendingInvocation:
         """Begin a canonical request; use an explicit transport for manual acquisition."""
         if self._closed:
@@ -806,7 +871,12 @@ class Hooks(BoundaryMixin):
         self._check_occurrence(event, "intercept", request["params"]["capabilities"])
         self._lineage.accept(event)
         pending = PendingInvocation(
-            request, self.validator, transport, content, owner=self
+            request,
+            self.validator,
+            transport,
+            content,
+            owner=self,
+            value_codecs=value_codecs,
         )
         self._pending.add(pending)
         return pending
@@ -832,6 +902,7 @@ class Hooks(BoundaryMixin):
         transport: Any = None,
         backend_id: str | None = None,
         content: ContentContext | None = None,
+        value_codecs: ValueCodecs | None = None,
     ) -> HookResult | None:
         """Exchange and settle a canonical request through the same lifecycle as dispatch."""
         await self._ensure_ready()
@@ -841,7 +912,9 @@ class Hooks(BoundaryMixin):
                     raise ValueError("backend_id is required with multiple backends")
                 backend_id = next(iter(self._transports))
             transport = self._transports[backend_id]
-        pending = self.begin(request, transport=transport, content=content)
+        pending = self.begin(
+            request, transport=transport, content=content, value_codecs=value_codecs
+        )
         await pending.acquire()
         return (
             await pending.accept_content() if content is not None else pending.accept()
@@ -888,8 +961,15 @@ class Hooks(BoundaryMixin):
         sources: ContentSources | None = None,
         original_request: dict[str, Any] | None = None,
         uploads: dict[str, Any] | None = None,
-    ) -> HookResult:
+        input_codec: Codec[InputT] | None = None,
+        result_codec: Codec[ResultT] | None = None,
+        provenance_codec: Codec[ProvenanceT] | None = None,
+        event_codecs: Mapping[tuple[str, ...], Codec[Any]] | None = None,
+    ) -> HookResult[InputT, ResultT, ProvenanceT]:
         await self._ensure_ready()
+        value_codecs = ValueCodecs(
+            input_codec, result_codec, provenance_codec, event_codecs
+        )
         if event_name not in self.capabilities:
             raise ProtocolError("Event was not advertised")
         declaration = self.capabilities[event_name]
@@ -927,11 +1007,13 @@ class Hooks(BoundaryMixin):
         )
         if sources is not None:
             sources._remember(event)
+        value_codecs._validate_event(event)
         state = deepcopy(
             initial_state
             if initial_state is not None
             else {"permission": "none", "candidate": None}
         )
+        value_codecs._validate_candidate(state.get("candidate"))
         request = {
             "jsonrpc": "2.0",
             "id": event["id"],
@@ -952,8 +1034,13 @@ class Hooks(BoundaryMixin):
             },
         }
         if "intercept" in declaration["modes"]:
-            current = apply_response(
-                request, empty, self.validator, include_staged=True
+            current = _apply_response(
+                request,
+                empty,
+                self.validator,
+                include_staged=True,
+                validate_operation=value_codecs._validate_event,
+                validate_candidate=value_codecs._validate_candidate,
             )
         else:
             self.validator.validate(
@@ -973,7 +1060,7 @@ class Hooks(BoundaryMixin):
                 "messages": [],
             }
         self._lineage.accept(event)
-        result = HookResult(deepcopy(event), current)
+        result = HookResult(deepcopy(current.get("event", event)), current)
         observers = []
         halted = state.get("permission") == "deny" or state.get("flow") == "stop"
         preupload_failures = {}
@@ -1083,7 +1170,10 @@ class Hooks(BoundaryMixin):
                                 original_request=original_request,
                             )
                         accepted = await self.exchange(
-                            request, transport=transport, content=delivery_content
+                            request,
+                            transport=transport,
+                            content=delivery_content,
+                            value_codecs=value_codecs,
                         )
                     if accepted is None:
                         raise OperationCancelledError(
@@ -1133,30 +1223,22 @@ class Hooks(BoundaryMixin):
                     from .runtime import _modification_paths
 
                     paths = _modification_paths(previous)
-                    effects = (
-                        (accepted.accepted_response or {})
-                        .get("result", {})
-                        .get("effects", [])
-                    )
+                    effects = accepted._contextual_response.result.effects
                     written_paths = set()
                     for effect in effects:
-                        if effect["type"] != "modify":
+                        if effect.type != "modify":
                             continue
-                        path = paths.get(effect["target"])
+                        path = paths.get(effect.target)
                         if path is None:
                             continue
-                        value = deepcopy(effect["value"])
-                        if effect["operation"] == "merge":
+                        value = deepcopy(effect.value)
+                        if effect.operation == "merge":
                             before = at(result.event, path)
                             # merge_effective already includes admitted additions;
                             # replay against the original host target exactly once.
                             if path not in written_paths:
                                 before = at(previous, path)
-                            value = (
-                                before + value
-                                if isinstance(before, list)
-                                else {**before, **value}
-                            )
+                            value = _merge_effect_value(effect, before)
                         put(result.event, path, value)
                         written_paths.add(path)
                     for path in replaced_paths:
@@ -1169,11 +1251,11 @@ class Hooks(BoundaryMixin):
                         with anyio.CancelScope(shield=True):
                             for source in retired_sources:
                                 await source.aclose()
-                    if not json_equal(previous, result.event):
+                    if not _json_equal(previous, result.event):
                         # Invalidate inherited state when a projected write changes
                         # the host value, but preserve fresh effects admitted by
                         # this response for the modified operation.
-                        supplied = {effect["type"] for effect in effects}
+                        supplied = {effect.type for effect in effects}
                         if "return" not in supplied:
                             accepted.state["candidate"] = None
                             accepted.state.pop("result", None)
@@ -1186,6 +1268,7 @@ class Hooks(BoundaryMixin):
                             accepted.state.pop("result", None)
                     accepted.state["event"] = deepcopy(result.event)
                     result.accepted_responses.extend(accepted.accepted_responses)
+                    result._contextual_response = accepted._contextual_response
                     messages = result.state.get("messages", []) + accepted.state.get(
                         "messages", []
                     )
@@ -1264,6 +1347,7 @@ class Hooks(BoundaryMixin):
         # The legacy evaluator uses a synthetic execution flag for fixtures;
         # the public harness never executes the host operation.
         result.state.pop("executed", None)
+        result._value_codecs = value_codecs
         return result
 
     async def _notify(

@@ -2,7 +2,7 @@
 
 from copy import deepcopy
 import unittest
-from agenthooksprotocol.runtime import Validator, ProtocolError, apply_response
+from agenthooksprotocol.runtime import Validator, ProtocolError, _apply_response
 from agenthooksprotocol.lifecycle import Lifecycle
 from agenthooksprotocol.lineage import TaskLineage
 from test_interop import request, response
@@ -52,7 +52,7 @@ class IntegrationTests(unittest.TestCase):
                 ]
                 rep = response(effects)
                 rep["id"] = req["id"]
-                settled = apply_response(req, rep, self.validator)
+                settled = _apply_response(req, rep, self.validator)
                 self.assertEqual(settled["event"][target], replacement + appended)
                 self.assertEqual(req["params"]["event"][target], original)
                 self.assertNotIn("content_references", settled)
@@ -61,7 +61,7 @@ class IntegrationTests(unittest.TestCase):
                     unselected["params"]["event"][target][0]["selection"] = selection
                     unselected["params"]["event"][target][0].pop("text")
                     with self.assertRaisesRegex(ProtocolError, "selected inline text"):
-                        apply_response(unselected, rep, self.validator)
+                        _apply_response(unselected, rep, self.validator)
 
     def test_observations_are_effective_payload_only(self):
         for effects, expected in [
@@ -134,21 +134,21 @@ class IntegrationTests(unittest.TestCase):
             "value": {"task": 2},
         }
         self.assertFalse(
-            apply_response(req, response([modify]), self.validator)["executed"]
+            _apply_response(req, response([modify]), self.validator)["executed"]
         )
         self.assertTrue(
-            apply_response(req, response([modify, {"type": "allow"}]), self.validator)[
+            _apply_response(req, response([modify, {"type": "allow"}]), self.validator)[
                 "executed"
             ]
         )
         req["params"]["state"] = {"permission": "ask", "candidate": None}
         self.assertFalse(
-            apply_response(req, response([modify, {"type": "allow"}]), self.validator)[
+            _apply_response(req, response([modify, {"type": "allow"}]), self.validator)[
                 "executed"
             ]
         )
         self.assertFalse(
-            apply_response(request(), response([]), self.validator)["executed"]
+            _apply_response(request(), response([]), self.validator)["executed"]
         )
 
     def task(self, ident="task-event", parent=None):
@@ -175,7 +175,7 @@ class IntegrationTests(unittest.TestCase):
         req["params"]["capabilities"] = {"effects": ["deny", "message"]}
         reply = response([{"type": "message", "text": "task policy"}])
         reply["id"] = req["id"]
-        actual = apply_response(req, reply, self.validator)
+        actual = _apply_response(req, reply, self.validator)
         self.assertEqual(actual["event"]["task"]["id"], "task-1")
         self.assertEqual(actual["event"]["parentEventId"], "origin")
         malformed = deepcopy(req)
@@ -191,7 +191,7 @@ class IntegrationTests(unittest.TestCase):
             }
         ]
         with self.assertRaises(ProtocolError):
-            apply_response(req, reply, self.validator)
+            _apply_response(req, reply, self.validator)
 
     def test_task_settlement_and_atomic_effects(self):
         req = request()
@@ -240,7 +240,7 @@ class IntegrationTests(unittest.TestCase):
             reply["id"] = req["id"]
             original = deepcopy(req)
             with self.assertRaises(ProtocolError):
-                apply_response(req, reply, self.validator)
+                _apply_response(req, reply, self.validator)
             self.assertEqual(req, original)
         req["params"]["capabilities"]["effects"].append("allow")
         with self.assertRaises(ProtocolError):
@@ -270,21 +270,21 @@ class IntegrationTests(unittest.TestCase):
         }
         reply = response([rewrite])
         reply["id"] = req["id"]
-        result = apply_response(req, reply, self.validator)
+        result = _apply_response(req, reply, self.validator)
         self.assertEqual(result["event"]["workspace"]["change"], {"cwd": "/new"})
         self.assertEqual(result["event"]["workspace"]["prior"], {"cwd": "/initial"})
         reply["result"]["effects"].append({"type": "deny", "reason": "managed policy"})
-        self.assertEqual(apply_response(req, reply, self.validator)["decision"], "deny")
+        self.assertEqual(_apply_response(req, reply, self.validator)["decision"], "deny")
         reply["result"]["effects"][0]["value"] = {"cwd": 42}
         with self.assertRaises(ProtocolError):
-            apply_response(req, reply, self.validator)
+            _apply_response(req, reply, self.validator)
         req["params"]["capabilities"]["modify"]["workspace"] = {
             "replace": False,
             "merge": True,
         }
         reply["result"]["effects"][0]["value"] = {"cwd": "/new"}
         with self.assertRaises(ProtocolError):
-            apply_response(req, reply, self.validator)
+            _apply_response(req, reply, self.validator)
 
     def test_deny_plus_stop_does_not_require_observation_arbitration(self):
         req = request()
@@ -350,7 +350,7 @@ class IntegrationTests(unittest.TestCase):
                 )
                 before = deepcopy(reply)
                 with self.assertRaises(ProtocolError):
-                    apply_response(
+                    _apply_response(
                         req,
                         reply,
                         self.validator,
@@ -364,19 +364,19 @@ class IntegrationTests(unittest.TestCase):
     def test_unknown_capability_and_control_fields_have_no_effect(self):
         req = request()
         req["params"]["state"] = {"permission": "none", "candidate": None}
-        baseline = apply_response(req, response([]), self.validator)
+        baseline = _apply_response(req, response([]), self.validator)
         req["params"]["futureField"] = {"allow": True}
         req["params"]["capabilities"]["futureField"] = {"allow": True}
         req["params"]["capabilities"]["modify"]["input"]["futureField"] = True
         req["params"]["state"]["futureField"] = {"permission": "allow"}
-        actual = apply_response(req, response([]), self.validator)
+        actual = _apply_response(req, response([]), self.validator)
         self.assertEqual(actual, baseline)
         req["params"]["state"]["permission"] = "future-permission"
         with self.assertRaises(ProtocolError):
-            apply_response(req, response([]), self.validator)
+            _apply_response(req, response([]), self.validator)
 
     def test_elicitation_capability_extensions_do_not_grant_modes(self):
-        from agenthooksprotocol.elicitation import validate_mode
+        from agenthooksprotocol._elicitation import validate_mode
 
         self.assertEqual(
             validate_mode("form", {"form": {}, "futureField": True}), {"form": {}}

@@ -3,7 +3,7 @@ from copy import deepcopy
 from threading import Event
 import unittest
 from agenthooksprotocol.lifecycle import Lifecycle
-from agenthooksprotocol.runtime import Validator, ProtocolError, apply_response
+from agenthooksprotocol.runtime import Validator, _apply_response
 from test_interop import request, response
 
 
@@ -121,7 +121,7 @@ class SettlementSafetyTests(unittest.TestCase):
                     calls.append(event)
                     return False
 
-                actual = apply_response(
+                actual = _apply_response(
                     request(),
                     response(effects),
                     self.validator,
@@ -134,7 +134,7 @@ class SettlementSafetyTests(unittest.TestCase):
 
     def test_pending_authorization_never_exposes_candidate(self):
         for authorize in (None, lambda event: None):
-            actual = apply_response(
+            actual = _apply_response(
                 request(),
                 response([{"type": "return", "value": "secret"}]),
                 self.validator,
@@ -156,7 +156,7 @@ class SettlementSafetyTests(unittest.TestCase):
             return False
 
         effects = [{"type": "return", "value": "authorized"}]
-        actual = apply_response(
+        actual = _apply_response(
             request(),
             response(effects),
             self.validator,
@@ -167,7 +167,7 @@ class SettlementSafetyTests(unittest.TestCase):
         self.assertEqual(actual["decision"], "deny")
         self.assertNotIn("result", actual)
         calls.clear()
-        actual = apply_response(
+        actual = _apply_response(
             request(),
             response([{"type": "allow"}, *effects]),
             self.validator,
@@ -177,7 +177,7 @@ class SettlementSafetyTests(unittest.TestCase):
         self.assertEqual(calls, ["access"])
         self.assertEqual(actual["result"], "authorized")
         calls.clear()
-        actual = apply_response(
+        actual = _apply_response(
             request(),
             response([{"type": "ask"}, {"type": "allow"}, *effects]),
             self.validator,
@@ -195,7 +195,21 @@ class SettlementSafetyTests(unittest.TestCase):
             "target": "context",
             "operation": "append",
             "deliverAt": "next_turn",
-            "value": "retained",
+            "value": [
+                {
+                    "id": "retained",
+                    "role": "system",
+                    "parts": [
+                        {
+                            "id": "retained:part",
+                            "kind": "text",
+                            "mediaType": "text/plain",
+                            "selection": "body",
+                            "text": "retained",
+                        }
+                    ],
+                }
+            ],
         }
         req["params"]["state"] = {
             "permission": "allow",
@@ -214,7 +228,7 @@ class SettlementSafetyTests(unittest.TestCase):
         def must_not_run(event):
             self.fail("Stopped operation attempted authorization")
 
-        actual = apply_response(
+        actual = _apply_response(
             req, response([]), self.validator, native_authorize=must_not_run
         )
         self.assertEqual(actual["flow"], "stop")

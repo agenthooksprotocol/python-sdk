@@ -1,7 +1,7 @@
 from copy import deepcopy
 import unittest
 from agenthooksprotocol import generated
-from agenthooksprotocol.runtime import Validator, ProtocolError, apply_response
+from agenthooksprotocol.runtime import Validator, ProtocolError, _apply_response
 from test_interop import request, response
 
 
@@ -64,7 +64,7 @@ class CorrectedSchemaTests(unittest.TestCase):
                 )
                 before = deepcopy((req, reply))
                 with self.assertRaises(ProtocolError):
-                    apply_response(req, reply, self.validator)
+                    _apply_response(req, reply, self.validator)
                 self.assertEqual((req, reply), before)
 
     def model_request(self):
@@ -114,7 +114,7 @@ class CorrectedSchemaTests(unittest.TestCase):
                 {"type": "flow", "operation": "stop", "reason": "budget"},
             ]
         )
-        actual = apply_response(req, reply, self.validator)
+        actual = _apply_response(req, reply, self.validator)
         self.assertEqual(actual["event"]["items"], [item])
         self.assertEqual(actual["event"]["attempt"], req["params"]["event"]["attempt"])
         self.assertEqual(actual["flow"], "stop")
@@ -127,7 +127,7 @@ class CorrectedSchemaTests(unittest.TestCase):
         self.validator.validate("intercept-request", supplied)
         del reply["result"]["effects"][0]["value"][0]["role"]
         with self.assertRaises(ProtocolError):
-            apply_response(req, reply, self.validator)
+            _apply_response(req, reply, self.validator)
 
     def test_synthesized_markers_are_preserved_and_typed(self):
         req = request()

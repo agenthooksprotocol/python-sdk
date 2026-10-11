@@ -13,8 +13,8 @@ from typing import Any, cast
 
 import anyio
 import httpx
-from agenthooksprotocol import Hooks, capability, event, tool
-from agenthooksprotocol.generated import Effect, InterceptRequest
+from agenthooksprotocol import HookResult, Hooks, capability, event, tool
+from agenthooksprotocol.wire import JsonValue, Effect, InterceptRequest
 from agenthooksprotocol.server import asgi, hooks
 from agenthooksprotocol.transports.http import HTTPTransport
 from typed_tool import ShellCodec, allowed_by_host
@@ -52,7 +52,7 @@ async def run_case(case: dict[str, Any]) -> dict[str, Any]:
             },
             transport=HTTPTransport("http://example.test/hooks", client=client),
         ) as harness:
-            result = await harness.tool_before(
+            result: HookResult[JsonValue, JsonValue, JsonValue] = await harness.tool_before(
                 event.ToolBeforeInput(
                     call_id="call-1",
                     path=tool.Path.NATIVE,

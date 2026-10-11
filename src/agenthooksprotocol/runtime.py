@@ -4,10 +4,15 @@ from copy import deepcopy
 import json
 import os
 from pathlib import Path
+from typing import Any
 from jsonschema import Draft202012Validator, FormatChecker
 from referencing import Registry, Resource
-from . import generated
+from . import generated, _models as models
+from .response import response_for_request
 from .diagnostics import Code as DiagnosticCode
+
+
+__all__ = ["ProtocolError", "OperationCancelledError", "BackendRPCError", "Validator"]
 
 
 class ProtocolError(ValueError):
@@ -28,7 +33,7 @@ class BackendRPCError(ProtocolError):
         super().__init__("Backend returned a JSON-RPC error")
 
 
-def validate_intercept_response(validator, request, response):
+def _validate_intercept_response(validator, request, response):
     if isinstance(response, dict) and "error" in response:
         validator.validate("json-rpc-message", response)
         if (
@@ -39,10 +44,14 @@ def validate_intercept_response(validator, request, response):
             raise ProtocolError("Invalid JSON-RPC error envelope")
         raise BackendRPCError(response["error"]["code"])
     validator.validate("intercept-response", response)
+    parsed = response_for_request(request["params"]["event"]["type"], response)
+    if not parsed["ok"]:
+        raise ProtocolError("Contextual response contract rejected the response")
+    return parsed["value"]
 
 
 class Validator:
-    def __init__(self, directory=None):
+    def __init__(self, directory: str | Path | None = None) -> None:
         directory = directory or os.environ.get("AHP_SCHEMA_DIR")
         if directory is None:
             bundle = json.loads(Path(__file__).with_name("schemas.json").read_text())
@@ -64,7 +73,7 @@ class Validator:
             for n, s in schemas.items()
         }
 
-    def validate(self, kind, value):
+    def validate(self, kind: str, value: Any) -> Any:
         if kind == "form-answer":
             # MCP requestedSchema is validated separately; never resolve remote
             # schemas or populate defaults while validating submitted content.
@@ -82,14 +91,14 @@ class Validator:
                 raise ProtocolError("Canonical schema rejected " + kind)
             return value
         if kind in ("intercept-request", "observe-notification"):
-            from .lifecycle import content_items
+            from .lifecycle import _content_items
 
             event = value.get("params", {}).get("event", {})
             if isinstance(event, dict) and any(
                 isinstance(item, dict)
                 and isinstance(item.get("body"), dict)
                 and item["body"].get("ref") == "ahp:owned:pending"
-                for item in content_items(event)
+                for item in _content_items(event)
             ):
                 raise ProtocolError(
                     "Pending local attachment references cannot enter wire messages"
@@ -110,17 +119,17 @@ class Validator:
         return value
 
 
-def json_equal(left, right):
+def _json_equal(left: Any, right: Any) -> bool:
     """JSON equality: booleans are not numbers; object member order is irrelevant."""
     if isinstance(left, bool) or isinstance(right, bool):
         return type(left) is type(right) and left == right
     if isinstance(left, dict) and isinstance(right, dict):
         return left.keys() == right.keys() and all(
-            json_equal(left[k], right[k]) for k in left
+            _json_equal(left[k], right[k]) for k in left
         )
     if isinstance(left, list) and isinstance(right, list):
         return len(left) == len(right) and all(
-            json_equal(a, b) for a, b in zip(left, right)
+            _json_equal(a, b) for a, b in zip(left, right)
         )
     return left == right
 
@@ -144,7 +153,37 @@ def _modification_paths(event):
     return targets
 
 
-def apply_response(
+def _merge_effect_value(effect, previous):
+    """Merge only the target type selected by the generated correlated effect."""
+    if isinstance(
+        effect,
+        (
+            models.ContextCompactBeforeModifyEffect,
+            models.ContextCompactAfterModifyEffect,
+            models.TurnStartModifyEffect,
+            models.ModelRequestBeforeModifyEffect,
+            models.ModelResponseAfterModifyEffect,
+            models.ToolAfterModifyEffect,
+            models.TurnFinishBeforeModifyEffect,
+            models.UserMessageInboundModifyEffect,
+            models.UserMessageOutboundModifyEffect,
+        ),
+    ):
+        return previous + effect.value
+    elif isinstance(effect, models.WorkspaceChangeBeforeModifyEffect):
+        return models.WorkspaceChange.from_dict({**previous, **effect.value})
+    elif isinstance(
+        effect,
+        (models.ToolBeforeModifyEffect, models.ToolPermissionRequestModifyEffect),
+    ):
+        # Caller-defined object T: temporary shallow JSON, validated
+        # against the declared codec before atomic publication.
+        return {**previous, **effect.value}
+    else:
+        raise ProtocolError("Unsupported typed merge target")
+
+
+def _apply_response(
     request,
     response,
     validator,
@@ -152,26 +191,32 @@ def apply_response(
     native_authorize=None,
     native_approve=None,
     validate_operation=None,
+    validate_candidate=None,
     include_staged=False,
     content=None,
 ):
     """Stage a complete response; neither argument is mutated on failure."""
     validator.validate("intercept-request", request)
-    validate_intercept_response(validator, request, response)
-    params = request["params"]
+    response = _validate_intercept_response(validator, request, response)
+    request = models.InterceptRequest.from_dict(request)
+    params = request.params
     if response["id"] != request["id"] or request["id"] != params["event"]["id"]:
         raise ProtocolError("Correlation mismatch")
     if response["result"]["protocolVersion"] != params["protocolVersion"]:
         raise ProtocolError("Protocol version mismatch")
     effects, caps, event = (
-        response["result"]["effects"],
-        params["capabilities"],
-        params["event"],
+        response.result.effects,
+        params.capabilities,
+        params.event,
     )
+    if effects is None:
+        raise ProtocolError("Generated response lacks the neutral effects default")
+    if any(not isinstance(effect, models._WireModel) for effect in effects):
+        raise ProtocolError("Unknown effects do not convey authority")
     if (
         content is None
         and event["type"] == "user.elicitation.request"
-        and any(effect["type"] in ("return", "deny", "modify") for effect in effects)
+        and any(effect.type in ("return", "deny", "modify") for effect in effects)
     ):
         raise ProtocolError(
             "Elicitation effects require an authenticated request context"
@@ -179,40 +224,54 @@ def apply_response(
     if (
         content is None
         and event["type"] == "user.elicitation.result"
-        and any(effect["type"] == "modify" for effect in effects)
+        and any(effect.type == "modify" for effect in effects)
     ):
         raise ProtocolError(
             "Elicitation result edits require the original request context"
         )
-    if event["type"].startswith("context.compact."):
-        for effect in effects:
-            target = effect.get("target")
-            if effect["type"] == "return" or target in ("instructions", "summary"):
-                parts = event.get(
-                    target if target in ("instructions", "summary") else "instructions"
-                )
-                if not isinstance(parts, list) or any(
-                    part.get("selection") != "body" or "text" not in part
-                    for part in parts
-                ):
-                    raise ProtocolError(
-                        "Compaction effects require selected inline text"
-                    )
-                if not isinstance(effect["value"], list):
-                    raise ProtocolError(
-                        "Compaction values require a canonical text-part list"
-                    )
-                for part in effect["value"]:
-                    validator.validate("content-item", part)
-                    if part.get("kind") != "text":
-                        raise ProtocolError("Compaction values require text parts")
-    state = deepcopy(params.get("state", {}))
+    for effect in effects:
+        if isinstance(
+            effect,
+            (
+                models.ReturnTextEffect,
+                models.ContextCompactBeforeModifyEffect,
+                models.ContextCompactAfterModifyEffect,
+            ),
+        ):
+            target = (
+                "instructions"
+                if isinstance(effect, models.ReturnTextEffect)
+                else effect.target
+            )
+            selected = getattr(event, target, None)
+            if selected is None or any(
+                not isinstance(part, models.TextBodyPart) for part in selected
+            ):
+                raise ProtocolError("Compaction effects require selected inline text")
+            if any(not isinstance(part, models.TextBodyPart) for part in effect.value):
+                raise ProtocolError("Compaction values require inline text parts")
+    state_model = {
+        "tool.before": models.ToolState,
+        "tool.permission.request": models.ToolState,
+        "model.request.before": models.MessagesState,
+        "context.compact.before": models.TextState,
+        "user.elicitation.request": models.ElicitResultState,
+    }.get(event.type, models.InterceptRequestParamsState)
+    state = (
+        state_model.from_dict(params.state)
+        if params.state is not None
+        else state_model(permission="none", candidate=None)
+    )
     original = deepcopy(event.get("tool", {}).get("input", event.get("input", {})))
     effective = deepcopy(original)
     effective_event = deepcopy(event)
     targets = _modification_paths(event)
-    permission = state.get("permission", "none")
-    denied, candidate = permission == "deny", state.get("candidate")
+    permission = state.permission
+    denied, candidate = permission == "deny", state.candidate
+    if validate_operation is not None:
+        validate_operation(effective_event)
+    if validate_candidate is not None:
+        validate_candidate(candidate)
     messages = []
     injections = deepcopy(state.get("injections", []))
     flow = state.get("flow")
@@ -226,7 +285,7 @@ def apply_response(
         flow_caps.get("maxContinuations", 0) - flow_caps.get("continuationCount", 0),
     )
     for effect in effects:
-        kind = effect["type"]
+        kind = effect.type
         if (
             kind
             not in {
@@ -239,74 +298,82 @@ def apply_response(
                 "flow",
                 "inject",
             }
-            or kind not in caps["effects"]
+            or kind not in caps.effects
         ):
             raise ProtocolError("Unsupported effect")
         if kind == "modify":
-            operation = effect["operation"]
-            support = caps.get("modify", {}).get(effect["target"], {})
+            operation = effect.operation
+            support = caps.get("modify", {}).get(effect.target, {})
             if (
-                effect["target"] not in targets
-                and (content is None or effect["target"] not in content.targets)
+                effect.target not in targets
+                and (content is None or effect.target not in content.targets)
                 or operation not in ("replace", "merge")
                 or support.get(operation) is not True
             ):
                 raise ProtocolError("Unsupported modification")
         if kind == "flow":
             support = caps.get("flow", {})
-            if effect["operation"] not in ("stop", "continue") or effect[
+            if effect.operation not in ("stop", "continue") or effect[
                 "operation"
             ] not in support.get("operations", []):
                 raise ProtocolError("Unsupported flow")
-            if effect["operation"] == "continue" and remaining <= 0:
+            if effect.operation == "continue" and remaining <= 0:
                 raise ProtocolError("Continuation budget exhausted")
         if kind == "inject":
             support = caps.get("inject", {}).get("context", {})
             if (
-                effect.get("target") != "context"
+                getattr(effect, "target", None) != "context"
                 or effect.get("operation") != "append"
                 or support.get("append") is not True
                 or effect.get("deliverAt") not in support.get("deliverAt", [])
             ):
                 raise ProtocolError("Unsupported injection")
-    bound = content.stage(request, effects) if content is not None else None
+
+    def validate_content_result(value):
+        if validate_candidate is not None:
+            validate_candidate(models.ElicitResultCandidate(value=value))
+
+    bound = (
+        content.stage(request, effects, validate_result=validate_content_result)
+        if content is not None
+        else None
+    )
     for effect in effects:
         if (
-            effect["type"] != "modify"
+            effect.type != "modify"
             or content is not None
-            and effect.get("target") in content.targets
+            and getattr(effect, "target", None) in content.targets
         ):
             continue
-        value = deepcopy(effect["value"])
-        path = targets[effect["target"]]
+        value = deepcopy(effect.value)
+        path = targets[effect.target]
         parent = effective_event
         for key in path[:-1]:
             parent = parent[key]
         previous = parent.get(path[-1])
-        if effect["operation"] == "merge":
-            if isinstance(value, list) and isinstance(previous, list):
-                value = previous + value
-            elif isinstance(value, dict) and isinstance(previous, dict):
-                value = {**previous, **value}
-            else:
-                raise ProtocolError("Merge requires matching list or object targets")
+        if effect.operation == "merge":
+            value = _merge_effect_value(effect, previous)
         parent[path[-1]] = value
         intermediate = deepcopy(request)
         intermediate["params"]["event"] = effective_event
         validator.validate("intercept-request", intermediate)
         if validate_operation is not None:
             validate_operation(effective_event)
-        if effect["target"] == "input":
+        if effect.target == "input":
             effective = deepcopy(value)
     staged_request = deepcopy(request)
     staged_request["params"]["event"] = effective_event
     validator.validate("intercept-request", staged_request)
-    if not json_equal(effective_event, event) or bound is not None and bound["changed"]:
+    if (
+        not _json_equal(effective_event, event)
+        or bound is not None
+        and bound["changed"]
+    ):
         candidate = None
         if permission == "allow":
             permission = "none"
     for effect in effects:
-        kind = effect["type"]
+        kind = effect.type
         if kind == "deny":
             denied = True
         elif kind == "ask":
@@ -314,18 +381,26 @@ def apply_response(
         elif kind == "allow" and permission != "ask":
             permission = "allow"
         elif kind == "return":
-            candidate = {"value": deepcopy(effect["value"])}
+            candidate_model = {
+                models.ReturnToolEffect: models.ToolCandidate,
+                models.ReturnMessagesEffect: models.MessagesCandidate,
+                models.ReturnTextEffect: models.TextCandidate,
+                models.ReturnElicitResultEffect: models.ElicitResultCandidate,
+            }[type(effect)]
+            candidate = candidate_model(value=deepcopy(effect.value))
+            if validate_candidate is not None:
+                validate_candidate(candidate)
         elif kind == "message":
-            messages.append(effect["text"])
+            messages.append(effect.text)
         elif kind == "inject":
             injections.append(deepcopy(effect))
         elif kind == "flow":
-            if effect["operation"] == "continue":
+            if effect.operation == "continue":
                 new_continuation = True
                 if "instruction" in effect:
-                    continuation_instructions.append(effect["instruction"])
+                    continuation_instructions.append(effect.instruction)
             if flow != "stop":
-                flow = effect["operation"]
+                flow = effect.operation
 
     # Host access policy is independent of hook prompt suppression. It gates
     # execution AND supplied-result delivery, and allow cannot bypass it.
@@ -381,11 +456,19 @@ def apply_response(
     if injections:
         result["injections"] = injections
     if (
-        any(e["type"] == "modify" and e["target"] != "input" for e in effects)
+        any(e.type == "modify" and e.target != "input" for e in effects)
         or event["type"] == "task.change.before"
     ):
         result["event"] = effective_event
     if bound is not None:
+        if (
+            event.type == "user.elicitation.result"
+            and bound["changed"]
+            and validate_candidate is not None
+        ):
+            validate_candidate(
+                models.ElicitResultCandidate(value=bound["values"]["result"])
+            )
         result["content"] = bound["values"]
         result["_content_updates"] = bound["updates"]
         result["event"] = effective_event

@@ -16,7 +16,7 @@ import sys
 import anyio
 from typing import Any, TYPE_CHECKING
 
-from .runtime import OperationCancelledError, ProtocolError, json_equal
+from .runtime import OperationCancelledError, ProtocolError, _json_equal
 
 if TYPE_CHECKING:
     from .attachment import Attachment
@@ -204,41 +204,61 @@ def project_content(
 
 
 def merge_effective(original: Any, view: Any, effective: Any) -> Any:
-    """Apply an admitted view delta without turning projection into a host edit."""
-    if json_equal(view, effective):
-        return deepcopy(original)
-    if (
-        isinstance(original, dict)
-        and isinstance(view, dict)
-        and isinstance(effective, dict)
-    ):
-        merged = deepcopy(original)
-        for key in view.keys() - effective.keys():
-            merged.pop(key, None)
-        for key, value in effective.items():
-            merged[key] = (
-                merge_effective(original[key], view[key], value)
-                if key in original and key in view
-                else deepcopy(value)
+    """Restore projection-only differences in schema-owned content slots.
+
+    Application values and opaque extra bags are whole values: never infer
+    message/part identity from an arbitrary list containing an id field.
+    """
+    parts, messages = normalized_content_slots().get(effective["type"], ((), ()))
+    owned_paths = parts + messages
+
+    def merge(before, projected, admitted, path=()):
+        if _json_equal(projected, admitted):
+            return deepcopy(before)
+        owned = any(
+            len(path) <= len(slot)
+            and all(
+                expected == "*" or actual == expected
+                for actual, expected in zip(path, slot)
             )
-        return merged
-    if (
-        isinstance(original, list)
-        and isinstance(view, list)
-        and isinstance(effective, list)
-    ):
-        before = {
-            item.get("id"): (original[index], item)
-            for index, item in enumerate(view)
-            if index < len(original) and isinstance(item, dict) and "id" in item
-        }
-        return [
-            merge_effective(*before[item["id"]], item)
-            if isinstance(item, dict) and item.get("id") in before
-            else deepcopy(item)
-            for item in effective
-        ]
-    return deepcopy(effective)
+            for slot in owned_paths
+        )
+        if not owned:
+            return deepcopy(admitted)
+        if (
+            isinstance(before, dict)
+            and isinstance(projected, dict)
+            and isinstance(admitted, dict)
+        ):
+            merged = deepcopy(before)
+            for key in projected.keys() - admitted.keys():
+                merged.pop(key, None)
+            for key, value in admitted.items():
+                merged[key] = (
+                    merge(before[key], projected[key], value, path + (key,))
+                    if key in before and key in projected
+                    else deepcopy(value)
+                )
+            return merged
+        if (
+            isinstance(before, list)
+            and isinstance(projected, list)
+            and isinstance(admitted, list)
+        ):
+            identities = {
+                item["id"]: (before[index], item)
+                for index, item in enumerate(projected)
+                if index < len(before)
+            }
+            return [
+                merge(*identities[item["id"]], item, path + (index,))
+                if item["id"] in identities
+                else deepcopy(item)
+                for index, item in enumerate(admitted)
+            ]
+        return deepcopy(admitted)
+
+    return merge(original, view, effective)
 
 
 class ContentContext:
@@ -302,7 +322,7 @@ class PreparedContent:
         )
 
     async def load(self) -> None:
-        from .elicitation import read_selected, validate_correlation
+        from ._elicitation import read_selected, validate_correlation
 
         event = self.request["params"]["event"]
         if not event["type"].startswith("user.elicitation."):
@@ -332,9 +352,12 @@ class PreparedContent:
         return AttachmentContents({})
 
     def stage(
-        self, request: dict[str, Any], effects: list[dict[str, Any]]
+        self,
+        request: dict[str, Any],
+        effects: list[dict[str, Any]],
+        validate_result=None,
     ) -> dict[str, Any]:
-        from .elicitation import apply_effects
+        from ._elicitation import apply_effects
 
         event = request["params"]["event"]
         body_effects = [
@@ -357,6 +380,7 @@ class PreparedContent:
             self.validator.validate,
             self.context.principal,
             body_effects,
+            validate_result=validate_result,
         )
         updates = (
             [{"target": "content", "value": binding["result"]}]
@@ -372,14 +396,13 @@ class PreparedContent:
     async def finalize(self, state: dict[str, Any]) -> dict[str, Any]:
         state = deepcopy(state)
         for update in state.pop("_content_updates", []):
-            item = state["event"]["elicitation"]["result"]
-            item["text"] = json.dumps(
-                update["value"],
-                allow_nan=False,
-                ensure_ascii=False,
-                separators=(",", ":"),
-            )
-            state["event"]["elicitation"]["action"] = update["value"]["action"]
+            from . import _models, generated
+
+            item = state["event"].elicitation.result
+            if not isinstance(item, _models.TextBodyPart):
+                raise ProtocolError("MCP result requires selected inline text")
+            item["text"] = generated._encode_json(update["value"])
+            state["event"].elicitation["action"] = update["value"].action
         check = deepcopy(self.request)
         check["params"]["event"] = state["event"]
         self.validator.validate("intercept-request", check)

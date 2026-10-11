@@ -1,7 +1,7 @@
 # Framework-neutral Python server
 
 ```python
-from agenthooksprotocol.generated import InterceptRequest, ObserveNotification
+from agenthooksprotocol.wire import InterceptRequest, ObserveNotification
 from agenthooksprotocol.server import hooks, asgi, stdio
 
 
@@ -21,7 +21,7 @@ app = asgi.App(handler)  # Mount with any ASGI server; no Starlette dependency.
 ```
 
 Callbacks receive canonical generated request/notification dictionaries. Effects
-are canonical `generated.Effect` dictionaries. The SDK validates request and
+are canonical `wire.Effect` dictionaries. The SDK validates request and
 response schemas and intercept/event correlation. The harness remains responsible
 for effect capability gating, authorization, native approval, atomic application,
 and runtime settlement; dispatch does not execute effects.
@@ -29,8 +29,7 @@ and runtime settlement; dispatch does not execute effects.
 `hooks.Engine(handler, validator=None, harness_manifest=None).handle(bytes)` is
 the common dispatcher. The optional static manifest describes a **harness**, not
 backend discovery. Only configuring this manifest enables `hooks/capabilities`.
-`Handler` has no capabilities callback. A direct callable handler caches its
-engine; use an explicit Engine when supplying a validator or static manifest.
+`Handler` has no capabilities callback. Use an explicit Engine when supplying a validator or static manifest.
 
 JSON-RPC error responses retain request IDs when valid. Valid notification
 envelopes never produce a response, including malformed params, unknown methods,

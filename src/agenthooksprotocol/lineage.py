@@ -1,7 +1,7 @@
 """Source-scoped lineage validation independent of subscription projection."""
 
 from threading import RLock
-from .runtime import ProtocolError, json_equal
+from .runtime import ProtocolError, _json_equal
 
 
 class TaskLineage:
@@ -32,7 +32,7 @@ class TaskLineage:
             )
             if payload.get("operation") != "remove" and "prior" in payload:
                 if all(
-                    k in payload["prior"] and json_equal(v, payload["prior"][k])
+                    k in payload["prior"] and _json_equal(v, payload["prior"][k])
                     for k, v in payload["change"].items()
                 ):
                     raise ProtocolError("After event must report an actual change")

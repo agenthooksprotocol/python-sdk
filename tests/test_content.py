@@ -190,7 +190,10 @@ class ContentTests(unittest.TestCase):
             "Content-Length": "1",
             "AHP-Content-SHA256": hashlib.sha256(b"x").hexdigest(),
         }
-        grant = lambda *_: (201, "scope")
+
+        def grant(*_):
+            return (201, "scope")
+
         self.assertEqual(receive(store, headers, b"x", grant)[0], 201)
         for changes in [
             {"Content-Length": "2"},

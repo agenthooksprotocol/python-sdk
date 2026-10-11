@@ -15,8 +15,8 @@ from threading import Thread
 from typing import Any
 
 import anyio
-from agenthooksprotocol import Hooks, capability, effect, event, tool
-from agenthooksprotocol.generated import InterceptRequest
+from agenthooksprotocol import HookResult, Hooks, capability, effect, event, tool
+from agenthooksprotocol.wire import JsonValue, InterceptRequest
 from agenthooksprotocol.server import attachments, hooks
 from agenthooksprotocol.transports.http import HTTPTransport
 from upload import Store, authorize
@@ -96,7 +96,7 @@ async def main() -> None:
                 ),
             },
         ) as harness:
-            result = await harness.tool_before(
+            result: HookResult[JsonValue, JsonValue, JsonValue] = await harness.tool_before(
                 event.ToolBeforeInput(
                     call_id="call-1",
                     path=tool.Path.NATIVE,
@@ -117,7 +117,7 @@ async def main() -> None:
             )
             assert (
                 descriptor is not None
-                and store.blobs[("upload-principal", descriptor["ref"])] == b"reviewed"
+                and store.blobs[("upload-principal", descriptor.ref)] == b"reviewed"
             )
         finally:
             await uploader.aclose()

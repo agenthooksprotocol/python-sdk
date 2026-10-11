@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
-from typing import Any, AsyncIterable, TYPE_CHECKING
+from typing import Any, AsyncIterable
 
-if TYPE_CHECKING:
-    from ..generated import ContentUploadReceipt
-from ..runtime import ProtocolError, Validator, validate_intercept_response
+from .._models import ContentUploadReceipt as _ContentUploadReceipt
+
+__all__ = ["HTTPTransport"]
+from ..runtime import ProtocolError, Validator, _validate_intercept_response
 
 
 class HTTPTransport:
@@ -49,12 +50,12 @@ class HTTPTransport:
             and isinstance(result, dict)
             and "error" in result
         ):
-            validate_intercept_response(self._validator, message, result)
+            _validate_intercept_response(self._validator, message, result)
         response.raise_for_status()
         if not isinstance(result, dict) or result.get("id") != message["id"]:
             raise ProtocolError("HTTP response correlation mismatch")
         if message.get("method") == "hooks/intercept":
-            validate_intercept_response(self._validator, message, result)
+            _validate_intercept_response(self._validator, message, result)
         return result
 
     async def notify(self, message: dict[str, Any]) -> None:
@@ -80,7 +81,7 @@ class HTTPTransport:
         selection: str = "body",
         size: int | None = None,
         sha256: str | None = None,
-    ) -> ContentUploadReceipt | None:
+    ) -> _ContentUploadReceipt | None:
         """Upload bytes or an async byte stream; streams require size and sha256.
 
         Metadata/omit never read the body. Receiver credentials are explicit and
@@ -144,6 +145,7 @@ class HTTPTransport:
             raise ProtocolError("Content upload requires a 201 receipt response")
         descriptor = json.loads(response.content)
         validator.validate("content-upload-receipt", descriptor)
-        if descriptor["size"] != count or descriptor["sha256"] != actual.hexdigest():
+        descriptor = _ContentUploadReceipt.from_dict(descriptor)
+        if descriptor.size != count or descriptor.sha256 != actual.hexdigest():
             raise ProtocolError("Content receipt does not match uploaded bytes")
         return descriptor

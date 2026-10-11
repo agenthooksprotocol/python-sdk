@@ -14,7 +14,11 @@ from uuid import uuid4
 
 import anyio
 
-from .runtime import OperationCancelledError, ProtocolError, validate_intercept_response
+from .runtime import (
+    OperationCancelledError,
+    ProtocolError,
+    _validate_intercept_response,
+)
 from .transports.http import HTTPTransport
 
 
@@ -273,7 +277,7 @@ class AuthenticatedHTTPTransport(HTTPTransport):
                 except (ValueError, UnicodeError):
                     rejected = None
                 if isinstance(rejected, dict) and "error" in rejected:
-                    validate_intercept_response(
+                    _validate_intercept_response(
                         self._validator, {"id": ident}, rejected
                     )
             raise TransportFailure(
@@ -283,6 +287,7 @@ class AuthenticatedHTTPTransport(HTTPTransport):
 
     async def request(self, message: dict[str, Any]) -> dict[str, Any]:
         ident = message["id"]
+        correlation = deepcopy(message)
         response = await self._event(
             message,
             retry_allowed=message.get("method") == "hooks/intercept",
@@ -294,7 +299,7 @@ class AuthenticatedHTTPTransport(HTTPTransport):
             raise ProtocolError("Malformed HTTP protocol response") from None
         if not isinstance(result, dict) or result.get("id") != ident:
             raise ProtocolError("HTTP response correlation mismatch")
-        validate_intercept_response(self._validator, {"id": ident}, result)
+        _validate_intercept_response(self._validator, correlation, result)
         return result
 
     async def notify(self, message: dict[str, Any]) -> None:

@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.1](https://github.com/agenthooksprotocol/python-sdk/compare/v0.4.0...v0.4.1) (2026-10-11)
+
+
+### Bug Fixes
+
+* hydrate typed consumer outcomes and bind codec results ([557c75a](https://github.com/agenthooksprotocol/python-sdk/commit/557c75aef4e20e6ef11660c8790e80f86cca463a))
+
 ## [0.4.0](https://github.com/agenthooksprotocol/python-sdk/compare/v0.3.0...v0.4.0) (2026-10-11)
 
 

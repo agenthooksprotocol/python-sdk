@@ -759,6 +759,22 @@ class Hooks(BoundaryMixin):
         self._observations: list[dict[str, Any]] = []
         self._observation_diagnostics: deque[dict[str, Any]] = deque(maxlen=256)
 
+    def subscribes(self, event: str) -> bool:
+        """Report static intercept or observation interest, not delivery or permission.
+
+        Payload-dependent filters are conservatively ignored. This lookup does
+        not prepare input, initialize transports, or contact a backend.
+        """
+        declaration = self.capabilities.get(event)
+        if declaration is None:
+            return False
+        return any(
+            subscription["mode"] in declaration["modes"]
+            and any(_matches(selector, event) for selector in subscription["events"])
+            for backend in self.config["hooks"]
+            for subscription in backend["subscriptions"]
+        )
+
     @property
     def manifest(self) -> dict[str, Any]:
         """Return a detached snapshot of the configured static host manifest."""

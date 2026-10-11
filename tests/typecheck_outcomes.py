@@ -8,11 +8,15 @@ from agenthooksprotocol import (
 )
 from agenthooksprotocol.integrations.pydantic import PydanticFormContract
 
-from agenthooksprotocol import HookResult, _models as models
+from agenthooksprotocol import Hooks, HookResult, _models as models
 from agenthooksprotocol.codec import Candidate
 from agenthooksprotocol.event import Event
 from agenthooksprotocol.response import ContextualResponse
 from agenthooksprotocol.state import Flow
+
+
+def subscription_contract(hooks: Hooks, event: str) -> None:
+    assert_type(hooks.subscribes(event), bool)
 
 
 def contracts(outcome: HookResult[dict[str, int], str, dict[str, str]]) -> None:

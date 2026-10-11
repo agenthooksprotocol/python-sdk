@@ -96,6 +96,8 @@ The default `auth.EnvironmentAuthProvider` resolves bearer `tokenEnv` or optiona
 
 ## Static host manifest
 
+`hooks.subscribes("tool.before")` is a pure synchronous static-interest lookup. Use it before expensive input preparation: `False` means no eligible intercept or observe subscription selects the configured event. Exact selectors, `*`, and prefix selectors such as `tool.*` use the same matching as dispatch. Unknown or unconfigured events return `False`. Payload filters are conservatively ignored, so `True` means potential interest, not permission or guaranteed delivery. The lookup does not prepare input, authenticate, upload content, initialize transports, or contact backends.
+
 Configure `Hooks(config, *, source, manifest=full_manifest, transport=None, auth_provider=None)` with a complete canonical static manifest, **or** use `capabilities=event_declarations`. These options are mutually exclusive. The full manifest supplies the same event/mode/effect authority used for admission; it is not backend discovery. `hooks.manifest` returns a detached snapshot.
 
 The event-map shorthand advertises only explicitly declared events and modes. Its derived manifest records a gap for every omitted canonical event and for host-level facilities that the map cannot establish (transports, authentication, tool paths, content categories, limits, and managed policy). Empty lists do not mean universal support. Use a full manifest to declare those facilities accurately; explicit full manifests are preserved rather than augmented with assumed support.

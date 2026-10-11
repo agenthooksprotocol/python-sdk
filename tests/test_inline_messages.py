@@ -380,7 +380,7 @@ class InlineMessageTests(unittest.TestCase):
         import json
         from agenthooksprotocol import ContentContext
         from agenthooksprotocol._content import PreparedContent
-        from agenthooksprotocol.runtime import Validator, apply_response
+        from agenthooksprotocol.runtime import Validator, _apply_response
 
         async def run():
             payload = {
@@ -445,7 +445,7 @@ class InlineMessageTests(unittest.TestCase):
                 principal="org.example.receiver",
             )
             request_content = await request_context.prepare(request, validator)
-            returned = apply_response(
+            returned = _apply_response(
                 request,
                 response,
                 validator,
@@ -491,7 +491,7 @@ class InlineMessageTests(unittest.TestCase):
                     "value": {"name": "Grace"},
                 }
             ]
-            staged = apply_response(
+            staged = _apply_response(
                 result_request,
                 response,
                 validator,

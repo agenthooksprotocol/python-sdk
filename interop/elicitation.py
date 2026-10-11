@@ -24,8 +24,9 @@ from agenthooksprotocol.interop import (
     loads,
 )
 from agenthooksprotocol.runtime import Validator
+from agenthooksprotocol.generated import _encode_json
 from agenthooksprotocol.interop import fixture_hooks
-from agenthooksprotocol.elicitation import (
+from agenthooksprotocol._elicitation import (
     validate_exchange,
     read_selected,
     selection,
@@ -82,7 +83,7 @@ def main():
                     invocation.receive(loads(body))
                     invocation.accept()
                 results.append({"status": response.status, "body": body})
-        print(json.dumps(results))
+        print(_encode_json(results))
         return
     schemas = {
         p.stem.removesuffix(".schema"): json.loads(p.read_text())
@@ -200,7 +201,7 @@ def main():
                 outputs[-1]["inputUnchanged"] = (
                     json.dumps(case, sort_keys=True) == snapshot
                 )
-        print(json.dumps(outputs))
+        print(_encode_json(outputs))
         return
 
     class Handler(BaseHTTPRequestHandler):
@@ -307,7 +308,7 @@ def main():
             except Exception:
                 status = 400
                 response = {"error": "rejected"}
-            body = json.dumps(response).encode() if response is not None else b""
+            body = _encode_json(response).encode() if response is not None else b""
             self.send_response(status)
             self.send_header("Content-Type", "application/json")
             self.send_header("Content-Length", str(len(body)))

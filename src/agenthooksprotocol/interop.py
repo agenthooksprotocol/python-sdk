@@ -20,8 +20,8 @@ import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.request import Request, build_opener, HTTPRedirectHandler, HTTPSHandler
 from urllib.parse import urlencode, urlsplit
-from .runtime import Validator, ProtocolError, json_equal
-from .lifecycle import content_items
+from .runtime import Validator, ProtocolError, _json_equal
+from .lifecycle import _content_items
 from .lineage import TaskLineage
 
 LIMIT = 4 * 1024 * 1024
@@ -48,6 +48,7 @@ RAW_RESPONSE_PROBES = frozenset(
         "wrong-protocol-version",
         "missing-effects-array",
         "non-array-effects",
+        "null-effects-array",
         "null-result-envelope",
         "flow-stop-then-unknown-is-atomic",
         "flow-stop-missing-reason",
@@ -539,7 +540,7 @@ def upload_blob(config, data, validator):
 
 def replace_references(value, references, *, event_type=None):
     """Rewrite confirmed references only in generated schema-owned body slots."""
-    from .lifecycle import content_items
+    from .lifecycle import _content_items
 
     if value is None:
         return None
@@ -550,7 +551,7 @@ def replace_references(value, references, *, event_type=None):
         return replace_references(wrapped, references)["params"]["event"]["items"]
     projected = deepcopy(value)
     event = projected.get("params", {}).get("event", {})
-    for item in content_items(event):
+    for item in _content_items(event):
         body = item.get("body")
         if isinstance(body, dict) and body.get("ref") in references:
             item["body"] = {"ref": references[body["ref"]]["ref"]}
@@ -647,7 +648,7 @@ class AdapterServer:
         if self.config.get("transport", "stdio") == "stdio":
             scope = self.config.get("stdioScope")
         with self.lock:
-            for item in content_items(request["params"]["event"]):
+            for item in _content_items(request["params"]["event"]):
                 body = item["body"]
                 data = self.blobs.get((scope, body["ref"]))
                 if data is None:
@@ -756,7 +757,7 @@ class AdapterServer:
         async def respond(message):
             result = scenario["response"]["result"]
             return InterceptResult(
-                effects=deepcopy(result["effects"]),
+                effects=deepcopy(result.get("effects", [])),
                 extensions=deepcopy(result.get("extensions")),
             )
 
@@ -1064,7 +1065,7 @@ def run_client(config):
                             continue
                         raise ProtocolError("Expected rejection")
                     if not all(
-                        key in actual and json_equal(actual[key], value)
+                        key in actual and _json_equal(actual[key], value)
                         for key, value in scenario["expected"].items()
                     ):
                         raise ProtocolError("Expected outcome mismatch")

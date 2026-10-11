@@ -31,7 +31,7 @@ from uuid import uuid4
 
 from ..runtime import ProtocolError, Validator
 from ._framing import validate_upload_framing
-from .hooks import HTTPError, encode
+from .hooks import HTTPError, _encode
 
 
 class Storage(Protocol):
@@ -188,7 +188,11 @@ class App:
                 storage=self.storage,
                 max_bytes=self.max_bytes,
             )
-            status, payload, content_type = 201, encode(descriptor), b"application/json"
+            status, payload, content_type = (
+                201,
+                _encode(descriptor),
+                b"application/json",
+            )
         except _Disconnected:
             return
         except HTTPError as exc:

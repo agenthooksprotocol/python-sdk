@@ -1,6 +1,6 @@
 import unittest
 from queue import Queue
-from agenthooksprotocol.lifecycle import dispatch_observations
+from agenthooksprotocol.lifecycle import _dispatch_observations
 
 
 class ObservationTests(unittest.TestCase):
@@ -32,7 +32,7 @@ class ObservationTests(unittest.TestCase):
         def notify(message):
             received.put(message)
 
-        dispatch_observations(event, subscriptions, {"called"}, prepare, notify)
+        _dispatch_observations(event, subscriptions, {"called"}, prepare, notify)
         notes = [received.get(timeout=1), received.get(timeout=1)]
         self.assertEqual(set(prepared), {"remaining", "explicit"})
         for note in notes:

@@ -10,7 +10,7 @@ from typing import Any, cast
 import anyio
 
 from agenthooksprotocol import Hooks, Session, SessionStartInputHarness, event
-from agenthooksprotocol.generated import ObserveNotification
+from agenthooksprotocol.wire import ObserveNotification
 from agenthooksprotocol.server import hooks
 
 

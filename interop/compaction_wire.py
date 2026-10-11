@@ -1,7 +1,12 @@
 #!/usr/bin/env python3
 """Canonical hooks/intercept fixture. Scheduling is local, never a wire method."""
 
-import hashlib, json, os, subprocess, sys, uuid
+import hashlib
+import json
+import os
+import subprocess
+import sys
+import uuid
 import anyio
 from agenthooksprotocol.server.hooks import Handler as HookHandler, InterceptResult
 from pathlib import Path

@@ -386,22 +386,12 @@ class Builder:
         arguments: dict[str, Any] = {}
         if continuation_count is not _UNSET:
             arguments["continuation_count"] = continuation_count
-            if (
-                type(continuation_count) is not int
-                or not 0 <= continuation_count <= 9007199254740991
-            ):
-                raise ValueError(
-                    "continuation counts must be nonnegative safe integers"
-                )
+            if type(continuation_count) is not int or continuation_count < 0:
+                raise ValueError("continuation counts must be nonnegative integers")
         if max_continuations is not _UNSET:
             arguments["max_continuations"] = max_continuations
-            if (
-                type(max_continuations) is not int
-                or not 0 <= max_continuations <= 9007199254740991
-            ):
-                raise ValueError(
-                    "continuation counts must be nonnegative safe integers"
-                )
+            if type(max_continuations) is not int or max_continuations < 0:
+                raise ValueError("continuation counts must be nonnegative integers")
         if operations is not _UNSET:
             arguments["operations"] = operations
             if not operations or any(
@@ -410,13 +400,8 @@ class Builder:
                 raise ValueError("operations requires known, nonempty values")
         if remaining_continuations is not _UNSET:
             arguments["remaining_continuations"] = remaining_continuations
-            if (
-                type(remaining_continuations) is not int
-                or not 0 <= remaining_continuations <= 9007199254740991
-            ):
-                raise ValueError(
-                    "continuation counts must be nonnegative safe integers"
-                )
+            if type(remaining_continuations) is not int or remaining_continuations < 0:
+                raise ValueError("continuation counts must be nonnegative integers")
         if "continue" in operations and (
             remaining_continuations is _UNSET or continuation_count is _UNSET
         ):

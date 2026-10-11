@@ -9,7 +9,7 @@ from referencing import Registry, Resource
 import unittest
 from unittest.mock import Mock, patch
 
-from agenthooksprotocol.elicitation import apply_effects, validate_exchange
+from agenthooksprotocol._elicitation import apply_effects, validate_exchange
 from agenthooksprotocol.lifecycle_client import Transport
 from agenthooksprotocol.lifecycle_server import Server, MALICIOUS
 from agenthooksprotocol.runtime import Validator, ProtocolError
@@ -182,6 +182,34 @@ class IntegrationEdgeTests(unittest.TestCase):
                         method(notification)
         finally:
             transport.close()
+
+    def test_named_null_effects_fixture_preserves_wire_without_admitting_null(self):
+        from threading import RLock
+        from agenthooksprotocol.interop import AdapterServer
+        from test_interop import request as tool_request
+
+        request = tool_request()
+        ident = request["id"]
+        wire = {
+            "jsonrpc": "2.0",
+            "id": ident,
+            "result": {"protocolVersion": "draft", "effects": None},
+        }
+        server = AdapterServer.__new__(AdapterServer)
+        server.verify_content = Mock()
+        server.lineage = Mock()
+        server.lock = RLock()
+        server.receipts = []
+        server.barriers = {}
+        server.scenarios = {ident: {"id": "null-effects-array", "response": wire}}
+        reply = server.intercept(request)
+        self.assertEqual(reply, wire)
+        self.assertIsNot(reply, wire)
+        self.assertIsNone(reply["result"]["effects"])
+        with self.assertRaises(ProtocolError):
+            Validator().validate("intercept-response", reply)
+        reply["result"]["effects"] = []
+        self.assertIsNone(wire["result"]["effects"])
 
     def test_only_named_malicious_observer_responds(self):
         server = Server.__new__(Server)

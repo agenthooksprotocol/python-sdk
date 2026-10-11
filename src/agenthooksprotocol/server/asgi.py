@@ -3,7 +3,7 @@
 from collections.abc import Awaitable, Callable, MutableMapping
 from typing import Any
 
-from .hooks import Engine, Handler, HTTPError, encode
+from .hooks import Engine, Handler, HTTPError, _encode
 
 
 class App:
@@ -49,7 +49,7 @@ class App:
             status, payload, content_type = (
                 (204, b"", None)
                 if result is None
-                else (200, encode(result), b"application/json")
+                else (200, _encode(result), b"application/json")
             )
         except HTTPError as exc:
             status, payload, content_type = exc.status, exc.body, exc.content_type

@@ -47,6 +47,31 @@ class LifecycleTests(unittest.TestCase):
         self.assertTrue(settled.cancel(ident))
         self.assertIsNone(settled.accept(ident, fallback=True))
 
+    def test_contextually_invalid_acquisition_never_publishes_and_cancelled_reply_is_ignored(
+        self,
+    ):
+        from agenthooksprotocol import Hooks
+
+        req = request()
+        invalid = response(
+            [{"type": "flow", "operation": "continue", "instruction": "private"}]
+        )
+        from test_public_hooks import config, capabilities
+
+        hooks = Hooks(
+            config(),
+            source=req["params"]["event"]["source"],
+            capabilities=capabilities(),
+        )
+        pending = hooks.begin(req)
+        self.assertTrue(pending.receive(invalid))
+        with self.assertRaises(ProtocolError):
+            pending.accept()
+        self.assertEqual(pending.lifecycle.states, {})
+        self.assertTrue(pending.cancel())
+        self.assertFalse(pending.receive(invalid))
+        self.assertIsNone(pending.accept())
+
     def test_immutable_receiver_and_authorization(self):
         validator = Validator()
         store = ContentStore(validator, lambda subscription: subscription == "body")

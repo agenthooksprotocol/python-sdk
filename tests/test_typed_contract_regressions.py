@@ -341,6 +341,9 @@ class TypedContractRegressions(unittest.TestCase):
             async with hooks_for(name, {"effects": ["return"]}, transport) as hooks:
                 result = await hooks.dispatch(name, payload)
                 self.assertEqual(len(result.accepted_responses), 1, result.diagnostics)
+                from agenthooksprotocol._models import MessagesCandidate, CanonicalMessage
+                self.assertIsInstance(result.candidate, MessagesCandidate)
+                self.assertIsInstance(result.decoded_candidate.value[0], CanonicalMessage)
                 self.assertEqual(result.candidate["value"], messages)
                 self.assertEqual(result.event["params"], payload["params"])
                 self.assertNotIn("parts", result.candidate["value"][0]["parts"][0])
@@ -401,6 +404,10 @@ class TypedContractRegressions(unittest.TestCase):
             ) as hooks:
                 result = await hooks.dispatch(name, original["params"]["event"])
                 self.assertEqual(len(result.accepted_responses), 1, result.diagnostics)
+                from agenthooksprotocol._models import ElicitResultCandidate, McpElicitationElicitResult
+                self.assertIsInstance(result.candidate, ElicitResultCandidate)
+                self.assertIsInstance(result.decoded_candidate.value, McpElicitationElicitResult)
+                self.assertEqual(result.decoded_candidate.value.action, "accept")
                 self.assertEqual(result.candidate["value"], value)
                 self.assertEqual(result.content["candidate"], value)
             self.assertEqual(original, before)

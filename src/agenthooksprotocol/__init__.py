@@ -24,10 +24,12 @@ from ._models import *  # noqa: F403
 from ._models import __all__ as _model_names
 from ._hooks import (
     HookResult as HookResult,
+    SettlementDecodeError as SettlementDecodeError,
     Hooks as Hooks,
     PendingInvocation as PendingInvocation,
     HooksClosedError as HooksClosedError,
 )
+from ._outcomes import SchemaCandidate as SchemaCandidate
 from .permission import Permission as Permission
 from .content import (
     OwnedContentSource as OwnedContentSource,
@@ -69,6 +71,8 @@ __all__ = list(_model_names) + [
     "transport",
     "Hooks",
     "HookResult",
+    "SettlementDecodeError",
+    "SchemaCandidate",
     "PendingInvocation",
     "ProtocolError",
     "Codec",

@@ -320,7 +320,7 @@ def run_fixture_compaction(
                 staged = deepcopy(state)
                 staged[target] = committed
                 if boundary == "before":
-                    candidate = settled.candidate
+                    candidate = settled.raw_candidate
                     returned = any(
                         effect["type"] == "return"
                         for response in settled.accepted_responses

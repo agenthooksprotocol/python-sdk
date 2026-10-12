@@ -71,9 +71,23 @@ and callback failures. Invalid JSON/envelopes produce JSON-RPC errors. HTTP uses
 body=b"", content_type=b"text/plain; charset=utf-8")` from an intercept callback
 emits that HTTP status and body. On stdio, a canonical JSON-RPC error body
 with the matching request ID is preserved, regardless of HTTP status. Other
-bodies are carried in internal-error `error.data` with `httpStatus` and a UTF-8
-`body` string, or `bodyBase64` for binary data. Framing/output limits still apply.
-Cancellation propagates. Exceptions from callbacks do not disclose their details.
+bodies are carried in `backend_internal_error` (`-32004`) `error.data` with
+`httpStatus` and a UTF-8 `body` string, or `bodyBase64` for binary data.
+Framing/output limits still apply. Cancellation propagates. Exceptions from
+callbacks do not disclose their details.
+
+Requests receive the AHP error codes:
+
+| Condition | Code |
+| --- | --- |
+| Invalid JSON | `-32700` |
+| Invalid JSON-RPC envelope | `-32600` |
+| Unknown method, or `hooks/capabilities` without a static manifest | `-32601` |
+| Invalid params or correlation mismatch | `-32602` |
+| Unsupported `params.protocolVersion` (`data.supported` lists the supported versions) | `-32001` |
+| Intercept event with no registered callback, or an unknown event type | `-32002` |
+| Callback raised an exception | `-32004` |
+| Callback returned an invalid, ungranted, or unencodable reply | `-32603` |
 
 ## Transports and resource ownership
 

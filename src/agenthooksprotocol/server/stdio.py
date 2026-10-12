@@ -105,7 +105,7 @@ def _http_error_response(exc, id):
         and isinstance(body["error"].get("message"), str)
     ):
         return body
-    response = _error(-32603, "HTTP handler error", id)
+    response = _error(-32004, "Backend internal error", id)
     details = {"httpStatus": exc.status}
     try:
         details["body"] = exc.body.decode("utf-8")
@@ -127,7 +127,7 @@ async def serve(
 
     Invalid JSON/UTF-8 within a bounded frame produces a JSON-RPC parse error.
     HTTPError bodies preserve correlated JSON-RPC errors; other bodies are
-    carried as internal-error data with their HTTP status (binary as base64).
+    carried as backend_internal_error data with their HTTP status (binary as base64).
     Output is bounded as well; an oversized response becomes an internal error.
     """
     if max_bytes < 1:

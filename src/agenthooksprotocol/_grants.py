@@ -50,12 +50,6 @@ class Elicitation(Enum):
 
 
 @dataclass(frozen=True, kw_only=True, slots=True)
-class Observe:
-    def _wire(self) -> WireDeclaration:
-        return {"modes": ["observe"]}
-
-
-@dataclass(frozen=True, kw_only=True, slots=True)
 class FlowStop:
     max_continuations: int | None = None
 
@@ -116,6 +110,19 @@ class EffectName(StrEnum):
     MESSAGE = "message"
     MODIFY = "modify"
     RETURN = "return"
+
+
+@dataclass(frozen=True, kw_only=True, slots=True)
+class ConfigChangeAfterCapabilities:
+    observe: bool = False
+
+    def __post_init__(self) -> None:
+        _bool(self.observe, "observe")
+        if not self.observe:
+            raise ValueError("declaration requires observation")
+
+    def _wire(self) -> WireDeclaration:
+        return {"modes": ["observe"]}
 
 
 @dataclass(frozen=True, kw_only=True, slots=True)
@@ -344,6 +351,45 @@ class ContextCompactBeforeCapabilities:
 
 
 @dataclass(frozen=True, kw_only=True, slots=True)
+class FileChangedCapabilities:
+    observe: bool = False
+
+    def __post_init__(self) -> None:
+        _bool(self.observe, "observe")
+        if not self.observe:
+            raise ValueError("declaration requires observation")
+
+    def _wire(self) -> WireDeclaration:
+        return {"modes": ["observe"]}
+
+
+@dataclass(frozen=True, kw_only=True, slots=True)
+class HookFailureCapabilities:
+    observe: bool = False
+
+    def __post_init__(self) -> None:
+        _bool(self.observe, "observe")
+        if not self.observe:
+            raise ValueError("declaration requires observation")
+
+    def _wire(self) -> WireDeclaration:
+        return {"modes": ["observe"]}
+
+
+@dataclass(frozen=True, kw_only=True, slots=True)
+class ModelErrorCapabilities:
+    observe: bool = False
+
+    def __post_init__(self) -> None:
+        _bool(self.observe, "observe")
+        if not self.observe:
+            raise ValueError("declaration requires observation")
+
+    def _wire(self) -> WireDeclaration:
+        return {"modes": ["observe"]}
+
+
+@dataclass(frozen=True, kw_only=True, slots=True)
 class ModelRequestBeforeIntercept:
     deny: bool = False
     message: bool = False
@@ -516,6 +562,19 @@ class ModelResponseAfterCapabilities:
 
 
 @dataclass(frozen=True, kw_only=True, slots=True)
+class ModelSwitchAfterCapabilities:
+    observe: bool = False
+
+    def __post_init__(self) -> None:
+        _bool(self.observe, "observe")
+        if not self.observe:
+            raise ValueError("declaration requires observation")
+
+    def _wire(self) -> WireDeclaration:
+        return {"modes": ["observe"]}
+
+
+@dataclass(frozen=True, kw_only=True, slots=True)
 class ModelSwitchBeforeIntercept:
     deny: bool = False
     message: bool = False
@@ -577,6 +636,19 @@ class ModelSwitchBeforeCapabilities:
         if self.observe:
             result["modes"].append("observe")
         return result
+
+
+@dataclass(frozen=True, kw_only=True, slots=True)
+class SessionEndCapabilities:
+    observe: bool = False
+
+    def __post_init__(self) -> None:
+        _bool(self.observe, "observe")
+        if not self.observe:
+            raise ValueError("declaration requires observation")
+
+    def _wire(self) -> WireDeclaration:
+        return {"modes": ["observe"]}
 
 
 @dataclass(frozen=True, kw_only=True, slots=True)
@@ -643,6 +715,19 @@ class SessionStartCapabilities:
         if self.observe:
             result["modes"].append("observe")
         return result
+
+
+@dataclass(frozen=True, kw_only=True, slots=True)
+class TaskChangeAfterCapabilities:
+    observe: bool = False
+
+    def __post_init__(self) -> None:
+        _bool(self.observe, "observe")
+        if not self.observe:
+            raise ValueError("declaration requires observation")
+
+    def _wire(self) -> WireDeclaration:
+        return {"modes": ["observe"]}
 
 
 @dataclass(frozen=True, kw_only=True, slots=True)
@@ -1057,6 +1142,45 @@ class ToolPermissionRequestCapabilities:
 
 
 @dataclass(frozen=True, kw_only=True, slots=True)
+class ToolPermissionResolvedCapabilities:
+    observe: bool = False
+
+    def __post_init__(self) -> None:
+        _bool(self.observe, "observe")
+        if not self.observe:
+            raise ValueError("declaration requires observation")
+
+    def _wire(self) -> WireDeclaration:
+        return {"modes": ["observe"]}
+
+
+@dataclass(frozen=True, kw_only=True, slots=True)
+class ToolProgressCapabilities:
+    observe: bool = False
+
+    def __post_init__(self) -> None:
+        _bool(self.observe, "observe")
+        if not self.observe:
+            raise ValueError("declaration requires observation")
+
+    def _wire(self) -> WireDeclaration:
+        return {"modes": ["observe"]}
+
+
+@dataclass(frozen=True, kw_only=True, slots=True)
+class TurnEndCapabilities:
+    observe: bool = False
+
+    def __post_init__(self) -> None:
+        _bool(self.observe, "observe")
+        if not self.observe:
+            raise ValueError("declaration requires observation")
+
+    def _wire(self) -> WireDeclaration:
+        return {"modes": ["observe"]}
+
+
+@dataclass(frozen=True, kw_only=True, slots=True)
 class TurnFinishBeforeIntercept:
     message: bool = False
     modify_response: Modify | None = None
@@ -1127,6 +1251,19 @@ class TurnFinishBeforeCapabilities:
         if self.observe:
             result["modes"].append("observe")
         return result
+
+
+@dataclass(frozen=True, kw_only=True, slots=True)
+class TurnProgressCapabilities:
+    observe: bool = False
+
+    def __post_init__(self) -> None:
+        _bool(self.observe, "observe")
+        if not self.observe:
+            raise ValueError("declaration requires observation")
+
+    def _wire(self) -> WireDeclaration:
+        return {"modes": ["observe"]}
 
 
 @dataclass(frozen=True, kw_only=True, slots=True)
@@ -1221,6 +1358,19 @@ class TurnStartCapabilities:
         if self.observe:
             result["modes"].append("observe")
         return result
+
+
+@dataclass(frozen=True, kw_only=True, slots=True)
+class UserAttentionCapabilities:
+    observe: bool = False
+
+    def __post_init__(self) -> None:
+        _bool(self.observe, "observe")
+        if not self.observe:
+            raise ValueError("declaration requires observation")
+
+    def _wire(self) -> WireDeclaration:
+        return {"modes": ["observe"]}
 
 
 @dataclass(frozen=True, kw_only=True, slots=True)
@@ -1486,6 +1636,19 @@ class UserMessageOutboundCapabilities:
 
 
 @dataclass(frozen=True, kw_only=True, slots=True)
+class WorkspaceChangeAfterCapabilities:
+    observe: bool = False
+
+    def __post_init__(self) -> None:
+        _bool(self.observe, "observe")
+        if not self.observe:
+            raise ValueError("declaration requires observation")
+
+    def _wire(self) -> WireDeclaration:
+        return {"modes": ["observe"]}
+
+
+@dataclass(frozen=True, kw_only=True, slots=True)
 class WorkspaceChangeBeforeIntercept:
     deny: bool = False
     message: bool = False
@@ -1556,237 +1719,180 @@ class WorkspaceChangeBeforeCapabilities:
 
 @dataclass(frozen=True, kw_only=True, slots=True)
 class HostCapabilities:
-    config_change_after: Observe | None = None
-    config_change_before: ConfigChangeBeforeCapabilities | Observe | None = None
-    context_compact_after: ContextCompactAfterCapabilities | Observe | None = None
-    context_compact_before: ContextCompactBeforeCapabilities | Observe | None = None
-    file_changed: Observe | None = None
-    hook_failure: Observe | None = None
-    model_error: Observe | None = None
-    model_request_before: ModelRequestBeforeCapabilities | Observe | None = None
-    model_response_after: ModelResponseAfterCapabilities | Observe | None = None
-    model_switch_after: Observe | None = None
-    model_switch_before: ModelSwitchBeforeCapabilities | Observe | None = None
-    session_end: Observe | None = None
-    session_start: SessionStartCapabilities | Observe | None = None
-    task_change_after: Observe | None = None
-    task_change_before: TaskChangeBeforeCapabilities | Observe | None = None
-    tool_after: ToolAfterCapabilities | Observe | None = None
-    tool_batch_after: ToolBatchAfterCapabilities | Observe | None = None
-    tool_before: ToolBeforeCapabilities | Observe | None = None
-    tool_permission_request: ToolPermissionRequestCapabilities | Observe | None = None
-    tool_permission_resolved: Observe | None = None
-    tool_progress: Observe | None = None
-    turn_end: Observe | None = None
-    turn_finish_before: TurnFinishBeforeCapabilities | Observe | None = None
-    turn_progress: Observe | None = None
-    turn_start: TurnStartCapabilities | Observe | None = None
-    user_attention: Observe | None = None
-    user_elicitation_request: UserElicitationRequestCapabilities | Observe | None = None
-    user_elicitation_result: UserElicitationResultCapabilities | Observe | None = None
-    user_message_inbound: UserMessageInboundCapabilities | Observe | None = None
-    user_message_outbound: UserMessageOutboundCapabilities | Observe | None = None
-    workspace_change_after: Observe | None = None
-    workspace_change_before: WorkspaceChangeBeforeCapabilities | Observe | None = None
+    config_change_after: ConfigChangeAfterCapabilities | None = None
+    config_change_before: ConfigChangeBeforeCapabilities | None = None
+    context_compact_after: ContextCompactAfterCapabilities | None = None
+    context_compact_before: ContextCompactBeforeCapabilities | None = None
+    file_changed: FileChangedCapabilities | None = None
+    hook_failure: HookFailureCapabilities | None = None
+    model_error: ModelErrorCapabilities | None = None
+    model_request_before: ModelRequestBeforeCapabilities | None = None
+    model_response_after: ModelResponseAfterCapabilities | None = None
+    model_switch_after: ModelSwitchAfterCapabilities | None = None
+    model_switch_before: ModelSwitchBeforeCapabilities | None = None
+    session_end: SessionEndCapabilities | None = None
+    session_start: SessionStartCapabilities | None = None
+    task_change_after: TaskChangeAfterCapabilities | None = None
+    task_change_before: TaskChangeBeforeCapabilities | None = None
+    tool_after: ToolAfterCapabilities | None = None
+    tool_batch_after: ToolBatchAfterCapabilities | None = None
+    tool_before: ToolBeforeCapabilities | None = None
+    tool_permission_request: ToolPermissionRequestCapabilities | None = None
+    tool_permission_resolved: ToolPermissionResolvedCapabilities | None = None
+    tool_progress: ToolProgressCapabilities | None = None
+    turn_end: TurnEndCapabilities | None = None
+    turn_finish_before: TurnFinishBeforeCapabilities | None = None
+    turn_progress: TurnProgressCapabilities | None = None
+    turn_start: TurnStartCapabilities | None = None
+    user_attention: UserAttentionCapabilities | None = None
+    user_elicitation_request: UserElicitationRequestCapabilities | None = None
+    user_elicitation_result: UserElicitationResultCapabilities | None = None
+    user_message_inbound: UserMessageInboundCapabilities | None = None
+    user_message_outbound: UserMessageOutboundCapabilities | None = None
+    workspace_change_after: WorkspaceChangeAfterCapabilities | None = None
+    workspace_change_before: WorkspaceChangeBeforeCapabilities | None = None
 
     def __post_init__(self) -> None:
         if self.config_change_after is not None:
-            _exact(self.config_change_after, (Observe,), "config_change_after")
+            _exact(
+                self.config_change_after,
+                (ConfigChangeAfterCapabilities,),
+                "config_change_after",
+            )
         if self.config_change_before is not None:
             _exact(
                 self.config_change_before,
-                (
-                    ConfigChangeBeforeCapabilities,
-                    Observe,
-                ),
+                (ConfigChangeBeforeCapabilities,),
                 "config_change_before",
             )
         if self.context_compact_after is not None:
             _exact(
                 self.context_compact_after,
-                (
-                    ContextCompactAfterCapabilities,
-                    Observe,
-                ),
+                (ContextCompactAfterCapabilities,),
                 "context_compact_after",
             )
         if self.context_compact_before is not None:
             _exact(
                 self.context_compact_before,
-                (
-                    ContextCompactBeforeCapabilities,
-                    Observe,
-                ),
+                (ContextCompactBeforeCapabilities,),
                 "context_compact_before",
             )
         if self.file_changed is not None:
-            _exact(self.file_changed, (Observe,), "file_changed")
+            _exact(self.file_changed, (FileChangedCapabilities,), "file_changed")
         if self.hook_failure is not None:
-            _exact(self.hook_failure, (Observe,), "hook_failure")
+            _exact(self.hook_failure, (HookFailureCapabilities,), "hook_failure")
         if self.model_error is not None:
-            _exact(self.model_error, (Observe,), "model_error")
+            _exact(self.model_error, (ModelErrorCapabilities,), "model_error")
         if self.model_request_before is not None:
             _exact(
                 self.model_request_before,
-                (
-                    ModelRequestBeforeCapabilities,
-                    Observe,
-                ),
+                (ModelRequestBeforeCapabilities,),
                 "model_request_before",
             )
         if self.model_response_after is not None:
             _exact(
                 self.model_response_after,
-                (
-                    ModelResponseAfterCapabilities,
-                    Observe,
-                ),
+                (ModelResponseAfterCapabilities,),
                 "model_response_after",
             )
         if self.model_switch_after is not None:
-            _exact(self.model_switch_after, (Observe,), "model_switch_after")
+            _exact(
+                self.model_switch_after,
+                (ModelSwitchAfterCapabilities,),
+                "model_switch_after",
+            )
         if self.model_switch_before is not None:
             _exact(
                 self.model_switch_before,
-                (
-                    ModelSwitchBeforeCapabilities,
-                    Observe,
-                ),
+                (ModelSwitchBeforeCapabilities,),
                 "model_switch_before",
             )
         if self.session_end is not None:
-            _exact(self.session_end, (Observe,), "session_end")
+            _exact(self.session_end, (SessionEndCapabilities,), "session_end")
         if self.session_start is not None:
-            _exact(
-                self.session_start,
-                (
-                    SessionStartCapabilities,
-                    Observe,
-                ),
-                "session_start",
-            )
+            _exact(self.session_start, (SessionStartCapabilities,), "session_start")
         if self.task_change_after is not None:
-            _exact(self.task_change_after, (Observe,), "task_change_after")
+            _exact(
+                self.task_change_after,
+                (TaskChangeAfterCapabilities,),
+                "task_change_after",
+            )
         if self.task_change_before is not None:
             _exact(
                 self.task_change_before,
-                (
-                    TaskChangeBeforeCapabilities,
-                    Observe,
-                ),
+                (TaskChangeBeforeCapabilities,),
                 "task_change_before",
             )
         if self.tool_after is not None:
-            _exact(
-                self.tool_after,
-                (
-                    ToolAfterCapabilities,
-                    Observe,
-                ),
-                "tool_after",
-            )
+            _exact(self.tool_after, (ToolAfterCapabilities,), "tool_after")
         if self.tool_batch_after is not None:
             _exact(
-                self.tool_batch_after,
-                (
-                    ToolBatchAfterCapabilities,
-                    Observe,
-                ),
-                "tool_batch_after",
+                self.tool_batch_after, (ToolBatchAfterCapabilities,), "tool_batch_after"
             )
         if self.tool_before is not None:
-            _exact(
-                self.tool_before,
-                (
-                    ToolBeforeCapabilities,
-                    Observe,
-                ),
-                "tool_before",
-            )
+            _exact(self.tool_before, (ToolBeforeCapabilities,), "tool_before")
         if self.tool_permission_request is not None:
             _exact(
                 self.tool_permission_request,
-                (
-                    ToolPermissionRequestCapabilities,
-                    Observe,
-                ),
+                (ToolPermissionRequestCapabilities,),
                 "tool_permission_request",
             )
         if self.tool_permission_resolved is not None:
             _exact(
-                self.tool_permission_resolved, (Observe,), "tool_permission_resolved"
+                self.tool_permission_resolved,
+                (ToolPermissionResolvedCapabilities,),
+                "tool_permission_resolved",
             )
         if self.tool_progress is not None:
-            _exact(self.tool_progress, (Observe,), "tool_progress")
+            _exact(self.tool_progress, (ToolProgressCapabilities,), "tool_progress")
         if self.turn_end is not None:
-            _exact(self.turn_end, (Observe,), "turn_end")
+            _exact(self.turn_end, (TurnEndCapabilities,), "turn_end")
         if self.turn_finish_before is not None:
             _exact(
                 self.turn_finish_before,
-                (
-                    TurnFinishBeforeCapabilities,
-                    Observe,
-                ),
+                (TurnFinishBeforeCapabilities,),
                 "turn_finish_before",
             )
         if self.turn_progress is not None:
-            _exact(self.turn_progress, (Observe,), "turn_progress")
+            _exact(self.turn_progress, (TurnProgressCapabilities,), "turn_progress")
         if self.turn_start is not None:
-            _exact(
-                self.turn_start,
-                (
-                    TurnStartCapabilities,
-                    Observe,
-                ),
-                "turn_start",
-            )
+            _exact(self.turn_start, (TurnStartCapabilities,), "turn_start")
         if self.user_attention is not None:
-            _exact(self.user_attention, (Observe,), "user_attention")
+            _exact(self.user_attention, (UserAttentionCapabilities,), "user_attention")
         if self.user_elicitation_request is not None:
             _exact(
                 self.user_elicitation_request,
-                (
-                    UserElicitationRequestCapabilities,
-                    Observe,
-                ),
+                (UserElicitationRequestCapabilities,),
                 "user_elicitation_request",
             )
         if self.user_elicitation_result is not None:
             _exact(
                 self.user_elicitation_result,
-                (
-                    UserElicitationResultCapabilities,
-                    Observe,
-                ),
+                (UserElicitationResultCapabilities,),
                 "user_elicitation_result",
             )
         if self.user_message_inbound is not None:
             _exact(
                 self.user_message_inbound,
-                (
-                    UserMessageInboundCapabilities,
-                    Observe,
-                ),
+                (UserMessageInboundCapabilities,),
                 "user_message_inbound",
             )
         if self.user_message_outbound is not None:
             _exact(
                 self.user_message_outbound,
-                (
-                    UserMessageOutboundCapabilities,
-                    Observe,
-                ),
+                (UserMessageOutboundCapabilities,),
                 "user_message_outbound",
             )
         if self.workspace_change_after is not None:
-            _exact(self.workspace_change_after, (Observe,), "workspace_change_after")
+            _exact(
+                self.workspace_change_after,
+                (WorkspaceChangeAfterCapabilities,),
+                "workspace_change_after",
+            )
         if self.workspace_change_before is not None:
             _exact(
                 self.workspace_change_before,
-                (
-                    WorkspaceChangeBeforeCapabilities,
-                    Observe,
-                ),
+                (WorkspaceChangeBeforeCapabilities,),
                 "workspace_change_before",
             )
 

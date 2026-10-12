@@ -128,28 +128,38 @@ async def _run_catalogue(config, fixtures, transport, validator):
     # remains canonical wire evidence for registration checks, not a constructor
     # adapter that can grant arbitrary host capabilities.
     declarations = capability.HostCapabilities(
-        tool_before=capability.Observe(),
-        tool_after=capability.Observe(),
-        turn_start=capability.Observe(),
-        turn_finish_before=capability.Observe(),
-        turn_end=capability.Observe(),
-        turn_progress=capability.Observe(),
-        model_request_before=capability.Observe(),
-        model_response_after=capability.Observe(),
-        model_error=capability.Observe(),
-        model_switch_before=capability.Observe(),
-        model_switch_after=capability.Observe(),
-        tool_permission_request=capability.Observe(),
-        tool_permission_resolved=capability.Observe(),
-        tool_progress=capability.Observe(),
-        tool_batch_after=capability.Observe(),
-        context_compact_before=capability.Observe(),
-        context_compact_after=capability.Observe(),
-        task_change_before=capability.Observe(),
-        task_change_after=capability.Observe(),
-        workspace_change_before=capability.Observe(),
-        workspace_change_after=capability.Observe(),
-        file_changed=capability.Observe(),
+        tool_before=capability.ToolBeforeCapabilities(observe=True),
+        tool_after=capability.ToolAfterCapabilities(observe=True),
+        turn_start=capability.TurnStartCapabilities(observe=True),
+        turn_finish_before=capability.TurnFinishBeforeCapabilities(observe=True),
+        turn_end=capability.TurnEndCapabilities(observe=True),
+        turn_progress=capability.TurnProgressCapabilities(observe=True),
+        model_request_before=capability.ModelRequestBeforeCapabilities(observe=True),
+        model_response_after=capability.ModelResponseAfterCapabilities(observe=True),
+        model_error=capability.ModelErrorCapabilities(observe=True),
+        model_switch_before=capability.ModelSwitchBeforeCapabilities(observe=True),
+        model_switch_after=capability.ModelSwitchAfterCapabilities(observe=True),
+        tool_permission_request=capability.ToolPermissionRequestCapabilities(
+            observe=True
+        ),
+        tool_permission_resolved=capability.ToolPermissionResolvedCapabilities(
+            observe=True
+        ),
+        tool_progress=capability.ToolProgressCapabilities(observe=True),
+        tool_batch_after=capability.ToolBatchAfterCapabilities(observe=True),
+        context_compact_before=capability.ContextCompactBeforeCapabilities(
+            observe=True
+        ),
+        context_compact_after=capability.ContextCompactAfterCapabilities(observe=True),
+        task_change_before=capability.TaskChangeBeforeCapabilities(observe=True),
+        task_change_after=capability.TaskChangeAfterCapabilities(observe=True),
+        workspace_change_before=capability.WorkspaceChangeBeforeCapabilities(
+            observe=True
+        ),
+        workspace_change_after=capability.WorkspaceChangeAfterCapabilities(
+            observe=True
+        ),
+        file_changed=capability.FileChangedCapabilities(observe=True),
     )
     registration = {
         "protocolVersion": "draft",

@@ -94,7 +94,7 @@ class ManifestTests(unittest.TestCase):
                 source="urn:configured",
                 manifest_metadata=configured,
                 capabilities=capability.HostCapabilities(
-                    session_start=capability.Observe()
+                    session_start=capability.SessionStartCapabilities(observe=True)
                 ),
                 transport=Transport(),
             ) as harness:
@@ -136,7 +136,7 @@ class ManifestTests(unittest.TestCase):
             config(),
             source="urn:configured",
             capabilities=capability.HostCapabilities(
-                session_start=capability.Observe(),
+                session_start=capability.SessionStartCapabilities(observe=True),
                 tool_before=capability.ToolBeforeCapabilities(
                     intercept=capability.ToolBeforeIntercept(deny=True)
                 ),
@@ -190,7 +190,7 @@ class ManifestTests(unittest.TestCase):
                 registration,
                 source="urn:shorthand",
                 capabilities=capability.HostCapabilities(
-                    session_start=capability.Observe()
+                    session_start=capability.SessionStartCapabilities(observe=True)
                 ),
                 transport=Transport(),
             ) as harness:

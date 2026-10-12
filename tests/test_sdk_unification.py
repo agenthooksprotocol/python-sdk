@@ -46,7 +46,9 @@ class UnificationTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             capability.ToolBeforeIntercept()
         self.assertEqual(
-            capability.HostCapabilities(tool_before=capability.Observe()).to_wire(),
+            capability.HostCapabilities(
+                tool_before=capability.ToolBeforeCapabilities(observe=True)
+            ).to_wire(),
             {"tool.before": {"modes": ["observe"]}},
         )
 

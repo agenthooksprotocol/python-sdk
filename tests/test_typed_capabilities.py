@@ -67,7 +67,8 @@ class TypedCapabilityTests(unittest.TestCase):
 
     def test_observe_is_valid_for_both_phase_and_session_start_events(self):
         declared = capability.HostCapabilities(
-            tool_before=capability.Observe(), session_start=capability.Observe()
+            tool_before=capability.ToolBeforeCapabilities(observe=True),
+            session_start=capability.SessionStartCapabilities(observe=True),
         )
         self.assertEqual(
             declared.to_wire(),
@@ -78,6 +79,32 @@ class TypedCapabilityTests(unittest.TestCase):
         )
         hooks = Hooks(config(mode="observe"), source="urn:typed", capabilities=declared)
         self.assertEqual(hooks.capabilities, declared.to_wire())
+
+    def test_observation_only_events_have_their_own_declaration_type(self):
+        self.assertFalse(hasattr(capability, "Observe"))
+        host = capability.HostCapabilities(
+            session_end=capability.SessionEndCapabilities(observe=True),
+            file_changed=capability.FileChangedCapabilities(observe=True),
+        )
+        self.assertEqual(
+            host.to_wire(),
+            {
+                "file.changed": {"modes": ["observe"]},
+                "session.end": {"modes": ["observe"]},
+            },
+        )
+        for create in (
+            lambda: capability.SessionEndCapabilities(),
+            lambda: capability.SessionEndCapabilities(observe=False),
+            lambda: capability.HostCapabilities(
+                session_end=capability.FileChangedCapabilities(observe=True)
+            ),
+        ):
+            with (
+                self.subTest(create=create),
+                self.assertRaises((TypeError, ValueError)),
+            ):
+                create()
 
     def test_elicitation_only_interception_is_a_real_grant(self):
         declared = capability.HostCapabilities(
@@ -114,7 +141,9 @@ class TypedCapabilityTests(unittest.TestCase):
             lambda: capability.ToolBeforeCapabilities(observe="yes"),
             lambda: capability.ToolBeforeIntercept(modify_input="replace"),
             lambda: capability.ToolBeforeIntercept(elicitation="form"),
-            lambda: capability.HostCapabilities(unknown_event=capability.Observe()),
+            lambda: capability.HostCapabilities(
+                unknown_event=capability.ToolBeforeCapabilities(observe=True)
+            ),
             lambda: capability.HostCapabilities(tool_before={"modes": ["observe"]}),
             lambda: capability.HostCapabilities(
                 tool_before=capability.ToolAfterCapabilities(

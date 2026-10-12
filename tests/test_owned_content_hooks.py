@@ -116,14 +116,14 @@ def harness(selections, *, mode="intercept", unmatched=False):
                 subscription.pop("failurePolicy")
     capabilities = capability.HostCapabilities(
         context_compact_before=(
-            capability.Observe()
+            capability.ContextCompactBeforeCapabilities(observe=True)
             if mode == "observe"
             else capability.ContextCompactBeforeCapabilities(
                 intercept=capability.ContextCompactBeforeIntercept(message=True)
             )
         ),
         context_compact_after=(
-            capability.Observe()
+            capability.ContextCompactAfterCapabilities(observe=True)
             if mode == "observe"
             else capability.ContextCompactAfterCapabilities(
                 intercept=capability.ContextCompactAfterIntercept(message=True)

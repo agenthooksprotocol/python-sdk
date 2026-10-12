@@ -15,6 +15,7 @@ from typing import Any
 
 from .. import _models as models
 from .._outcomes import decode_event
+from ..generated import PROTOCOL_VERSION
 from ..runtime import ProtocolError, Validator, _validate_intercept_response
 from ._admission import validate_grants
 from ._handlers import *  # noqa: F403 - explicit event-specific public facade
@@ -68,8 +69,27 @@ class HTTPError(Exception):
         self.content_type = content_type
 
 
-def _error(code, message, id=None):
-    return {"jsonrpc": "2.0", "id": id, "error": {"code": code, "message": message}}
+def _error(code, message, id=None, data=None):
+    error: dict[str, Any] = {"code": code, "message": message}
+    if data is not None:
+        error["data"] = data
+    return {"jsonrpc": "2.0", "id": id, "error": error}
+
+
+class _CallbackError(Exception):
+    """A backend callback raised; mapped to ``backend_internal_error``."""
+
+
+async def _invoke(callback, context):
+    try:
+        result = callback(context)
+        if inspect.isawaitable(result):
+            result = await result
+    except HTTPError:
+        raise
+    except Exception as exc:  # noqa: BLE001 - contain callback failures, not cancellation
+        raise _CallbackError from exc
+    return result
 
 
 def _encode(value):
@@ -129,6 +149,27 @@ class Engine:
             kinds[method] = "capabilities-request"
         if method not in kinds:
             return None if notification else _error(-32601, "Method not found", id)
+        params = message.get("params")
+        version = params.get("protocolVersion") if isinstance(params, dict) else None
+        if isinstance(version, str) and version != PROTOCOL_VERSION:
+            # Notifications are never answered, and their semantics are not processed.
+            if notification:
+                return None
+            return _error(
+                -32001,
+                "Unsupported AHP protocol version",
+                id,
+                {"supported": [PROTOCOL_VERSION]},
+            )
+        event = params.get("event") if isinstance(params, dict) else None
+        event_type = event.get("type") if isinstance(event, dict) else None
+        if (
+            method == "hooks/intercept"
+            and not notification
+            and isinstance(event_type, str)
+            and event_type not in _INTERCEPT_CONTEXTS
+        ):
+            return _error(-32002, "Unsupported event", id)
         try:
             self.validator.validate(kinds[method], message)
             if method == "hooks/intercept" and id != message["params"]["event"]["id"]:
@@ -145,8 +186,14 @@ class Engine:
                 event_type.replace(".", "_") if isinstance(event_type, str) else ""
             )
             if method == "hooks/observe":
-                callback = getattr(self.handler.observe, field_name, None)
                 context_type = _OBSERVE_CONTEXTS.get(event_type)
+                callback = (
+                    getattr(self.handler.observe, field_name, None)
+                    if context_type is not None
+                    else None
+                )
+                if callback is None:
+                    callback = self.handler.observe.any
                 if callback is not None and context_type is not None:
                     envelope = models.ObserveNotification.from_dict(deepcopy(original))
                     context = context_type(
@@ -155,9 +202,7 @@ class Engine:
                         envelope=envelope,
                         raw=deepcopy(original),
                     )
-                    result = callback(context)
-                    if inspect.isawaitable(result):
-                        result = await result
+                    result = await _invoke(callback, context)
                     if result is not None:
                         raise TypeError("observe callbacks must return None")
                 return None
@@ -165,7 +210,7 @@ class Engine:
                 callback = getattr(self.handler.intercept, field_name, None)
                 spec = _INTERCEPT_CONTEXTS.get(event_type)
                 if callback is None or spec is None:
-                    return _error(-32601, "Method not found", id)
+                    return _error(-32002, "Unsupported event", id)
                 context_type, reply_type, capabilities_type, state_type = spec
                 envelope = models.InterceptRequest.from_dict(deepcopy(original))
                 context = context_type(
@@ -180,9 +225,7 @@ class Engine:
                     envelope=envelope,
                     raw=deepcopy(original),
                 )
-                result = callback(context)
-                if inspect.isawaitable(result):
-                    result = await result
+                result = await _invoke(callback, context)
                 if type(result) is not reply_type:
                     raise TypeError("callback must return its event-specific Reply")
                 if not isinstance(result.effects, tuple) or any(
@@ -216,5 +259,10 @@ class Engine:
             if notification:
                 return None
             raise
-        except Exception:  # noqa: BLE001 - contain callback/store failures, not cancellation
+        except _CallbackError:
+            # Never echo callback exception text: it may carry secrets.
+            return (
+                None if notification else _error(-32004, "Backend internal error", id)
+            )
+        except Exception:  # noqa: BLE001 - SDK invariant failures, not cancellation
             return None if notification else _error(-32603, "Internal error", id)

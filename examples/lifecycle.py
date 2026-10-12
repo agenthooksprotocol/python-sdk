@@ -1,6 +1,7 @@
 """Caller-owned hook concurrency and owned subprocess cancellation (S09/S10)."""
 
 from __future__ import annotations
+from agenthooksprotocol import capability
 
 import json
 import os
@@ -10,8 +11,7 @@ import tempfile
 
 import anyio
 import httpx
-from agenthooksprotocol import HookResult, Hooks, capability, effect, event, tool
-from agenthooksprotocol.wire import InterceptRequest, ObserveNotification
+from agenthooksprotocol import HookResult, Hooks, effect, event, tool
 from agenthooksprotocol.server import asgi, hooks
 from agenthooksprotocol.transports.http import HTTPTransport
 
@@ -38,25 +38,29 @@ async def main() -> None:
     )
     started, release, delivered = anyio.Event(), anyio.Event(), anyio.Event()
 
-    async def intercept(request: InterceptRequest) -> hooks.InterceptResult:
-        return hooks.InterceptResult(effects=[effect.Allow()])
+    async def intercept(ctx: hooks.ToolBeforeContext) -> hooks.ToolBeforeReply:
+        return hooks.ToolBeforeReply(effects=(effect.Allow(),))
 
-    async def observe(notification: ObserveNotification) -> None:
+    async def observe(ctx: hooks.ToolBeforeObserveContext) -> None:
         started.set()
         await release.wait()
         delivered.set()
 
-    app = asgi.App(hooks.Handler(intercept=intercept, observe=observe))
+    app = asgi.App(
+        hooks.Handlers(
+            intercept=hooks.InterceptHandlers(tool_before=intercept),
+            observe=hooks.ObserveHandlers(tool_before=observe),
+        )
+    )
     async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app)) as client:
         async with Hooks(
             config,
             source="urn:example:comparison",
-            capabilities={
-                "tool.before": capability.Declaration(
-                    modes=[capability.Mode.INTERCEPT, capability.Mode.OBSERVE],
-                    grants=[capability.Allow()],
-                ),
-            },
+            capabilities=capability.HostCapabilities(
+                tool_before=capability.ToolBeforeCapabilities(
+                    intercept=capability.ToolBeforeIntercept(allow=True), observe=True
+                )
+            ),
             transport=HTTPTransport("http://example.test/hooks", client=client),
         ) as harness:
             results: list[HookResult[object, object, object]] = []
@@ -92,11 +96,11 @@ async def main() -> None:
         async with Hooks(
             config,
             source="urn:example:comparison",
-            capabilities={
-                "tool.before": capability.Declaration(
-                    modes=[capability.Mode.INTERCEPT], grants=[capability.Allow()]
-                ),
-            },
+            capabilities=capability.HostCapabilities(
+                tool_before=capability.ToolBeforeCapabilities(
+                    intercept=capability.ToolBeforeIntercept(allow=True)
+                )
+            ),
         ) as harness:
             with anyio.move_on_after(0.3) as scope:
                 await harness.tool_before(input_event())

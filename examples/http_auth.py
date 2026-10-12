@@ -5,6 +5,7 @@ verified attachment admission use the same public SDK engines as ASGI/stdio.
 """
 
 from __future__ import annotations
+from agenthooksprotocol import capability
 
 from collections.abc import AsyncIterator
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -15,19 +16,22 @@ from threading import Thread
 from typing import Any
 
 import anyio
-from agenthooksprotocol import HookResult, Hooks, capability, effect, event, tool
-from agenthooksprotocol.wire import InterceptRequest
+from agenthooksprotocol import HookResult, Hooks, effect, event, tool
+from agenthooksprotocol.permission import Permission
 from agenthooksprotocol.server import attachments, hooks
 from agenthooksprotocol.transports.http import HTTPTransport
 from upload import Store, authorize
 
 
-async def intercept(request: InterceptRequest) -> hooks.InterceptResult:
-    return hooks.InterceptResult(effects=[effect.Allow()])
+async def intercept(ctx: hooks.ToolBeforeContext) -> hooks.ToolBeforeReply:
+    return hooks.ToolBeforeReply(effects=(effect.Allow(),))
 
 
 async def main() -> None:
-    handler, store = hooks.Handler(intercept=intercept), Store()
+    handler, store = (
+        hooks.Handlers(intercept=hooks.InterceptHandlers(tool_before=intercept)),
+        Store(),
+    )
     event_auth_correct: list[bool] = []
     upload_auth_correct: list[bool] = []
 
@@ -90,11 +94,11 @@ async def main() -> None:
         async with Hooks(
             config,
             source="urn:example:comparison",
-            capabilities={
-                "tool.before": capability.Declaration(
-                    modes=[capability.Mode.INTERCEPT], grants=[capability.Allow()]
-                ),
-            },
+            capabilities=capability.HostCapabilities(
+                tool_before=capability.ToolBeforeCapabilities(
+                    intercept=capability.ToolBeforeIntercept(allow=True)
+                )
+            ),
         ) as harness:
             result: HookResult[object, object, object] = await harness.tool_before(
                 event.ToolBeforeInput(
@@ -105,7 +109,8 @@ async def main() -> None:
                     input={"command": "echo original", "timeoutMs": 1000},
                 )
             )
-            assert result.decision == "allow" and result.accepted_response is not None
+            assert result.permission is Permission.ALLOW
+            assert result.accepted_responses[-1] is not None
         uploader = HTTPTransport(
             base + "/hooks", headers={"Authorization": "Bearer event-only"}
         )

@@ -1,35 +1,68 @@
 # Framework-neutral Python server
 
+Install the SDK with `pip install agenthooksprotocol`. Import transports explicitly.
+
 ```python
-from agenthooksprotocol.wire import InterceptRequest, ObserveNotification
+from agenthooksprotocol import effect
 from agenthooksprotocol.server import hooks, asgi, stdio
 
 
-async def intercept(request: InterceptRequest) -> hooks.InterceptResult:
-    return hooks.InterceptResult(effects=[{"type": "deny", "reason": "Policy"}])
+def before(ctx: hooks.ToolBeforeContext) -> hooks.ToolBeforeReply:
+    # Event-specific generated model; ctx.raw retains the full wire envelope.
+    return hooks.ToolBeforeReply(effects=(effect.Deny(reason="Policy"),))
 
 
-async def observe(notification: ObserveNotification) -> None:
+async def observe(ctx: hooks.ToolBeforeObserveContext) -> None:
     pass
 
 
-handler = hooks.Handler(intercept=intercept, observe=observe)
-app = asgi.App(handler)  # Mount with any ASGI server; no Starlette dependency.
-# await stdio.serve(handler)  # AnyIO: asyncio or Trio.
-# response = await handler(utf8_json_bytes)  # dict or None
-# response = await handler.process(canonical_request_dict)
+handlers = hooks.Handlers(
+    intercept=hooks.InterceptHandlers(tool_before=before),
+    observe=hooks.ObserveHandlers(tool_before=observe),
+)
+app = asgi.App(handlers)  # Mount with any ASGI server; no framework dependency.
+# await stdio.serve(handlers)  # AnyIO: asyncio or Trio.
+# response = await handlers(utf8_json_bytes)  # dict or None
+# response = await handlers.process(canonical_request_dict)
 ```
 
-Callbacks receive canonical generated request/notification dictionaries. Effects
-are canonical `wire.Effect` dictionaries. The SDK validates request and
-response schemas and intercept/event correlation. The harness remains responsible
-for effect capability gating, authorization, native approval, atomic application,
-and runtime settlement; dispatch does not execute effects.
+Register callbacks on the snake_case field for their event. Interception callbacks
+receive a named context and return the corresponding named reply; observation
+callbacks return `None`. Both synchronous and asynchronous callbacks are supported.
+The context exposes `.event`, full generated `.params` and `.envelope`, and a
+separate `.raw` wire snapshot preserving opaque properties and extensions.
+Interception contexts also expose typed `.capabilities` and `.state` (absent state
+is `None`). The server retains a separate request snapshot for validation.
 
-`hooks.Engine(handler, validator=None, harness_manifest=None).handle(bytes)` is
-the common dispatcher. The optional static manifest describes a **harness**, not
-backend discovery. Only configuring this manifest enables `hooks/capabilities`.
-`Handler` has no capabilities callback. Use an explicit Engine when supplying a validator or static manifest.
+Replies contain an ordered tuple of generated effect models and optional
+`extensions`. An empty tuple is a valid neutral reply. For tool input edits:
+
+```python
+def replace(ctx: hooks.ToolBeforeContext) -> hooks.ToolBeforeReply:
+    return hooks.ToolBeforeReply(
+        effects=(hooks.ReplaceInput({"path": "safe.txt"}), effect.Allow()),
+    )
+```
+
+`ReplaceInput(args)` and `MergeInput(args)` construct validated structural tool
+input effects. Other effect constructors are available from `agenthooksprotocol.effect`.
+Tool contexts provide `decode_input(codec)` for an explicit caller-owned input
+contract. Before/permission contexts also provide
+`decode_candidate(result_codec, provenance_codec)` returning a typed
+`Candidate[ResultT, ProvenanceT]` or `None`. These projections round-trip-check
+wire preservation. `ReplaceInput(value, codec=codec)` and `MergeInput(value,
+codec=codec)` encode the declared input contract without removing original evidence.
+
+The SDK validates canonical requests, event-specific replies, and request-time
+capability grants. The server supplies the request ID and protocol version;
+callbacks cannot set response correlation. Dispatch never executes effects.
+The harness is responsible for native authorization, approval, declared caller
+payload contracts, atomic application, and runtime settlement.
+
+`hooks.Engine(handlers, validator=None, harness_manifest=None).handle(bytes)` is
+the common HTTP/stdio dispatcher. The optional static manifest describes a
+**harness**, not backend discovery. Configuring it enables `hooks/capabilities`.
+Use an explicit Engine when supplying a validator or static manifest.
 
 JSON-RPC error responses retain request IDs when valid. Valid notification
 envelopes never produce a response, including malformed params, unknown methods,
@@ -44,14 +77,14 @@ Cancellation propagates. Exceptions from callbacks do not disclose their details
 
 ## Transports and resource ownership
 
-`asgi.App(handler, max_bytes=4194304, **engine_options)` and its `asgi.app` alias
-accept HTTP POST at their mounted path. Routing, authentication, TLS, request
+`asgi.App(handlers, max_bytes=4194304, **engine_options)`
+accepts HTTP POST at their mounted path. Routing, authentication, TLS, request
 timeouts and deployment concurrency limits belong to the caller/framework. HTTP
 request bodies are bounded; disconnect before dispatch does not invoke callbacks.
 Only HTTP scopes are supported (configure ASGI-server lifespan handling or mount
 inside a framework). No framework or HTTP client is imported.
 
-`await stdio.serve(handler, input=None, output=None, max_bytes=4194304,
+`await stdio.serve(handlers, input=None, output=None, max_bytes=4194304,
 **engine_options)` accepts borrowed AnyIO byte streams. Defaults borrow binary
 stdin/stdout. On POSIX, default pipes use cancellable descriptor readiness without
 changing flags or closing descriptors. They require exclusive access and must

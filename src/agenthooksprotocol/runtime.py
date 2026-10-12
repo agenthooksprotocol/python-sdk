@@ -331,7 +331,7 @@ def _apply_response(
 
     def validate_content_result(value):
         if validate_candidate is not None:
-            validate_candidate(models.ElicitResultCandidate(value=value))
+            validate_candidate(models.ElicitResultCandidate.from_dict({"value": value}))
 
     bound = (
         content.stage(request, effects, validate_result=validate_content_result)
@@ -445,14 +445,22 @@ def _apply_response(
         result["result"] = candidate["value"]
     if flow is not None:
         result["flow"] = flow
-        if continuation_instructions or any(
-            k in flow_caps
-            for k in ("remainingContinuations", "maxContinuations", "continuationCount")
-        ):
-            result["continuationInstructions"] = continuation_instructions
-            result["continuationRemaining"] = (
-                remaining - 1 if flow == "continue" and new_continuation else remaining
-            )
+    elif "flow" in state:
+        result["flow"] = "none"
+    has_continuation_budget = any(
+        k in flow_caps
+        for k in ("remainingContinuations", "maxContinuations", "continuationCount")
+    )
+    if (
+        continuation_instructions
+        or "instructions" in state
+        or (flow is not None and has_continuation_budget)
+    ):
+        result["continuationInstructions"] = continuation_instructions
+    if has_continuation_budget:
+        result["continuationRemaining"] = (
+            remaining - 1 if flow == "continue" and new_continuation else remaining
+        )
     if injections:
         result["injections"] = injections
     if (
@@ -467,7 +475,9 @@ def _apply_response(
             and validate_candidate is not None
         ):
             validate_candidate(
-                models.ElicitResultCandidate(value=bound["values"]["result"])
+                models.ElicitResultCandidate.from_dict(
+                    {"value": bound["values"]["result"]}
+                )
             )
         result["content"] = bound["values"]
         result["_content_updates"] = bound["updates"]

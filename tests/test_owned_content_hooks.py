@@ -1,5 +1,7 @@
 """Owned content is scoped to an awaited Hooks call and each selected receiver."""
 
+from agenthooksprotocol import capability
+
 from copy import deepcopy
 import hashlib
 import unittest
@@ -112,10 +114,22 @@ def harness(selections, *, mode="intercept", unmatched=False):
             for subscription in backend["subscriptions"]:
                 subscription.pop("timeoutMs")
                 subscription.pop("failurePolicy")
-    capabilities = {
-        name: {"modes": [mode], "capabilities": {"effects": []}}
-        for name in ("context.compact.before", "context.compact.after")
-    }
+    capabilities = capability.HostCapabilities(
+        context_compact_before=(
+            capability.Observe()
+            if mode == "observe"
+            else capability.ContextCompactBeforeCapabilities(
+                intercept=capability.ContextCompactBeforeIntercept(message=True)
+            )
+        ),
+        context_compact_after=(
+            capability.Observe()
+            if mode == "observe"
+            else capability.ContextCompactAfterCapabilities(
+                intercept=capability.ContextCompactAfterIntercept(message=True)
+            )
+        ),
+    )
     return Hooks(
         config, source="urn:test", capabilities=capabilities, transport=transports
     ), transports

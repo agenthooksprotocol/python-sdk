@@ -99,8 +99,10 @@ class ContentReceiptTests(unittest.TestCase):
             id=req["id"],
             params=models.InterceptRequestParams(
                 protocol_version="draft",
-                capabilities=req["params"]["capabilities"],
-                event=req["params"]["event"],
+                capabilities=models.InterceptRequestParamsCapabilities.from_dict(
+                    req["params"]["capabilities"]
+                ),
+                event=models.ToolBeforeEvent.from_dict(req["params"]["event"]),
             ),
         )
         observation = models.ObserveNotification(
@@ -109,6 +111,7 @@ class ContentReceiptTests(unittest.TestCase):
                 event=intercept.params.event,
             ),
         )
+        self.assertIs(observation.params.event, intercept.params.event)
         for kind, envelope, parse in (
             ("intercept-request", intercept, generated.parse_intercept_request),
             ("observe-notification", observation, generated.parse_observe_notification),

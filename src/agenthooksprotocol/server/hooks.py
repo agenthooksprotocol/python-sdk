@@ -1,32 +1,39 @@
 """Canonical request dispatch shared by every public server transport.
 
-Callbacks receive generated TypedDict wire values, not a parallel event model.
+Callbacks receive event-specific contexts with lossless generated wire models.
 Capabilities describe a harness, not a backend; no discovery callback is exposed.
 """
 
 from __future__ import annotations
 
+import inspect
 import json
-from collections.abc import Awaitable, Callable, Mapping, Sequence
+from collections.abc import Mapping
 from copy import deepcopy
 from dataclasses import dataclass, field
 from typing import Any
 
-from ..generated import Effect, InterceptRequest, ObserveNotification
-from ..runtime import ProtocolError, Validator
+from .. import _models as models
+from .._outcomes import decode_event
+from ..runtime import ProtocolError, Validator, _validate_intercept_response
+from ._admission import validate_grants
+from ._handlers import *  # noqa: F403 - explicit event-specific public facade
+from ._handlers import (
+    InterceptHandlers,
+    ObserveHandlers,
+    _INTERCEPT_CONTEXTS,
+    _OBSERVE_CONTEXTS,
+    __all__ as _handler_exports,
+)
 from ._json import loads
 
 
-@dataclass
-class InterceptResult:
-    effects: Sequence[Effect | Mapping[str, Any]] = field(default_factory=list)
-    extensions: dict[str, Any] | None = None
+@dataclass(slots=True, kw_only=True)
+class Handlers:
+    """Declarative, event-specific callbacks shared by all server transports."""
 
-
-@dataclass
-class Handler:
-    intercept: Callable[[InterceptRequest], Awaitable[InterceptResult]] | None = None
-    observe: Callable[[ObserveNotification], Awaitable[None]] | None = None
+    intercept: InterceptHandlers = field(default_factory=InterceptHandlers)
+    observe: ObserveHandlers = field(default_factory=ObserveHandlers)
     _engine: Engine | None = field(default=None, init=False, repr=False, compare=False)
 
     async def __call__(self, body: bytes) -> dict[str, Any] | None:
@@ -42,7 +49,7 @@ class Handler:
         return await self._engine.process(request)
 
 
-__all__ = ["Handler", "InterceptResult", "Engine", "HTTPError"]
+__all__ = ["Handlers", "Engine", "HTTPError", *_handler_exports]
 
 
 class HTTPError(Exception):
@@ -80,7 +87,7 @@ class Engine:
 
     def __init__(
         self,
-        handler: Handler,
+        handler: Handlers,
         *,
         validator: Validator | None = None,
         harness_manifest: dict[str, Any] | None = None,
@@ -129,24 +136,68 @@ class Engine:
         except ProtocolError:
             return None if notification else _error(-32602, "Invalid params", id)
         try:
+            # The engine owns a detached snapshot: callback mutation cannot change
+            # correlation, contextual validation, or request-time grants.
+            original = deepcopy(message)
+            params = original.get("params", {})
+            event_type = params.get("event", {}).get("type")
+            field_name = (
+                event_type.replace(".", "_") if isinstance(event_type, str) else ""
+            )
             if method == "hooks/observe":
-                if self.handler.observe is not None:
-                    await self.handler.observe(message)
+                callback = getattr(self.handler.observe, field_name, None)
+                context_type = _OBSERVE_CONTEXTS.get(event_type)
+                if callback is not None and context_type is not None:
+                    envelope = models.ObserveNotification.from_dict(deepcopy(original))
+                    context = context_type(
+                        event=decode_event(deepcopy(params["event"])),
+                        params=envelope.params,
+                        envelope=envelope,
+                        raw=deepcopy(original),
+                    )
+                    result = callback(context)
+                    if inspect.isawaitable(result):
+                        result = await result
+                    if result is not None:
+                        raise TypeError("observe callbacks must return None")
                 return None
             if method == "hooks/intercept":
-                if self.handler.intercept is None:
+                callback = getattr(self.handler.intercept, field_name, None)
+                spec = _INTERCEPT_CONTEXTS.get(event_type)
+                if callback is None or spec is None:
                     return _error(-32601, "Method not found", id)
-                # Preserve correlation even if a callback edits its request.
-                version = message["params"]["protocolVersion"]
-                result = await self.handler.intercept(message)
-                if not isinstance(result, InterceptResult):
-                    raise TypeError("intercept must return InterceptResult")
+                context_type, reply_type, capabilities_type, state_type = spec
+                envelope = models.InterceptRequest.from_dict(deepcopy(original))
+                context = context_type(
+                    event=decode_event(deepcopy(params["event"])),
+                    capabilities=capabilities_type.from_dict(
+                        deepcopy(params["capabilities"])
+                    ),
+                    state=state_type.from_dict(deepcopy(params["state"]))
+                    if "state" in params
+                    else None,
+                    params=envelope.params,
+                    envelope=envelope,
+                    raw=deepcopy(original),
+                )
+                result = callback(context)
+                if inspect.isawaitable(result):
+                    result = await result
+                if type(result) is not reply_type:
+                    raise TypeError("callback must return its event-specific Reply")
+                if not isinstance(result.effects, tuple) or any(
+                    not isinstance(effect, models._WireModel)
+                    for effect in result.effects
+                ):
+                    raise TypeError(
+                        "effects must be a tuple of generated effect models"
+                    )
                 payload = {
-                    "protocolVersion": version,
+                    "protocolVersion": params["protocolVersion"],
                     "effects": [dict(effect) for effect in result.effects],
                 }
                 if result.extensions is not None:
-                    payload["extensions"] = result.extensions
+                    payload["extensions"] = deepcopy(result.extensions)
                 kind = "intercept-response"
             else:
                 payload = {
@@ -156,6 +207,9 @@ class Engine:
                 kind = "capabilities-response"
             response = {"jsonrpc": "2.0", "id": id, "result": payload}
             self.validator.validate(kind, response)
+            if kind == "intercept-response":
+                _validate_intercept_response(self.validator, original, response)
+                validate_grants(original, response)
             _encode(response)
             return response
         except HTTPError:

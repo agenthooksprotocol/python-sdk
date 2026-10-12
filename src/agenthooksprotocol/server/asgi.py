@@ -3,7 +3,7 @@
 from collections.abc import Awaitable, Callable, MutableMapping
 from typing import Any
 
-from .hooks import Engine, Handler, HTTPError, _encode
+from .hooks import Engine, Handlers, HTTPError, _encode
 
 
 class App:
@@ -11,7 +11,7 @@ class App:
 
     def __init__(
         self,
-        handler: Handler,
+        handler: Handlers,
         *,
         max_bytes: int = 4 * 1024 * 1024,
         **engine_options: Any,
@@ -60,7 +60,3 @@ class App:
             {"type": "http.response.start", "status": status, "headers": headers}
         )
         await send({"type": "http.response.body", "body": payload})
-
-
-def app(handler: Handler, **options: Any) -> App:
-    return App(handler, **options)

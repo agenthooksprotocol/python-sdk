@@ -227,12 +227,12 @@ def response_for_request(
 ) -> _wire.ParseResult[_models.WorkspaceChangeBeforeInterceptResponse]: ...
 @overload
 def response_for_request(
-    event_type: str,
+    event_type: _models.EventType,
     raw: str | JsonValue,
     validate: Callable[[Any], Sequence[_wire.ParseDiagnostic]] | None = None,
 ) -> _wire.ParseResult[ContextualResponse]: ...
 def response_for_request(
-    event_type: str,
+    event_type: _models.EventType,
     raw: str | JsonValue,
     validate: Callable[[Any], Sequence[_wire.ParseDiagnostic]] | None = None,
 ) -> _wire.ParseResult[Any]:

@@ -8,7 +8,7 @@ import threading
 import unittest
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from unittest.mock import patch
-from agenthooksprotocol.content import upload, receive
+from agenthooksprotocol._interop_content import upload, receive
 from agenthooksprotocol.lifecycle import ContentStore
 from agenthooksprotocol.runtime import Validator, ProtocolError
 

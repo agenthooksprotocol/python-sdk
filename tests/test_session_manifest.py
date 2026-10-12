@@ -1,11 +1,18 @@
 """Static host manifests belong to configuration, not each session occurrence."""
 
+from agenthooksprotocol import capability
+
 from copy import deepcopy
 import unittest
 
 import anyio
 
-from agenthooksprotocol import Hooks, event
+from agenthooksprotocol import Hooks, HostManifestMetadata, event
+from agenthooksprotocol._models import (
+    StaticCapabilityManifestGapsItem,
+    StaticCapabilityManifestLimits,
+    StaticCapabilityManifestManagedPolicy,
+)
 from agenthooksprotocol.runtime import ProtocolError
 from agenthooksprotocol.server import hooks as server
 from test_public_hooks import config
@@ -35,24 +42,46 @@ def manifest():
     }
 
 
+def metadata():
+    return HostManifestMetadata(
+        transports=("in_process",),
+        authentication=(),
+        tool_paths=(),
+        content_categories=(),
+        limits=StaticCapabilityManifestLimits(),
+        managed_policy=StaticCapabilityManifestManagedPolicy(
+            scopes=[], disableable=True
+        ),
+        correlation_identity_fields=("event.source", "event.id"),
+        gaps=(
+            StaticCapabilityManifestGapsItem(
+                path="events.other", reason="Not implemented"
+            ),
+        ),
+        additional_properties={"opaque": {"nested": ["original"]}},
+    )
+
+
 class ManifestTests(unittest.TestCase):
     def test_full_manifest_and_sdk_envelope_are_detached(self):
         async def run():
             received = []
-            configured = manifest()
-            expected = deepcopy(configured)
+            configured = metadata()
+            expected = {**manifest(), "opaque": {"nested": ["original"]}}
             registration = config(mode="observe")
             registration["hooks"][0]["subscriptions"][0]["events"] = ["session.start"]
 
-            async def observe(note):
-                occurrence = note["params"]["event"]
+            async def observe(ctx: server.SessionStartObserveContext) -> None:
+                occurrence = ctx.raw["params"]["event"]
                 received.append(deepcopy(occurrence))
                 occurrence["manifest"]["events"].clear()
                 occurrence["session"]["id"] = "callback-mutation"
                 occurrence["source"] = "urn:callback"
                 occurrence["id"] = "callback-id"
 
-            handler = server.Handler(observe=observe)
+            handler = server.Handlers(
+                observe=server.ObserveHandlers(session_start=observe)
+            )
 
             class Transport:
                 async def notify(self, note):
@@ -63,14 +92,17 @@ class ManifestTests(unittest.TestCase):
             async with Hooks(
                 registration,
                 source="urn:configured",
-                manifest=configured,
+                manifest_metadata=configured,
+                capabilities=capability.HostCapabilities(
+                    session_start=capability.Observe()
+                ),
                 transport=Transport(),
             ) as harness:
-                configured["events"].clear()
+                configured.additional_properties["opaque"]["nested"].clear()
                 snapshot = harness.manifest
                 snapshot["events"].clear()
                 first = await harness.session_start(facts, event_id="owned-id")
-                self.assertEqual(await harness.wait(), [])
+                self.assertEqual(await harness.wait_observations(), [])
                 self.assertEqual(harness.manifest, expected)
                 self.assertEqual(first.event["manifest"], expected)
                 # Raw caller attempts cannot override SDK-owned envelope fields.
@@ -84,7 +116,7 @@ class ManifestTests(unittest.TestCase):
                     },
                     event_id="second-id",
                 )
-                self.assertEqual(await harness.wait(), [])
+                self.assertEqual(await harness.wait_observations(), [])
                 self.assertEqual(harness.config, registration)
             self.assertEqual(facts, original)
             self.assertEqual(len(received), 2)
@@ -103,13 +135,12 @@ class ManifestTests(unittest.TestCase):
         harness = Hooks(
             config(),
             source="urn:configured",
-            capabilities={
-                "session.start": {"modes": ["observe"]},
-                "tool.before": {
-                    "modes": ["intercept"],
-                    "capabilities": {"effects": ["deny"]},
-                },
-            },
+            capabilities=capability.HostCapabilities(
+                session_start=capability.Observe(),
+                tool_before=capability.ToolBeforeCapabilities(
+                    intercept=capability.ToolBeforeIntercept(deny=True)
+                ),
+            ),
         )
         result = harness.manifest
         self.assertEqual(
@@ -132,7 +163,11 @@ class ManifestTests(unittest.TestCase):
         with self.assertRaisesRegex(
             ProtocolError, "Unsupported event or delivery mode"
         ):
-            Hooks(config(), source="urn:configured", capabilities={})
+            Hooks(
+                config(),
+                source="urn:configured",
+                capabilities=capability.HostCapabilities(),
+            )
 
     def test_shorthand_session_start_delivers_without_caller_manifest(self):
         async def run():
@@ -140,10 +175,12 @@ class ManifestTests(unittest.TestCase):
             registration = config(mode="observe")
             registration["hooks"][0]["subscriptions"][0]["events"] = ["session.start"]
 
-            async def observe(note):
-                received.append(deepcopy(note["params"]["event"]))
+            async def observe(ctx: server.SessionStartObserveContext) -> None:
+                received.append(deepcopy(ctx.raw["params"]["event"]))
 
-            handler = server.Handler(observe=observe)
+            handler = server.Handlers(
+                observe=server.ObserveHandlers(session_start=observe)
+            )
 
             class Transport:
                 async def notify(self, note):
@@ -152,11 +189,13 @@ class ManifestTests(unittest.TestCase):
             async with Hooks(
                 registration,
                 source="urn:shorthand",
-                capabilities={"session.start": {"modes": ["observe"]}},
+                capabilities=capability.HostCapabilities(
+                    session_start=capability.Observe()
+                ),
                 transport=Transport(),
             ) as harness:
                 await harness.session_start(host_facts())
-                self.assertEqual(await harness.wait(), [])
+                self.assertEqual(await harness.wait_observations(), [])
                 self.assertEqual(len(received), 1)
                 self.assertEqual(received[0]["manifest"], harness.manifest)
                 self.assertEqual(received[0]["source"], "urn:shorthand")
@@ -168,12 +207,11 @@ class ManifestTests(unittest.TestCase):
             with self.subTest(backend=backend):
                 anyio.run(run, backend=backend)
 
-    def test_constructor_rejects_ambiguous_or_invalid_manifest(self):
+    def test_constructor_rejects_removed_full_manifest_argument(self):
         for kwargs in (
-            {"manifest": manifest(), "capabilities": {}},
+            {"manifest": manifest()},
+            {"manifest": manifest(), "capabilities": capability.HostCapabilities()},
             {"manifest": {}},
-            {},
-            {"manifest": {**manifest(), "events": manifest()["events"] * 2}},
         ):
-            with self.subTest(kwargs=kwargs), self.assertRaises(ProtocolError):
+            with self.subTest(kwargs=kwargs), self.assertRaises(TypeError):
                 Hooks(config(), source="urn:configured", **kwargs)

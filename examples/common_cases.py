@@ -5,6 +5,7 @@ admission, ordinary application validation, denial, and synthetic execution.
 """
 
 from __future__ import annotations
+from agenthooksprotocol import capability
 
 from copy import deepcopy
 from pathlib import Path
@@ -12,10 +13,10 @@ import json
 from typing import Any, cast
 
 import anyio
+from agenthooksprotocol.generated import JsonValue
 import httpx
-from agenthooksprotocol import HookResult, Hooks, capability, event, tool
-from agenthooksprotocol.wire import Effect, InterceptRequest
-from agenthooksprotocol.server import asgi, hooks
+from agenthooksprotocol import HookResult, Hooks, event, tool
+from agenthooksprotocol.permission import Permission
 from agenthooksprotocol.transports.http import HTTPTransport
 from typed_tool import ShellCodec, allowed_by_host
 
@@ -27,29 +28,36 @@ async def run_case(case: dict[str, Any]) -> dict[str, Any]:
         "policy", "fail-closed"
     )
 
-    async def intercept(request: InterceptRequest) -> hooks.InterceptResult:
+    # These comparison fixtures deliberately include malformed or overbroad
+    # effects. Frame a raw backend response so the SDK, not server admission,
+    # remains the validation boundary under test.
+    async def respond(request: httpx.Request) -> httpx.Response:
         if case.get("deliveryError"):
             raise ValueError("deliberate backend failure")
-        return hooks.InterceptResult(
-            effects=cast(list[Effect], deepcopy(case["effects"]))
+        message = json.loads(request.content)
+        return httpx.Response(
+            200,
+            json={
+                "jsonrpc": "2.0",
+                "id": message["id"],
+                "result": {
+                    "protocolVersion": "draft",
+                    "effects": deepcopy(case["effects"]),
+                },
+            },
         )
 
-    async with httpx.AsyncClient(
-        transport=httpx.ASGITransport(app=asgi.App(hooks.Handler(intercept=intercept)))
-    ) as client:
+    async with httpx.AsyncClient(transport=httpx.MockTransport(respond)) as client:
         async with Hooks(
             config,
             source="urn:example:comparison",
-            capabilities={
-                "tool.before": capability.Declaration(
-                    modes=[capability.Mode.INTERCEPT],
-                    grants=[
-                        capability.Allow(),
-                        capability.Deny(),
-                        capability.ModifyInput(replace=True),
-                    ],
-                ),
-            },
+            capabilities=capability.HostCapabilities(
+                tool_before=capability.ToolBeforeCapabilities(
+                    intercept=capability.ToolBeforeIntercept(
+                        allow=True, deny=True, modify_input=capability.Modify.REPLACE
+                    )
+                )
+            ),
             transport=HTTPTransport("http://example.test/hooks", client=client),
         ) as harness:
             result: HookResult[object, object, object] = await harness.tool_before(
@@ -71,7 +79,7 @@ async def run_case(case: dict[str, Any]) -> dict[str, Any]:
             host_accepted = False
             executions: list[dict[str, Any]] = []
             try:
-                effective = result.decode_input(ShellCodec())
+                effective = ShellCodec().decode(cast(JsonValue, result.input))
                 host_accepted = allowed_by_host(effective)
                 if not host_accepted:
                     layer = "host-policy"
@@ -79,7 +87,11 @@ async def run_case(case: dict[str, Any]) -> dict[str, Any]:
                 layer = "host-input-schema"
             if result.diagnostics and not result.accepted_responses:
                 layer = "protocol"
-            if host_accepted and result.decision == "allow":
+            if host_accepted and result.permission in (
+                Permission.NONE,
+                Permission.ALLOW,
+            ):
+                # Explicit host validation can authorize NONE, but never DENY or ASK.
                 # A harmless ordinary host operation, not SDK execution or a shell.
                 executions.append(dict(effective))
             return {
@@ -87,8 +99,8 @@ async def run_case(case: dict[str, Any]) -> dict[str, Any]:
                 "sdkAccepted": bool(result.accepted_responses),
                 "hostAccepted": host_accepted,
                 "rejectionLayer": layer,
-                "decision": result.decision,
-                "effectiveInput": result.effective_input,
+                "permission": result.permission.value,
+                "effectiveInput": result.input,
                 "executed": bool(executions),
                 "executionCount": len(executions),
                 "diagnostics": result.diagnostics,

@@ -1,5 +1,7 @@
 """Correlated generated contracts are consumed by the actual public runtime."""
 
+from agenthooksprotocol import capability
+
 from copy import deepcopy
 import unittest
 
@@ -26,16 +28,22 @@ class CorrelatedCoreTests(unittest.TestCase):
                 {"effects": [{"type": "return", "value": {"result": 9}}]}
             )
             async with hooks_for(
-                "tool.before", {"effects": ["return"]}, transport
+                "tool.before",
+                capability.HostCapabilities(
+                    tool_before=capability.ToolBeforeCapabilities(
+                        intercept=capability.ToolBeforeIntercept(return_result=True)
+                    )
+                ),
+                transport,
             ) as hooks:
                 result = await hooks.tool_before(tool_input())
                 self.assertIsInstance(result.event, _models.ToolBeforeEvent)
-                self.assertIsInstance(result.state["candidate"], _models.ToolCandidate)
+                self.assertIsInstance(result._state["candidate"], _models.ToolCandidate)
                 self.assertIsInstance(
                     result._contextual_response, _models.ToolBeforeInterceptResponse
                 )
-                self.assertIsInstance(result.decoded_candidate, Candidate)
-                self.assertEqual(result.decoded_candidate.value, {"result": 9})
+                self.assertIsInstance(result.candidate, Candidate)
+                self.assertEqual(result.candidate.value, {"result": 9})
 
         self.run_async(run)
 
@@ -56,7 +64,15 @@ class CorrelatedCoreTests(unittest.TestCase):
             }
             original = deepcopy(payload)
             transport = Replies({"effects": []})
-            async with hooks_for("tool.before", {"effects": []}, transport) as hooks:
+            async with hooks_for(
+                "tool.before",
+                capability.HostCapabilities(
+                    tool_before=capability.ToolBeforeCapabilities(
+                        intercept=capability.ToolBeforeIntercept(message=True)
+                    )
+                ),
+                transport,
+            ) as hooks:
                 result = await hooks.tool_before(payload)
                 counters = result.event.session.counters
                 self.assertIsInstance(counters, SessionCounters)
@@ -90,10 +106,20 @@ class CorrelatedCoreTests(unittest.TestCase):
                     ]
                 }
             )
-            async with hooks_for(name, {"effects": ["return"]}, transport) as hooks:
+            async with hooks_for(
+                name,
+                capability.HostCapabilities(
+                    model_request_before=capability.ModelRequestBeforeCapabilities(
+                        intercept=capability.ModelRequestBeforeIntercept(
+                            return_result=True
+                        )
+                    )
+                ),
+                transport,
+            ) as hooks:
                 result = await hooks.model_request_before(payload)
                 self.assertEqual(result.accepted_responses, [])
-                self.assertIsNone(result.decoded_candidate)
+                self.assertIsNone(result.candidate)
                 self.assertTrue(result.diagnostics)
             with self.assertRaises(ProtocolError):
                 _apply_response(
@@ -127,11 +153,17 @@ class CorrelatedCoreTests(unittest.TestCase):
                     ]
                 }
             )
-            caps = {
-                "effects": ["modify"],
-                "modify": {"input": {"replace": True, "merge": True}},
-            }
-            async with hooks_for("tool.before", caps, transport) as hooks:
+            async with hooks_for(
+                "tool.before",
+                capability.HostCapabilities(
+                    tool_before=capability.ToolBeforeCapabilities(
+                        intercept=capability.ToolBeforeIntercept(
+                            modify_input=capability.Modify.REPLACE_AND_MERGE
+                        )
+                    )
+                ),
+                transport,
+            ) as hooks:
                 result = await hooks.tool_before(payload)
                 self.assertEqual(result.input, replacement)
                 self.assertEqual(result.event.tool.input, replacement)
@@ -195,7 +227,14 @@ class CorrelatedCoreTests(unittest.TestCase):
                 )
                 async with hooks_for(
                     "user.elicitation.result",
-                    response["params"]["capabilities"],
+                    capability.HostCapabilities(
+                        user_elicitation_result=capability.UserElicitationResultCapabilities(
+                            intercept=capability.UserElicitationResultIntercept(
+                                modify_content=capability.Modify.REPLACE_AND_MERGE,
+                                elicitation=capability.Elicitation.FORM,
+                            )
+                        )
+                    ),
                     transport,
                     count=2,
                 ) as hooks:

@@ -4,13 +4,16 @@ Missing effects remains gated by the canonical bundle until regeneration.
 No test substitutes a permissive validator for canonical admission.
 """
 
+from agenthooksprotocol import capability
+
 from copy import deepcopy
 import unittest
 
 import anyio
+from agenthooksprotocol import Candidate
 
 from agenthooksprotocol import Hooks
-from agenthooksprotocol.compaction import compaction_capabilities, text_parts
+from agenthooksprotocol.compaction import text_parts
 from agenthooksprotocol.event import (
     ContextCompactBeforeInput,
     ContextCompactAfterInput,
@@ -19,7 +22,12 @@ from agenthooksprotocol.event import (
 )
 from agenthooksprotocol._models import InterceptResponse, TextBodyPart
 from agenthooksprotocol.runtime import ProtocolError, Validator
-from agenthooksprotocol.server.hooks import Handler, InterceptResult
+from agenthooksprotocol.server.hooks import (
+    Handlers,
+    InterceptHandlers,
+    ToolBeforeContext,
+    ToolBeforeReply,
+)
 from agenthooksprotocol.response import response_for_request
 
 
@@ -65,7 +73,7 @@ def hooks_for(name, caps, transport, count=1):
             ],
         },
         source="urn:test:typed",
-        capabilities={name: {"modes": ["intercept"], "capabilities": caps}},
+        capabilities=caps,
         transport=transport,
     )
 
@@ -102,14 +110,22 @@ class TypedContractRegressions(unittest.TestCase):
     def test_explicit_empty_effects_neutral_state(self):
         async def run():
             transport = Replies({"effects": []})
-            async with hooks_for("tool.before", {"effects": []}, transport) as hooks:
+            async with hooks_for(
+                "tool.before",
+                capability.HostCapabilities(
+                    tool_before=capability.ToolBeforeCapabilities(
+                        intercept=capability.ToolBeforeIntercept(message=True)
+                    )
+                ),
+                transport,
+            ) as hooks:
                 result = await hooks.dispatch("tool.before", tool_input())
                 self.assertEqual(len(result.accepted_responses), 1)
                 self.assertEqual(result.input, tool_input()["tool"]["input"])
                 self.assertIsNone(result.candidate)
                 self.assertEqual(result.permission.value, "none")
                 self.assertEqual(
-                    response_for_request("tool.before", result.accepted_response)[
+                    response_for_request("tool.before", result.accepted_responses[-1])[
                         "value"
                     ].result.effects,
                     [],
@@ -120,20 +136,28 @@ class TypedContractRegressions(unittest.TestCase):
     def test_missing_effects_neutral_state(self):
         async def run():
             transport = Replies({})
-            async with hooks_for("tool.before", {"effects": []}, transport) as hooks:
+            async with hooks_for(
+                "tool.before",
+                capability.HostCapabilities(
+                    tool_before=capability.ToolBeforeCapabilities(
+                        intercept=capability.ToolBeforeIntercept(message=True)
+                    )
+                ),
+                transport,
+            ) as hooks:
                 result = await hooks.dispatch("tool.before", tool_input())
                 self.assertEqual(len(result.accepted_responses), 1)
                 self.assertEqual(result.input, tool_input()["tool"]["input"])
                 self.assertIsNone(result.candidate)
                 self.assertEqual(
-                    response_for_request("tool.before", result.accepted_response)[
+                    response_for_request("tool.before", result.accepted_responses[-1])[
                         "value"
                     ].result.effects,
                     [],
                 )
-                self.assertNotIn("effects", result.accepted_response["result"])
+                self.assertNotIn("effects", result.accepted_responses[-1]["result"])
                 self.assertNotIn("effects", transport.responses[0]["result"])
-                parsed = InterceptResponse.from_dict(result.accepted_response)
+                parsed = InterceptResponse.from_dict(result.accepted_responses[-1])
                 self.assertEqual(
                     response_for_request("tool.before", parsed)["value"].result.effects,
                     [],
@@ -145,15 +169,25 @@ class TypedContractRegressions(unittest.TestCase):
     def test_backend_default_reply_is_neutral(self):
         async def run():
             transport = Replies({"effects": []})
-            async with hooks_for("tool.before", {"effects": []}, transport) as hooks:
+            async with hooks_for(
+                "tool.before",
+                capability.HostCapabilities(
+                    tool_before=capability.ToolBeforeCapabilities(
+                        intercept=capability.ToolBeforeIntercept(message=True)
+                    )
+                ),
+                transport,
+            ) as hooks:
                 await hooks.dispatch("tool.before", tool_input())
             request = transport.requests[0]
             before = deepcopy(request)
 
-            async def intercept(message):
-                return InterceptResult()
+            async def intercept(ctx: ToolBeforeContext) -> ToolBeforeReply:
+                return ToolBeforeReply()
 
-            response = await Handler(intercept=intercept).process(request)
+            response = await Handlers(
+                intercept=InterceptHandlers(tool_before=intercept)
+            ).process(request)
             self.assertEqual(response["result"]["effects"], [])
             Validator().validate("intercept-response", response)
             self.assertEqual(request, before)
@@ -186,7 +220,29 @@ class TypedContractRegressions(unittest.TestCase):
                 )
                 before = deepcopy(payload)
                 async with hooks_for(
-                    name, compaction_capabilities(boundary), transport
+                    name,
+                    (
+                        capability.HostCapabilities(
+                            context_compact_before=capability.ContextCompactBeforeCapabilities(
+                                intercept=capability.ContextCompactBeforeIntercept(
+                                    message=True,
+                                    return_result=True,
+                                    deny=True,
+                                    modify_instructions=capability.Modify.REPLACE_AND_MERGE,
+                                )
+                            )
+                        )
+                        if boundary == "before"
+                        else capability.HostCapabilities(
+                            context_compact_after=capability.ContextCompactAfterCapabilities(
+                                intercept=capability.ContextCompactAfterIntercept(
+                                    message=True,
+                                    modify_summary=capability.Modify.REPLACE_AND_MERGE,
+                                )
+                            )
+                        )
+                    ),
+                    transport,
                 ) as hooks:
                     typed = (
                         ContextCompactBeforeInput
@@ -253,17 +309,24 @@ class TypedContractRegressions(unittest.TestCase):
                     ]
                 },
             )
-            caps = {
-                "effects": ["modify"],
-                "modify": {"prompt": {"replace": True, "merge": False}},
-            }
             payload = {
                 "trigger": "user",
                 "items": [{"role": "user", "parts": text_parts("original")}],
                 "turn": {"id": "turn-one"},
             }
             before = deepcopy(payload)
-            async with hooks_for(name, caps, transport, count=2) as hooks:
+            async with hooks_for(
+                name,
+                capability.HostCapabilities(
+                    turn_start=capability.TurnStartCapabilities(
+                        intercept=capability.TurnStartIntercept(
+                            modify_prompt=capability.Modify.REPLACE
+                        )
+                    )
+                ),
+                transport,
+                count=2,
+            ) as hooks:
                 result = await hooks.dispatch(name, payload)
                 self.assertEqual(len(result.accepted_responses), 1, result.diagnostics)
                 self.assertEqual(result.event["items"], replacement)
@@ -287,10 +350,6 @@ class TypedContractRegressions(unittest.TestCase):
                 workspace={"kind": "cwd", "change": {"cwd": "/before"}},
                 extensions={"org.example.future": deepcopy(opaque)},
             )
-            caps = {
-                "effects": ["modify"],
-                "modify": {"workspace": {"replace": True, "merge": True}},
-            }
             transport = Replies(
                 {
                     "effects": [
@@ -304,7 +363,17 @@ class TypedContractRegressions(unittest.TestCase):
                     "extensions": {"org.example.future": deepcopy(opaque)},
                 }
             )
-            async with hooks_for(name, caps, transport) as hooks:
+            async with hooks_for(
+                name,
+                capability.HostCapabilities(
+                    workspace_change_before=capability.WorkspaceChangeBeforeCapabilities(
+                        intercept=capability.WorkspaceChangeBeforeIntercept(
+                            modify_workspace=capability.Modify.REPLACE_AND_MERGE
+                        )
+                    )
+                ),
+                transport,
+            ) as hooks:
                 result = await hooks.dispatch(name, payload)
                 self.assertEqual(len(result.accepted_responses), 1, result.diagnostics)
                 self.assertEqual(result.event["workspace"]["change"], {"cwd": "/after"})
@@ -312,7 +381,7 @@ class TypedContractRegressions(unittest.TestCase):
                     result.event["extensions"]["org.example.future"], opaque
                 )
                 self.assertEqual(
-                    result.accepted_response["result"]["extensions"][
+                    result.accepted_responses[-1]["result"]["extensions"][
                         "org.example.future"
                     ],
                     opaque,
@@ -338,15 +407,26 @@ class TypedContractRegressions(unittest.TestCase):
                 params={"unrecognized": {"parts": None}},
                 items=[],
             )
-            async with hooks_for(name, {"effects": ["return"]}, transport) as hooks:
+            async with hooks_for(
+                name,
+                capability.HostCapabilities(
+                    model_request_before=capability.ModelRequestBeforeCapabilities(
+                        intercept=capability.ModelRequestBeforeIntercept(
+                            return_result=True
+                        )
+                    )
+                ),
+                transport,
+            ) as hooks:
                 result = await hooks.dispatch(name, payload)
                 self.assertEqual(len(result.accepted_responses), 1, result.diagnostics)
-                from agenthooksprotocol._models import MessagesCandidate, CanonicalMessage
-                self.assertIsInstance(result.candidate, MessagesCandidate)
-                self.assertIsInstance(result.decoded_candidate.value[0], CanonicalMessage)
-                self.assertEqual(result.candidate["value"], messages)
+                from agenthooksprotocol._models import CanonicalMessage
+
+                self.assertIsInstance(result.candidate, Candidate)
+                self.assertIsInstance(result.candidate.value[0], CanonicalMessage)
+                self.assertEqual(result.candidate.value, messages)
                 self.assertEqual(result.event["params"], payload["params"])
-                self.assertNotIn("parts", result.candidate["value"][0]["parts"][0])
+                self.assertNotIn("parts", result.candidate.value[0]["parts"][0])
 
         self.run_async(run)
 
@@ -372,7 +452,16 @@ class TypedContractRegressions(unittest.TestCase):
             )
             name = "user.elicitation.result"
             async with hooks_for(
-                name, response["params"]["capabilities"], transport
+                name,
+                capability.HostCapabilities(
+                    user_elicitation_result=capability.UserElicitationResultCapabilities(
+                        intercept=capability.UserElicitationResultIntercept(
+                            modify_content=capability.Modify.REPLACE_AND_MERGE,
+                            elicitation=capability.Elicitation.FORM,
+                        )
+                    )
+                ),
+                transport,
             ) as hooks:
                 result = await hooks.dispatch(
                     name, response["params"]["event"], original_request=original
@@ -400,16 +489,29 @@ class TypedContractRegressions(unittest.TestCase):
             name = "user.elicitation.request"
             before = deepcopy(original)
             async with hooks_for(
-                name, original["params"]["capabilities"], transport
+                name,
+                capability.HostCapabilities(
+                    user_elicitation_request=capability.UserElicitationRequestCapabilities(
+                        intercept=capability.UserElicitationRequestIntercept(
+                            deny=True,
+                            return_result=True,
+                            elicitation=capability.Elicitation.FORM,
+                        )
+                    )
+                ),
+                transport,
             ) as hooks:
                 result = await hooks.dispatch(name, original["params"]["event"])
                 self.assertEqual(len(result.accepted_responses), 1, result.diagnostics)
-                from agenthooksprotocol._models import ElicitResultCandidate, McpElicitationElicitResult
-                self.assertIsInstance(result.candidate, ElicitResultCandidate)
-                self.assertIsInstance(result.decoded_candidate.value, McpElicitationElicitResult)
-                self.assertEqual(result.decoded_candidate.value.action, "accept")
-                self.assertEqual(result.candidate["value"], value)
-                self.assertEqual(result.content["candidate"], value)
+                from agenthooksprotocol._models import McpElicitationElicitResult
+
+                self.assertIsInstance(result.candidate, Candidate)
+                self.assertIsInstance(
+                    result.candidate.value, McpElicitationElicitResult
+                )
+                self.assertEqual(result.candidate.value.action, "accept")
+                self.assertEqual(result.candidate.value, value)
+                self.assertEqual(result.candidate.value, value)
             self.assertEqual(original, before)
 
         self.run_async(run)

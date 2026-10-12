@@ -164,11 +164,15 @@ def host_outcome(request, outcome, *, validate_input=False):
     """Apply this fixture host's policy after SDK settlement, never inside it."""
     if outcome is None:
         raise ProtocolError("No correlated response accepted")
-    actual = deepcopy(outcome.state)
+    actual = deepcopy(outcome._state)
     actual["executed"] = False
     candidate = actual.pop("candidate", None)
     actual.pop("permission", None)
-    effects = (outcome.accepted_response or {}).get("result", {}).get("effects", [])
+    effects = (
+        (outcome.accepted_responses[-1] if outcome.accepted_responses else {})
+        .get("result", {})
+        .get("effects", [])
+    )
     if not (
         any(e.get("type") == "modify" and e.get("target") != "input" for e in effects)
         or outcome.event["type"] == "task.change.before"
@@ -208,7 +212,7 @@ def fixture_hooks(request, transport=None):
     Socket authentication and test-only barriers belong to the injected transport;
     acquisition, cancellation, response validation, and settlement belong to Hooks.
     """
-    from . import Hooks
+    from ._interop_hooks import _hooks_for_wire
 
     event = request["params"]["event"]
     mode = "observe" if request["method"] == "hooks/observe" else "intercept"
@@ -239,11 +243,9 @@ def fixture_hooks(request, transport=None):
             }
         ],
     }
-    return Hooks(
-        config,
-        source=event["source"],
-        capabilities={event["type"]: declaration},
-        transport=transport,
+    return _hooks_for_wire(
+        config, source=event["source"],
+        declarations={event["type"]: declaration}, transport=transport,
     )
 
 
@@ -320,7 +322,7 @@ def run_fixture_compaction(
                 staged = deepcopy(state)
                 staged[target] = committed
                 if boundary == "before":
-                    candidate = settled.raw_candidate
+                    candidate = settled.candidate
                     returned = any(
                         effect["type"] == "return"
                         for response in settled.accepted_responses
@@ -333,7 +335,7 @@ def run_fixture_compaction(
                         None
                         if candidate is None
                         else {
-                            "value": parts(candidate["value"], item_id),
+                            "value": parts(candidate.value, item_id),
                             "supplier": (
                                 supplier
                                 if returned or original is None
@@ -341,8 +343,8 @@ def run_fixture_compaction(
                             ),
                         }
                     )
-                staged["messages"].extend(settled.state["messages"])
-                staged["denied"] = settled.decision == "deny"
+                staged["messages"].extend(message.text for message in settled.messages)
+                staged["denied"] = settled._state.get("decision", "allow") == "deny"
                 state = staged
             except Exception:
                 failures.append({"boundary": boundary, "supplier": supplier})
@@ -751,20 +753,16 @@ class AdapterServer:
         if scenario["id"] in RAW_RESPONSE_PROBES:
             return deepcopy(scenario["response"])
 
-        import anyio
-        from .server.hooks import Handler, InterceptResult
-
-        async def respond(message):
-            result = scenario["response"]["result"]
-            return InterceptResult(
-                effects=deepcopy(result.get("effects", [])),
-                extensions=deepcopy(result.get("extensions")),
-            )
-
-        async def process():
-            return await Handler(intercept=respond).process(request)
-
-        return anyio.run(process)
+        # Raw fixture responses exercise SDK admission (including overbroad
+        # effects), not typed server authoring. Frame without effect hydration.
+        result = scenario["response"]["result"]
+        framed = {
+            "protocolVersion": request["params"]["protocolVersion"],
+            "effects": deepcopy(result.get("effects", [])),
+        }
+        if result.get("extensions") is not None:
+            framed["extensions"] = deepcopy(result["extensions"])
+        return {"jsonrpc": "2.0", "id": request["id"], "result": framed}
 
     def stop(self):
         self.stopping.set()

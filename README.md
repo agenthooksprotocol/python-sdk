@@ -26,9 +26,13 @@ with open("hooks.json") as file:
     config = json.load(file)
 
 async def review(existing_arguments):
-    async with Hooks(config, source="urn:example:harness", capabilities={
-        capability.Event.TOOL_BEFORE: capability.intercept().allow().deny().modify_input(replace=True),
-    }) as hooks:
+    async with Hooks(config, source="urn:example:harness", capabilities=capability.HostCapabilities(
+        tool_before=capability.ToolBeforeCapabilities(
+            intercept=capability.ToolBeforeIntercept(
+                allow=True, deny=True, modify_input=capability.Modify.REPLACE,
+            ),
+        ),
+    )) as hooks:
         result = await hooks.tool_before(event.ToolBeforeInput(
             call_id="call-1", name="read_file", input=existing_arguments,
             path="native", origin="native",
@@ -36,7 +40,7 @@ async def review(existing_arguments):
         return result  # Host validation and authorization still precede execution.
 ```
 
-Generated `Input` objects are distinct from canonical wire events. They flatten only protocol-owned wrappers, never application arguments, and `to_wire()` performs the shared mapping. `path` and `origin` remain separate required facts. Optional host IDs, timestamps, parent IDs, and other facts are retained; `event_id=` overrides an input ID. The SDK supplies type/source and the configured session manifest. Low-level `dispatch` accepts canonical dictionaries.
+Generated `Input` objects are distinct from canonical wire events. They flatten only protocol-owned wrappers, never application arguments, and `to_wire()` performs the shared mapping. `path` and `origin` remain separate required facts. Optional host IDs, timestamps, parent IDs, and other facts are retained; `event_id=` overrides an input ID. The SDK supplies type/source and the configured session manifest. Low-level `dispatch` accepts canonical dictionaries and an `event_name: EventType`. `from agenthooksprotocol.event import EventType` exposes the catalogue-derived literal type shared by `dispatch`, `subscribes`, and contextual response parsing. Canonical name literals are accepted directly; static checking rejects dynamic strings, unknown names, and selectors in these event-name positions. Registration selectors remain separate and support their documented wildcard matching.
 
 Capability builders are immutable: reusing a base declaration does not widen it. `intercept()` deliberately advertises **both intercept and observe**; `observe()` is observation-only. `modify_input(replace=True)` supplies both the effect grant and operation block. Empty operations and observation effect grants are rejected; boundary compatibility is validated before delivery. Form and URL elicitation grants are explicit (`elicitation_form()` / `elicitation_url()`). Raw manifests retain their exact modes; omission never implies permission. Per-call `capabilities=` only narrows configured grants.
 
@@ -61,17 +65,17 @@ Capabilities explicitly grant effects and target operations. Supply event capabi
 
 Supply `input_codec=`, `result_codec=`, and optional `provenance_codec=` to a named hook method or `dispatch` to declare caller types. Complete staged values are decoded and validated before publication. Object merge is shallow: omitted fields remain unchanged, literal null is retained, and nested values replace whole values. An invalid response publishes none of its effects; earlier accepted responses remain visible to later interceptors. A codec must preserve the wire data it receives, including opaque extra fields. Lossy serialization rejects admission rather than dropping fields.
 
-`result.decoded_input` exposes the declared argument value. `result.decoded_candidate` is an application `Candidate[Result, Provenance]`, or `None` when there is no candidate. Its value can itself be `None`; optional provenance is omitted from `candidate.to_dict()` when absent. Raw `input` and `candidate` views remain detached snapshots. For explicitly selected opaque host slots, use `event_codecs={("params",): codec}` with event-relative paths. Unspecified native, provider, task, permission, and discovery values are not interpreted.
+`result.input` exposes the declared argument value. `result.candidate` is an SDK-owned `Candidate[Result, Provenance]`, or `None` when there is no candidate. Its value can itself be `None`; optional provenance is omitted from `candidate.to_dict()` when absent. Both values are detached snapshots. Without caller codecs, protocol-owned candidate values use canonical typed models and application-owned values remain JSON. `result.event` is the canonical typed event; `result.accepted_responses` retains complete contextual response envelopes in settlement order. `result.messages` and `result.injections` contain typed effects, including injection delivery timing. `result.has_result` distinguishes absence from a supplied null deliverable; `result.result` raises `KeyError` when absent. `result.flow` is the settled `state.Flow`, or `None` when no flow state is supplied; explicit neutral flow is `state.Flow.NONE`. `result.instructions` includes inherited and accepted continuation instructions, with `None` when absent and `[]` for an effective empty list. `result.continuation_remaining` is the settled budget, or `None` when no budget is declared. For explicitly selected opaque host slots, use `event_codecs={("params",): codec}` with event-relative paths. Unspecified native, provider, task, permission, and discovery values are not interpreted.
 
 For forms, construct `PydanticFormContract(TypeAdapter(Answer))` from one answer declaration. `request(message)` derives the restricted MCP schema; `result_codec()` decodes the complete MCP result and its accepted answer while preserving opaque result metadata. Unsupported shapes and schema constraints are rejected during construction. Decline, cancel, and URL results have no form content. See [`examples/value_codecs.py`](examples/value_codecs.py).
 
-After settlement, explicitly decode effective input with `result.decode_input(codec)`. A codec implements `encode(value)` and `decode(json_value)`; `IdentityCodec` copies JSON. The optional `integrations.pydantic.PydanticCodec` accepts a Pydantic `TypeAdapter`. A decoding error does not retroactively reject protocol effects: retain the settled result, raw effective input, accepted responses, and diagnostics, and report host-level rejection without executing.
+A codec implements `encode(value)` and `decode(json_value)`; `IdentityCodec` copies JSON. The optional `integrations.pydantic.PydanticCodec` accepts a Pydantic `TypeAdapter`. Hosts can call `codec.decode(result.input)` for an explicit application check when no input codec is declared. A post-settlement application error does not retroactively reject protocol effects: retain the settled result, accepted responses, and diagnostics, and report host-level rejection without executing.
 
-`result.permission` is the generated `Permission` enum (`NONE`, `ALLOW`, `ASK`, `DENY`) read from canonical settlement, not an independent decision engine. `NONE` is not approval; `ASK` needs host approval; interruption never authorizes execution. `result.input` is detached accepted JSON. Declared codecs validate accepted modifications; without a declared codec, the host supplies application validation. `decode_input(codec)` remains an explicit, post-settlement host check. Candidate, canonical event, accepted responses, and diagnostics remain accessible.
+`result.permission` is the generated `Permission` enum (`NONE`, `ALLOW`, `ASK`, `DENY`) read from canonical settlement, not an independent decision engine. `NONE` is not approval; `ASK` needs host approval; interruption never authorizes execution. `result.input` is the detached accepted argument value. Declared codecs validate accepted modifications; without a declared codec, the host supplies application validation. Candidate, canonical event, accepted responses, and diagnostics remain accessible.
 
 `state.initial(Permission.ALLOW)` represents a native decision **already made for this exact occurrence**, not an authorization shortcut. Its default candidate is absent (`null`); `state.Candidate(value=None)` instead means a supplied JSON-null result. Optional typed provenance records facts, not authenticated identity or execution proof. Canonical modifications still invalidate candidates/approval as specified.
 
-Generated backend helpers such as `effect.deny(reason="policy")`, `effect.replace_input(new_args)` and `effect.merge_input(changes)`, and `effect.Return(value=...)` fill discriminants and return canonical effect models. They cannot grant themselves authority: unsupported compound responses are rejected atomically.
+Generated backend helpers such as `effect.DenyEffect(reason="policy")`, `effect.replace_input(new_args)` and `effect.merge_input(changes)`, and `effect.ReturnToolEffect(value=...)` fill discriminants and return canonical effect models. They cannot grant themselves authority: unsupported compound responses are rejected atomically.
 
 ### Diagnostics and one call budget
 
@@ -96,15 +100,19 @@ The default `auth.EnvironmentAuthProvider` resolves bearer `tokenEnv` or optiona
 
 ## Static host manifest
 
-Configure `Hooks(config, *, source, manifest=full_manifest, transport=None, auth_provider=None)` with a complete canonical static manifest, **or** use `capabilities=event_declarations`. These options are mutually exclusive. The full manifest supplies the same event/mode/effect authority used for admission; it is not backend discovery. `hooks.manifest` returns a detached snapshot.
+`hooks.subscribes("tool.before")` is a pure synchronous static-interest lookup. Use it before expensive input preparation: `False` means no eligible intercept or observe subscription selects the configured event. Exact selectors, `*`, and prefix selectors such as `tool.*` use the same matching as dispatch. Unknown or unconfigured events return `False`. Payload filters are conservatively ignored, so `True` means potential interest, not permission or guaranteed delivery. The lookup does not prepare input, authenticate, upload content, initialize transports, or contact backends.
 
-The event-map shorthand advertises only explicitly declared events and modes. Its derived manifest records a gap for every omitted canonical event and for host-level facilities that the map cannot establish (transports, authentication, tool paths, content categories, limits, and managed policy). Empty lists do not mean universal support. Use a full manifest to declare those facilities accurately; explicit full manifests are preserved rather than augmented with assumed support.
+Configure `Hooks(config, *, source, capabilities=capability.HostCapabilities(...), manifest_metadata=HostManifestMetadata(...))`. Typed host capabilities are the sole source of event modes and effect grants. Optional metadata declares transport/authentication facilities, tool paths, content categories, limits, managed policy, gaps, correlation fields, and opaque extras without granting event authority. Metadata cannot contain events or override known fields through extras. `hooks.manifest` returns a detached canonical snapshot.
+
+The frozen, keyword-only host capability model advertises only explicitly declared events and modes. Each event accepts its own typed interception options; `Observe()` declares observation interest. Empty interception and invalid option values are rejected at construction, while an empty `HostCapabilities()` grants nothing and elicitation-only interception is a valid facility declaration. `Modify.REPLACE`, `Modify.MERGE`, and `Modify.REPLACE_AND_MERGE` declare complete modification grants. `HostCapabilities.to_wire()` returns fresh canonical declarations directly; it does not parse JSON. Runtime admission still validates registration, request-time grants, and responses. The derived manifest records gaps for omitted events and host-level facilities not supplied through metadata. Explicit empty metadata collections declare no such facility; they do not mean universal support.
 
 `await hooks.session_start(event.SessionStartInput(session=..., trigger="startup", harness=..., permission_mode="default", items=[]))` needs only occurrence-specific host facts. The SDK supplies `manifest`, `type`, and `source`, and supplies `id`/`time` when absent; `event_id=` takes precedence over a supplied ID. Caller payload fields cannot override the configured type, source, or manifest. Configuration, manifest snapshots, and delivered occurrences are independent copies. See [`examples/session_manifest.py`](examples/session_manifest.py) for a runnable, typechecked receiver example.
 
 ## Backend servers
 
-`from agenthooksprotocol.server import hooks` exposes the small `hooks.Handler(intercept=..., observe=...)` callback surface and `hooks.InterceptResult`. Both callbacks are asynchronous and receive canonical generated protocol requests. The same protocol dispatcher serves stdio and the framework-neutral ASGI adapter. ASGI does not require Starlette or FastAPI.
+`from agenthooksprotocol.server import hooks` exposes event-correlated callback maps. Configure `hooks.Handlers(intercept=hooks.InterceptHandlers(tool_before=before), observe=hooks.ObserveHandlers(tool_before=observer))`. A tool interception callback accepts `hooks.ToolBeforeContext` and returns `hooks.ToolBeforeReply`; an observation callback accepts `hooks.ToolBeforeObserveContext` and returns `None`. Callbacks can be synchronous or asynchronous. Contexts expose the typed event, full params/envelope, and detached raw evidence; interception contexts also expose request-time capabilities and state. Reply envelopes and correlation IDs belong to the server.
+
+`hooks.ToolBeforeReply(effects=(hooks.ReplaceInput(arguments), effect.Allow()))` preserves effect order. `hooks.ToolBeforeReply()` is a valid no-op. Reply types constrain event-specific controls; runtime validation still checks canonical/contextual legality and dynamic request grants. Tool contexts provide `decode_input(codec)` and `decode_candidate(result_codec, provenance_codec)` for caller-owned application types without discarding original wire evidence. The same dispatcher serves stdio and the framework-neutral ASGI adapter; ASGI does not require Starlette or FastAPI.
 
 Observation is one-way. It does not acquire effect authority and never waits for an acknowledgement. An optional static **harness** manifest can expose `hooks/capabilities`; backend callbacks are not capability discovery and do not manufacture grants.
 
@@ -210,8 +218,9 @@ or `sha256`. Metadata-only content and body gaps may still disclose size/digest.
 
 ```python
 from agenthooksprotocol import ContentReference, capability, effect
+from agenthooksprotocol._models.capability import Capabilities
 
-caps = capability.Capabilities.from_dict({"effects": ["deny", "vendor.custom"]})
+caps = Capabilities.from_dict({"effects": ["deny", "vendor.custom"]})
 assert caps.supports(capability.EffectName.DENY)
 assert caps.supports("vendor.custom")
 assert effect.EffectName is capability.EffectName
@@ -241,21 +250,17 @@ non-finite numbers and non-JSON values are rejected. Parsing raw JSON through
 
 Provide valid enum/literal values and all required wire members to `from_dict`. A null candidate, a candidate with
 `{"value": null}`, and a candidate with `{"value": 0}` remain distinct; omitting a
-required candidate is an error. Generated input projections and capability grant
-builders are construction helpers, not wire decode entrypoints; their final wire
-objects are validated at the dispatch/parse boundary. Direct dictionary
+required candidate is an error. Generated input projections and frozen host capability
+models are construction APIs, not wire decode entrypoints; their canonical wire
+values are validated at the dispatch/parse boundary. Direct dictionary
 mutation, standard-library `json.loads`, TypedDict annotations, and type assertions
 are not SDK validation entrypoints. Re-parse after manually mutating a mapping.
 
-Nested model attributes expose declared protocol fields. For example, `capability.Capabilities(effects=["modify"], modify={}).modify.input` is `None` when that grant is absent. Family queries are available on generic and per-occurrence capability models.
+Nested model attributes expose declared protocol fields. For example, `Capabilities(effects=["modify"], modify={}).modify.input` is `None` when that grant is absent. Family queries are available on generic and per-occurrence capability models.
 
-Constructor aliases cannot silently overwrite wire keys. Supplying both
-`tool_name=` and `toolName=` raises `TypeError`, even if the values agree. For
-optional/defaulted fields, a lone wire spelling (for example `addressForm=` or
-`protocolVersion=`) is used and validated rather than replaced by a default.
-Required constructor parameters use their documented Python spelling;
-use `from_dict` to decode complete wire-keyed objects. In `from_dict`, distinct
-keys such as `toolName` and `tool_name` remain distinct wire/extension keys.
+Use the documented Python spelling for constructor parameters. Use `from_dict`
+to decode complete wire-keyed objects. In `from_dict`, distinct keys such as
+`toolName` and `tool_name` remain distinct wire/extension keys.
 
 ### Owned attachments
 

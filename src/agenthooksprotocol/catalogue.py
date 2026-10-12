@@ -5,6 +5,7 @@ from collections import defaultdict
 from contextlib import AsyncExitStack
 from .runtime import ProtocolError
 from .registration import validate_registration
+from . import capability
 import anyio
 
 EXECUTION_EVENTS = (
@@ -123,11 +124,33 @@ async def _run_catalogue(config, fixtures, transport, validator):
         async def notify(self, message):
             await anyio.to_thread.run_sync(transport.notify, message)
 
-    declarations = {
-        entry["event"]: {"modes": ["observe"]}
-        for entry in manifest["events"]
-        if "observe" in entry["modes"]
-    }
+    # The synthetic host implements this fixed catalogue. External discovery
+    # remains canonical wire evidence for registration checks, not a constructor
+    # adapter that can grant arbitrary host capabilities.
+    declarations = capability.HostCapabilities(
+        tool_before=capability.Observe(),
+        tool_after=capability.Observe(),
+        turn_start=capability.Observe(),
+        turn_finish_before=capability.Observe(),
+        turn_end=capability.Observe(),
+        turn_progress=capability.Observe(),
+        model_request_before=capability.Observe(),
+        model_response_after=capability.Observe(),
+        model_error=capability.Observe(),
+        model_switch_before=capability.Observe(),
+        model_switch_after=capability.Observe(),
+        tool_permission_request=capability.Observe(),
+        tool_permission_resolved=capability.Observe(),
+        tool_progress=capability.Observe(),
+        tool_batch_after=capability.Observe(),
+        context_compact_before=capability.Observe(),
+        context_compact_after=capability.Observe(),
+        task_change_before=capability.Observe(),
+        task_change_after=capability.Observe(),
+        workspace_change_before=capability.Observe(),
+        workspace_change_after=capability.Observe(),
+        file_changed=capability.Observe(),
+    )
     registration = {
         "protocolVersion": "draft",
         "hooks": [
@@ -136,7 +159,11 @@ async def _run_catalogue(config, fixtures, transport, validator):
                 "transport": {"type": "http", "url": "http://127.0.0.1/fixture"},
                 "subscriptions": [
                     {
-                        "events": list(declarations),
+                        "events": [
+                            entry["event"]
+                            for entry in manifest["events"]
+                            if "observe" in entry["modes"]
+                        ],
                         "mode": "observe",
                         "content": {"default": "metadata"},
                     }

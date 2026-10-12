@@ -7,6 +7,8 @@ import weakref
 
 import anyio
 
+from agenthooksprotocol.permission import Permission
+
 from agenthooksprotocol import Attachment, OperationCancelledError
 from agenthooksprotocol.runtime import ProtocolError
 from test_attachments import inline_input
@@ -100,7 +102,7 @@ class ContentLifetimeTests(unittest.TestCase):
                     except OperationCancelledError:
                         self.assertEqual(mode, "cancel")
                     else:
-                        self.assertEqual(result.decision, "deny")
+                        self.assertEqual(result.permission, Permission.DENY)
                         await result.aclose()
                 self.assert_retired(hooks, handles, owner)
 
@@ -281,7 +283,7 @@ class ContentLifetimeTests(unittest.TestCase):
                 owner = Attachment.from_bytes(b"hello")
                 async with hooks:
                     result = await call(owner)
-                    self.assertEqual(result.decision, "deny")
+                    self.assertEqual(result.permission, Permission.DENY)
                     await result.aclose()
                 self.assert_retired(hooks, handles, owner)
                 # One-shot byte owners cannot be retried; a fresh owner can.

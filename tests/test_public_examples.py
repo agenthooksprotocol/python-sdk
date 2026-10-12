@@ -37,7 +37,7 @@ class PublicExamplesTests(unittest.TestCase):
 
     def test_actual_owned_stdio_backend(self):
         result = self.run_example("stdio_tool.py")
-        self.assertEqual(result["decision"], "deny")
+        self.assertEqual(result["permission"], "deny")
         self.assertFalse(result["executed"])
 
     def test_streamed_upload_and_no_metadata_reads(self):
@@ -84,6 +84,25 @@ class PublicExamplesTests(unittest.TestCase):
                 )
                 self.assertEqual(result.returncode, 0, result.stderr)
                 self.assertIsNotNone(json.loads(result.stdout))
+
+    def test_explicit_host_validation_does_not_override_deny_or_ask(self):
+        script = (
+            "import sys, anyio, json; sys.path.insert(0, 'examples'); "
+            "from common_cases import run_case; "
+            "print(json.dumps(anyio.run(run_case, json.loads(sys.argv[1]))))"
+        )
+        for permission in ("none", "allow", "deny", "ask"):
+            with self.subTest(permission=permission):
+                case = {"id": "host-gate", "effects": [], "initialPermission": permission}
+                result = subprocess.run(
+                    [sys.executable, "-c", script, json.dumps(case)],
+                    cwd=ROOT, capture_output=True, text=True, timeout=20,
+                )
+                self.assertEqual(result.returncode, 0, result.stderr)
+                report = json.loads(result.stdout)
+                self.assertEqual(report["permission"], permission)
+                self.assertTrue(report["hostAccepted"])
+                self.assertEqual(report["executed"], permission in ("none", "allow"))
 
     def test_protocol_settlement_is_not_host_input_validation(self):
         results = {row["id"]: row for row in self.run_example("common_cases.py")}

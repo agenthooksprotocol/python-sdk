@@ -29,53 +29,66 @@ class UnificationTests(unittest.TestCase):
                 anyio.run(fn, backend=backend)
 
     def test_generated_declarations_are_immutable_and_explicit(self):
-        base = capability.intercept().deny()
-        extended = base.modify_input(replace=True)
-        self.assertEqual(base.to_wire()["modes"], ["intercept", "observe"])
-        self.assertNotIn("modify", base.to_wire()["capabilities"])
-        caps = extended.to_wire()["capabilities"]
+        from dataclasses import FrozenInstanceError, replace
+
+        base = capability.ToolBeforeIntercept(deny=True)
+        extended = replace(base, modify_input=capability.Modify.REPLACE)
+        host = capability.HostCapabilities(
+            tool_before=capability.ToolBeforeCapabilities(intercept=extended)
+        )
+        caps = host.to_wire()["tool.before"]["capabilities"]
         self.assertTrue(caps["modify"]["input"]["replace"])
         self.assertFalse(caps["modify"]["input"].get("merge", False))
         self.assertEqual(set(caps["effects"]), {"deny", "modify"})
+        self.assertIsNone(base.modify_input)
+        with self.assertRaises(FrozenInstanceError):
+            base.deny = False
         with self.assertRaises(ValueError):
-            base.modify_input()
-        with self.assertRaises(ValueError):
-            base.modify_input(replace=False)
-        with self.assertRaises(ValueError):
-            capability.observe().deny()
-        self.assertEqual(capability.observe().to_wire()["modes"], ["observe"])
-        self.assertNotIn("elicitation", base.to_wire()["capabilities"])
+            capability.ToolBeforeIntercept()
+        self.assertEqual(
+            capability.HostCapabilities(tool_before=capability.Observe()).to_wire(),
+            {"tool.before": {"modes": ["observe"]}},
+        )
 
     def test_generated_flow_counts_are_integral_nonnegative_and_required(self):
-        base = capability.intercept()
         for field in (
             "continuation_count",
             "remaining_continuations",
             "max_continuations",
         ):
             for value in (-1, True, False, 0.5):
+                counts = dict(continuation_count=0, remaining_continuations=0)
+                counts[field] = value
                 with (
                     self.subTest(field=field, value=value),
                     self.assertRaises(ValueError),
                 ):
-                    base.flow(operations=["stop"], **{field: value})
+                    capability.FlowContinue(**counts)
         for counts in ({}, {"continuation_count": 0}, {"remaining_continuations": 0}):
-            with self.subTest(counts=counts), self.assertRaises(ValueError):
-                base.flow(operations=["continue"], **counts)
+            with self.subTest(counts=counts), self.assertRaises(TypeError):
+                capability.FlowContinue(**counts)
         for value in (0, 9007199254740991, 9007199254740992, 10**100):
-            caps = base.flow(
-                operations=["continue"],
+            flow = capability.FlowContinue(
                 continuation_count=value,
                 remaining_continuations=value,
                 max_continuations=value,
-            ).to_wire()["capabilities"]["flow"]
+            )
+            host = capability.HostCapabilities(
+                turn_finish_before=capability.TurnFinishBeforeCapabilities(
+                    intercept=capability.TurnFinishBeforeIntercept(flow=flow)
+                )
+            )
+            caps = host.to_wire()["turn.finish.before"]["capabilities"]["flow"]
             self.assertEqual(caps["continuationCount"], value)
             self.assertEqual(caps["remainingContinuations"], value)
             self.assertEqual(caps["maxContinuations"], value)
+        host = capability.HostCapabilities(
+            tool_before=capability.ToolBeforeCapabilities(
+                intercept=capability.ToolBeforeIntercept(flow=capability.FlowStop())
+            )
+        )
         self.assertEqual(
-            base.flow(operations=["stop"]).to_wire()["capabilities"]["flow"][
-                "operations"
-            ],
+            host.to_wire()["tool.before"]["capabilities"]["flow"]["operations"],
             ["stop"],
         )
 
@@ -86,11 +99,13 @@ class UnificationTests(unittest.TestCase):
                 config(),
                 source="urn:host",
                 transport=transport,
-                capabilities={
-                    capability.Event.TOOL_BEFORE: capability.intercept().modify_input(
-                        replace=True
+                capabilities=capability.HostCapabilities(
+                    tool_before=capability.ToolBeforeCapabilities(
+                        intercept=capability.ToolBeforeIntercept(
+                            modify_input=capability.Modify.REPLACE
+                        )
                     )
-                },
+                ),
             ) as hooks:
                 original = facts(
                     id="host-id", time="2026-01-01T00:00:00Z", parent_event_id="parent"
@@ -110,7 +125,8 @@ class UnificationTests(unittest.TestCase):
                     transport.requests[0]["params"]["event"]["call"]["id"], "call-1"
                 )
                 self.assertEqual(
-                    result.accepted_response["result"]["effects"][0]["type"], "modify"
+                    result.accepted_responses[-1]["result"]["effects"][0]["type"],
+                    "modify",
                 )
 
         self.run_async(run)
@@ -123,16 +139,27 @@ class UnificationTests(unittest.TestCase):
             {"value": None},
         )
 
+    def test_removed_effect_wrapper_is_absent(self):
+        self.assertFalse(hasattr(effect, "deny"))
+        self.assertEqual(
+            effect.Deny(reason="policy"), {"type": "deny", "reason": "policy"}
+        )
+
     def test_generated_effects_do_not_authorize_their_own_response(self):
         async def run():
             transport = MemoryTransport(
-                [effect.deny(reason="policy"), effect.replace_input({"bad": True})]
+                [effect.Deny(reason="policy"), effect.replace_input({"bad": True})]
             )
             async with Hooks(
                 config(),
                 source="urn:host",
                 transport=transport,
-                capabilities={"tool.before": capability.intercept().deny()},
+                capabilities=capability.HostCapabilities(
+                    tool_before=capability.ToolBeforeCapabilities(
+                        intercept=capability.ToolBeforeIntercept(deny=True),
+                        observe=True,
+                    )
+                ),
             ) as hooks:
                 result = await hooks.tool_before(facts())
                 self.assertEqual(result.permission, Permission.NONE)
@@ -185,7 +212,11 @@ class UnificationTests(unittest.TestCase):
                     config(policy="fail-closed"),
                     source="urn:host",
                     transport=transport,
-                    capabilities={"tool.before": capability.intercept().deny()},
+                    capabilities=capability.HostCapabilities(
+                        tool_before=capability.ToolBeforeCapabilities(
+                            intercept=capability.ToolBeforeIntercept(deny=True)
+                        )
+                    ),
                 ) as hooks:
                     result = await hooks.tool_before(facts())
                     diagnostic = result.diagnostics[0]
@@ -206,7 +237,12 @@ class UnificationTests(unittest.TestCase):
                 config(),
                 source="urn:host",
                 transport=transport,
-                capabilities={"tool.before": capability.intercept().deny()},
+                capabilities=capability.HostCapabilities(
+                    tool_before=capability.ToolBeforeCapabilities(
+                        intercept=capability.ToolBeforeIntercept(deny=True),
+                        observe=True,
+                    )
+                ),
             )
             started, release = anyio.Event(), anyio.Event()
 
@@ -237,7 +273,12 @@ class UnificationTests(unittest.TestCase):
                 config(),
                 source="urn:host",
                 transport=transport,
-                capabilities={"tool.before": capability.intercept().deny()},
+                capabilities=capability.HostCapabilities(
+                    tool_before=capability.ToolBeforeCapabilities(
+                        intercept=capability.ToolBeforeIntercept(deny=True),
+                        observe=True,
+                    )
+                ),
             ) as hooks:
                 with self.assertRaises(ValueError):
                     state.Candidate(value=object())
@@ -302,7 +343,11 @@ class UnificationTests(unittest.TestCase):
                     cfg,
                     source="urn:host",
                     transport=transport,
-                    capabilities={"tool.before": capability.intercept().deny()},
+                    capabilities=capability.HostCapabilities(
+                        tool_before=capability.ToolBeforeCapabilities(
+                            intercept=capability.ToolBeforeIntercept(deny=True)
+                        )
+                    ),
                 ) as hooks:
                     with self.assertRaises(TimeoutError):
                         with anyio.fail_after(0.25) as scope:
@@ -331,7 +376,12 @@ class UnificationTests(unittest.TestCase):
                 cfg,
                 source="urn:host",
                 transport=transport,
-                capabilities={"tool.before": capability.intercept().deny()},
+                capabilities=capability.HostCapabilities(
+                    tool_before=capability.ToolBeforeCapabilities(
+                        intercept=capability.ToolBeforeIntercept(deny=True),
+                        observe=True,
+                    )
+                ),
             ) as hooks:
                 with self.assertRaises(OperationCancelledError) as caught:
                     await hooks.tool_before(
@@ -447,7 +497,11 @@ class UnificationTests(unittest.TestCase):
                         cfg,
                         source="urn:host",
                         transport=transport,
-                        capabilities={"tool.before": capability.intercept().deny()},
+                        capabilities=capability.HostCapabilities(
+                            tool_before=capability.ToolBeforeCapabilities(
+                                intercept=capability.ToolBeforeIntercept(deny=True)
+                            )
+                        ),
                     ) as hooks:
                         with self.assertRaises(OperationCancelledError):
                             await hooks.tool_before(
@@ -491,7 +545,11 @@ class UnificationTests(unittest.TestCase):
                         config(),
                         source="urn:host",
                         transport=transport,
-                        capabilities={"tool.before": capability.intercept().deny()},
+                        capabilities=capability.HostCapabilities(
+                            tool_before=capability.ToolBeforeCapabilities(
+                                intercept=capability.ToolBeforeIntercept(deny=True)
+                            )
+                        ),
                     ) as hooks:
                         result = await hooks.tool_before(facts())
                     self.assertEqual(result.diagnostics[0]["code"], expected)

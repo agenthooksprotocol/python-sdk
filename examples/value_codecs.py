@@ -4,15 +4,18 @@ Install agenthooksprotocol[pydantic]. Keep opaque extras with extra="allow";
 lossy serializers reject a staged response rather than dropping wire fields.
 """
 
+from agenthooksprotocol import capability
+
 import json
-from typing import Any, cast
+from typing import Any
 
 import anyio
 import httpx
 
 from pydantic import BaseModel, ConfigDict, TypeAdapter
 
-from agenthooksprotocol import HookResult, Hooks, event, wire
+from agenthooksprotocol import HookResult, Hooks, event, effect
+from agenthooksprotocol._models import McpElicitationElicitResult
 from agenthooksprotocol.elicitation import ElicitResult
 from agenthooksprotocol.server import asgi, hooks as server
 from agenthooksprotocol.transports.http import HTTPTransport
@@ -57,27 +60,26 @@ form_result_codec = form.result_codec()
 
 
 async def main() -> None:
-    async def intercept(request: wire.InterceptRequest) -> server.InterceptResult:
-        params = cast(dict[str, Any], request["params"])
-        if params["event"]["type"] == "tool.before":
-            return server.InterceptResult(
-                effects=[
-                    {
-                        "type": "modify",
-                        "target": "input",
-                        "operation": "merge",
-                        "value": {"path": "reviewed.md"},
-                    },
-                    {"type": "return", "value": {"contents": "Reviewed"}},
-                ]
+    async def before_tool(ctx: server.ToolBeforeContext) -> server.ToolBeforeReply:
+        return server.ToolBeforeReply(
+            effects=(
+                server.MergeInput({"path": "reviewed.md"}),
+                effect.ReturnTool(value={"contents": "Reviewed"}),
             )
-        return server.InterceptResult(
-            effects=[
-                {
-                    "type": "return",
-                    "value": {"action": "accept", "content": {"approved": True}},
-                }
-            ]
+        )
+
+    async def intercept_elicitation(
+        ctx: server.UserElicitationRequestContext,
+    ) -> server.UserElicitationRequestReply:
+        return server.UserElicitationRequestReply(
+            effects=(
+                effect.ReturnElicitResult(
+                    value=McpElicitationElicitResult(
+                        action="accept",
+                        content={"approved": True},
+                    )
+                ),
+            )
         )
 
     config = {
@@ -98,20 +100,26 @@ async def main() -> None:
             }
         ],
     }
-    capabilities = {
-        "tool.before": {
-            "modes": ["intercept"],
-            "capabilities": {
-                "effects": ["modify", "return"],
-                "modify": {"input": {"replace": True, "merge": True}},
-            },
-        },
-        "user.elicitation.request": {
-            "modes": ["intercept"],
-            "capabilities": {"effects": ["return"], "elicitation": {"form": {}}},
-        },
-    }
-    app = asgi.App(server.Handler(intercept=intercept))
+    capabilities = capability.HostCapabilities(
+        tool_before=capability.ToolBeforeCapabilities(
+            intercept=capability.ToolBeforeIntercept(
+                return_result=True, modify_input=capability.Modify.REPLACE_AND_MERGE
+            )
+        ),
+        user_elicitation_request=capability.UserElicitationRequestCapabilities(
+            intercept=capability.UserElicitationRequestIntercept(
+                return_result=True, elicitation=capability.Elicitation.FORM
+            )
+        ),
+    )
+    app = asgi.App(
+        server.Handlers(
+            intercept=server.InterceptHandlers(
+                tool_before=before_tool,
+                user_elicitation_request=intercept_elicitation,
+            )
+        )
+    )
     async with httpx.AsyncClient(
         transport=httpx.ASGITransport(app=app), base_url="http://contracts.test"
     ) as client:
@@ -131,8 +139,8 @@ async def main() -> None:
                     origin="native",
                 ),
             )
-            assert tool_result.decoded_input.path == "reviewed.md"
-            candidate = tool_result.decoded_candidate
+            assert tool_result.input.path == "reviewed.md"
+            candidate = tool_result.candidate
             assert candidate is not None and candidate.value.contents == "Reviewed"
             form_result: HookResult[
                 object, ElicitResult[Answer], object
@@ -152,13 +160,13 @@ async def main() -> None:
                 },
                 result_codec=form_result_codec,
             )
-            supplied = form_result.decoded_candidate
+            supplied = form_result.candidate
             assert supplied is not None and supplied.value.content.approved
             # Candidates are not permission to execute or proof of human approval.
             print(
                 json.dumps(
                     {
-                        "path": tool_result.decoded_input.path,
+                        "path": tool_result.input.path,
                         "contents": candidate.value.contents,
                         "approved": supplied.value.content.approved,
                     }

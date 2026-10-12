@@ -1,5 +1,7 @@
 """Public content-bound settlement on asyncio and Trio, including negative cases."""
 
+from agenthooksprotocol import capability
+
 from copy import deepcopy
 import json
 import unittest
@@ -8,6 +10,8 @@ from uuid import uuid4
 from jsonschema.exceptions import ValidationError
 
 import anyio
+
+from agenthooksprotocol.permission import Permission
 
 from agenthooksprotocol import Hooks
 from agenthooksprotocol._content import ContentContext
@@ -87,7 +91,7 @@ def hooks_for(event, caps, transport, *, count=1, selection="body"):
     return Hooks(
         config,
         source="urn:test",
-        capabilities={event: {"modes": ["intercept"], "capabilities": caps}},
+        capabilities=caps,
         transport=transport,
     )
 
@@ -174,22 +178,28 @@ class PublicContentTests(unittest.TestCase):
             for selection in ("body", "metadata", "omit"):
                 store = Store()
                 request, _ = elicitation(store)
-                caps = {"effects": ["message"]}
                 context = ContentContext(
-                    resolve=store.resolve,
-                    upload=store.upload,
                     bindings={"request": ("elicitation", "request")},
                     principal="hook",
                 )
                 transport = Replies([{"type": "message", "text": "audit"}])
                 async with hooks_for(
-                    "user.elicitation.request", caps, transport, selection=selection
+                    "user.elicitation.request",
+                    capability.HostCapabilities(
+                        user_elicitation_request=capability.UserElicitationRequestCapabilities(
+                            intercept=capability.UserElicitationRequestIntercept(
+                                message=True
+                            )
+                        )
+                    ),
+                    transport,
+                    selection=selection,
                 ) as hooks:
                     result = await hooks.user_elicitation_request(
                         request["params"]["event"], content=context
                     )
                 self.assertEqual(result.diagnostics, [])
-                self.assertEqual(result.state["messages"], ["audit"])
+                self.assertEqual(result._state["messages"], ["audit"])
                 self.assertEqual(len(result.accepted_responses), 1)
                 self.assertEqual(store.writes, [])
                 self.assertEqual(store.reads, [])
@@ -217,15 +227,36 @@ class PublicContentTests(unittest.TestCase):
                     }
                     bindings = {"request": ("elicitation", "request")}
                 context = ContentContext(
-                    resolve=store.resolve,
-                    upload=store.upload,
                     bindings=bindings,
                     principal="hook",
                     original_request=request if stage == "result" else None,
                 )
                 transport = Replies([{"type": "message", "text": "audit"}, effect])
                 async with hooks_for(
-                    original["params"]["event"]["type"], caps, transport
+                    original["params"]["event"]["type"],
+                    (
+                        capability.HostCapabilities(
+                            user_elicitation_result=capability.UserElicitationResultCapabilities(
+                                intercept=capability.UserElicitationResultIntercept(
+                                    message=True,
+                                    modify_content=capability.Modify.REPLACE_AND_MERGE,
+                                    elicitation=capability.Elicitation.FORM,
+                                )
+                            )
+                        )
+                        if stage == "result"
+                        else capability.HostCapabilities(
+                            user_elicitation_request=capability.UserElicitationRequestCapabilities(
+                                intercept=capability.UserElicitationRequestIntercept(
+                                    deny=True,
+                                    return_result=True,
+                                    message=True,
+                                    elicitation=capability.Elicitation.FORM,
+                                )
+                            )
+                        )
+                    ),
+                    transport,
                 ) as hooks:
                     settled = await hooks.dispatch(
                         original["params"]["event"]["type"],
@@ -233,13 +264,13 @@ class PublicContentTests(unittest.TestCase):
                         content=context,
                     )
                 if stage == "invalid":
-                    self.assertEqual(settled.state["messages"], [])
+                    self.assertEqual(settled._state["messages"], [])
                     self.assertEqual(settled.accepted_responses, [])
                     self.assertEqual(store.writes, [])
                     self.assertEqual(store.reads, [])
                 else:
                     self.assertEqual(settled.diagnostics, [])
-                    self.assertEqual(settled.state["messages"], ["audit"])
+                    self.assertEqual(settled._state["messages"], ["audit"])
                     self.assertEqual(len(settled.accepted_responses), 1)
                     self.assertEqual(store.writes, [])
                     self.assertEqual(store.reads, [])
@@ -251,22 +282,29 @@ class PublicContentTests(unittest.TestCase):
             store = Store()
             request, result = elicitation(store)
             context = ContentContext(
-                resolve=store.resolve,
-                upload=store.upload,
                 bindings={"content": ("elicitation", "result")},
                 principal="authenticated-hook",
                 original_request=request,
             )
             transport = Replies([modify("content", {"ok": True})])
             async with hooks_for(
-                "user.elicitation.result", result["params"]["capabilities"], transport
+                "user.elicitation.result",
+                capability.HostCapabilities(
+                    user_elicitation_result=capability.UserElicitationResultCapabilities(
+                        intercept=capability.UserElicitationResultIntercept(
+                            modify_content=capability.Modify.REPLACE_AND_MERGE,
+                            elicitation=capability.Elicitation.FORM,
+                        )
+                    )
+                ),
+                transport,
             ) as hooks:
                 settled = await hooks.user_elicitation_result(
                     result["params"]["event"], event_id="answer", content=context
                 )
             self.assertEqual(settled.diagnostics, [])
             self.assertEqual(
-                settled.state["content"]["content"],
+                settled._state["content"]["content"],
                 {"action": "accept", "content": {"ok": True}},
             )
             part = settled.event["elicitation"]["result"]
@@ -279,7 +317,7 @@ class PublicContentTests(unittest.TestCase):
             )
             self.assertEqual(store.writes, [])
             self.assertEqual(store.reads, [])
-            self.assertFalse(settled.state["content"]["externalCompletion"])
+            self.assertFalse(settled._state["content"]["externalCompletion"])
 
         self.run_async(run)
 
@@ -294,15 +332,21 @@ class PublicContentTests(unittest.TestCase):
                 store = Store()
                 request, _ = elicitation(store)
                 context = ContentContext(
-                    resolve=store.resolve,
-                    upload=store.upload,
                     bindings={"request": ("elicitation", "request")},
                     principal="hook",
                 )
                 transport = Replies([{"type": "return", "value": answer}])
                 async with hooks_for(
                     "user.elicitation.request",
-                    request["params"]["capabilities"],
+                    capability.HostCapabilities(
+                        user_elicitation_request=capability.UserElicitationRequestCapabilities(
+                            intercept=capability.UserElicitationRequestIntercept(
+                                deny=True,
+                                return_result=True,
+                                elicitation=capability.Elicitation.FORM,
+                            )
+                        )
+                    ),
                     transport,
                 ) as hooks:
                     settled = await hooks.user_elicitation_request(
@@ -312,10 +356,10 @@ class PublicContentTests(unittest.TestCase):
                 self.assertEqual(store.writes, [])
                 self.assertEqual(store.reads, [])
                 if valid:
-                    self.assertEqual(settled.candidate["value"], answer)
-                    self.assertNotIn("content_references", settled.state)
+                    self.assertEqual(settled.candidate.value, answer)
+                    self.assertNotIn("content_references", settled._state)
                 else:
-                    self.assertEqual(settled.decision, "deny")
+                    self.assertEqual(settled.permission, Permission.DENY)
 
         self.run_async(run)
 
@@ -329,21 +373,28 @@ class PublicContentTests(unittest.TestCase):
                 else:
                     result["params"]["event"]["parentEventId"] = "wrong"
                 context = ContentContext(
-                    resolve=store.resolve,
-                    upload=store.upload,
                     bindings={"content": ("elicitation", "result")},
                     principal="hook",
                     original_request=request,
                 )
                 async with hooks_for(
                     "user.elicitation.result",
-                    result["params"]["capabilities"],
+                    capability.HostCapabilities(
+                        user_elicitation_result=capability.UserElicitationResultCapabilities(
+                            intercept=capability.UserElicitationResultIntercept(
+                                modify_content=capability.Modify.REPLACE_AND_MERGE,
+                                elicitation=None
+                                if bad_mode
+                                else capability.Elicitation.FORM,
+                            )
+                        )
+                    ),
                     Replies([modify("content", {"ok": True})]),
                 ) as hooks:
                     settled = await hooks.user_elicitation_result(
                         result["params"]["event"], content=context
                     )
-                self.assertEqual(settled.decision, "deny")
+                self.assertEqual(settled.permission, Permission.DENY)
                 self.assertEqual(store.writes, [])
                 self.assertEqual(store.reads, [])
 
@@ -355,8 +406,6 @@ class PublicContentTests(unittest.TestCase):
                 store = Store()
                 request, result = elicitation(store)
                 context = ContentContext(
-                    resolve=store.resolve,
-                    upload=store.upload,
                     bindings={"content": ("elicitation", "result")},
                     principal="hook",
                     original_request=request,
@@ -364,7 +413,14 @@ class PublicContentTests(unittest.TestCase):
                 transport = Replies([])
                 async with hooks_for(
                     "user.elicitation.result",
-                    result["params"]["capabilities"],
+                    capability.HostCapabilities(
+                        user_elicitation_result=capability.UserElicitationResultCapabilities(
+                            intercept=capability.UserElicitationResultIntercept(
+                                modify_content=capability.Modify.REPLACE_AND_MERGE,
+                                elicitation=capability.Elicitation.FORM,
+                            )
+                        )
+                    ),
                     transport,
                     selection=selection,
                 ) as hooks:
@@ -393,17 +449,25 @@ class PublicContentTests(unittest.TestCase):
                 "items": [],
                 "instructions": text_parts("old"),
             }
-            caps = {
-                "effects": ["modify", "return", "deny", "message"],
-                "modify": {"instructions": {"replace": True, "merge": False}},
-            }
             transport = Replies(
                 [{"type": "return", "value": text_parts("supplied")}],
                 [modify("instructions", "new")],
                 [],
             )
             async with hooks_for(
-                "context.compact.before", caps, transport, count=3
+                "context.compact.before",
+                capability.HostCapabilities(
+                    context_compact_before=capability.ContextCompactBeforeCapabilities(
+                        intercept=capability.ContextCompactBeforeIntercept(
+                            return_result=True,
+                            deny=True,
+                            message=True,
+                            modify_instructions=capability.Modify.REPLACE,
+                        )
+                    )
+                ),
+                transport,
+                count=3,
             ) as hooks:
                 settled = await hooks.context_compact_before(payload)
             self.assertEqual(settled.diagnostics, [])
@@ -426,12 +490,16 @@ class PublicContentTests(unittest.TestCase):
                 "removed": [],
                 "execution": {"status": "executed"},
             }
-            caps = {
-                "effects": ["modify", "message"],
-                "modify": {"summary": {"replace": True, "merge": False}},
-            }
             async with hooks_for(
-                "context.compact.after", caps, Replies([modify("summary", "redacted")])
+                "context.compact.after",
+                capability.HostCapabilities(
+                    context_compact_after=capability.ContextCompactAfterCapabilities(
+                        intercept=capability.ContextCompactAfterIntercept(
+                            message=True, modify_summary=capability.Modify.REPLACE
+                        )
+                    )
+                ),
+                Replies([modify("summary", "redacted")]),
             ) as hooks:
                 settled = await hooks.context_compact_after(payload)
             self.assertEqual(settled.diagnostics, [])
@@ -450,8 +518,6 @@ class PublicContentTests(unittest.TestCase):
                 caps = request["params"]["capabilities"]
                 caps["effects"].append("message")
                 context = ContentContext(
-                    resolve=store.resolve,
-                    upload=store.upload,
                     bindings={"request": ("elicitation", "request")},
                     principal="hook",
                 )
@@ -464,7 +530,18 @@ class PublicContentTests(unittest.TestCase):
                     {"type": "return", "value": answer},
                 ]
                 async with hooks_for(
-                    "user.elicitation.request", caps, Replies(effects)
+                    "user.elicitation.request",
+                    capability.HostCapabilities(
+                        user_elicitation_request=capability.UserElicitationRequestCapabilities(
+                            intercept=capability.UserElicitationRequestIntercept(
+                                deny=True,
+                                return_result=True,
+                                message=True,
+                                elicitation=capability.Elicitation.FORM,
+                            )
+                        )
+                    ),
+                    Replies(effects),
                 ) as hooks:
                     pending = hooks.begin(request, content=context)
                     await pending.acquire()
@@ -475,8 +552,8 @@ class PublicContentTests(unittest.TestCase):
                         self.assertIsNone(pending.result)
                     else:
                         settled = await pending.accept_content()
-                        self.assertEqual(settled.candidate["value"], answer)
-                        self.assertEqual(settled.state["messages"], ["audit"])
+                        self.assertEqual(settled.candidate.value, answer)
+                        self.assertEqual(settled._state["messages"], ["audit"])
                 self.assertEqual(store.reads, [])
                 self.assertEqual(store.writes, [])
 
@@ -525,12 +602,9 @@ class PublicContentTests(unittest.TestCase):
                 elif failure == "nonfinite":
                     part["text"] = '{"mode":"form","message":NaN}'
                 context = ContentContext(
-                    resolve=store.resolve,
-                    upload=store.upload,
                     bindings={"request": ("elicitation", "request")},
                     principal="hook",
                 )
-                caps = request["params"]["capabilities"]
                 effects = [
                     {
                         "type": "return",
@@ -539,14 +613,22 @@ class PublicContentTests(unittest.TestCase):
                 ]
                 async with hooks_for(
                     "user.elicitation.request",
-                    caps,
+                    capability.HostCapabilities(
+                        user_elicitation_request=capability.UserElicitationRequestCapabilities(
+                            intercept=capability.UserElicitationRequestIntercept(
+                                deny=True,
+                                return_result=True,
+                                elicitation=capability.Elicitation.FORM,
+                            )
+                        )
+                    ),
                     Replies(effects),
                     selection=failure if failure in ("metadata", "omit") else "body",
                 ) as hooks:
                     result = await hooks.user_elicitation_request(
                         request["params"]["event"], content=context
                     )
-                self.assertEqual(result.decision, "deny")
+                self.assertEqual(result.permission, Permission.DENY)
                 self.assertEqual(result.accepted_responses, [])
                 self.assertEqual(result.event["elicitation"]["request"], part)
                 self.assertEqual(store.reads, [])
@@ -579,20 +661,30 @@ class PublicContentTests(unittest.TestCase):
                 if scenario == "conflict":
                     effects.append({"type": "deny", "reason": "conflict"})
                 context = ContentContext(
-                    resolve=store.resolve,
-                    upload=store.upload,
                     bindings={"request": ("elicitation", "request")},
                     principal="hook",
                 )
                 async with hooks_for(
                     "user.elicitation.request",
-                    request["params"]["capabilities"],
+                    capability.HostCapabilities(
+                        user_elicitation_request=capability.UserElicitationRequestCapabilities(
+                            intercept=capability.UserElicitationRequestIntercept(
+                                deny=True,
+                                return_result=True,
+                                elicitation=(
+                                    capability.Elicitation.URL
+                                    if scenario == "url"
+                                    else capability.Elicitation.FORM
+                                ),
+                            )
+                        )
+                    ),
                     Replies(effects),
                 ) as hooks:
                     result = await hooks.user_elicitation_request(
                         request["params"]["event"], content=context
                     )
-                self.assertEqual(result.decision, "deny")
+                self.assertEqual(result.permission, Permission.DENY)
                 self.assertEqual(result.accepted_responses, [])
                 self.assertEqual(store.writes, [])
                 self.assertEqual(store.reads, [])
@@ -607,10 +699,6 @@ class PublicContentTests(unittest.TestCase):
                 "items": [],
                 "instructions": text_parts("old"),
             }
-            caps = {
-                "effects": ["modify", "return"],
-                "modify": {"instructions": {"replace": True, "merge": False}},
-            }
             transport = Replies(
                 [
                     {"type": "return", "value": text_parts("summary-for-final")},
@@ -619,11 +707,21 @@ class PublicContentTests(unittest.TestCase):
                 [],
             )
             async with hooks_for(
-                "context.compact.before", caps, transport, count=2
+                "context.compact.before",
+                capability.HostCapabilities(
+                    context_compact_before=capability.ContextCompactBeforeCapabilities(
+                        intercept=capability.ContextCompactBeforeIntercept(
+                            return_result=True,
+                            modify_instructions=capability.Modify.REPLACE,
+                        )
+                    )
+                ),
+                transport,
+                count=2,
             ) as hooks:
                 result = await hooks.context_compact_before(payload)
             self.assertEqual(result.diagnostics, [])
-            self.assertEqual(result.candidate["value"][0]["text"], "summary-for-final")
+            self.assertEqual(result.candidate.value[0]["text"], "summary-for-final")
             self.assertEqual(result.event["instructions"][0]["text"], "final")
             self.assertEqual(store.reads, [])
             self.assertEqual(store.writes, [])
@@ -650,10 +748,16 @@ class PublicContentTests(unittest.TestCase):
         async def run():
             store = Store()
             request, result = elicitation(store)
-            caps = result["params"]["capabilities"]
             async with hooks_for(
                 "user.elicitation.result",
-                caps,
+                capability.HostCapabilities(
+                    user_elicitation_result=capability.UserElicitationResultCapabilities(
+                        intercept=capability.UserElicitationResultIntercept(
+                            modify_content=capability.Modify.REPLACE_AND_MERGE,
+                            elicitation=capability.Elicitation.FORM,
+                        )
+                    )
+                ),
                 Replies([modify("content", {"ok": True})]),
             ) as hooks:
                 settled = await hooks.user_elicitation_result(
@@ -678,8 +782,6 @@ class PublicContentTests(unittest.TestCase):
             store = Store()
             request, _ = elicitation(store)
             context = ContentContext(
-                resolve=store.resolve,
-                upload=store.upload,
                 bindings={"request": ("elicitation", "request")},
                 principal="hook",
             )
@@ -699,7 +801,15 @@ class PublicContentTests(unittest.TestCase):
 
             async with hooks_for(
                 "user.elicitation.request",
-                request["params"]["capabilities"],
+                capability.HostCapabilities(
+                    user_elicitation_request=capability.UserElicitationRequestCapabilities(
+                        intercept=capability.UserElicitationRequestIntercept(
+                            deny=True,
+                            return_result=True,
+                            elicitation=capability.Elicitation.FORM,
+                        )
+                    )
+                ),
                 Replies(effects),
             ) as hooks:
                 pending = hooks.begin(request, content=context)

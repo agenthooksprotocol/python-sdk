@@ -11,7 +11,6 @@ from ._models.tool import BatchAfterGapsItem as BatchAfterGapsItem
 from ._models.tool import BatchAfterSession as BatchAfterSession
 from ._models.tool import BatchAfterTurn as BatchAfterTurn
 from ._models.tool import Call as Call
-from ._models.tool import Input as Input
 from ._models.tool import Mcp as Mcp
 from ._models.tool import Origin as Origin
 from ._models.tool import Path as Path

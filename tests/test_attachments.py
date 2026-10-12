@@ -1,9 +1,13 @@
 """Owned attachment regression coverage on both supported async backends."""
 
+from agenthooksprotocol import capability
+
 import hashlib
 import unittest
 
 import anyio
+
+from agenthooksprotocol.permission import Permission
 
 from agenthooksprotocol import Attachment
 from agenthooksprotocol.content import OwnedAttachment
@@ -334,10 +338,6 @@ class AttachmentTests(unittest.TestCase):
         from test_public_content import Replies, hooks_for, modify
 
         async def run():
-            caps = {
-                "effects": ["modify"],
-                "modify": {"instructions": {"replace": True, "merge": False}},
-            }
             reviewed = [
                 {
                     "id": "reviewed",
@@ -348,7 +348,18 @@ class AttachmentTests(unittest.TestCase):
                 }
             ]
             transport = Replies([modify("instructions", reviewed)], [])
-            hooks = hooks_for("context.compact.before", caps, transport, count=2)
+            hooks = hooks_for(
+                "context.compact.before",
+                capability.HostCapabilities(
+                    context_compact_before=capability.ContextCompactBeforeCapabilities(
+                        intercept=capability.ContextCompactBeforeIntercept(
+                            modify_instructions=capability.Modify.REPLACE
+                        )
+                    )
+                ),
+                transport,
+                count=2,
+            )
             owner = Attachment.from_bytes(b"hello", max_bytes=32)
             value = payload()
             value["instructions"] = [
@@ -414,12 +425,17 @@ class AttachmentTests(unittest.TestCase):
                     },
                 }
             }
-            caps = {"effects": ["return"], "elicitation": {"form": {}}}
             answer = {"action": "accept", "content": {"ok": True}}
             first = {"action": "accept", "content": {"ok": False}}
             hooks = hooks_for(
                 "user.elicitation.request",
-                caps,
+                capability.HostCapabilities(
+                    user_elicitation_request=capability.UserElicitationRequestCapabilities(
+                        intercept=capability.UserElicitationRequestIntercept(
+                            return_result=True, elicitation=capability.Elicitation.FORM
+                        )
+                    )
+                ),
                 Replies(
                     [{"type": "return", "value": first}],
                     [{"type": "return", "value": answer}],
@@ -440,7 +456,10 @@ class AttachmentTests(unittest.TestCase):
                         value, uploads={"org.example.content": upload}
                     )
             self.assertEqual(result.diagnostics, [])
-            self.assertEqual(result.candidate, {"value": answer})
+            self.assertEqual(
+                result.candidate.to_dict() if result.candidate is not None else None,
+                {"value": answer},
+            )
             self.assertEqual(result.attachments._bindings, {})
             self.assertEqual(
                 json.loads(result.event["elicitation"]["request"]["text"]), request
@@ -453,13 +472,15 @@ class AttachmentTests(unittest.TestCase):
         from test_public_content import Replies, hooks_for, modify
 
         async def run():
-            caps = {
-                "effects": ["modify"],
-                "modify": {"instructions": {"replace": True, "merge": False}},
-            }
             hooks = hooks_for(
                 "context.compact.before",
-                caps,
+                capability.HostCapabilities(
+                    context_compact_before=capability.ContextCompactBeforeCapabilities(
+                        intercept=capability.ContextCompactBeforeIntercept(
+                            modify_instructions=capability.Modify.REPLACE
+                        )
+                    )
+                ),
                 Replies(
                     [
                         modify(
@@ -491,7 +512,7 @@ class AttachmentTests(unittest.TestCase):
                 result = await hooks.context_compact_before(
                     inline_input(owner), uploads={"org.example.content": upload}
                 )
-            self.assertEqual(result.decision, "deny")
+            self.assertEqual(result.permission, Permission.DENY)
             self.assertEqual(len(result.diagnostics), 1)
             self.assertEqual(writes, [b"hello"])
             async with result:
@@ -552,14 +573,16 @@ class AttachmentTests(unittest.TestCase):
                     },
                 },
             }
-            caps = {
-                "effects": ["modify"],
-                "modify": {"content": {"replace": True, "merge": True}},
-                "elicitation": {"form": {}},
-            }
             hooks = hooks_for(
                 "user.elicitation.result",
-                caps,
+                capability.HostCapabilities(
+                    user_elicitation_result=capability.UserElicitationResultCapabilities(
+                        intercept=capability.UserElicitationResultIntercept(
+                            modify_content=capability.Modify.REPLACE_AND_MERGE,
+                            elicitation=capability.Elicitation.FORM,
+                        )
+                    )
+                ),
                 Replies([modify("content", changed["content"])]),
             )
 
@@ -675,10 +698,6 @@ class AttachmentTests(unittest.TestCase):
                 ],
             ):
                 owner = Attachment.from_bytes(b"hello")
-                caps = {
-                    "effects": ["modify"],
-                    "modify": {"request": {"replace": True, "merge": False}},
-                }
                 replies = Replies([modify("request", replacement)], [])
                 original = replies.request
 
@@ -689,7 +708,18 @@ class AttachmentTests(unittest.TestCase):
                     return await original(value)
 
                 replies.request = request
-                hooks = hooks_for("model.request.before", caps, replies, count=2)
+                hooks = hooks_for(
+                    "model.request.before",
+                    capability.HostCapabilities(
+                        model_request_before=capability.ModelRequestBeforeCapabilities(
+                            intercept=capability.ModelRequestBeforeIntercept(
+                                modify_request=capability.Modify.REPLACE
+                            )
+                        )
+                    ),
+                    replies,
+                    count=2,
+                )
 
                 async def upload(data):
                     return {

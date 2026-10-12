@@ -1,7 +1,7 @@
 """Application codecs for explicit decoding and optional declared admission.
 
-Post-settlement decode_input remains explicit. Codecs supplied to dispatch also
-validate detached staged values before any response becomes visible.
+Application decoding remains explicit. Codecs supplied to dispatch validate
+detached staged values before any response becomes visible.
 """
 
 from __future__ import annotations

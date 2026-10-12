@@ -1,6 +1,6 @@
 """Public asynchronous harness; schema validation and settlement stay canonical.
 
-Capabilities map event names to ``{modes: [...], capabilities: {...}}``.
+Capabilities use event-specific frozen host declarations.
 Dispatch inputs are event-specific payload objects, not tool arguments alone.
 Ordinary host authorization and domain validation remain the caller's job.
 """
@@ -10,12 +10,14 @@ from __future__ import annotations
 from typing import Any, Callable, Generic, Mapping, TypeVar, cast, overload
 from types import TracebackType
 from .codec import ValueCodecs, Codec, Candidate, _decode_preserving
-from .generated import JsonValue
 from .response import ContextualResponse
-from .event import Event
+from .event import Event, EventType
+from .capability import HostCapabilities
+from ._host_metadata import HostManifestMetadata
 from . import _models as models
-from ._outcomes import SchemaCandidate, decode_event, decode_candidate, decode_response
+from ._outcomes import decode_event, decode_candidate, decode_response
 from .permission import Permission
+from .state import Flow
 from .diagnostics import Code
 from ._diagnostics import (
     Diagnostic,
@@ -259,12 +261,12 @@ ProvenanceT = TypeVar("ProvenanceT")
 class HookResult(Generic[InputT, ResultT, ProvenanceT]):
     """Committed settlement with schema-owned typed consumer views.
 
-    ``state`` stays raw for reducer compatibility. Host values use caller codecs;
-    decoding never rolls back accepted effects or grants host authorization.
+    Host values use caller codecs; reducer bookkeeping is private.
+    Decoding never rolls back accepted effects or grants host authorization.
     """
 
     event: Event
-    state: dict[str, Any]
+    _state: dict[str, Any] = field(repr=False)
     accepted_responses: list[ContextualResponse] = field(default_factory=list)
     diagnostics: list[Diagnostic] = field(default_factory=list)
 
@@ -277,19 +279,21 @@ class HookResult(Generic[InputT, ResultT, ProvenanceT]):
     _contextual_response: ContextualResponse | None = field(default=None, repr=False)
 
     @property
-    def decoded_input(self) -> InputT:
+    def input(self) -> InputT:
         codec = self._value_codecs.input
         return cast(
             InputT,
-            self.input if codec is None else _decode_preserving(codec, self.input),
+            deepcopy(self._state.get("input", {}))
+            if codec is None
+            else _decode_preserving(codec, self._state.get("input", {})),
         )
 
     @property
-    def decoded_candidate(self) -> Candidate[ResultT, ProvenanceT] | None:
-        candidate = self.schema_candidate
+    def candidate(self) -> Candidate[ResultT, ProvenanceT] | None:
+        candidate = decode_candidate(self.event["type"], self._state.get("candidate"))
         if candidate is None:
             return None
-        value = candidate["value"]
+        value = candidate.value
         provenance = candidate.get("provenance")
         if self._value_codecs.result is not None:
             value = _decode_preserving(self._value_codecs.result, value)
@@ -310,12 +314,12 @@ class HookResult(Generic[InputT, ResultT, ProvenanceT]):
     @property
     def has_result(self) -> bool:
         """Distinguish a supplied null result from no deliverable result."""
-        return "result" in self.state
+        return "result" in self._state
 
     @property
-    def decoded_result(self) -> ResultT:
+    def result(self) -> ResultT:
         """Decode a present result; absence raises KeyError, not a null sentinel."""
-        value = deepcopy(self.state["result"])
+        value = deepcopy(self._state["result"])
         if self._value_codecs.result is not None:
             return _decode_preserving(self._value_codecs.result, value)
         candidate = decode_candidate(self.event["type"], {"value": value})
@@ -332,111 +336,64 @@ class HookResult(Generic[InputT, ResultT, ProvenanceT]):
         await self.aclose()
 
     @property
-    def input(self) -> JsonValue:
-        return deepcopy(self.state.get("input", {}))
-
-    @property
-    def effective_input(self) -> JsonValue:
-        return self.input
-
-    @property
-    def decision(self) -> str:
-        return self.state.get("decision", "allow")
-
-    @property
     def permission(self) -> Permission:
-        return Permission(self.state.get("permission", "none"))
+        return Permission(self._state.get("permission", "none"))
+
+    @property
+    def flow(self) -> Flow | None:
+        """Settled flow control; None means no supplied flow state."""
+        return Flow(self._state["flow"]) if "flow" in self._state else None
+
+    @property
+    def instructions(self) -> list[str] | None:
+        """Accumulated continuation instructions; None differs from explicit []."""
+        return deepcopy(self._state.get("continuationInstructions"))
+
+    @property
+    def continuation_remaining(self) -> int | None:
+        """Settled continuation budget, or None when no budget is declared."""
+        return self._state.get("continuationRemaining")
 
     @property
     def interrupted(self) -> bool:
-        return bool(self.state.get("interrupted", False))
-
-    @property
-    def candidate(self) -> SchemaCandidate | None:
-        """Schema-owned candidate envelope; presence is not delivery authority."""
-        return self.schema_candidate
-
-    @property
-    def raw_candidate(self) -> dict[str, Any] | None:
-        return deepcopy(self.state.get("candidate"))
-
-    @property
-    def schema_candidate(self) -> SchemaCandidate | None:
-        return decode_candidate(self.event["type"], self.raw_candidate)
-
-    @property
-    def settled_event(self) -> Event:
-        """Typed effective event, including for low-level raw settlements."""
-        return decode_event(self.event)
-
-    @property
-    def raw_event(self) -> dict[str, Any]:
-        return deepcopy(dict(self.event))
+        return bool(self._state.get("interrupted", False))
 
     @property
     def messages(self) -> list[models.MessageEffect]:
         """Diagnostic message effects, not conversational CanonicalMessages."""
-        return [models.MessageEffect(text=text) for text in self.state.get("messages", [])]
+        return [
+            models.MessageEffect(text=text) for text in self._state.get("messages", [])
+        ]
 
     @property
     def injections(self) -> list[models.InjectEffect]:
         """Complete injection envelopes, including target and delivery timing."""
         return [
             models.InjectEffect.from_dict(deepcopy(value))
-            for value in self.state.get("injections", [])
+            for value in self._state.get("injections", [])
         ]
-
-    @property
-    def decoded_accepted_responses(self) -> list[ContextualResponse]:
-        """Accepted canonical envelopes in settlement order, detached from state."""
-        return [decode_response(self.event["type"], value) for value in self.accepted_responses]
-
-    @property
-    def accepted_response(self) -> ContextualResponse | None:
-        return (
-            decode_response(self.event["type"], self.accepted_responses[-1])
-            if self.accepted_responses else None
-        )
-
-    @property
-    def raw_accepted_response(self) -> dict[str, Any] | None:
-        return deepcopy(dict(self.accepted_responses[-1])) if self.accepted_responses else None
-
-    @property
-    def raw_accepted_responses(self) -> list[dict[str, Any]]:
-        return [deepcopy(dict(value)) for value in self.accepted_responses]
 
     def _decode_settlement(self) -> None:
         # Stage every projection first. A failed decode is an error, not a
         # failure-policy fallback or an apparently authorized partial result.
         try:
-            event = self.settled_event
-            _ = self.schema_candidate
+            event = decode_event(self.event)
+            _ = self.candidate
+            _ = self.flow
+            _ = self.instructions
+            _ = self.continuation_remaining
             _ = self.messages
             _ = self.injections
-            responses = self.decoded_accepted_responses
-            _ = self.decoded_input if self._value_codecs.input is not None else None
-            _ = self.decoded_candidate
-            _ = self.decoded_result if self.has_result else None
+            responses = [
+                decode_response(event["type"], value)
+                for value in self.accepted_responses
+            ]
+            _ = self.input if self._value_codecs.input is not None else None
+            _ = self.result if self.has_result else None
         except Exception as exc:
             raise SettlementDecodeError(self) from exc
         self.event = event
         self.accepted_responses = responses
-
-    def decode_input(self, codec: Codec[T]) -> T:
-        return codec.decode(self.input)
-
-    @property
-    def content(self) -> dict[str, Any]:
-        """Explicit settled body targets; no inferred primary content."""
-        return deepcopy(self.state.get("content", {}))
-
-    @property
-    def content_references(self) -> dict[str, Any]:
-        return deepcopy(self.state.get("content_references", {}))
-
-    def decode_content(self, target: str, codec: Codec[T]) -> T:
-        return codec.decode(deepcopy(self.state["content"][target]))
 
 
 class SettlementDecodeError(ProtocolError):
@@ -691,8 +648,37 @@ class Hooks(BoundaryMixin):
         config: dict[str, Any],
         *,
         source: str,
-        capabilities: dict[str, Any] | None = None,
-        manifest: dict[str, Any] | None = None,
+        capabilities: HostCapabilities,
+        manifest_metadata: HostManifestMetadata | None = None,
+        transport: Any = None,
+        resolve_credential: Any = None,
+        auth_provider: Any = None,
+        max_concurrent_uploads: int = 8,
+    ) -> None:
+        if not isinstance(capabilities, HostCapabilities):
+            raise TypeError("capabilities must be HostCapabilities")
+        if manifest_metadata is not None and not isinstance(
+            manifest_metadata, HostManifestMetadata
+        ):
+            raise TypeError("manifest_metadata must be HostManifestMetadata")
+        self._configure(
+            config,
+            source=source,
+            declarations=capabilities.to_wire(),
+            manifest_metadata=manifest_metadata,
+            transport=transport,
+            resolve_credential=resolve_credential,
+            auth_provider=auth_provider,
+            max_concurrent_uploads=max_concurrent_uploads,
+        )
+
+    def _configure(
+        self,
+        config: dict[str, Any],
+        *,
+        source: str,
+        declarations: dict[EventType, Any],
+        manifest_metadata: HostManifestMetadata | None = None,
         transport: Any = None,
         resolve_credential: Any = None,
         auth_provider: Any = None,
@@ -715,39 +701,10 @@ class Hooks(BoundaryMixin):
             or not FormatChecker().conforms(source, "uri")
         ):
             raise ProtocolError("source must be an absolute URI")
-        if manifest is not None:
-            if capabilities is not None:
-                raise ProtocolError("Supply manifest or capabilities, not both")
-            self.validator.validate(
-                "capabilities-response",
-                {
-                    "jsonrpc": "2.0",
-                    "id": "configured-manifest",
-                    "result": {
-                        "protocolVersion": config["protocolVersion"],
-                        "manifest": manifest,
-                    },
-                },
-            )
-            capabilities = {}
-            for entry in manifest["events"]:
-                name = entry["event"]
-                if name in capabilities:
-                    raise ProtocolError("Duplicate manifest event")
-                capabilities[name] = {
-                    key: deepcopy(value)
-                    for key, value in entry.items()
-                    if key != "event"
-                }
-        if not isinstance(capabilities, dict):
-            raise ProtocolError("capabilities must map events to explicit modes")
         self._pending: WeakSet[PendingInvocation] = WeakSet()
         self.config = deepcopy(config)
         self.source = source
-        self.capabilities = {
-            key: deepcopy(value.to_wire() if hasattr(value, "to_wire") else value)
-            for key, value in capabilities.items()
-        }
+        self.capabilities = deepcopy(declarations)
         from .auth import EnvironmentAuthProvider
 
         self._auth_provider = (
@@ -767,21 +724,7 @@ class Hooks(BoundaryMixin):
             if "intercept" in modes:
                 if "capabilities" not in declaration:
                     raise ProtocolError("Interception requires explicit capabilities")
-                self.validator.validate("capabilities", declaration["capabilities"])
-        self._manifest = (
-            deepcopy(manifest) if manifest is not None else self._derive_manifest()
-        )
-        self.validator.validate(
-            "capabilities-response",
-            {
-                "jsonrpc": "2.0",
-                "id": "configured-manifest",
-                "result": {
-                    "protocolVersion": config["protocolVersion"],
-                    "manifest": self._manifest,
-                },
-            },
-        )
+        self._manifest = self._derive_manifest(manifest_metadata)
         for backend in self.config["hooks"]:
             if backend["id"] in ids:
                 raise ProtocolError("Duplicate backend ID")
@@ -804,12 +747,30 @@ class Hooks(BoundaryMixin):
         self._observations: list[dict[str, Any]] = []
         self._observation_diagnostics: deque[dict[str, Any]] = deque(maxlen=256)
 
+    def subscribes(self, event: EventType) -> bool:
+        """Report static intercept or observation interest, not delivery or permission.
+
+        Payload-dependent filters are conservatively ignored. This lookup does
+        not prepare input, initialize transports, or contact a backend.
+        """
+        declaration = self.capabilities.get(event)
+        if declaration is None:
+            return False
+        return any(
+            subscription["mode"] in declaration["modes"]
+            and any(_matches(selector, event) for selector in subscription["events"])
+            for backend in self.config["hooks"]
+            for subscription in backend["subscriptions"]
+        )
+
     @property
     def manifest(self) -> dict[str, Any]:
         """Return a detached snapshot of the configured static host manifest."""
         return deepcopy(self._manifest)
 
-    def _derive_manifest(self) -> dict[str, Any]:
+    def _derive_manifest(
+        self, metadata: HostManifestMetadata | None = None
+    ) -> dict[str, Any]:
         # The schema catalogue bounds coverage; omitted declarations never grant modes.
         schema = self.validator.validators["capabilities-response.schema.json"].schema
         shape = schema["allOf"][1]["properties"]["result"]["properties"]["manifest"]
@@ -839,11 +800,13 @@ class Hooks(BoundaryMixin):
             "managedPolicy": {"scopes": [], "disableable": True},
             "correlationIdentityFields": ["event.source", "event.id"],
         }
-        # An event grant map provides no evidence for these host-level facilities.
+        supplied = metadata.to_wire() if metadata is not None else {}
+        result.update(deepcopy(supplied))
+        # Event declarations provide no evidence for omitted host-level facilities.
         result["gaps"].extend(
             {
                 "path": name,
-                "reason": "Not declared by the event capability map; supply a full manifest",
+                "reason": "Not declared by host metadata",
             }
             for name in (
                 "transports",
@@ -853,6 +816,7 @@ class Hooks(BoundaryMixin):
                 "limits",
                 "managedPolicy",
             )
+            if name not in supplied
         )
         return result
 
@@ -912,9 +876,6 @@ class Hooks(BoundaryMixin):
         diagnostics = deepcopy(list(self._observation_diagnostics))
         self._observation_diagnostics.clear()
         return diagnostics
-
-    async def wait(self) -> list[dict[str, Any]]:
-        return await self.wait_observations()
 
     @asynccontextmanager
     async def _operation(self):
@@ -1046,7 +1007,7 @@ class Hooks(BoundaryMixin):
     @overload
     async def dispatch(
         self,
-        event_name: str,
+        event_name: EventType,
         input: dict[str, Any],
         *,
         initial_state: dict[str, Any] | None = None,
@@ -1065,7 +1026,7 @@ class Hooks(BoundaryMixin):
     @overload
     async def dispatch(
         self,
-        event_name: str,
+        event_name: EventType,
         input: dict[str, Any],
         *,
         initial_state: dict[str, Any] | None = None,
@@ -1084,7 +1045,7 @@ class Hooks(BoundaryMixin):
     @overload
     async def dispatch(
         self,
-        event_name: str,
+        event_name: EventType,
         input: dict[str, Any],
         *,
         initial_state: dict[str, Any] | None = None,
@@ -1103,7 +1064,7 @@ class Hooks(BoundaryMixin):
     @overload
     async def dispatch(
         self,
-        event_name: str,
+        event_name: EventType,
         input: dict[str, Any],
         *,
         initial_state: dict[str, Any] | None = None,
@@ -1122,7 +1083,7 @@ class Hooks(BoundaryMixin):
     @overload
     async def dispatch(
         self,
-        event_name: str,
+        event_name: EventType,
         input: dict[str, Any],
         *,
         initial_state: dict[str, Any] | None = None,
@@ -1141,7 +1102,7 @@ class Hooks(BoundaryMixin):
     @overload
     async def dispatch(
         self,
-        event_name: str,
+        event_name: EventType,
         input: dict[str, Any],
         *,
         initial_state: dict[str, Any] | None = None,
@@ -1160,7 +1121,7 @@ class Hooks(BoundaryMixin):
     @overload
     async def dispatch(
         self,
-        event_name: str,
+        event_name: EventType,
         input: dict[str, Any],
         *,
         initial_state: dict[str, Any] | None = None,
@@ -1179,7 +1140,7 @@ class Hooks(BoundaryMixin):
     @overload
     async def dispatch(
         self,
-        event_name: str,
+        event_name: EventType,
         input: dict[str, Any],
         *,
         initial_state: dict[str, Any] | None = None,
@@ -1198,7 +1159,7 @@ class Hooks(BoundaryMixin):
     @_owned_operation
     async def dispatch(
         self,
-        event_name: str,
+        event_name: EventType,
         input: dict[str, Any],
         *,
         initial_state: dict[str, Any] | None = None,
@@ -1386,18 +1347,7 @@ class Hooks(BoundaryMixin):
                             delivery_context=delivery_context,
                         )
                         stage = "delivery"
-                        delivery_content = (
-                            sources.edit_context(
-                                request["params"]["event"],
-                                backend["id"],
-                                uploads.get(backend["id"])
-                                if uploads is not None
-                                else None,
-                                content,
-                            )
-                            if sources is not None
-                            else content
-                        )
+                        delivery_content = content
                         if (
                             delivery_content is None
                             and event_name == "user.elicitation.request"
@@ -1504,25 +1454,25 @@ class Hooks(BoundaryMixin):
                         # this response for the modified operation.
                         supplied = {effect.type for effect in effects}
                         if "return" not in supplied:
-                            accepted.state["candidate"] = None
-                            accepted.state.pop("result", None)
+                            accepted._state["candidate"] = None
+                            accepted._state.pop("result", None)
                         if (
-                            accepted.state["permission"] == "allow"
+                            accepted._state["permission"] == "allow"
                             and "allow" not in supplied
                         ):
-                            accepted.state["permission"] = "none"
-                            accepted.state["authorization"] = "pending"
-                            accepted.state.pop("result", None)
-                    accepted.state["event"] = deepcopy(result.event)
+                            accepted._state["permission"] = "none"
+                            accepted._state["authorization"] = "pending"
+                            accepted._state.pop("result", None)
+                    accepted._state["event"] = deepcopy(result.event)
                     result.accepted_responses.extend(accepted.accepted_responses)
                     result._contextual_response = accepted._contextual_response
-                    messages = result.state.get("messages", []) + accepted.state.get(
+                    messages = result._state.get("messages", []) + accepted._state.get(
                         "messages", []
                     )
-                    result.state = accepted.state
-                    result.state["messages"] = messages
+                    result._state = accepted._state
+                    result._state["messages"] = messages
                     state = {
-                        key: deepcopy(accepted.state[key])
+                        key: deepcopy(accepted._state[key])
                         for key in ("permission", "candidate")
                     }
                     for key, target in (
@@ -1530,14 +1480,15 @@ class Hooks(BoundaryMixin):
                         ("continuationInstructions", "instructions"),
                         ("injections", "injections"),
                     ):
-                        if key in result.state:
-                            state[target] = deepcopy(result.state[key])
-                    if "continuationRemaining" in result.state:
-                        caps["flow"]["remainingContinuations"] = result.state[
+                        if key in result._state:
+                            state[target] = deepcopy(result._state[key])
+                    if "continuationRemaining" in result._state:
+                        caps["flow"]["remainingContinuations"] = result._state[
                             "continuationRemaining"
                         ]
                     halted = (
-                        result.decision == "deny" or result.state.get("flow") == "stop"
+                        result._state.get("decision") == "deny"
+                        or result._state.get("flow") == "stop"
                     )
                 except (OperationCancelledError, SettlementDecodeError):
                     raise
@@ -1560,11 +1511,11 @@ class Hooks(BoundaryMixin):
                     )
                     if closed:
                         state["permission"] = "deny"
-                        result.state["decision"] = "deny"
-                        result.state["permission"] = "deny"
-                        result.state["executed"] = False
-                        result.state.pop("result", None)
-                        result.state.pop("authorization", None)
+                        result._state["decision"] = "deny"
+                        result._state["permission"] = "deny"
+                        result._state["executed"] = False
+                        result._state.pop("result", None)
+                        result._state.pop("authorization", None)
                         halted = True
         result._value_codecs = value_codecs
         result._decode_settlement()
@@ -1593,9 +1544,9 @@ class Hooks(BoundaryMixin):
                     (backend["id"], subscription_index), 0
                 ),
             )
-        # The legacy evaluator uses a synthetic execution flag for fixtures;
+        # The fixture evaluator uses a synthetic execution flag;
         # the public harness never executes the host operation.
-        result.state.pop("executed", None)
+        result._state.pop("executed", None)
         result._value_codecs = value_codecs
         return result
 

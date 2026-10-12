@@ -12,7 +12,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from unittest.mock import patch
 from agenthooksprotocol.lifecycle_server import Server
 from agenthooksprotocol.lifecycle_client import Transport, run, http
-from agenthooksprotocol.content import upload
+from agenthooksprotocol._interop_content import upload
 from agenthooksprotocol.runtime import ProtocolError
 from test_interop import request, response, jwt, FIXTURES
 

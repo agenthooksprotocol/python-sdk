@@ -186,8 +186,14 @@ class Engine:
                 event_type.replace(".", "_") if isinstance(event_type, str) else ""
             )
             if method == "hooks/observe":
-                callback = getattr(self.handler.observe, field_name, None)
                 context_type = _OBSERVE_CONTEXTS.get(event_type)
+                callback = (
+                    getattr(self.handler.observe, field_name, None)
+                    if context_type is not None
+                    else None
+                )
+                if callback is None:
+                    callback = self.handler.observe.any
                 if callback is not None and context_type is not None:
                     envelope = models.ObserveNotification.from_dict(deepcopy(original))
                     context = context_type(

@@ -53,6 +53,20 @@ def observe_control(ctx: hooks.ToolBeforeObserveContext) -> hooks.ToolBeforeRepl
     return hooks.ToolBeforeReply()
 
 
+def observe_any(ctx: hooks.AnyObserveContext) -> None:
+    event_type: str = ctx.event.type
+    if isinstance(ctx, hooks.ToolBeforeObserveContext):
+        assert_type(ctx.event, event.ToolBeforeEvent)
+    del event_type
+
+
+async def async_observe_any(ctx: hooks.AnyObserveContext) -> None:
+    observe_any(ctx)
+
+
+hooks.ObserveHandlers(tool_before=observe, any=observe_any)
+hooks.ObserveHandlers(any=async_observe_any)
+hooks.ObserveHandlers(any=observe)  # type: ignore[arg-type]
 hooks.InterceptHandlers(tool_before=after)  # type: ignore[arg-type]
 hooks.InterceptHandlers(tool_before=wrong_reply)  # type: ignore[arg-type]
 hooks.ObserveHandlers(tool_before=observe_control)  # type: ignore[arg-type]

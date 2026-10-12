@@ -21,9 +21,24 @@ handlers = hooks.Handlers(
     observe=hooks.ObserveHandlers(tool_before=observe),
 )
 app = asgi.App(handlers)  # Mount with any ASGI server; no framework dependency.
-# await stdio.serve(handlers)  # AnyIO: asyncio or Trio.
+# await stdio.serve(handlers)  # AnyIO: asyncio or Trio; also server.serve.
 # response = await handlers(utf8_json_bytes)  # dict or None
 # response = await handlers.process(canonical_request_dict)
+```
+
+`ObserveHandlers(any=callback)` registers an optional catch-all observer. It
+receives the event-specific observation context (typed as
+`hooks.AnyObserveContext`; branch on `ctx.event.type` or `isinstance`) and runs
+only for observed events without their own observer field. It never handles
+`hooks/intercept` requests.
+
+```python
+async def audit(ctx: hooks.AnyObserveContext) -> None:
+    print(ctx.event.type, ctx.event.id)
+
+
+handlers = hooks.Handlers(observe=hooks.ObserveHandlers(any=audit))
+# await agenthooksprotocol.server.serve(handlers)  # same as stdio.serve
 ```
 
 Register callbacks on the snake_case field for their event. Interception callbacks

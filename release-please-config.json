@@ -3,6 +3,7 @@
   "packages": {
     ".": {
       "release-type": "python",
+      "bump-minor-pre-major": true,
       "package-name": "agenthooksprotocol",
       "include-component-in-tag": false,
       "initial-version": "0.1.0",
@@ -10,7 +11,7 @@
         {
           "type": "toml",
           "path": "uv.lock",
-          "jsonpath": "$.package[?(@.name=='agenthooksprotocol')].version"
+          "jsonpath": "$.package[?(@.name.value=='agenthooksprotocol')].version"
         }
       ]
     }

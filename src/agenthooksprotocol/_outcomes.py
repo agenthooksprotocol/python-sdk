@@ -11,7 +11,7 @@ from copy import deepcopy
 from typing import Any, cast
 
 from . import _models as models, generated as wire
-from .event import Event
+from .event import Event, EventType
 from .response import ContextualResponse, response_for_request
 from .runtime import ProtocolError
 
@@ -38,7 +38,7 @@ def decode_event(value: dict[str, Any]) -> Event:
 
 
 def decode_candidate(
-    event_type: str, value: dict[str, Any] | None
+    event_type: EventType, value: dict[str, Any] | None
 ) -> _SchemaCandidate | None:
     if value is None:
         return None
@@ -58,7 +58,7 @@ def decode_candidate(
         raise ProtocolError("Cannot decode settled candidate") from exc
 
 
-def decode_response(event_type: str, value: dict[str, Any]) -> ContextualResponse:
+def decode_response(event_type: EventType, value: dict[str, Any]) -> ContextualResponse:
     parsed = response_for_request(event_type, deepcopy(value))
     if not parsed["ok"]:
         raise ProtocolError(

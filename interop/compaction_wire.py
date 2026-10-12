@@ -8,7 +8,6 @@ import subprocess
 import sys
 import uuid
 import anyio
-from agenthooksprotocol.server.hooks import Handler as HookHandler, InterceptResult
 from pathlib import Path
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from urllib.request import Request
@@ -59,10 +58,18 @@ def receive(request, sub, config, store, validator):
                 ]
             else:
                 effects = action["effects"]
-            return InterceptResult(effects=effects)
+            # Dynamic adversarial fixtures test the SDK response boundary.
+            return {
+                "jsonrpc": "2.0",
+                "id": message["id"],
+                "result": {
+                    "protocolVersion": message["params"]["protocolVersion"],
+                    "effects": effects,
+                },
+            }
 
         async def process():
-            return await HookHandler(intercept=intercept).process(request)
+            return await intercept(request)
 
         response = anyio.run(process)
         with open(Path(store) / "receipts.jsonl", "a") as f:

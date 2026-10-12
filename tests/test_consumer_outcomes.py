@@ -1,5 +1,7 @@
 """Schema-owned typed settlement and fail-closed decoding regressions."""
 
+from agenthooksprotocol import capability
+
 from copy import deepcopy
 from unittest import TestCase
 from unittest.mock import patch
@@ -50,11 +52,22 @@ class ConsumerOutcomeTests(TestCase):
                 },
                 {"effects": [{"type": "return", "value": None}]},
             )
-            caps = {
-                "effects": ["message", "inject", "return"],
-                "inject": {"context": {"append": True, "deliverAt": ["next_turn"]}},
-            }
-            async with hooks_for("tool.before", caps, replies, count=2) as hooks:
+            async with hooks_for(
+                "tool.before",
+                capability.HostCapabilities(
+                    tool_before=capability.ToolBeforeCapabilities(
+                        intercept=capability.ToolBeforeIntercept(
+                            message=True,
+                            return_result=True,
+                            inject_context=capability.InjectContext(
+                                deliver_at=(capability.Delivery.NEXT_TURN,)
+                            ),
+                        )
+                    )
+                ),
+                replies,
+                count=2,
+            ) as hooks:
                 outcome = await hooks.tool_before(payload)
                 self.assertIsInstance(outcome.event, models.ToolBeforeEvent)
                 self.assertEqual(outcome.event.tool.input, opaque)
@@ -89,7 +102,13 @@ class ConsumerOutcomeTests(TestCase):
         async def run():
             replies = Replies({"effects": [{"type": "return", "value": {"ok": True}}]})
             async with hooks_for(
-                "tool.before", {"effects": ["return"]}, replies
+                "tool.before",
+                capability.HostCapabilities(
+                    tool_before=capability.ToolBeforeCapabilities(
+                        intercept=capability.ToolBeforeIntercept(return_result=True)
+                    )
+                ),
+                replies,
             ) as hooks:
                 original = HookResult._decode_settlement
                 calls = 0
@@ -118,7 +137,15 @@ class ConsumerOutcomeTests(TestCase):
             parts = text_parts("summary")
             replies = Replies({"effects": [{"type": "return", "value": parts}]})
             async with hooks_for(
-                "context.compact.before", {"effects": ["return"]}, replies
+                "context.compact.before",
+                capability.HostCapabilities(
+                    context_compact_before=capability.ContextCompactBeforeCapabilities(
+                        intercept=capability.ContextCompactBeforeIntercept(
+                            return_result=True
+                        )
+                    )
+                ),
+                replies,
             ) as hooks:
                 outcome = await hooks.context_compact_before(
                     {
@@ -140,7 +167,13 @@ class ConsumerOutcomeTests(TestCase):
                     _ = outcome.result
             replies = Replies({"effects": [{"type": "return", "value": None}]})
             async with hooks_for(
-                "tool.before", {"effects": ["return"]}, replies
+                "tool.before",
+                capability.HostCapabilities(
+                    tool_before=capability.ToolBeforeCapabilities(
+                        intercept=capability.ToolBeforeIntercept(return_result=True)
+                    )
+                ),
+                replies,
             ) as hooks:
                 outcome = await hooks.tool_before(tool_input())
                 outcome._state["result"] = None
@@ -160,15 +193,6 @@ class ConsumerOutcomeTests(TestCase):
                 "continuationCount": 0,
                 "items": [],
             }
-            caps = {
-                "effects": ["flow"],
-                "flow": {
-                    "operations": ["continue", "stop"],
-                    "remainingContinuations": 2,
-                    "continuationCount": 0,
-                    "maxContinuations": 2,
-                },
-            }
             for operation in ("continue", "stop"):
                 effect = {"type": "flow", "operation": operation}
                 if operation == "continue":
@@ -179,15 +203,32 @@ class ConsumerOutcomeTests(TestCase):
                 name = (
                     "turn.finish.before" if operation == "continue" else "tool.before"
                 )
-                operation_caps = (
-                    caps
-                    if operation == "continue"
-                    else {
-                        "effects": ["flow"],
-                        "flow": {"operations": ["stop"], "remainingContinuations": 2},
-                    }
-                )
-                async with hooks_for(name, operation_caps, replies) as hooks:
+                async with hooks_for(
+                    name,
+                    (
+                        capability.HostCapabilities(
+                            turn_finish_before=capability.TurnFinishBeforeCapabilities(
+                                intercept=capability.TurnFinishBeforeIntercept(
+                                    flow=capability.FlowContinue(
+                                        remaining_continuations=2,
+                                        continuation_count=0,
+                                        max_continuations=2,
+                                        include_stop=True,
+                                    )
+                                )
+                            )
+                        )
+                        if operation == "continue"
+                        else capability.HostCapabilities(
+                            tool_before=capability.ToolBeforeCapabilities(
+                                intercept=capability.ToolBeforeIntercept(
+                                    flow=capability.FlowStop(max_continuations=2)
+                                )
+                            )
+                        )
+                    ),
+                    replies,
+                ) as hooks:
                     outcome = await hooks.dispatch(
                         name,
                         payload if operation == "continue" else tool_input(),
@@ -224,16 +265,6 @@ class ConsumerOutcomeTests(TestCase):
             for flow in (None, "none", "stop", "continue"):
                 for instructions in (None, [], ["inherited"]):
                     for budget in (None, 0, 2):
-                        caps = {
-                            "effects": ["flow"],
-                            "flow": {"operations": ["stop"]},
-                        }
-                        if budget is not None:
-                            caps["flow"]["remainingContinuations"] = budget
-                            caps["flow"]["continuationCount"] = 0
-                            caps["flow"]["maxContinuations"] = budget
-                        else:
-                            caps["flow"]["operations"] = ["stop"]
                         initial = {"permission": "none", "candidate": None}
                         if flow is not None:
                             initial["flow"] = flow
@@ -261,12 +292,16 @@ class ConsumerOutcomeTests(TestCase):
                             },
                             source="urn:test:typed",
                             transport=Replies(),
-                            capabilities={
-                                "tool.before": {
-                                    "modes": ["intercept", "observe"],
-                                    "capabilities": caps,
-                                }
-                            },
+                            capabilities=capability.HostCapabilities(
+                                tool_before=capability.ToolBeforeCapabilities(
+                                    intercept=capability.ToolBeforeIntercept(
+                                        flow=capability.FlowStop(
+                                            max_continuations=budget
+                                        )
+                                    ),
+                                    observe=True,
+                                )
+                            ),
                         ) as hooks:
                             outcome = await hooks.tool_before(
                                 tool_input(), initial_state=initial
@@ -293,15 +328,6 @@ class ConsumerOutcomeTests(TestCase):
         from agenthooksprotocol.state import Flow
 
         async def run():
-            caps = {
-                "effects": ["flow"],
-                "flow": {
-                    "operations": ["continue"],
-                    "remainingContinuations": 3,
-                    "continuationCount": 0,
-                    "maxContinuations": 3,
-                },
-            }
             replies = Replies(
                 {
                     "effects": [
@@ -318,7 +344,22 @@ class ConsumerOutcomeTests(TestCase):
                     ]
                 },
             )
-            async with hooks_for("turn.finish.before", caps, replies, count=2) as hooks:
+            async with hooks_for(
+                "turn.finish.before",
+                capability.HostCapabilities(
+                    turn_finish_before=capability.TurnFinishBeforeCapabilities(
+                        intercept=capability.TurnFinishBeforeIntercept(
+                            flow=capability.FlowContinue(
+                                remaining_continuations=3,
+                                continuation_count=0,
+                                max_continuations=3,
+                            )
+                        )
+                    )
+                ),
+                replies,
+                count=2,
+            ) as hooks:
                 outcome = await hooks.turn_finish_before(
                     {
                         "turn": {"id": "turn-one"},

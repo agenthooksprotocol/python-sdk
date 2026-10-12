@@ -22,6 +22,7 @@ from . import ToolPermissionResolvedInputDecidedBy as DecidedBy
 from . import ToolPermissionResolvedInputDecision as Decision
 from . import TurnProgressInputDelta as Delta
 from . import Event as Event
+from . import EventType as EventType
 from . import ModelErrorInputExecutionExecuted as ExecutionExecuted
 from . import ModelErrorInputExecutionSkippedCancelled as ExecutionSkippedCancelled
 from . import ModelErrorInputExecutionSkippedOther as ExecutionSkippedOther
@@ -149,6 +150,7 @@ __all__ = [
     "Decision",
     "Delta",
     "Event",
+    "EventType",
     "ExecutionExecuted",
     "ExecutionSkippedCancelled",
     "ExecutionSkippedOther",

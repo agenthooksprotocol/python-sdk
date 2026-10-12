@@ -1,11 +1,13 @@
 """Load JSON, own a real backend process, and receive a denial."""
 
+from agenthooksprotocol import capability
+
 import json
 from pathlib import Path
 import sys
 
 import anyio
-from agenthooksprotocol import HookResult, Hooks, capability, event, tool
+from agenthooksprotocol import HookResult, Hooks, event, tool
 
 
 async def main() -> None:
@@ -20,11 +22,11 @@ async def main() -> None:
     async with Hooks(
         config,
         source="urn:example:comparison",
-        capabilities={
-            "tool.before": capability.Declaration(
-                modes=[capability.Mode.INTERCEPT], grants=[capability.Deny()]
-            ),
-        },
+        capabilities=capability.HostCapabilities(
+            tool_before=capability.ToolBeforeCapabilities(
+                intercept=capability.ToolBeforeIntercept(deny=True)
+            )
+        ),
     ) as harness:
         result: HookResult[object, object, object] = await harness.tool_before(
             event.ToolBeforeInput(

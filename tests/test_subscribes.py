@@ -1,5 +1,7 @@
 """External public consumer coverage for synchronous static interest."""
 
+from agenthooksprotocol import capability
+
 from copy import deepcopy
 import unittest
 from unittest.mock import patch
@@ -51,8 +53,9 @@ class SubscriptionInterestTests(unittest.TestCase):
                         self.assertEqual((hooks.config, hooks.capabilities), before)
 
     def test_no_subscribers_and_unrelated_selectors(self):
-        declarations = capabilities()
-        declarations["tool.after"] = {"modes": ["observe"]}
+        declarations = capability.HostCapabilities(
+            tool_before=capabilities().tool_before, tool_after=capability.Observe()
+        )
         registration = config(mode="observe")
         registration["hooks"][0]["subscriptions"][0]["events"] = ["tool.after"]
         hooks = Hooks(registration, source="urn:test", capabilities=declarations)

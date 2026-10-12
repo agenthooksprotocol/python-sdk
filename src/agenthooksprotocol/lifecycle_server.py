@@ -203,32 +203,22 @@ class Server:
         ):
             return self._fixture_protocol(request)
 
-        import anyio
-        from .server.hooks import Handler, InterceptResult
-
-        async def intercept(message):
-            response = self._fixture_protocol(message)
-            result = response["result"]
-            return InterceptResult(
-                effects=result["effects"], extensions=result.get("extensions")
-            )
-
-        observer_errors = []
-
-        async def observe(message):
-            try:
-                self._fixture_protocol(message)
-            except (CatalogueRejection, ProtocolError) as exc:
-                observer_errors.append(exc)
-                raise
-
-        async def process():
-            return await Handler(intercept=intercept, observe=observe).process(request)
-
-        response = anyio.run(process)
-        if observer_errors:
-            raise observer_errors[0]
-        return response
+        # These scenarios own canonical wire responses, including deliberate
+        # errors and malformed effect grants. Do not hydrate them into public
+        # event callbacks: doing so would change the evidence under test.
+        kind = {
+            "hooks/intercept": "intercept-request",
+            "hooks/observe": "observe-notification",
+        }.get(request.get("method"))
+        if kind is None:
+            raise ProtocolError("Unknown fixture method")
+        self.validator.validate(kind, request)
+        if (
+            kind == "intercept-request"
+            and request["id"] != request["params"]["event"]["id"]
+        ):
+            raise ProtocolError("Correlation mismatch")
+        return self._fixture_protocol(request)
 
     def _fixture_protocol(self, request):
         if self.config.get("suite") == "catalogue":

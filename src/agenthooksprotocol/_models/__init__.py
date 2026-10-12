@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Any
 from enum import StrEnum
 from copy import deepcopy
 from decimal import Decimal
-from typing import Self, get_args, get_origin, Union, Literal as _Literal
+from typing import Self, TypeAlias, get_args, get_origin, Union, Literal as _Literal
 from types import UnionType
 from functools import lru_cache
 from uuid import uuid4
@@ -31924,6 +31924,41 @@ WorkspaceChangeBeforeModifyEffectValue = WorkspaceChange
 CanonicalMessages = list[CanonicalMessage]
 TextParts = list[TextBodyPart | TextGapPart | TextMetadataPart | TextOmittedPart]
 
+EventType: TypeAlias = _Literal[
+    "config.change.after",
+    "config.change.before",
+    "context.compact.after",
+    "context.compact.before",
+    "file.changed",
+    "hook.failure",
+    "model.error",
+    "model.request.before",
+    "model.response.after",
+    "model.switch.after",
+    "model.switch.before",
+    "session.end",
+    "session.start",
+    "task.change.after",
+    "task.change.before",
+    "tool.after",
+    "tool.batch.after",
+    "tool.before",
+    "tool.permission.request",
+    "tool.permission.resolved",
+    "tool.progress",
+    "turn.end",
+    "turn.finish.before",
+    "turn.progress",
+    "turn.start",
+    "user.attention",
+    "user.elicitation.request",
+    "user.elicitation.result",
+    "user.message.inbound",
+    "user.message.outbound",
+    "workspace.change.after",
+    "workspace.change.before",
+]
+
 Event = (
     ConfigChangeAfterEvent
     | ConfigChangeBeforeEvent
@@ -33238,6 +33273,7 @@ __all__ = [
     "WorkspaceChangeBeforeModifyEffect",
     "WorkspaceChangeBeforeModifyEffectValue",
     "Path",
+    "EventType",
     "CanonicalMessages",
     "TextParts",
     "Event",

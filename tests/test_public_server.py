@@ -7,7 +7,9 @@ from contextlib import aclosing
 
 import anyio
 
-from agenthooksprotocol.runtime import Validator
+from agenthooksprotocol import effect
+from agenthooksprotocol.codec import IdentityCodec
+from agenthooksprotocol.runtime import Validator, _apply_response
 from agenthooksprotocol.server import asgi, attachments, hooks, stdio
 
 
@@ -112,18 +114,239 @@ class PublicServerTests(unittest.TestCase):
             with self.subTest(backend=backend):
                 anyio.run(function, backend=backend)
 
+    def test_typed_noop_and_full_envelope_evidence(self):
+        async def run():
+            value = request()
+            value["extraEnvelope"] = {"opaque": [1, None]}
+            value["params"]["extraParams"] = {"caller": "opaque"}
+            value["params"]["extensions"] = {"com.example.param": True}
+            value["params"]["event"]["extensions"] = {"com.example.event": [1, 2]}
+            value["params"]["event"]["extraEvent"] = {"keep": True}
+            value["params"]["capabilities"]["extraGrant"] = "evidence"
+            value["params"]["state"] = {
+                "permission": "none",
+                "candidate": None,
+                "extraState": ["opaque"],
+            }
+            seen = []
+
+            def intercept(ctx: hooks.ToolBeforeContext) -> hooks.ToolBeforeReply:
+                seen.append(ctx)
+                self.assertEqual(ctx.raw, value)
+                self.assertEqual(dict(ctx.envelope), value)
+                self.assertEqual(ctx.params["extraParams"], {"caller": "opaque"})
+                self.assertEqual(ctx.event["extraEvent"], {"keep": True})
+                self.assertEqual(ctx.event.tool.name, "write_file")
+                self.assertEqual(ctx.capabilities["extraGrant"], "evidence")
+                self.assertEqual(ctx.state["extraState"], ["opaque"])
+                # Even editing every exposed correlation/grant bag is detached.
+                ctx.envelope["id"] = "callback-id"
+                ctx.params["protocolVersion"] = "callback-version"
+                ctx.event["id"] = "callback-event"
+                ctx.raw["id"] = "raw-callback-id"
+                return hooks.ToolBeforeReply()
+
+            handler = hooks.Handlers(
+                intercept=hooks.InterceptHandlers(tool_before=intercept)
+            )
+            result = await handler.process(value)
+            self.assertEqual(
+                result,
+                {
+                    "jsonrpc": "2.0",
+                    "id": "event-1",
+                    "result": {"protocolVersion": "draft", "effects": []},
+                },
+            )
+            self.assertEqual(value["id"], "event-1")
+            self.assertEqual(value["params"]["event"]["id"], "event-1")
+            self.assertEqual(len(seen), 1)
+            self.assertFalse(hasattr(hooks, "Handler"))
+            self.assertFalse(hasattr(hooks, "InterceptResult"))
+
+        self.both(run)
+
+    def test_typed_order_and_request_time_grants(self):
+        async def run():
+            def intercept(ctx: hooks.ToolBeforeContext) -> hooks.ToolBeforeReply:
+                # This mutation cannot manufacture request-time grants.
+                ctx.capabilities["effects"] = ["modify", "allow"]
+                ctx.raw["params"]["capabilities"] = {
+                    "effects": ["modify", "allow"],
+                    "modify": {"input": {"replace": True}},
+                }
+                return hooks.ToolBeforeReply(
+                    effects=(
+                        hooks.ReplaceInput({"path": "safe.txt"}),
+                        effect.Allow(),
+                    )
+                )
+
+            handler = hooks.Handlers(
+                intercept=hooks.InterceptHandlers(tool_before=intercept)
+            )
+            missing = await handler.process(request())
+            self.assertEqual(missing["error"]["code"], -32603)
+            granted = request()
+            granted["params"]["capabilities"] = {
+                "effects": ["modify", "allow"],
+                "modify": {"input": {"replace": True, "merge": False}},
+            }
+            result = await handler.process(granted)
+            self.assertEqual(
+                result["result"]["effects"],
+                [
+                    {
+                        "type": "modify",
+                        "target": "input",
+                        "operation": "replace",
+                        "value": {"path": "safe.txt"},
+                    },
+                    {"type": "allow"},
+                ],
+            )
+            granted["params"]["capabilities"]["modify"]["input"] = {
+                "replace": False,
+                "merge": True,
+            }
+            self.assertEqual((await handler.process(granted))["error"]["code"], -32603)
+
+        self.both(run)
+
+    def test_compound_continuations_share_request_budget(self):
+        async def run():
+            value = request()
+            value["params"]["event"] = {
+                "id": "event-1",
+                "source": "urn:test:harness",
+                "time": "2026-09-15T12:00:00Z",
+                "type": "turn.finish.before",
+                "turn": {"id": "turn-1"},
+                "outcome": "completed",
+                "continuationCount": 0,
+                "items": [],
+            }
+            value["params"]["capabilities"] = {
+                "effects": ["flow"],
+                "flow": {
+                    "operations": ["continue"],
+                    "remainingContinuations": 1,
+                    "continuationCount": 0,
+                    "maxContinuations": 1,
+                },
+            }
+
+            def intercept(
+                ctx: hooks.TurnFinishBeforeContext,
+            ) -> hooks.TurnFinishBeforeReply:
+                return hooks.TurnFinishBeforeReply(
+                    effects=(
+                        effect.ContinueFlow(instruction="first instruction"),
+                        effect.ContinueFlow(instruction="second instruction"),
+                    ),
+                )
+
+            handler = hooks.Handlers(
+                intercept=hooks.InterceptHandlers(turn_finish_before=intercept),
+            )
+            response = await handler.process(value)
+            self.assertNotIn("error", response)
+            self.assertEqual(len(response["result"]["effects"]), 2)
+            settled = _apply_response(value, response, Validator())
+            self.assertEqual(settled["flow"], "continue")
+            self.assertEqual(
+                settled["continuationInstructions"],
+                ["first instruction", "second instruction"],
+            )
+            self.assertEqual(settled["continuationRemaining"], 0)
+
+            value["params"]["capabilities"]["flow"].update(
+                remainingContinuations=0,
+                continuationCount=1,
+            )
+            value["params"]["event"]["continuationCount"] = 1
+            exhausted = await handler.process(value)
+            self.assertEqual(exhausted["error"]["code"], -32603)
+
+        self.both(run)
+
+    def test_explicit_tool_caller_slots_preserve_evidence(self):
+        async def run():
+            value = request()
+            value["params"]["state"] = {
+                "permission": "none",
+                "candidate": {
+                    "value": {"toolOwned": [1, None]},
+                    "provenance": {"callerOwned": {"trace": True}},
+                    "extraCandidate": "opaque",
+                },
+            }
+
+            def intercept(ctx: hooks.ToolBeforeContext) -> hooks.ToolBeforeReply:
+                codec = IdentityCodec()
+                self.assertEqual(ctx.decode_input(codec), {"path": "é.txt"})
+                candidate = ctx.decode_candidate(codec, codec)
+                self.assertEqual(candidate.value, {"toolOwned": [1, None]})
+                self.assertEqual(candidate.provenance, {"callerOwned": {"trace": True}})
+                self.assertEqual(
+                    candidate.additional_properties, {"extraCandidate": "opaque"}
+                )
+                self.assertEqual(ctx.raw, value)
+                return hooks.ToolBeforeReply(effects=())
+
+            handler = hooks.Handlers(
+                intercept=hooks.InterceptHandlers(tool_before=intercept)
+            )
+            result = await handler.process(value)
+            self.assertEqual(result["result"]["effects"], [])
+            self.assertEqual(
+                hooks.ReplaceInput({"path": "é.txt"}, codec=IdentityCodec()).value,
+                {"path": "é.txt"},
+            )
+
+        self.both(run)
+
+    def test_wrong_reply_context_and_observation_controls(self):
+        async def run():
+            for reply in (
+                hooks.ToolAfterReply(),
+                hooks.ToolBeforeReply(effects=(effect.ContinueFlow(),)),
+            ):
+
+                def intercept(ctx, reply=reply):
+                    return reply
+
+                handler = hooks.Handlers(
+                    intercept=hooks.InterceptHandlers(tool_before=intercept)
+                )
+                self.assertEqual(
+                    (await handler.process(request()))["error"]["code"], -32603
+                )
+
+            seen = []
+
+            def observe(ctx):
+                seen.append(ctx.raw)
+                return hooks.ToolBeforeReply(effects=(effect.Allow(),))
+
+            handler = hooks.Handlers(observe=hooks.ObserveHandlers(tool_before=observe))
+            self.assertIsNone(await handler.process(notification()))
+            self.assertEqual(seen, [notification()])
+
+        self.both(run)
+
     def test_canonical_handler_and_transport_parity(self):
         async def run():
             seen = []
 
             async def intercept(value):
-                Validator().validate("intercept-request", value)
+                Validator().validate("intercept-request", value.raw)
                 seen.append(value)
-                return hooks.InterceptResult(
-                    effects=[{"type": "deny", "reason": "é policy"}]
-                )
+                return hooks.ToolBeforeReply(effects=(effect.Deny(reason="é policy"),))
 
-            handler = hooks.Handler(intercept=intercept)
+            handler = hooks.Handlers(
+                intercept=hooks.InterceptHandlers(tool_before=intercept)
+            )
             direct = await handler(wire(request()))
             Validator().validate("intercept-response", direct)
             self.assertEqual(direct["id"], request()["id"])
@@ -146,7 +369,7 @@ class PublicServerTests(unittest.TestCase):
             async def observe(value):
                 seen.append(value)
 
-            handler = hooks.Handler(observe=observe)
+            handler = hooks.Handlers(observe=hooks.ObserveHandlers(tool_before=observe))
             valid = notification()
             malformed = {"jsonrpc": "2.0", "method": "hooks/observe", "params": {}}
             unknown = {"jsonrpc": "2.0", "method": "other"}
@@ -174,7 +397,7 @@ class PublicServerTests(unittest.TestCase):
 
     def test_strict_utf8_json_and_unknown_method(self):
         async def run():
-            handler = hooks.Handler()
+            handler = hooks.Handlers()
             for data in (b"\xff", b'{"a":1,"a":2}', b'{"n":NaN}', b"{"):
                 self.assertEqual((await handler(data))["error"]["code"], -32700)
             for value in ([], None, {"jsonrpc": "2.0", "method": "x", "id": True}):
@@ -194,30 +417,34 @@ class PublicServerTests(unittest.TestCase):
         async def run():
             for result in (
                 None,
-                hooks.InterceptResult(effects=[{"type": "not-an-effect"}]),
+                hooks.ToolBeforeReply(effects=[{"type": "not-an-effect"}]),
             ):
 
                 async def intercept(_, result=result):
                     return result
 
                 self.assertEqual(
-                    (await hooks.Handler(intercept=intercept)(wire(request())))[
-                        "error"
-                    ]["code"],
+                    (
+                        await hooks.Handlers(
+                            intercept=hooks.InterceptHandlers(tool_before=intercept)
+                        )(wire(request()))
+                    )["error"]["code"],
                     -32603,
                 )
             called = []
 
             async def intercept(_):
                 called.append(True)
-                return hooks.InterceptResult()
+                return hooks.ToolBeforeReply()
 
             value = request()
             value["id"] = "different"
             self.assertEqual(
-                (await hooks.Handler(intercept=intercept)(wire(value)))["error"][
-                    "code"
-                ],
+                (
+                    await hooks.Handlers(
+                        intercept=hooks.InterceptHandlers(tool_before=intercept)
+                    )(wire(value))
+                )["error"]["code"],
                 -32602,
             )
             self.assertEqual(called, [])
@@ -229,11 +456,13 @@ class PublicServerTests(unittest.TestCase):
             async def intercept(_):
                 raise hooks.HTTPError(429, b"retry later", content_type=b"text/plain")
 
-            app = asgi.App(hooks.Handler(intercept=intercept))
+            app = asgi.App(
+                hooks.Handlers(intercept=hooks.InterceptHandlers(tool_before=intercept))
+            )
             sent = await call_app(app, wire(request()))
             self.assertEqual(sent[0]["status"], 429)
             self.assertEqual(sent[1]["body"], b"retry later")
-            sent = await call_app(asgi.App(hooks.Handler(), max_bytes=2), b"123")
+            sent = await call_app(asgi.App(hooks.Handlers(), max_bytes=2), b"123")
             self.assertEqual(sent[0]["status"], 413)
             self.assertTrue(sent[1]["body"])
             sent = await call_app(app, method="GET")
@@ -257,7 +486,11 @@ class PublicServerTests(unittest.TestCase):
 
                 async def serve():
                     await stdio.serve(
-                        hooks.Handler(intercept=intercept), input=source, output=sink
+                        hooks.Handlers(
+                            intercept=hooks.InterceptHandlers(tool_before=intercept)
+                        ),
+                        input=source,
+                        output=sink,
                     )
 
                 tasks.start_soon(serve)
@@ -274,14 +507,14 @@ class PublicServerTests(unittest.TestCase):
                 source, sink = Input(data), Output()
                 with self.assertRaises(ValueError):
                     await stdio.serve(
-                        hooks.Handler(), input=source, output=sink, max_bytes=4
+                        hooks.Handlers(), input=source, output=sink, max_bytes=4
                     )
                 self.assertFalse(source.closed or sink.closed)
             called, entered, release = [], anyio.Event(), anyio.Event()
 
             async def intercept(_):
                 called.append(True)
-                return hooks.InterceptResult()
+                return hooks.ToolBeforeReply()
 
             class SlowOutput(Output):
                 async def send(self, data):
@@ -294,7 +527,9 @@ class PublicServerTests(unittest.TestCase):
 
                 async def serve():
                     await stdio.serve(
-                        hooks.Handler(intercept=intercept),
+                        hooks.Handlers(
+                            intercept=hooks.InterceptHandlers(tool_before=intercept)
+                        ),
                         input=Input((wire(request()) + b"\n") * 2, chunk=65536),
                         output=sink,
                     )
@@ -506,13 +741,17 @@ class PublicServerTests(unittest.TestCase):
             source, sink = io.BytesIO(wire(request()) + b"\n"), io.BytesIO()
 
             async def intercept(_):
-                return hooks.InterceptResult()
+                return hooks.ToolBeforeReply()
 
             with (
                 patch.object(stdio.sys, "stdin", SimpleNamespace(buffer=source)),
                 patch.object(stdio.sys, "stdout", SimpleNamespace(buffer=sink)),
             ):
-                await stdio.serve(hooks.Handler(intercept=intercept))
+                await stdio.serve(
+                    hooks.Handlers(
+                        intercept=hooks.InterceptHandlers(tool_before=intercept)
+                    )
+                )
             self.assertFalse(source.closed or sink.closed)
             self.assertEqual(json.loads(sink.getvalue())["id"], "event-1")
 
@@ -528,7 +767,9 @@ class PublicServerTests(unittest.TestCase):
                 async def observe(_, exception=exception):
                     raise exception
 
-                app = asgi.App(hooks.Handler(observe=observe))
+                app = asgi.App(
+                    hooks.Handlers(observe=hooks.ObserveHandlers(tool_before=observe))
+                )
                 sent = await call_app(app, wire(notification()))
                 self.assertEqual(sent[0]["status"], 204)
                 self.assertEqual(sent[1]["body"], b"")
@@ -596,15 +837,15 @@ class PublicServerTests(unittest.TestCase):
                 "method": "hooks/capabilities",
                 "params": {"protocolVersion": "draft"},
             }
-            engine = hooks.Engine(hooks.Handler(), harness_manifest=manifest)
+            engine = hooks.Engine(hooks.Handlers(), harness_manifest=manifest)
             manifest["gaps"].append({"invalid": "caller mutation"})
             result = await engine.process(value)
             Validator().validate("capabilities-response", result)
             self.assertEqual(result["result"]["manifest"]["gaps"], [])
             self.assertEqual(
-                (await hooks.Handler().process(value))["error"]["code"], -32601
+                (await hooks.Handlers().process(value))["error"]["code"], -32601
             )
-            malformed = hooks.Engine(hooks.Handler(), harness_manifest={})
+            malformed = hooks.Engine(hooks.Handlers(), harness_manifest={})
             self.assertEqual((await malformed.process(value))["error"]["code"], -32603)
 
         self.both(run)
@@ -669,7 +910,9 @@ class PublicServerTests(unittest.TestCase):
 
                 sink = Output()
                 await stdio.serve(
-                    hooks.Handler(intercept=intercept),
+                    hooks.Handlers(
+                        intercept=hooks.InterceptHandlers(tool_before=intercept)
+                    ),
                     input=Input(wire(request()) + b"\n"),
                     output=sink,
                 )
@@ -708,7 +951,7 @@ class PublicServerTests(unittest.TestCase):
                     ),
                 ):
                     async with anyio.create_task_group() as tasks:
-                        tasks.start_soon(stdio.serve, hooks.Handler())
+                        tasks.start_soon(stdio.serve, hooks.Handlers())
                         await anyio.sleep(0.01)
                         tasks.cancel_scope.cancel()
                 self.assertFalse(source.closed)

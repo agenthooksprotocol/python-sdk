@@ -1,6 +1,6 @@
 """Public asynchronous harness; schema validation and settlement stay canonical.
 
-Capabilities map event names to ``{modes: [...], capabilities: {...}}``.
+Capabilities use event-specific frozen host declarations.
 Dispatch inputs are event-specific payload objects, not tool arguments alone.
 Ordinary host authorization and domain validation remain the caller's job.
 """
@@ -11,7 +11,9 @@ from typing import Any, Callable, Generic, Mapping, TypeVar, cast, overload
 from types import TracebackType
 from .codec import ValueCodecs, Codec, Candidate, _decode_preserving
 from .response import ContextualResponse
-from .event import Event
+from .event import Event, EventType
+from .capability import HostCapabilities
+from ._host_metadata import HostManifestMetadata
 from . import _models as models
 from ._outcomes import decode_event, decode_candidate, decode_response
 from .permission import Permission
@@ -646,8 +648,37 @@ class Hooks(BoundaryMixin):
         config: dict[str, Any],
         *,
         source: str,
-        capabilities: dict[str, Any] | None = None,
-        manifest: dict[str, Any] | None = None,
+        capabilities: HostCapabilities,
+        manifest_metadata: HostManifestMetadata | None = None,
+        transport: Any = None,
+        resolve_credential: Any = None,
+        auth_provider: Any = None,
+        max_concurrent_uploads: int = 8,
+    ) -> None:
+        if not isinstance(capabilities, HostCapabilities):
+            raise TypeError("capabilities must be HostCapabilities")
+        if manifest_metadata is not None and not isinstance(
+            manifest_metadata, HostManifestMetadata
+        ):
+            raise TypeError("manifest_metadata must be HostManifestMetadata")
+        self._configure(
+            config,
+            source=source,
+            declarations=capabilities.to_wire(),
+            manifest_metadata=manifest_metadata,
+            transport=transport,
+            resolve_credential=resolve_credential,
+            auth_provider=auth_provider,
+            max_concurrent_uploads=max_concurrent_uploads,
+        )
+
+    def _configure(
+        self,
+        config: dict[str, Any],
+        *,
+        source: str,
+        declarations: dict[EventType, Any],
+        manifest_metadata: HostManifestMetadata | None = None,
         transport: Any = None,
         resolve_credential: Any = None,
         auth_provider: Any = None,
@@ -670,39 +701,10 @@ class Hooks(BoundaryMixin):
             or not FormatChecker().conforms(source, "uri")
         ):
             raise ProtocolError("source must be an absolute URI")
-        if manifest is not None:
-            if capabilities is not None:
-                raise ProtocolError("Supply manifest or capabilities, not both")
-            self.validator.validate(
-                "capabilities-response",
-                {
-                    "jsonrpc": "2.0",
-                    "id": "configured-manifest",
-                    "result": {
-                        "protocolVersion": config["protocolVersion"],
-                        "manifest": manifest,
-                    },
-                },
-            )
-            capabilities = {}
-            for entry in manifest["events"]:
-                name = entry["event"]
-                if name in capabilities:
-                    raise ProtocolError("Duplicate manifest event")
-                capabilities[name] = {
-                    key: deepcopy(value)
-                    for key, value in entry.items()
-                    if key != "event"
-                }
-        if not isinstance(capabilities, dict):
-            raise ProtocolError("capabilities must map events to explicit modes")
         self._pending: WeakSet[PendingInvocation] = WeakSet()
         self.config = deepcopy(config)
         self.source = source
-        self.capabilities = {
-            key: deepcopy(value.to_wire() if hasattr(value, "to_wire") else value)
-            for key, value in capabilities.items()
-        }
+        self.capabilities = deepcopy(declarations)
         from .auth import EnvironmentAuthProvider
 
         self._auth_provider = (
@@ -722,21 +724,7 @@ class Hooks(BoundaryMixin):
             if "intercept" in modes:
                 if "capabilities" not in declaration:
                     raise ProtocolError("Interception requires explicit capabilities")
-                self.validator.validate("capabilities", declaration["capabilities"])
-        self._manifest = (
-            deepcopy(manifest) if manifest is not None else self._derive_manifest()
-        )
-        self.validator.validate(
-            "capabilities-response",
-            {
-                "jsonrpc": "2.0",
-                "id": "configured-manifest",
-                "result": {
-                    "protocolVersion": config["protocolVersion"],
-                    "manifest": self._manifest,
-                },
-            },
-        )
+        self._manifest = self._derive_manifest(manifest_metadata)
         for backend in self.config["hooks"]:
             if backend["id"] in ids:
                 raise ProtocolError("Duplicate backend ID")
@@ -759,7 +747,7 @@ class Hooks(BoundaryMixin):
         self._observations: list[dict[str, Any]] = []
         self._observation_diagnostics: deque[dict[str, Any]] = deque(maxlen=256)
 
-    def subscribes(self, event: str) -> bool:
+    def subscribes(self, event: EventType) -> bool:
         """Report static intercept or observation interest, not delivery or permission.
 
         Payload-dependent filters are conservatively ignored. This lookup does
@@ -780,7 +768,9 @@ class Hooks(BoundaryMixin):
         """Return a detached snapshot of the configured static host manifest."""
         return deepcopy(self._manifest)
 
-    def _derive_manifest(self) -> dict[str, Any]:
+    def _derive_manifest(
+        self, metadata: HostManifestMetadata | None = None
+    ) -> dict[str, Any]:
         # The schema catalogue bounds coverage; omitted declarations never grant modes.
         schema = self.validator.validators["capabilities-response.schema.json"].schema
         shape = schema["allOf"][1]["properties"]["result"]["properties"]["manifest"]
@@ -810,11 +800,13 @@ class Hooks(BoundaryMixin):
             "managedPolicy": {"scopes": [], "disableable": True},
             "correlationIdentityFields": ["event.source", "event.id"],
         }
-        # An event grant map provides no evidence for these host-level facilities.
+        supplied = metadata.to_wire() if metadata is not None else {}
+        result.update(deepcopy(supplied))
+        # Event declarations provide no evidence for omitted host-level facilities.
         result["gaps"].extend(
             {
                 "path": name,
-                "reason": "Not declared by the event capability map; supply a full manifest",
+                "reason": "Not declared by host metadata",
             }
             for name in (
                 "transports",
@@ -824,6 +816,7 @@ class Hooks(BoundaryMixin):
                 "limits",
                 "managedPolicy",
             )
+            if name not in supplied
         )
         return result
 
@@ -1014,7 +1007,7 @@ class Hooks(BoundaryMixin):
     @overload
     async def dispatch(
         self,
-        event_name: str,
+        event_name: EventType,
         input: dict[str, Any],
         *,
         initial_state: dict[str, Any] | None = None,
@@ -1033,7 +1026,7 @@ class Hooks(BoundaryMixin):
     @overload
     async def dispatch(
         self,
-        event_name: str,
+        event_name: EventType,
         input: dict[str, Any],
         *,
         initial_state: dict[str, Any] | None = None,
@@ -1052,7 +1045,7 @@ class Hooks(BoundaryMixin):
     @overload
     async def dispatch(
         self,
-        event_name: str,
+        event_name: EventType,
         input: dict[str, Any],
         *,
         initial_state: dict[str, Any] | None = None,
@@ -1071,7 +1064,7 @@ class Hooks(BoundaryMixin):
     @overload
     async def dispatch(
         self,
-        event_name: str,
+        event_name: EventType,
         input: dict[str, Any],
         *,
         initial_state: dict[str, Any] | None = None,
@@ -1090,7 +1083,7 @@ class Hooks(BoundaryMixin):
     @overload
     async def dispatch(
         self,
-        event_name: str,
+        event_name: EventType,
         input: dict[str, Any],
         *,
         initial_state: dict[str, Any] | None = None,
@@ -1109,7 +1102,7 @@ class Hooks(BoundaryMixin):
     @overload
     async def dispatch(
         self,
-        event_name: str,
+        event_name: EventType,
         input: dict[str, Any],
         *,
         initial_state: dict[str, Any] | None = None,
@@ -1128,7 +1121,7 @@ class Hooks(BoundaryMixin):
     @overload
     async def dispatch(
         self,
-        event_name: str,
+        event_name: EventType,
         input: dict[str, Any],
         *,
         initial_state: dict[str, Any] | None = None,
@@ -1147,7 +1140,7 @@ class Hooks(BoundaryMixin):
     @overload
     async def dispatch(
         self,
-        event_name: str,
+        event_name: EventType,
         input: dict[str, Any],
         *,
         initial_state: dict[str, Any] | None = None,
@@ -1166,7 +1159,7 @@ class Hooks(BoundaryMixin):
     @_owned_operation
     async def dispatch(
         self,
-        event_name: str,
+        event_name: EventType,
         input: dict[str, Any],
         *,
         initial_state: dict[str, Any] | None = None,

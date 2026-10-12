@@ -22,6 +22,7 @@ from ._models.event import DecidedBy as DecidedBy
 from ._models.event import Decision as Decision
 from ._models.event import Delta as Delta
 from ._models.event import Event as Event
+from ._models.event import EventType as EventType
 from ._models.event import ExecutionExecuted as ExecutionExecuted
 from ._models.event import ExecutionSkippedCancelled as ExecutionSkippedCancelled
 from ._models.event import ExecutionSkippedOther as ExecutionSkippedOther

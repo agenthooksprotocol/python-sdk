@@ -4,6 +4,8 @@ Run: uv run python examples/file_attachment.py path/to/report.pdf
 The attachment is the sole byte owner; no receiver or content store is needed.
 """
 
+from agenthooksprotocol import capability
+
 from pathlib import Path
 import sys
 
@@ -58,18 +60,16 @@ async def main(path: Path) -> None:
         },
         source="urn:example:file-review",
         max_concurrent_uploads=8,
-        capabilities={
-            "context.compact.after": {
-                "modes": ["observe"],
-                "capabilities": {"effects": []},
-            },
-            "context.compact.before": {
-                "modes": ["intercept"],
-                "capabilities": {"effects": []},
-            },
-        },
+        capabilities=capability.HostCapabilities(
+            context_compact_after=capability.Observe(),
+            context_compact_before=capability.ContextCompactBeforeCapabilities(
+                intercept=capability.ContextCompactBeforeIntercept(message=True)
+            ),
+        ),
     ) as hooks:
-        result: HookResult[object, TextParts, object] = await hooks.context_compact_before(event)
+        result: HookResult[
+            object, TextParts, object
+        ] = await hooks.context_compact_before(event)
         # No matching receiver: the file has not been opened.
     async with result:
         body = await result.attachments.read("context.compact.before.items_parts[0][1]")

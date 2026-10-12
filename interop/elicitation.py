@@ -8,7 +8,6 @@ import os
 import sys
 import uuid
 import anyio
-from agenthooksprotocol.server.hooks import Handler as HookHandler, InterceptResult
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from urllib.request import Request
 from urllib.error import HTTPError
@@ -143,13 +142,21 @@ def main():
                         target = "content" if case.get("result") else "request"
 
                         async def respond(message):
-                            return InterceptResult(effects=case["effects"])
+                            # Malformed/contextual effects must reach SDK validation.
+                            return {
+                                "jsonrpc": "2.0",
+                                "id": message["id"],
+                                "result": {
+                                    "protocolVersion": message["params"][
+                                        "protocolVersion"
+                                    ],
+                                    "effects": case["effects"],
+                                },
+                            }
 
                         class Transport:
                             async def request(self, message):
-                                return await HookHandler(intercept=respond).process(
-                                    message
-                                )
+                                return await respond(message)
 
                         async def settle():
                             context = ContentContext(
@@ -294,10 +301,17 @@ def main():
                                 "summary": summary,
                             }
                         )
-                        return InterceptResult()
+                        return {
+                            "jsonrpc": "2.0",
+                            "id": message["id"],
+                            "result": {
+                                "protocolVersion": message["params"]["protocolVersion"],
+                                "effects": [],
+                            },
+                        }
 
                     async def process():
-                        return await HookHandler(intercept=intercept).process(message)
+                        return await intercept(message)
 
                     response = anyio.run(process)
                     if response is None or "error" in response:

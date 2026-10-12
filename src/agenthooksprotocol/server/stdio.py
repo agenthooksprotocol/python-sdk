@@ -20,7 +20,7 @@ import anyio
 from anyio.abc import ByteReceiveStream, ByteSendStream
 
 from ._json import loads
-from .hooks import Engine, Handler, HTTPError, _encode, _error
+from .hooks import Engine, Handlers, HTTPError, _encode, _error
 
 
 def _pipe_fd(stream):
@@ -116,7 +116,7 @@ def _http_error_response(exc, id):
 
 
 async def serve(
-    handler: Handler,
+    handler: Handlers,
     *,
     input: ByteReceiveStream | None = None,
     output: ByteSendStream | None = None,

@@ -14,6 +14,7 @@ from agenthooksprotocol import (
     ExecutionEventMcpConnectionHttp,
 )
 from agenthooksprotocol import capability, effect, state
+from agenthooksprotocol._models import capability as wire_capability
 from agenthooksprotocol.generated import parse_content_reference
 
 
@@ -24,7 +25,7 @@ class StructuralFacadeTests(unittest.TestCase):
         self.assertEqual(decoded.gaps[0].reason, "unavailable")
         self.assertEqual(decoded.gaps[0].path, "url")
         self.assertEqual(decoded, raw)
-        caps = capability.Capabilities.from_dict(
+        caps = wire_capability.Capabilities.from_dict(
             {
                 "effects": ["modify"],
                 "modify": {"input": {"replace": True, "merge": False}},
@@ -51,7 +52,7 @@ class StructuralFacadeTests(unittest.TestCase):
     def test_all_exported_capability_models_support_family_queries(self):
         classes = {
             value
-            for value in vars(capability).values()
+            for value in vars(wire_capability).values()
             if isinstance(value, type)
             and issubclass(value, dict)
             and hasattr(value, "effects")
@@ -68,7 +69,7 @@ class StructuralFacadeTests(unittest.TestCase):
                     self.assertFalse(caps.supports(capability.EffectName.MODIFY))
                 self.assertFalse(cls(effects=[]).supports(capability.EffectName.DENY))
         self.assertTrue(
-            capability.ToolBeforeCapabilities(effects=["deny"]).supports(
+            wire_capability.ToolBeforeCapabilities(effects=["deny"]).supports(
                 capability.EffectName.DENY
             )
         )
@@ -76,8 +77,8 @@ class StructuralFacadeTests(unittest.TestCase):
 
     def test_constructors_require_typed_nested_values(self):
         with self.assertRaises(TypeError):
-            capability.Capabilities(effects=["modify"], modify={})
-        caps = capability.Capabilities(
+            wire_capability.Capabilities(effects=["modify"], modify={})
+        caps = wire_capability.Capabilities(
             effects=["modify"], modify=ahp.CapabilitiesModify()
         )
         self.assertIsNone(caps.modify.input)
@@ -185,8 +186,8 @@ class StructuralFacadeTests(unittest.TestCase):
     def test_family_support_is_not_authorization(self):
         self.assertIs(capability.EffectName, effect.EffectName)
         for cls in (
-            capability.Capabilities,
-            capability.InterceptRequestParamsCapabilities,
+            wire_capability.Capabilities,
+            wire_capability.InterceptRequestParamsCapabilities,
         ):
             caps = cls.from_dict(
                 {

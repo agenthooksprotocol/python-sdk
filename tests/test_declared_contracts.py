@@ -1,5 +1,7 @@
 """Caller contracts are checked during public-facade atomic admission."""
 
+from agenthooksprotocol import capability
+
 from copy import deepcopy
 import unittest
 
@@ -57,13 +59,6 @@ def merge(value):
     return {"type": "modify", "target": "input", "operation": "merge", "value": value}
 
 
-def caps():
-    return {
-        "effects": ["modify", "return", "message"],
-        "modify": {"input": {"replace": True, "merge": True}},
-    }
-
-
 class DeclaredContractsTests(unittest.TestCase):
     def run_async(self, fn):
         for backend in ("asyncio", "trio"):
@@ -82,7 +77,20 @@ class DeclaredContractsTests(unittest.TestCase):
                 },
                 {"effects": []},
             )
-            async with hooks_for("tool.before", caps(), transport, count=2) as hooks:
+            async with hooks_for(
+                "tool.before",
+                capability.HostCapabilities(
+                    tool_before=capability.ToolBeforeCapabilities(
+                        intercept=capability.ToolBeforeIntercept(
+                            return_result=True,
+                            message=True,
+                            modify_input=capability.Modify.REPLACE_AND_MERGE,
+                        )
+                    )
+                ),
+                transport,
+                count=2,
+            ) as hooks:
                 result = await hooks.tool_before(
                     p, input_codec=PydanticCodec(TypeAdapter(Arguments))
                 )
@@ -127,7 +135,20 @@ class DeclaredContractsTests(unittest.TestCase):
                 },
                 {"effects": []},
             )
-            async with hooks_for("tool.before", caps(), transport, count=3) as hooks:
+            async with hooks_for(
+                "tool.before",
+                capability.HostCapabilities(
+                    tool_before=capability.ToolBeforeCapabilities(
+                        intercept=capability.ToolBeforeIntercept(
+                            return_result=True,
+                            message=True,
+                            modify_input=capability.Modify.REPLACE_AND_MERGE,
+                        )
+                    )
+                ),
+                transport,
+                count=3,
+            ) as hooks:
                 result = await hooks.tool_before(
                     payload(),
                     input_codec=PydanticCodec(TypeAdapter(Arguments)),
@@ -158,7 +179,19 @@ class DeclaredContractsTests(unittest.TestCase):
                 [merge({"required": 2}), {"type": "return", "value": {"text": 42}}],
             ):
                 transport = Replies({"effects": effects})
-                async with hooks_for("tool.before", caps(), transport) as hooks:
+                async with hooks_for(
+                    "tool.before",
+                    capability.HostCapabilities(
+                        tool_before=capability.ToolBeforeCapabilities(
+                            intercept=capability.ToolBeforeIntercept(
+                                return_result=True,
+                                message=True,
+                                modify_input=capability.Modify.REPLACE_AND_MERGE,
+                            )
+                        )
+                    ),
+                    transport,
+                ) as hooks:
                     result = await hooks.tool_before(
                         payload(),
                         input_codec=PydanticCodec(TypeAdapter(Arguments)),
@@ -182,7 +215,19 @@ class DeclaredContractsTests(unittest.TestCase):
             value = {"future": {"body": {"ref": "opaque"}, "parts": None}}
             for cls, accepted in ((Lossy, False), (Arguments, True)):
                 transport = Replies({"effects": [merge(value)]})
-                async with hooks_for("tool.before", caps(), transport) as hooks:
+                async with hooks_for(
+                    "tool.before",
+                    capability.HostCapabilities(
+                        tool_before=capability.ToolBeforeCapabilities(
+                            intercept=capability.ToolBeforeIntercept(
+                                return_result=True,
+                                message=True,
+                                modify_input=capability.Modify.REPLACE_AND_MERGE,
+                            )
+                        )
+                    ),
+                    transport,
+                ) as hooks:
                     result = await hooks.tool_before(
                         payload(), input_codec=PydanticCodec(TypeAdapter(cls))
                     )
@@ -201,7 +246,19 @@ class DeclaredContractsTests(unittest.TestCase):
         async def run():
             for candidate in (None, {"value": None, "provenance": {"source": "host"}}):
                 transport = Replies({"effects": []})
-                async with hooks_for("tool.before", caps(), transport) as hooks:
+                async with hooks_for(
+                    "tool.before",
+                    capability.HostCapabilities(
+                        tool_before=capability.ToolBeforeCapabilities(
+                            intercept=capability.ToolBeforeIntercept(
+                                return_result=True,
+                                message=True,
+                                modify_input=capability.Modify.REPLACE_AND_MERGE,
+                            )
+                        )
+                    ),
+                    transport,
+                ) as hooks:
                     result = await hooks.tool_before(
                         payload(),
                         initial_state={"permission": "none", "candidate": candidate},
@@ -221,7 +278,19 @@ class DeclaredContractsTests(unittest.TestCase):
                     ]
                 }
             )
-            async with hooks_for("tool.before", caps(), transport) as hooks:
+            async with hooks_for(
+                "tool.before",
+                capability.HostCapabilities(
+                    tool_before=capability.ToolBeforeCapabilities(
+                        intercept=capability.ToolBeforeIntercept(
+                            return_result=True,
+                            message=True,
+                            modify_input=capability.Modify.REPLACE_AND_MERGE,
+                        )
+                    )
+                ),
+                transport,
+            ) as hooks:
                 result = await hooks.tool_before(
                     payload(),
                     initial_state={
@@ -241,7 +310,19 @@ class DeclaredContractsTests(unittest.TestCase):
     def test_postsettlement_decode_remains_explicit_and_does_not_reject_effects(self):
         async def run():
             transport = Replies({"effects": [merge({"required": "not declared"})]})
-            async with hooks_for("tool.before", caps(), transport) as hooks:
+            async with hooks_for(
+                "tool.before",
+                capability.HostCapabilities(
+                    tool_before=capability.ToolBeforeCapabilities(
+                        intercept=capability.ToolBeforeIntercept(
+                            return_result=True,
+                            message=True,
+                            modify_input=capability.Modify.REPLACE_AND_MERGE,
+                        )
+                    )
+                ),
+                transport,
+            ) as hooks:
                 result = await hooks.tool_before(payload())
                 self.assertEqual(len(result.accepted_responses), 1)
                 before = deepcopy(result._state)
@@ -263,7 +344,19 @@ class DeclaredContractsTests(unittest.TestCase):
                     ]
                 }
             )
-            async with hooks_for("tool.before", caps(), transport) as hooks:
+            async with hooks_for(
+                "tool.before",
+                capability.HostCapabilities(
+                    tool_before=capability.ToolBeforeCapabilities(
+                        intercept=capability.ToolBeforeIntercept(
+                            return_result=True,
+                            message=True,
+                            modify_input=capability.Modify.REPLACE_AND_MERGE,
+                        )
+                    )
+                ),
+                transport,
+            ) as hooks:
                 result = await hooks.tool_before(
                     payload(),
                     input_codec=PydanticCodec(TypeAdapter(Arguments)),
@@ -285,7 +378,19 @@ class DeclaredContractsTests(unittest.TestCase):
             transport = Replies(
                 {"effects": [{"type": "return", "value": {"text": "new"}}]}
             )
-            async with hooks_for("tool.before", caps(), transport) as hooks:
+            async with hooks_for(
+                "tool.before",
+                capability.HostCapabilities(
+                    tool_before=capability.ToolBeforeCapabilities(
+                        intercept=capability.ToolBeforeIntercept(
+                            return_result=True,
+                            message=True,
+                            modify_input=capability.Modify.REPLACE_AND_MERGE,
+                        )
+                    )
+                ),
+                transport,
+            ) as hooks:
                 result = await hooks.tool_before(
                     payload(),
                     initial_state={
@@ -308,11 +413,35 @@ class DeclaredContractsTests(unittest.TestCase):
             p = payload()
             p["native"] = {"parts": None, "body": {"ref": "not-an-attachment"}}
             transport = Replies({"effects": []})
-            async with hooks_for("tool.before", caps(), transport) as hooks:
+            async with hooks_for(
+                "tool.before",
+                capability.HostCapabilities(
+                    tool_before=capability.ToolBeforeCapabilities(
+                        intercept=capability.ToolBeforeIntercept(
+                            return_result=True,
+                            message=True,
+                            modify_input=capability.Modify.REPLACE_AND_MERGE,
+                        )
+                    )
+                ),
+                transport,
+            ) as hooks:
                 result = await hooks.tool_before(p)
                 self.assertEqual(result.event["native"], p["native"])
             transport = Replies({"effects": []})
-            async with hooks_for("tool.before", caps(), transport) as hooks:
+            async with hooks_for(
+                "tool.before",
+                capability.HostCapabilities(
+                    tool_before=capability.ToolBeforeCapabilities(
+                        intercept=capability.ToolBeforeIntercept(
+                            return_result=True,
+                            message=True,
+                            modify_input=capability.Modify.REPLACE_AND_MERGE,
+                        )
+                    )
+                ),
+                transport,
+            ) as hooks:
                 with self.assertRaises(Exception):
                     await hooks.tool_before(
                         p,
@@ -351,7 +480,15 @@ class DeclaredContractsTests(unittest.TestCase):
                 transport = Replies({"effects": [{"type": "return", "value": value}]})
                 async with hooks_for(
                     "user.elicitation.request",
-                    original["params"]["capabilities"],
+                    capability.HostCapabilities(
+                        user_elicitation_request=capability.UserElicitationRequestCapabilities(
+                            intercept=capability.UserElicitationRequestIntercept(
+                                deny=True,
+                                return_result=True,
+                                elicitation=capability.Elicitation.FORM,
+                            )
+                        )
+                    ),
                     transport,
                 ) as hooks:
                     result = await hooks.user_elicitation_request(
@@ -458,7 +595,15 @@ class FormContractTests(unittest.TestCase):
                 transport = Replies({"effects": [{"type": "return", "value": wire}]})
                 async with hooks_for(
                     "user.elicitation.request",
-                    original["params"]["capabilities"],
+                    capability.HostCapabilities(
+                        user_elicitation_request=capability.UserElicitationRequestCapabilities(
+                            intercept=capability.UserElicitationRequestIntercept(
+                                deny=True,
+                                return_result=True,
+                                elicitation=capability.Elicitation.FORM,
+                            )
+                        )
+                    ),
                     transport,
                 ) as hooks:
                     result = await hooks.user_elicitation_request(

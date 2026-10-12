@@ -1,5 +1,7 @@
 """Deterministic upload fanout, destination isolation, and receipt reuse."""
 
+from agenthooksprotocol import capability
+
 from copy import deepcopy
 import unittest
 
@@ -42,7 +44,14 @@ class UploadPlanningTests(unittest.TestCase):
             selections, replies, timeout=5000, caps=caps, event=event
         )
         config = deepcopy(template.config)
-        capabilities = deepcopy(template.capabilities)
+        capabilities = caps or capability.HostCapabilities(
+            context_compact_before=capability.ContextCompactBeforeCapabilities(
+                intercept=capability.ContextCompactBeforeIntercept(message=True)
+            ),
+            context_compact_after=capability.ContextCompactAfterCapabilities(
+                intercept=capability.ContextCompactAfterIntercept(message=True)
+            ),
+        )
         if configure is not None:
             configure(config, capabilities)
         if guard is not None:
@@ -65,7 +74,7 @@ class UploadPlanningTests(unittest.TestCase):
                 Hooks(
                     template.config,
                     source="urn:test",
-                    capabilities=template.capabilities,
+                    capabilities=capability.HostCapabilities(),
                     transport=transports,
                     max_concurrent_uploads=limit,
                 )
@@ -210,7 +219,9 @@ class UploadPlanningTests(unittest.TestCase):
                     transports[names[2]].requests[0]["method"],
                     "hooks/observe" if policy == "fail-closed" else "hooks/intercept",
                 )
-                self.assertEqual(result.permission is Permission.DENY, policy == "fail-closed")
+                self.assertEqual(
+                    result.permission is Permission.DENY, policy == "fail-closed"
+                )
                 self.assertTrue(
                     any(d["backend"] == names[1] for d in result.diagnostics)
                 )
@@ -231,7 +242,14 @@ class UploadPlanningTests(unittest.TestCase):
             hooks, transports = self.configured(
                 ["body"],
                 replies=([denial],),
-                caps={"effects": ["deny"]},
+                caps=capability.HostCapabilities(
+                    context_compact_before=capability.ContextCompactBeforeCapabilities(
+                        intercept=capability.ContextCompactBeforeIntercept(deny=True)
+                    ),
+                    context_compact_after=capability.ContextCompactAfterCapabilities(
+                        intercept=capability.ContextCompactAfterIntercept(message=True)
+                    ),
+                ),
                 configure=configure,
             )
             name = next(iter(transports))
@@ -280,10 +298,16 @@ class UploadPlanningTests(unittest.TestCase):
             hooks, transports = self.configured(
                 ["metadata", "body"],
                 replies=([effects], []),
-                caps={
-                    "effects": ["modify"],
-                    "modify": {"prompt": {"replace": True, "merge": True}},
-                },
+                caps=capability.HostCapabilities(
+                    turn_start=capability.TurnStartCapabilities(
+                        intercept=capability.TurnStartIntercept(
+                            modify_prompt=capability.Modify.REPLACE_AND_MERGE
+                        )
+                    ),
+                    context_compact_after=capability.ContextCompactAfterCapabilities(
+                        intercept=capability.ContextCompactAfterIntercept(message=True)
+                    ),
+                ),
                 event="turn.start",
                 guard=guard,
             )

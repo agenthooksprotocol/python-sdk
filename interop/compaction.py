@@ -13,7 +13,6 @@ from agenthooksprotocol.interop import open_local, loads, LIMIT
 
 def settle(snapshot, row):
     """Run one offline backend through the same public hook lifecycle as wire."""
-    from agenthooksprotocol.server.hooks import Handler, InterceptResult
     from agenthooksprotocol.interop import fixture_hooks
     import anyio
 
@@ -45,7 +44,15 @@ def settle(snapshot, row):
         async def respond(message):
             if row.get("throw", False):
                 raise ValueError("hook failed")
-            return InterceptResult(effects=row["effects"])
+            # Deliberately raw effects must reach SDK admission unchanged.
+            return {
+                "jsonrpc": "2.0",
+                "id": message["id"],
+                "result": {
+                    "protocolVersion": message["params"]["protocolVersion"],
+                    "effects": row["effects"],
+                },
+            }
 
         async def observe(message):
             if row.get("throw", False):
@@ -56,7 +63,10 @@ def settle(snapshot, row):
 
             class NotificationTransport:
                 async def notify(self, message):
-                    await Handler(observe=observe).process(message)
+                    try:
+                        await observe(message)
+                    except ValueError:
+                        pass  # Notification callback failures have no response.
 
             async with fixture_hooks(note, NotificationTransport()) as hooks:
                 await hooks.notify(note)
@@ -79,7 +89,7 @@ def settle(snapshot, row):
 
         class Transport:
             async def request(self, message):
-                return await Handler(intercept=respond).process(message)
+                return await respond(message)
 
         async with fixture_hooks(request, Transport()) as hooks:
             return await hooks.exchange(request)

@@ -30,6 +30,7 @@ from ._hooks import (
     PendingInvocation as PendingInvocation,
     HooksClosedError as HooksClosedError,
 )
+from ._host_metadata import HostManifestMetadata as HostManifestMetadata
 from .permission import Permission as Permission
 from .content import (
     OwnedContentSource as OwnedContentSource,
@@ -54,6 +55,7 @@ __all__ = list(_model_names) + [
     "OwnedContentSource",
     "ContentSources",
     "Permission",
+    "HostManifestMetadata",
     "state",
     "candidate",
     "diagnostics",

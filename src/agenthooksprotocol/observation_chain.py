@@ -11,7 +11,7 @@ from functools import partial
 
 import anyio
 
-from . import Hooks
+from ._interop_hooks import _hooks_for_wire
 
 
 def run_chain(scenario, transport, validator):
@@ -96,13 +96,13 @@ def run_chain(scenario, transport, validator):
                 }
             )
 
-        async with Hooks(
+        async with _hooks_for_wire(
             {
                 "protocolVersion": original["params"]["protocolVersion"],
                 "hooks": registrations,
             },
             source=event["source"],
-            capabilities={
+            declarations={
                 event["type"]: {
                     "modes": ["intercept", "observe"],
                     "capabilities": original["params"]["capabilities"],

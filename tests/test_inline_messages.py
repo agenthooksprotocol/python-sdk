@@ -1,5 +1,7 @@
 """Direct host messages, private projections, and immutable attachment owners."""
 
+from agenthooksprotocol import capability
+
 from copy import deepcopy
 import hashlib
 import unittest
@@ -64,15 +66,14 @@ def harness(
             for name, selection in zip(names, selections)
         ],
     }
-    capabilities = {
-        name: {
-            "modes": ["intercept"],
-            "capabilities": (caps or {"effects": []})
-            if name == event
-            else {"effects": []},
-        }
-        for name in (event, "context.compact.after")
-    }
+    capabilities = caps or capability.HostCapabilities(
+        context_compact_before=capability.ContextCompactBeforeCapabilities(
+            intercept=capability.ContextCompactBeforeIntercept(message=True)
+        ),
+        context_compact_after=capability.ContextCompactAfterCapabilities(
+            intercept=capability.ContextCompactAfterIntercept(message=True)
+        ),
+    )
     return Hooks(
         config, source="urn:test", capabilities=capabilities, transport=transports
     ), transports
@@ -240,10 +241,16 @@ class InlineMessageTests(unittest.TestCase):
         self,
     ):
         async def run():
-            caps = {
-                "effects": ["modify"],
-                "modify": {"prompt": {"merge": True, "replace": True}},
-            }
+            caps = capability.HostCapabilities(
+                turn_start=capability.TurnStartCapabilities(
+                    intercept=capability.TurnStartIntercept(
+                        modify_prompt=capability.Modify.REPLACE_AND_MERGE
+                    )
+                ),
+                context_compact_after=capability.ContextCompactAfterCapabilities(
+                    intercept=capability.ContextCompactAfterIntercept(message=True)
+                ),
+            )
             appended = {
                 "id": "new",
                 "role": "assistant",
@@ -312,10 +319,17 @@ class InlineMessageTests(unittest.TestCase):
                     "text": value,
                 }
 
-            caps = {
-                "effects": ["modify", "return"],
-                "modify": {"instructions": {"replace": True, "merge": True}},
-            }
+            caps = capability.HostCapabilities(
+                context_compact_before=capability.ContextCompactBeforeCapabilities(
+                    intercept=capability.ContextCompactBeforeIntercept(
+                        return_result=True,
+                        modify_instructions=capability.Modify.REPLACE_AND_MERGE,
+                    )
+                ),
+                context_compact_after=capability.ContextCompactAfterCapabilities(
+                    intercept=capability.ContextCompactAfterIntercept(message=True)
+                ),
+            )
             effects = [
                 {
                     "type": "modify",
@@ -570,10 +584,16 @@ class InlineMessageTests(unittest.TestCase):
                 calls.append("close")
 
             owner = Attachment.lazy(load, aclose=close)
-            caps = {
-                "effects": ["modify"],
-                "modify": {"prompt": {"replace": True, "merge": True}},
-            }
+            caps = capability.HostCapabilities(
+                turn_start=capability.TurnStartCapabilities(
+                    intercept=capability.TurnStartIntercept(
+                        modify_prompt=capability.Modify.REPLACE_AND_MERGE
+                    )
+                ),
+                context_compact_after=capability.ContextCompactAfterCapabilities(
+                    intercept=capability.ContextCompactAfterIntercept(message=True)
+                ),
+            )
             effects = [
                 {
                     "type": "modify",
@@ -638,10 +658,16 @@ class InlineMessageTests(unittest.TestCase):
                     "value": replacement,
                 }
             ]
-            caps = {
-                "effects": ["modify"],
-                "modify": {"prompt": {"replace": True, "merge": True}},
-            }
+            caps = capability.HostCapabilities(
+                turn_start=capability.TurnStartCapabilities(
+                    intercept=capability.TurnStartIntercept(
+                        modify_prompt=capability.Modify.REPLACE_AND_MERGE
+                    )
+                ),
+                context_compact_after=capability.ContextCompactAfterCapabilities(
+                    intercept=capability.ContextCompactAfterIntercept(message=True)
+                ),
+            )
             hooks, transports = harness(
                 ["metadata", "body"],
                 replies=([effects], []),
@@ -730,10 +756,16 @@ class InlineMessageTests(unittest.TestCase):
                     ],
                 }
             ]
-            caps = {
-                "effects": ["modify"],
-                "modify": {"prompt": {"replace": True, "merge": True}},
-            }
+            caps = capability.HostCapabilities(
+                turn_start=capability.TurnStartCapabilities(
+                    intercept=capability.TurnStartIntercept(
+                        modify_prompt=capability.Modify.REPLACE_AND_MERGE
+                    )
+                ),
+                context_compact_after=capability.ContextCompactAfterCapabilities(
+                    intercept=capability.ContextCompactAfterIntercept(message=True)
+                ),
+            )
             effects = [
                 {
                     "type": "modify",
@@ -813,10 +845,16 @@ class InlineMessageTests(unittest.TestCase):
                 message("replacement", '{"ok":true}'),
                 message("appended", "next"),
             )
-            caps = {
-                "effects": ["modify"],
-                "modify": {"output": {"replace": True, "merge": True}},
-            }
+            caps = capability.HostCapabilities(
+                tool_after=capability.ToolAfterCapabilities(
+                    intercept=capability.ToolAfterIntercept(
+                        modify_output=capability.Modify.REPLACE_AND_MERGE
+                    )
+                ),
+                context_compact_after=capability.ContextCompactAfterCapabilities(
+                    intercept=capability.ContextCompactAfterIntercept(message=True)
+                ),
+            )
             replace = {
                 "type": "modify",
                 "target": "output",

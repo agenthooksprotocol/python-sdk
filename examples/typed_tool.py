@@ -1,7 +1,7 @@
 """Run a typed tool boundary without executing any real shell command.
 
 The HTTPX ASGI transport runs the real SDK ASGI adapter in-process. The sibling
-stdio example runs the same Handler over an actual owned child process.
+stdio example runs the same typed handlers over an actual owned child process.
 """
 
 from __future__ import annotations
@@ -13,8 +13,17 @@ from typing import TypedDict, cast
 import anyio
 import httpx
 
-from agenthooksprotocol import HookResult, Hooks, Permission, capability, effect, event, state, tool
-from agenthooksprotocol.wire import InterceptRequest, JsonObject, JsonValue
+from agenthooksprotocol import (
+    HookResult,
+    Hooks,
+    Permission,
+    capability,
+    effect,
+    event,
+    state,
+    tool,
+)
+from agenthooksprotocol.wire import JsonObject, JsonValue
 from agenthooksprotocol.server import asgi, hooks
 from agenthooksprotocol.transports.http import HTTPTransport
 
@@ -48,15 +57,15 @@ async def main() -> None:
     arguments = ShellInput(command="echo original", timeoutMs=1000)
     codec = ShellCodec()
 
-    async def intercept(request: InterceptRequest) -> hooks.InterceptResult:
-        return hooks.InterceptResult(
-            effects=[
-                effect.replace_input({"command": "echo reviewed", "timeoutMs": 1000}),
+    async def intercept(ctx: hooks.ToolBeforeContext) -> hooks.ToolBeforeReply:
+        return hooks.ToolBeforeReply(
+            effects=(
+                hooks.ReplaceInput({"command": "echo reviewed", "timeoutMs": 1000}),
                 effect.Allow(),
-            ]
+            )
         )
 
-    handler = hooks.Handler(intercept=intercept)
+    handler = hooks.Handlers(intercept=hooks.InterceptHandlers(tool_before=intercept))
     # The injected AsyncClient is borrowed; this outer context owns its lifetime.
     async with httpx.AsyncClient(
         transport=httpx.ASGITransport(app=asgi.App(handler))
@@ -65,12 +74,13 @@ async def main() -> None:
         async with Hooks(
             config,
             source="urn:example:comparison",
-            capabilities={
-                "tool.before": capability.intercept()
-                .allow()
-                .deny()
-                .modify_input(replace=True),
-            },
+            capabilities=capability.HostCapabilities(
+                tool_before=capability.ToolBeforeCapabilities(
+                    intercept=capability.ToolBeforeIntercept(
+                        allow=True, deny=True, modify_input=capability.Modify.REPLACE
+                    )
+                )
+            ),
             transport=transport,
         ) as harness:
             result: HookResult[object, object, object] = await harness.tool_before(

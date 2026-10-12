@@ -1,5 +1,7 @@
 """Public API tests: no private network bridge and both AnyIO backends."""
 
+from agenthooksprotocol import capability
+
 from copy import deepcopy
 import json
 import sys
@@ -36,12 +38,19 @@ def config(*, policy="fail-open", mode="intercept", count=1):
 
 
 def capabilities():
-    return {
-        "tool.before": {
-            "modes": ["intercept", "observe"],
-            "capabilities": request()["params"]["capabilities"],
-        }
-    }
+    return capability.HostCapabilities(
+        tool_before=capability.ToolBeforeCapabilities(
+            intercept=capability.ToolBeforeIntercept(
+                allow=True,
+                deny=True,
+                ask=True,
+                return_result=True,
+                message=True,
+                modify_input=capability.Modify.REPLACE_AND_MERGE,
+            ),
+            observe=True,
+        )
+    )
 
 
 class MemoryTransport:
@@ -77,13 +86,9 @@ class PublicHooksTests(unittest.TestCase):
 
     def test_constructor_checks_registration_and_explicit_modes(self):
         with self.assertRaises(ProtocolError):
-            Hooks({}, source="urn:test", capabilities={})
-        with self.assertRaises(ProtocolError):
-            Hooks(
-                config(),
-                source="urn:test",
-                capabilities={"tool.before": {"effects": []}},
-            )
+            Hooks({}, source="urn:test", capabilities=capability.HostCapabilities())
+        with self.assertRaises(TypeError):
+            capability.ToolBeforeCapabilities(effects=[])
         with self.assertRaises(ProtocolError):
             Hooks(config(), source="relative", capabilities=capabilities())
 
@@ -244,8 +249,11 @@ class PublicHooksTests(unittest.TestCase):
         async def run():
             req = request()
             transport = MemoryTransport([])
-            declared = capabilities()
-            declared["tool.before"]["capabilities"] = {"effects": ["message"]}
+            declared = capability.HostCapabilities(
+                tool_before=capability.ToolBeforeCapabilities(
+                    intercept=capability.ToolBeforeIntercept(message=True), observe=True
+                )
+            )
             async with Hooks(
                 config(),
                 source=req["params"]["event"]["source"],
@@ -274,8 +282,7 @@ class PublicHooksTests(unittest.TestCase):
                 self.assertEqual(transport.requests, [])
                 self.assertEqual(transport.notifications, [])
                 self.assertIsNotNone(await hooks.exchange(req))
-            observed = capabilities()
-            observed["tool.before"]["modes"] = ["observe"]
+            observed = capability.HostCapabilities(tool_before=capability.Observe())
             async with Hooks(
                 config(mode="observe"),
                 source=req["params"]["event"]["source"],

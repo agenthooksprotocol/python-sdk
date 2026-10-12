@@ -71,6 +71,28 @@ class HandwrittenSurfaceTests(unittest.TestCase):
         ):
             with self.subTest(module="effect", name=name):
                 self.assertFalse(hasattr(effect, name))
+        from agenthooksprotocol import capability
+
+        for name in (
+            "Declaration",
+            "Builder",
+            "Mode",
+            "Grant",
+            "intercept",
+            "observe",
+            "Allow",
+            "Deny",
+            "Ask",
+            "Message",
+            "ModifyInput",
+            "ModifyOutput",
+            "ReturnResult",
+            "InjectContextGrant",
+            "Flow",
+            "ElicitationGrant",
+        ):
+            with self.subTest(module="capability", name=name):
+                self.assertFalse(hasattr(capability, name))
         self.assertFalse(hasattr(diagnostics, "DiagnosticCode"))
         for name in ("Receipt", "UploadReceipt", "Reference", "Selection", "Upload"):
             with self.subTest(module="content_models", name=name):

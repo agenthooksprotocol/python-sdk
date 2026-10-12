@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.5.0](https://github.com/agenthooksprotocol/python-sdk/compare/v0.4.1...v0.5.0) (2026-10-12)
+
+
+### ⚠ BREAKING CHANGES
+
+* replace draft compatibility surfaces with typed event APIs
+
+### Features
+
+* replace draft compatibility surfaces with typed event APIs ([69f91ce](https://github.com/agenthooksprotocol/python-sdk/commit/69f91cef780c26cc53e51eaeccdb996ca1ec8a56))
+
+
+### Bug Fixes
+
+* sync merged canonical provenance and pre-major release policy ([8bb1e29](https://github.com/agenthooksprotocol/python-sdk/commit/8bb1e298826365f6db91773071a15ea9374291c3))
+
 ## [0.4.1](https://github.com/agenthooksprotocol/python-sdk/compare/v0.4.0...v0.4.1) (2026-10-11)
 
 

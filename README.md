@@ -12,6 +12,8 @@ python -m pip install 'agenthooksprotocol[http]'
 
 HTTPX is an opt-in dependency (`[http]`). Pydantic is an independent opt-in integration (`[pydantic]`); neither a web framework nor Pydantic is needed for the core SDK or stdio.
 
+Upgrading from 0.4.x? See [MIGRATING.md](MIGRATING.md) for removed and renamed APIs and their replacements.
+
 ## Harness ownership
 
 Read trusted registration JSON with the standard library and construct `Hooks` from the resulting dictionary. Registration validation occurs at construction; each asynchronous boundary ensures readiness. There is no mandatory separate initialization call or special configuration-file loader. Registration can launch processes: **do not load untrusted registrations**.
@@ -42,14 +44,30 @@ async def review(existing_arguments):
 
 Generated `Input` objects are distinct from canonical wire events. They flatten only protocol-owned wrappers, never application arguments, and `to_wire()` performs the shared mapping. `path` and `origin` remain separate required facts. Optional host IDs, timestamps, parent IDs, and other facts are retained; `event_id=` overrides an input ID. The SDK supplies type/source and the configured session manifest. Low-level `dispatch` accepts canonical dictionaries and an `event_name: EventType`. `from agenthooksprotocol.event import EventType` exposes the catalogue-derived literal type shared by `dispatch`, `subscribes`, and contextual response parsing. Canonical name literals are accepted directly; static checking rejects dynamic strings, unknown names, and selectors in these event-name positions. Registration selectors remain separate and support their documented wildcard matching.
 
-Capability builders are immutable: reusing a base declaration does not widen it. `intercept()` deliberately advertises **both intercept and observe**; `observe()` is observation-only. `modify_input(replace=True)` supplies both the effect grant and operation block. Empty operations and observation effect grants are rejected; boundary compatibility is validated before delivery. Form and URL elicitation grants are explicit (`elicitation_form()` / `elicitation_url()`). Raw manifests retain their exact modes; omission never implies permission. Per-call `capabilities=` only narrows configured grants.
+Host capabilities are frozen, keyword-only dataclasses; there are no builder functions. Each event has an `<Event>Capabilities(intercept=..., observe=...)` declaration whose `intercept` takes that event's `<Event>Intercept(...)` grants and whose `observe` defaults to `False`. Advertise both modes explicitly with `observe=True`; use `capability.Observe()` for an observation-only event. `modify_input=capability.Modify.REPLACE` supplies both the effect grant and its operation block, and form/URL elicitation grants are explicit (`elicitation=capability.Elicitation.FORM`, `URL`, or `FORM_AND_URL`). Interception without a control grant and declarations with neither mode are rejected at construction; boundary compatibility is validated before delivery. Omission never implies permission. Per-call `capabilities=` only narrows configured grants.
+
+```python
+from agenthooksprotocol import capability
+
+capabilities = capability.HostCapabilities(
+    tool_before=capability.ToolBeforeCapabilities(
+        intercept=capability.ToolBeforeIntercept(
+            allow=True, deny=True, modify_input=capability.Modify.REPLACE
+        ),
+        observe=True,  # intercept and observe
+    ),
+    tool_after=capability.Observe(),  # observe only
+)
+assert capabilities.to_wire()["tool.before"]["modes"] == ["intercept", "observe"]
+assert capabilities.to_wire()["tool.after"] == {"modes": ["observe"]}
+```
 
 Runnable, statically checked consumer programs live in [`examples/`](examples):
 
 - `value_codecs.py`: independent argument/result/provenance codecs, admission-time invariants, and a form schema derived from its answer type.
 - `typed_tool.py`: JSON registration, generated tool input, typed grants, initial state, real in-process ASGI handler, borrowed HTTP client, and explicit application decoding.
 - `common_cases.py`: rewrite/allow, deny, invalid application shape, host policy, occurrence narrowing, native initial state, and fail-open/fail-closed reports. The host operation is an in-memory execution recorder, not a shell.
-- `stdio_tool.py` / `stdio_backend.py`: a real owned backend process using the same public Handler, denial, and child cleanup.
+- `stdio_tool.py` / `stdio_backend.py`: a real owned backend process using the same public `hooks.Handlers`, denial, and child cleanup.
 - `upload.py`: streamed binary upload, metadata no-read behavior, independent upload credentials, verified upload receipt, and caller-owned immutable storage.
 
 - `lifecycle.py`: caller-owned task groups, operation-owned observations, interrupted requests, idempotent close, and proof that an owned subprocess was reaped.

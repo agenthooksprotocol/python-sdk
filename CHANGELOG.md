@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.6.0](https://github.com/agenthooksprotocol/python-sdk/compare/v0.5.0...v0.6.0) (2026-10-13)
+
+
+### ⚠ BREAKING CHANGES
+
+* event-specific capabilities, stdio env, JSON-RPC conformance, and stdio client reader ([#33](https://github.com/agenthooksprotocol/python-sdk/issues/33))
+
+### Features
+
+* event-specific capabilities, stdio env, JSON-RPC conformance, and stdio client reader ([#33](https://github.com/agenthooksprotocol/python-sdk/issues/33)) ([5b152f8](https://github.com/agenthooksprotocol/python-sdk/commit/5b152f86388d3a0b4d99d7c06f853b5e87931c6f))
+
 ## [0.5.0](https://github.com/agenthooksprotocol/python-sdk/compare/v0.4.1...v0.5.0) (2026-10-12)
 
 

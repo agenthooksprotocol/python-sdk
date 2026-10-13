@@ -1,5 +1,6 @@
 """Deterministic upload fanout, destination isolation, and receipt reuse."""
 
+from agenthooksprotocol import event as protocol_event
 from agenthooksprotocol import capability
 
 from copy import deepcopy
@@ -62,6 +63,7 @@ class UploadPlanningTests(unittest.TestCase):
         return Hooks(
             config,
             source="urn:test",
+            harness=protocol_event.Harness(name="test-host", version="1"),
             capabilities=capabilities,
             transport=transports,
             max_concurrent_uploads=limit,
@@ -74,6 +76,7 @@ class UploadPlanningTests(unittest.TestCase):
                 Hooks(
                     template.config,
                     source="urn:test",
+                    harness=protocol_event.Harness(name="test-host", version="1"),
                     capabilities=capability.HostCapabilities(),
                     transport=transports,
                     max_concurrent_uploads=limit,

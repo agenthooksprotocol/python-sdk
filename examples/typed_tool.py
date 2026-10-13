@@ -74,6 +74,7 @@ async def main() -> None:
         async with Hooks(
             config,
             source="urn:example:comparison",
+            harness=event.Harness(name="example", version="1"),
             capabilities=capability.HostCapabilities(
                 tool_before=capability.ToolBeforeCapabilities(
                     intercept=capability.ToolBeforeIntercept(

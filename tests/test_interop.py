@@ -44,6 +44,7 @@ def request():
             / "agent-hooks-protocol/fixtures/draft/http/intercept-request.valid.json"
         ).read_text()
     )
+    value["params"]["event"]["harness"] = {"name": "test-host", "version": "1"}
     value["params"]["event"]["call"] = {
         "id": value["params"]["event"]["tool"].pop("callId", "call-test")
     }

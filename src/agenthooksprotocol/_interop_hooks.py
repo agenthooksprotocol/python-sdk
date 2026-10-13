@@ -6,7 +6,7 @@ uses the same validated core without making wire mappings a public Hooks input.
 
 from typing import Any, cast, get_args
 
-from .event import EventType
+from .event import EventType, Harness
 from .runtime import ProtocolError
 
 from ._hooks import Hooks
@@ -16,6 +16,7 @@ def _hooks_for_wire(
     config: dict[str, Any],
     *,
     source: str,
+    harness: Harness,
     declarations: dict[str, Any],
     transport: Any,
 ) -> Hooks:
@@ -25,6 +26,7 @@ def _hooks_for_wire(
     hooks._configure(
         config,
         source=source,
+        harness=harness,
         declarations=cast(dict[EventType, Any], declarations),
         transport=transport,
     )

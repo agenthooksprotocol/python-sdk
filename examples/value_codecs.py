@@ -126,6 +126,7 @@ async def main() -> None:
         async with Hooks(
             config,
             source="urn:example:contracts",
+            harness=event.Harness(name="example", version="1"),
             capabilities=capabilities,
             transport=HTTPTransport("http://contracts.test/hooks", client=client),
         ) as harness:

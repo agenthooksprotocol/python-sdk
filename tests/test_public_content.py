@@ -1,5 +1,6 @@
 """Public content-bound settlement on asyncio and Trio, including negative cases."""
 
+from agenthooksprotocol import event as protocol_event
 from agenthooksprotocol import capability
 
 from copy import deepcopy
@@ -91,6 +92,7 @@ def hooks_for(event, caps, transport, *, count=1, selection="body"):
     return Hooks(
         config,
         source="urn:test",
+        harness=protocol_event.Harness(name="test-host", version="1"),
         capabilities=caps,
         transport=transport,
     )
@@ -107,6 +109,7 @@ def wire(name, ident, payload, caps):
             "event": {
                 "id": ident,
                 "source": "urn:test",
+                "harness": {"name": "test-host", "version": "1"},
                 "type": name,
                 "time": "2026-01-01T00:00:00Z",
                 "session": {"id": "session"},

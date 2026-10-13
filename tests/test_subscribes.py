@@ -1,5 +1,6 @@
 """External public consumer coverage for synchronous static interest."""
 
+from agenthooksprotocol import event as protocol_event
 from agenthooksprotocol import capability
 
 from copy import deepcopy
@@ -25,7 +26,12 @@ class SubscriptionInterestTests(unittest.TestCase):
                                 "paths": ["not-the-path"],
                             }
                         hooks = Hooks(
-                            registration, source="urn:test", capabilities=capabilities()
+                            registration,
+                            source="urn:test",
+                            harness=protocol_event.Harness(
+                                name="test-host", version="1"
+                            ),
+                            capabilities=capabilities(),
                         )
                         before = deepcopy((hooks.config, hooks.capabilities))
                         with (
@@ -59,7 +65,12 @@ class SubscriptionInterestTests(unittest.TestCase):
         )
         registration = config(mode="observe")
         registration["hooks"][0]["subscriptions"][0]["events"] = ["tool.after"]
-        hooks = Hooks(registration, source="urn:test", capabilities=declarations)
+        hooks = Hooks(
+            registration,
+            source="urn:test",
+            harness=protocol_event.Harness(name="test-host", version="1"),
+            capabilities=declarations,
+        )
         self.assertIs(hooks.subscribes("tool.before"), False)
         self.assertIs(hooks.subscribes("tool.after"), True)
         self.assertIs(hooks.subscribes("unknown.event"), False)

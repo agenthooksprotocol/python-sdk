@@ -97,6 +97,7 @@ def exchange(plan, sub, name, snapshot, validator, trace):
     event = {
         "id": name + ":" + snapshot["boundary"],
         "source": "urn:ahp:compaction-host",
+        "harness": {"name": "test-host", "version": "1"},
         "time": "2026-09-15T12:00:00Z",
         "session": {"id": name},
         "type": "context.compact." + snapshot["boundary"],

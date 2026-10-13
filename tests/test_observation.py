@@ -18,6 +18,7 @@ class ObservationTests(unittest.TestCase):
         event = {
             "id": "same",
             "source": "urn:test",
+            "harness": {"name": "test-host", "version": "1"},
             "type": "tool.before",
             "secret": "effective",
         }

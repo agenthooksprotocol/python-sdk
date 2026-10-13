@@ -1,5 +1,6 @@
 """One catalogue-derived event identifier across the public SDK."""
 
+from agenthooksprotocol import event as protocol_event
 from typing import get_args, get_overloads, get_type_hints
 import unittest
 from unittest.mock import patch
@@ -32,6 +33,7 @@ class EventTypeTests(unittest.TestCase):
                 _hooks_for_wire(
                     config(),
                     source="urn:test",
+                    harness=protocol_event.Harness(name="test-host", version="1"),
                     declarations={"unknown.event": {"modes": ["observe"]}},
                     transport=None,
                 )

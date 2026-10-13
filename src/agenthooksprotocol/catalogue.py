@@ -6,6 +6,7 @@ from contextlib import AsyncExitStack
 from .runtime import ProtocolError
 from .registration import validate_registration
 from . import capability
+from .event import Harness
 import anyio
 
 EXECUTION_EVENTS = (
@@ -199,6 +200,9 @@ async def _run_catalogue(config, fixtures, transport, validator):
                                 Hooks(
                                     registration,
                                     source=source,
+                                    harness=Harness(
+                                        **message["params"]["event"]["harness"]
+                                    ),
                                     capabilities=declarations,
                                     transport=NotificationTransport(),
                                 )

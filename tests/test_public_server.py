@@ -23,6 +23,7 @@ def request():
             "event": {
                 "id": "event-1",
                 "source": "https://harness.example/runtime",
+                "harness": {"name": "test-host", "version": "1"},
                 "type": "tool.before",
                 "time": "2026-08-24T08:51:14Z",
                 "session": {"id": "session-1"},
@@ -219,6 +220,7 @@ class PublicServerTests(unittest.TestCase):
             value["params"]["event"] = {
                 "id": "event-1",
                 "source": "urn:test:harness",
+                "harness": {"name": "test-host", "version": "1"},
                 "time": "2026-09-15T12:00:00Z",
                 "type": "turn.finish.before",
                 "turn": {"id": "turn-1"},

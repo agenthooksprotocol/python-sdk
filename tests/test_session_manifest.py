@@ -22,7 +22,6 @@ def host_facts():
     return event.SessionStartInput(
         session={"id": "session-1"},
         trigger="startup",
-        harness={"name": "test-host", "version": "1"},
         permission_mode="default",
         items=[],
     )
@@ -92,6 +91,7 @@ class ManifestTests(unittest.TestCase):
             async with Hooks(
                 registration,
                 source="urn:configured",
+                harness=event.Harness(name="test-host", version="1"),
                 manifest_metadata=configured,
                 capabilities=capability.HostCapabilities(
                     session_start=capability.SessionStartCapabilities(observe=True)
@@ -123,6 +123,9 @@ class ManifestTests(unittest.TestCase):
             for occurrence, identity in zip(received, ("owned-id", "second-id")):
                 self.assertEqual(occurrence["manifest"], expected)
                 self.assertEqual(occurrence["source"], "urn:configured")
+                self.assertEqual(
+                    occurrence["harness"], {"name": "test-host", "version": "1"}
+                )
                 self.assertEqual(occurrence["type"], "session.start")
                 self.assertEqual(occurrence["id"], identity)
                 self.assertEqual(occurrence["session"]["id"], "session-1")
@@ -135,6 +138,7 @@ class ManifestTests(unittest.TestCase):
         harness = Hooks(
             config(),
             source="urn:configured",
+            harness=event.Harness(name="test-host", version="1"),
             capabilities=capability.HostCapabilities(
                 session_start=capability.SessionStartCapabilities(observe=True),
                 tool_before=capability.ToolBeforeCapabilities(
@@ -166,6 +170,7 @@ class ManifestTests(unittest.TestCase):
             Hooks(
                 config(),
                 source="urn:configured",
+                harness=event.Harness(name="test-host", version="1"),
                 capabilities=capability.HostCapabilities(),
             )
 
@@ -189,6 +194,7 @@ class ManifestTests(unittest.TestCase):
             async with Hooks(
                 registration,
                 source="urn:shorthand",
+                harness=event.Harness(name="test-host", version="1"),
                 capabilities=capability.HostCapabilities(
                     session_start=capability.SessionStartCapabilities(observe=True)
                 ),
@@ -214,4 +220,9 @@ class ManifestTests(unittest.TestCase):
             {"manifest": {}},
         ):
             with self.subTest(kwargs=kwargs), self.assertRaises(TypeError):
-                Hooks(config(), source="urn:configured", **kwargs)
+                Hooks(
+                    config(),
+                    source="urn:configured",
+                    harness=event.Harness(name="test-host", version="1"),
+                    **kwargs,
+                )

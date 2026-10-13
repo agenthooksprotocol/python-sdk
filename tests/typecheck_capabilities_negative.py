@@ -4,6 +4,7 @@ Empty typed declarations have valid signatures but fail immediately at runtime;
 those constraints are covered by test_typed_capabilities.py.
 """
 
+from agenthooksprotocol import event as protocol_event
 from typing import Any
 
 from agenthooksprotocol import Hooks, capability
@@ -11,7 +12,12 @@ from agenthooksprotocol import Hooks, capability
 
 # fmt: off
 def invalid_hosts(registration: dict[str, Any]) -> None:
-    Hooks(registration, source="urn:typed", capabilities={})  # type-error
+    Hooks(
+        registration,
+        source="urn:typed",
+        harness=protocol_event.Harness(name="test-host", version="1"),
+        capabilities={},
+    )  # type-error
     capability.HostCapabilities(unknown_event=capability.ToolBeforeCapabilities(observe=True))  # type-error
     capability.HostCapabilities(tool_before={"modes": ["observe"]})  # type-error
     capability.ToolBeforeIntercept(modify_summary=capability.Modify.REPLACE)  # type-error

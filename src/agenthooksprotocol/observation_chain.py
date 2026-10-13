@@ -12,6 +12,7 @@ from functools import partial
 import anyio
 
 from ._interop_hooks import _hooks_for_wire
+from .event import Harness
 
 
 def run_chain(scenario, transport, validator):
@@ -102,6 +103,7 @@ def run_chain(scenario, transport, validator):
                 "hooks": registrations,
             },
             source=event["source"],
+            harness=Harness(**event["harness"]),
             declarations={
                 event["type"]: {
                     "modes": ["intercept", "observe"],

@@ -8,6 +8,7 @@ from . import ExecutionEventToolBatchAfterCallsItemOutcome as BatchAfterCallsIte
 from . import ExecutionEventToolBatchAfterCallsItemTool as BatchAfterCallsItemTool
 from . import ExecutionEventToolBatchAfterExtensions as BatchAfterExtensions
 from . import ExecutionEventToolBatchAfterGapsItem as BatchAfterGapsItem
+from . import ExecutionEventToolBatchAfterHarness as BatchAfterHarness
 from . import ExecutionEventToolBatchAfterSession as BatchAfterSession
 from . import ExecutionEventToolBatchAfterTurn as BatchAfterTurn
 from . import ToolBeforeEventCall as Call
@@ -21,6 +22,7 @@ from . import (
     ExecutionEventToolPermissionRequestExtensions as PermissionRequestExtensions,
 )
 from . import ExecutionEventToolPermissionRequestGapsItem as PermissionRequestGapsItem
+from . import ExecutionEventToolPermissionRequestHarness as PermissionRequestHarness
 from . import ExecutionEventToolPermissionRequestSession as PermissionRequestSession
 from . import (
     ExecutionEventToolPermissionRequestSuggestionsItem as PermissionRequestSuggestionsItem,
@@ -38,6 +40,7 @@ from . import (
     ExecutionEventToolPermissionResolvedExtensions as PermissionResolvedExtensions,
 )
 from . import ExecutionEventToolPermissionResolvedGapsItem as PermissionResolvedGapsItem
+from . import ExecutionEventToolPermissionResolvedHarness as PermissionResolvedHarness
 from . import ExecutionEventToolPermissionResolvedSession as PermissionResolvedSession
 from . import ExecutionEventToolPermissionResolvedTool as PermissionResolvedTool
 from . import ExecutionEventToolPermissionResolvedTurn as PermissionResolvedTurn
@@ -46,6 +49,7 @@ from . import ExecutionEventToolProgressBatch as ProgressBatch
 from . import ExecutionEventToolProgressCall as ProgressCall
 from . import ExecutionEventToolProgressExtensions as ProgressExtensions
 from . import ExecutionEventToolProgressGapsItem as ProgressGapsItem
+from . import ExecutionEventToolProgressHarness as ProgressHarness
 from . import ExecutionEventToolProgressPartialOutput as ProgressPartialOutput
 from . import ExecutionEventToolProgressSession as ProgressSession
 from . import ExecutionEventToolProgressTool as ProgressTool
@@ -62,6 +66,7 @@ __all__ = [
     "BatchAfterCallsItemTool",
     "BatchAfterExtensions",
     "BatchAfterGapsItem",
+    "BatchAfterHarness",
     "BatchAfterSession",
     "BatchAfterTurn",
     "Call",
@@ -73,6 +78,7 @@ __all__ = [
     "PermissionRequestCall",
     "PermissionRequestExtensions",
     "PermissionRequestGapsItem",
+    "PermissionRequestHarness",
     "PermissionRequestSession",
     "PermissionRequestSuggestionsItem",
     "PermissionRequestTool",
@@ -84,6 +90,7 @@ __all__ = [
     "PermissionResolvedDecision",
     "PermissionResolvedExtensions",
     "PermissionResolvedGapsItem",
+    "PermissionResolvedHarness",
     "PermissionResolvedSession",
     "PermissionResolvedTool",
     "PermissionResolvedTurn",
@@ -92,6 +99,7 @@ __all__ = [
     "ProgressCall",
     "ProgressExtensions",
     "ProgressGapsItem",
+    "ProgressHarness",
     "ProgressPartialOutput",
     "ProgressSession",
     "ProgressTool",

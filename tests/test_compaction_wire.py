@@ -233,6 +233,7 @@ class CompactionWireTests(unittest.TestCase):
         envelope["params"]["event"] = {
             "id": envelope["id"],
             "source": event["source"],
+            "harness": {"name": "test-host", "version": "1"},
             "time": event["time"],
             "session": event["session"],
             "type": "context.compact.before",

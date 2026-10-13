@@ -1,5 +1,6 @@
 """Registration stdio env: minimal base environment plus literal entries."""
 
+from agenthooksprotocol import event as protocol_event
 import os
 import sys
 import unittest
@@ -128,6 +129,7 @@ class StdioEnvironmentTests(unittest.TestCase):
                 hooks = Hooks(
                     registration(),
                     source="urn:host",
+                    harness=protocol_event.Harness(name="test-host", version="1"),
                     capabilities=capabilities(),
                     inherit_environment=inherit,
                 )

@@ -4,6 +4,7 @@ Missing effects remains gated by the canonical bundle until regeneration.
 No test substitutes a permissive validator for canonical admission.
 """
 
+from agenthooksprotocol import event as protocol_event
 from agenthooksprotocol import capability
 
 from copy import deepcopy
@@ -73,6 +74,7 @@ def hooks_for(name, caps, transport, count=1):
             ],
         },
         source="urn:test:typed",
+        harness=protocol_event.Harness(name="test-host", version="1"),
         capabilities=caps,
         transport=transport,
     )

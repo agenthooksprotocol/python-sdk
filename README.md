@@ -26,13 +26,18 @@ with open("hooks.json") as file:
     config = json.load(file)
 
 async def review(existing_arguments):
-    async with Hooks(config, source="urn:example:harness", capabilities=capability.HostCapabilities(
-        tool_before=capability.ToolBeforeCapabilities(
-            intercept=capability.ToolBeforeIntercept(
-                allow=True, deny=True, modify_input=capability.Modify.REPLACE,
+    async with Hooks(
+        config,
+        source="urn:example:harness",
+        harness=event.Harness(name="example", version="1"),
+        capabilities=capability.HostCapabilities(
+            tool_before=capability.ToolBeforeCapabilities(
+                intercept=capability.ToolBeforeIntercept(
+                    allow=True, deny=True, modify_input=capability.Modify.REPLACE,
+                ),
             ),
         ),
-    )) as hooks:
+    ) as hooks:
         result = await hooks.tool_before(event.ToolBeforeInput(
             call_id="call-1", name="read_file", input=existing_arguments,
             path="native", origin="native",
@@ -40,7 +45,7 @@ async def review(existing_arguments):
         return result  # Host validation and authorization still precede execution.
 ```
 
-Generated `Input` objects are distinct from canonical wire events. They flatten only protocol-owned wrappers, never application arguments, and `to_wire()` performs the shared mapping. `path` and `origin` remain separate required facts. Optional host IDs, timestamps, parent IDs, and other facts are retained; `event_id=` overrides an input ID. The SDK supplies type/source and the configured session manifest. Low-level `dispatch` accepts canonical dictionaries and an `event_name: EventType`. `from agenthooksprotocol.event import EventType` exposes the catalogue-derived literal type shared by `dispatch`, `subscribes`, and contextual response parsing. Canonical name literals are accepted directly; static checking rejects dynamic strings, unknown names, and selectors in these event-name positions. Registration selectors remain separate and support their documented wildcard matching.
+Generated `Input` objects are distinct from canonical wire events. They flatten only protocol-owned wrappers, never application arguments, and `to_wire()` performs the shared mapping. `path` and `origin` remain separate required facts. Optional host IDs, timestamps, parent IDs, and other facts are retained; `event_id=` overrides an input ID. The SDK supplies type/source, the configured harness identity, and the configured session manifest. Full canonical wire events must include a matching `harness` identity. Low-level `dispatch` accepts canonical dictionaries and an `event_name: EventType`. `from agenthooksprotocol.event import EventType` exposes the catalogue-derived literal type shared by `dispatch`, `subscribes`, and contextual response parsing. Canonical name literals are accepted directly; static checking rejects dynamic strings, unknown names, and selectors in these event-name positions. Registration selectors remain separate and support their documented wildcard matching.
 
 Host capabilities are frozen, keyword-only dataclasses; there are no builder functions. Each event has its own `<Event>Capabilities` declaration. Events that support interception take `intercept=<Event>Intercept(...)` grants, and every declaration takes `observe`, which defaults to `False`, so to advertise both modes you must pass `observe=True` explicitly. Observation-only events such as `SessionEndCapabilities(observe=True)` accept only the flag. `modify_input=capability.Modify.REPLACE` supplies both the effect grant and its operation block, and form/URL elicitation grants are explicit (`elicitation=capability.Elicitation.FORM`, `URL`, or `FORM_AND_URL`). Interception without a control grant and declarations with neither mode are rejected at construction; boundary compatibility is validated before delivery. Omission never implies permission. Per-call `capabilities=` only narrows configured grants.
 
@@ -120,11 +125,11 @@ Registered stdio backends start with a minimal base environment rather than the 
 
 `hooks.subscribes("tool.before")` is a pure synchronous static-interest lookup. Use it before expensive input preparation: `False` means no eligible intercept or observe subscription selects the configured event. Exact selectors, `*`, and prefix selectors such as `tool.*` use the same matching as dispatch. Unknown or unconfigured events return `False`. Payload filters are conservatively ignored, so `True` means potential interest, not permission or guaranteed delivery. The lookup does not prepare input, authenticate, upload content, initialize transports, or contact backends.
 
-Configure `Hooks(config, *, source, capabilities=capability.HostCapabilities(...), manifest_metadata=HostManifestMetadata(...))`. Typed host capabilities are the sole source of event modes and effect grants. Optional metadata declares transport/authentication facilities, tool paths, content categories, limits, managed policy, gaps, correlation fields, and opaque extras without granting event authority. Metadata cannot contain events or override known fields through extras. `hooks.manifest` returns a detached canonical snapshot.
+Configure `Hooks(config, *, source, harness=event.Harness(name="example", version="1"), capabilities=capability.HostCapabilities(...), manifest_metadata=HostManifestMetadata(...))`. The required `source`, `harness`, and `capabilities` configure one host. Harness name and version identify the emitter on every event; SDK-generated events use a detached snapshot of that identity. Typed host capabilities are the sole source of event modes and effect grants. Optional metadata declares transport/authentication facilities, tool paths, content categories, limits, managed policy, gaps, correlation fields, and opaque extras without granting event authority. Metadata cannot contain events or override known fields through extras. `hooks.manifest` returns a detached canonical snapshot.
 
 The frozen, keyword-only host capability model advertises only explicitly declared events and modes. Each event has its own declaration type: `ToolBeforeCapabilities(intercept=..., observe=True)` accepts typed interception options and an observation flag, while observation-only events such as `SessionEndCapabilities(observe=True)` accept only the flag. Empty declarations, empty interception, and invalid option values are rejected at construction, while an empty `HostCapabilities()` grants nothing and elicitation-only interception is a valid facility declaration. `Modify.REPLACE`, `Modify.MERGE`, and `Modify.REPLACE_AND_MERGE` declare complete modification grants. `HostCapabilities.to_wire()` returns fresh canonical declarations directly; it does not parse JSON. Runtime admission still validates registration, request-time grants, and responses. The derived manifest records gaps for omitted events and host-level facilities not supplied through metadata. Explicit empty metadata collections declare no such facility; they do not mean universal support.
 
-`await hooks.session_start(event.SessionStartInput(session=..., trigger="startup", harness=..., permission_mode="default", items=[]))` needs only occurrence-specific host facts. The SDK supplies `manifest`, `type`, and `source`, and supplies `id`/`time` when absent; `event_id=` takes precedence over a supplied ID. Caller payload fields cannot override the configured type, source, or manifest. Configuration, manifest snapshots, and delivered occurrences are independent copies. See [`examples/session_manifest.py`](examples/session_manifest.py) for a runnable, typechecked receiver example.
+`await hooks.session_start(event.SessionStartInput(session=..., trigger="startup", permission_mode="default", items=[]))` needs only occurrence-specific host facts. The SDK supplies `manifest`, `harness`, `type`, and `source`, and supplies `id`/`time` when absent; `event_id=` takes precedence over a supplied ID. Named host inputs do not expose harness identity; the constructor supplies it. Caller payload fields cannot override the configured type, source, or manifest. Configuration, manifest snapshots, and delivered occurrences are independent copies. See [`examples/session_manifest.py`](examples/session_manifest.py) for a runnable, typechecked receiver example.
 
 ## Backend servers
 

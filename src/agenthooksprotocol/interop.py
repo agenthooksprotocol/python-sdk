@@ -213,6 +213,7 @@ def fixture_hooks(request, transport=None):
     acquisition, cancellation, response validation, and settlement belong to Hooks.
     """
     from ._interop_hooks import _hooks_for_wire
+    from .event import Harness
 
     event = request["params"]["event"]
     mode = "observe" if request["method"] == "hooks/observe" else "intercept"
@@ -244,8 +245,11 @@ def fixture_hooks(request, transport=None):
         ],
     }
     return _hooks_for_wire(
-        config, source=event["source"],
-        declarations={event["type"]: declaration}, transport=transport,
+        config,
+        source=event["source"],
+        harness=Harness(**event["harness"]),
+        declarations={event["type"]: declaration},
+        transport=transport,
     )
 
 

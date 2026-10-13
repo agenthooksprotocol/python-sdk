@@ -1,5 +1,6 @@
 """Owned content is scoped to an awaited Hooks call and each selected receiver."""
 
+from agenthooksprotocol import event as protocol_event
 from agenthooksprotocol import capability
 
 from copy import deepcopy
@@ -131,7 +132,11 @@ def harness(selections, *, mode="intercept", unmatched=False):
         ),
     )
     return Hooks(
-        config, source="urn:test", capabilities=capabilities, transport=transports
+        config,
+        source="urn:test",
+        harness=protocol_event.Harness(name="test-host", version="1"),
+        capabilities=capabilities,
+        transport=transports,
     ), transports
 
 

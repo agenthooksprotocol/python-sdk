@@ -100,6 +100,7 @@ class UnificationTests(unittest.TestCase):
             async with Hooks(
                 config(),
                 source="urn:host",
+                harness=event.Harness(name="test-host", version="1"),
                 transport=transport,
                 capabilities=capability.HostCapabilities(
                     tool_before=capability.ToolBeforeCapabilities(
@@ -155,6 +156,7 @@ class UnificationTests(unittest.TestCase):
             async with Hooks(
                 config(),
                 source="urn:host",
+                harness=event.Harness(name="test-host", version="1"),
                 transport=transport,
                 capabilities=capability.HostCapabilities(
                     tool_before=capability.ToolBeforeCapabilities(
@@ -213,6 +215,7 @@ class UnificationTests(unittest.TestCase):
                 async with Hooks(
                     config(policy="fail-closed"),
                     source="urn:host",
+                    harness=event.Harness(name="test-host", version="1"),
                     transport=transport,
                     capabilities=capability.HostCapabilities(
                         tool_before=capability.ToolBeforeCapabilities(
@@ -238,6 +241,7 @@ class UnificationTests(unittest.TestCase):
             hooks = Hooks(
                 config(),
                 source="urn:host",
+                harness=event.Harness(name="test-host", version="1"),
                 transport=transport,
                 capabilities=capability.HostCapabilities(
                     tool_before=capability.ToolBeforeCapabilities(
@@ -274,6 +278,7 @@ class UnificationTests(unittest.TestCase):
             async with Hooks(
                 config(),
                 source="urn:host",
+                harness=event.Harness(name="test-host", version="1"),
                 transport=transport,
                 capabilities=capability.HostCapabilities(
                     tool_before=capability.ToolBeforeCapabilities(
@@ -344,6 +349,7 @@ class UnificationTests(unittest.TestCase):
                 async with Hooks(
                     cfg,
                     source="urn:host",
+                    harness=event.Harness(name="test-host", version="1"),
                     transport=transport,
                     capabilities=capability.HostCapabilities(
                         tool_before=capability.ToolBeforeCapabilities(
@@ -377,6 +383,7 @@ class UnificationTests(unittest.TestCase):
             async with Hooks(
                 cfg,
                 source="urn:host",
+                harness=event.Harness(name="test-host", version="1"),
                 transport=transport,
                 capabilities=capability.HostCapabilities(
                     tool_before=capability.ToolBeforeCapabilities(
@@ -498,6 +505,7 @@ class UnificationTests(unittest.TestCase):
                     async with Hooks(
                         cfg,
                         source="urn:host",
+                        harness=event.Harness(name="test-host", version="1"),
                         transport=transport,
                         capabilities=capability.HostCapabilities(
                             tool_before=capability.ToolBeforeCapabilities(
@@ -546,6 +554,7 @@ class UnificationTests(unittest.TestCase):
                     async with Hooks(
                         config(),
                         source="urn:host",
+                        harness=event.Harness(name="test-host", version="1"),
                         transport=transport,
                         capabilities=capability.HostCapabilities(
                             tool_before=capability.ToolBeforeCapabilities(

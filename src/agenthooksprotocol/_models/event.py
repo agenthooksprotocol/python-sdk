@@ -34,6 +34,7 @@ from . import ModelErrorInputExecutionSkippedTimeout as ExecutionSkippedTimeout
 from . import FileChangedEvent as FileChanged
 from . import FileChangedEvent as FileChangedEvent
 from . import FileChangedInput as FileChangedInput
+from . import Harness as Harness
 from . import HookFailureEvent as HookFailure
 from . import HookFailureEvent as HookFailureEvent
 from . import HookFailureInput as HookFailureInput
@@ -160,6 +161,7 @@ __all__ = [
     "FileChanged",
     "FileChangedEvent",
     "FileChangedInput",
+    "Harness",
     "HookFailure",
     "HookFailureEvent",
     "HookFailureInput",

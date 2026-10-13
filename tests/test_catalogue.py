@@ -16,6 +16,7 @@ def note(ident, *, kind="task.change.before", parent=None, task="work"):
     event = {
         "id": ident,
         "source": "urn:python:catalogue-test",
+        "harness": {"name": "test-host", "version": "1"},
         "time": "2026-01-01T00:00:00Z",
         "type": kind,
         "task": {"id": task, "operation": "update", "change": {"status": "done"}},

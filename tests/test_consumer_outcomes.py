@@ -1,5 +1,6 @@
 """Schema-owned typed settlement and fail-closed decoding regressions."""
 
+from agenthooksprotocol import event as protocol_event
 from agenthooksprotocol import capability
 
 from copy import deepcopy
@@ -291,6 +292,9 @@ class ConsumerOutcomeTests(TestCase):
                                 ],
                             },
                             source="urn:test:typed",
+                            harness=protocol_event.Harness(
+                                name="test-host", version="1"
+                            ),
                             transport=Replies(),
                             capabilities=capability.HostCapabilities(
                                 tool_before=capability.ToolBeforeCapabilities(

@@ -22,6 +22,7 @@ def settle(snapshot, row):
         event = {
             "id": "fixture:" + boundary,
             "source": "urn:ahp:compaction-host",
+            "harness": {"name": "test-host", "version": "1"},
             "time": "2026-09-15T12:00:00Z",
             "session": {"id": "fixture"},
             "type": "context.compact." + boundary,

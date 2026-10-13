@@ -1,5 +1,6 @@
 """Compile-only positive cases for the handwritten Hooks constructor."""
 
+from agenthooksprotocol import event as protocol_event
 from typing import Any
 
 from agenthooksprotocol import Hooks, capability
@@ -9,6 +10,7 @@ def typed_hosts(registration: dict[str, Any]) -> tuple[Hooks, Hooks, Hooks]:
     intercepted = Hooks(
         registration,
         source="urn:typed",
+        harness=protocol_event.Harness(name="test-host", version="1"),
         capabilities=capability.HostCapabilities(
             tool_before=capability.ToolBeforeCapabilities(
                 intercept=capability.ToolBeforeIntercept(
@@ -21,6 +23,7 @@ def typed_hosts(registration: dict[str, Any]) -> tuple[Hooks, Hooks, Hooks]:
     observed = Hooks(
         registration,
         source="urn:typed",
+        harness=protocol_event.Harness(name="test-host", version="1"),
         capabilities=capability.HostCapabilities(
             tool_before=capability.ToolBeforeCapabilities(observe=True),
             session_start=capability.SessionStartCapabilities(observe=True),
@@ -29,6 +32,7 @@ def typed_hosts(registration: dict[str, Any]) -> tuple[Hooks, Hooks, Hooks]:
     elicitation_only = Hooks(
         registration,
         source="urn:typed",
+        harness=protocol_event.Harness(name="test-host", version="1"),
         capabilities=capability.HostCapabilities(
             tool_before=capability.ToolBeforeCapabilities(
                 intercept=capability.ToolBeforeIntercept(

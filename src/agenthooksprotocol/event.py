@@ -34,6 +34,7 @@ from ._models.event import ExecutionSkippedTimeout as ExecutionSkippedTimeout
 from ._models.event import FileChanged as FileChanged
 from ._models.event import FileChangedEvent as FileChangedEvent
 from ._models.event import FileChangedInput as FileChangedInput
+from ._models.event import Harness as Harness
 from ._models.event import HookFailure as HookFailure
 from ._models.event import HookFailureEvent as HookFailureEvent
 from ._models.event import HookFailureInput as HookFailureInput

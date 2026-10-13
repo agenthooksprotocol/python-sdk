@@ -8,6 +8,7 @@ from ._models.tool import BatchAfterCallsItemOutcome as BatchAfterCallsItemOutco
 from ._models.tool import BatchAfterCallsItemTool as BatchAfterCallsItemTool
 from ._models.tool import BatchAfterExtensions as BatchAfterExtensions
 from ._models.tool import BatchAfterGapsItem as BatchAfterGapsItem
+from ._models.tool import BatchAfterHarness as BatchAfterHarness
 from ._models.tool import BatchAfterSession as BatchAfterSession
 from ._models.tool import BatchAfterTurn as BatchAfterTurn
 from ._models.tool import Call as Call
@@ -19,6 +20,7 @@ from ._models.tool import PermissionRequestBatch as PermissionRequestBatch
 from ._models.tool import PermissionRequestCall as PermissionRequestCall
 from ._models.tool import PermissionRequestExtensions as PermissionRequestExtensions
 from ._models.tool import PermissionRequestGapsItem as PermissionRequestGapsItem
+from ._models.tool import PermissionRequestHarness as PermissionRequestHarness
 from ._models.tool import PermissionRequestSession as PermissionRequestSession
 from ._models.tool import (
     PermissionRequestSuggestionsItem as PermissionRequestSuggestionsItem,
@@ -32,6 +34,7 @@ from ._models.tool import PermissionResolvedDecidedBy as PermissionResolvedDecid
 from ._models.tool import PermissionResolvedDecision as PermissionResolvedDecision
 from ._models.tool import PermissionResolvedExtensions as PermissionResolvedExtensions
 from ._models.tool import PermissionResolvedGapsItem as PermissionResolvedGapsItem
+from ._models.tool import PermissionResolvedHarness as PermissionResolvedHarness
 from ._models.tool import PermissionResolvedSession as PermissionResolvedSession
 from ._models.tool import PermissionResolvedTool as PermissionResolvedTool
 from ._models.tool import PermissionResolvedTurn as PermissionResolvedTurn
@@ -40,6 +43,7 @@ from ._models.tool import ProgressBatch as ProgressBatch
 from ._models.tool import ProgressCall as ProgressCall
 from ._models.tool import ProgressExtensions as ProgressExtensions
 from ._models.tool import ProgressGapsItem as ProgressGapsItem
+from ._models.tool import ProgressHarness as ProgressHarness
 from ._models.tool import ProgressPartialOutput as ProgressPartialOutput
 from ._models.tool import ProgressSession as ProgressSession
 from ._models.tool import ProgressTool as ProgressTool

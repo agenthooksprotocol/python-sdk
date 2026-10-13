@@ -1,5 +1,6 @@
 """Direct host messages, private projections, and immutable attachment owners."""
 
+from agenthooksprotocol import event as protocol_event
 from agenthooksprotocol import capability
 
 from copy import deepcopy
@@ -75,7 +76,11 @@ def harness(
         ),
     )
     return Hooks(
-        config, source="urn:test", capabilities=capabilities, transport=transports
+        config,
+        source="urn:test",
+        harness=protocol_event.Harness(name="test-host", version="1"),
+        capabilities=capabilities,
+        transport=transports,
     ), transports
 
 
@@ -420,6 +425,7 @@ class InlineMessageTests(unittest.TestCase):
                 "id": "request-event",
                 "type": "user.elicitation.request",
                 "source": "urn:test",
+                "harness": {"name": "test-host", "version": "1"},
                 "time": "2026-01-01T00:00:00Z",
                 "elicitation": {
                     "server": "server",

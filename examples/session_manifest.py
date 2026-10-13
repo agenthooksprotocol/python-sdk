@@ -13,7 +13,6 @@ from agenthooksprotocol import (
     Hooks,
     HostManifestMetadata,
     Session,
-    SessionStartInputHarness,
     capability,
     event,
 )
@@ -65,6 +64,7 @@ async def main() -> dict[str, Any]:
     async with Hooks(
         config,
         source="urn:example:manifest",
+        harness=event.Harness(name="example", version="1"),
         manifest_metadata=configured,
         capabilities=capability.HostCapabilities(
             session_start=capability.SessionStartCapabilities(observe=True)
@@ -75,7 +75,6 @@ async def main() -> dict[str, Any]:
             event.SessionStartInput(
                 session=Session(id="example-session"),
                 trigger="startup",
-                harness=SessionStartInputHarness(name="example", version="1"),
                 permission_mode="default",
                 items=[],
             ),

@@ -4,6 +4,7 @@ Run: uv run python examples/file_attachment.py path/to/report.pdf
 The attachment is the sole byte owner; no receiver or content store is needed.
 """
 
+from agenthooksprotocol import event as protocol_event
 from agenthooksprotocol import capability
 
 from pathlib import Path
@@ -59,6 +60,7 @@ async def main(path: Path) -> None:
             ],
         },
         source="urn:example:file-review",
+        harness=protocol_event.Harness(name="example", version="1"),
         max_concurrent_uploads=8,
         capabilities=capability.HostCapabilities(
             context_compact_after=capability.ContextCompactAfterCapabilities(

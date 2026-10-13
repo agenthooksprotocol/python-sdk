@@ -129,6 +129,7 @@ class ContentReceiptTests(unittest.TestCase):
         event = models.SessionEndEvent(
             id="ended",
             source="urn:test",
+            harness=models.Harness(name="test-host", version="1"),
             time="2026-01-01T00:00:00Z",
             session=models.Session(id="session"),
             outcome="completed",

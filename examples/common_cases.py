@@ -51,6 +51,7 @@ async def run_case(case: dict[str, Any]) -> dict[str, Any]:
         async with Hooks(
             config,
             source="urn:example:comparison",
+            harness=event.Harness(name="example", version="1"),
             capabilities=capability.HostCapabilities(
                 tool_before=capability.ToolBeforeCapabilities(
                     intercept=capability.ToolBeforeIntercept(

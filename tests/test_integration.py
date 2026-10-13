@@ -155,6 +155,7 @@ class IntegrationTests(unittest.TestCase):
         event = {
             "id": ident,
             "source": "urn:test:source",
+            "harness": {"name": "test-host", "version": "1"},
             "time": "2026-01-01T00:00:00Z",
             "type": "task.change.before",
             "task": {
@@ -274,7 +275,9 @@ class IntegrationTests(unittest.TestCase):
         self.assertEqual(result["event"]["workspace"]["change"], {"cwd": "/new"})
         self.assertEqual(result["event"]["workspace"]["prior"], {"cwd": "/initial"})
         reply["result"]["effects"].append({"type": "deny", "reason": "managed policy"})
-        self.assertEqual(_apply_response(req, reply, self.validator)["decision"], "deny")
+        self.assertEqual(
+            _apply_response(req, reply, self.validator)["decision"], "deny"
+        )
         reply["result"]["effects"][0]["value"] = {"cwd": 42}
         with self.assertRaises(ProtocolError):
             _apply_response(req, reply, self.validator)

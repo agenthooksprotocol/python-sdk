@@ -1,5 +1,6 @@
 """The public host-authoring surface is typed, frozen, and serialization-free."""
 
+from agenthooksprotocol import event as protocol_event
 from copy import deepcopy
 from dataclasses import FrozenInstanceError
 import json
@@ -40,7 +41,12 @@ class TypedCapabilityTests(unittest.TestCase):
                 Hooks, "_ensure_ready", side_effect=AssertionError("transport")
             ),
         ):
-            hooks = Hooks(config(), source="urn:typed", capabilities=declared)
+            hooks = Hooks(
+                config(),
+                source="urn:typed",
+                harness=protocol_event.Harness(name="test-host", version="1"),
+                capabilities=declared,
+            )
         self.assertEqual(
             [call.args[0] for call in validate.call_args_list], ["registration"]
         )
@@ -77,7 +83,12 @@ class TypedCapabilityTests(unittest.TestCase):
                 "session.start": {"modes": ["observe"]},
             },
         )
-        hooks = Hooks(config(mode="observe"), source="urn:typed", capabilities=declared)
+        hooks = Hooks(
+            config(mode="observe"),
+            source="urn:typed",
+            harness=protocol_event.Harness(name="test-host", version="1"),
+            capabilities=declared,
+        )
         self.assertEqual(hooks.capabilities, declared.to_wire())
 
     def test_observation_only_events_have_their_own_declaration_type(self):
@@ -121,7 +132,12 @@ class TypedCapabilityTests(unittest.TestCase):
                 "capabilities": {"effects": [], "elicitation": {"form": {}, "url": {}}},
             },
         )
-        Hooks(config(), source="urn:typed", capabilities=declared)
+        Hooks(
+            config(),
+            source="urn:typed",
+            harness=protocol_event.Harness(name="test-host", version="1"),
+            capabilities=declared,
+        )
 
     def test_empty_interception_and_empty_declaration_are_rejected_immediately(self):
         for create in (
@@ -165,9 +181,21 @@ class TypedCapabilityTests(unittest.TestCase):
     def test_dictionary_constructor_has_no_compatibility_path(self):
         with self.assertRaises(TypeError):
             Hooks(
-                config(), source="urn:typed", capabilities=tool_capabilities().to_wire()
+                config(),
+                source="urn:typed",
+                harness=protocol_event.Harness(name="test-host", version="1"),
+                capabilities=tool_capabilities().to_wire(),
             )
         with self.assertRaises(TypeError):
-            Hooks(config(), source="urn:typed", capabilities={})
+            Hooks(
+                config(),
+                source="urn:typed",
+                harness=protocol_event.Harness(name="test-host", version="1"),
+                capabilities={},
+            )
         with self.assertRaises(TypeError):
-            Hooks(config(), source="urn:typed")
+            Hooks(
+                config(),
+                source="urn:typed",
+                harness=protocol_event.Harness(name="test-host", version="1"),
+            )

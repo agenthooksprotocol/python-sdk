@@ -11,7 +11,7 @@ from typing import Any, Callable, Generic, Mapping, TypeVar, cast, overload
 from types import TracebackType
 from .codec import ValueCodecs, Codec, Candidate, _decode_preserving
 from .response import ContextualResponse
-from .event import Event, EventType
+from .event import Event, EventType, Harness
 from .capability import HostCapabilities
 from ._host_metadata import HostManifestMetadata
 from . import _models as models
@@ -648,6 +648,7 @@ class Hooks(BoundaryMixin):
         config: dict[str, Any],
         *,
         source: str,
+        harness: Harness,
         capabilities: HostCapabilities,
         manifest_metadata: HostManifestMetadata | None = None,
         transport: Any = None,
@@ -665,6 +666,7 @@ class Hooks(BoundaryMixin):
         self._configure(
             config,
             source=source,
+            harness=harness,
             declarations=capabilities.to_wire(),
             manifest_metadata=manifest_metadata,
             transport=transport,
@@ -679,6 +681,7 @@ class Hooks(BoundaryMixin):
         config: dict[str, Any],
         *,
         source: str,
+        harness: Harness,
         declarations: dict[EventType, Any],
         manifest_metadata: HostManifestMetadata | None = None,
         transport: Any = None,
@@ -707,6 +710,15 @@ class Hooks(BoundaryMixin):
             or not FormatChecker().conforms(source, "uri")
         ):
             raise ProtocolError("source must be an absolute URI")
+        if not isinstance(harness, Harness):
+            raise TypeError("harness must be Harness")
+        identity = deepcopy(dict(harness))
+        common = self.validator.validators["common.schema.json"]
+        if not common.evolve(
+            schema={"$ref": common.schema["$id"] + "#/$defs/harness"}
+        ).is_valid(identity):
+            raise ProtocolError("harness must contain canonical name and version")
+        self._harness = identity
         self._pending: WeakSet[PendingInvocation] = WeakSet()
         self.config = deepcopy(config)
         self.source = source
@@ -950,6 +962,8 @@ class Hooks(BoundaryMixin):
     ) -> None:
         if event["source"] != self.source:
             raise ProtocolError("Occurrence source conflicts with configured source")
+        if not _json_equal(event["harness"], self._harness):
+            raise ProtocolError("Occurrence harness conflicts with configured harness")
         declaration = self.capabilities.get(event["type"])
         if declaration is None or mode not in declaration["modes"]:
             raise ProtocolError("Occurrence event or delivery mode was not advertised")
@@ -1199,6 +1213,8 @@ class Hooks(BoundaryMixin):
         event = deepcopy(input.to_wire() if hasattr(input, "to_wire") else input)
         if not isinstance(event, dict):
             raise TypeError("Event input must be a canonical event payload object")
+        if "harness" in event and not _json_equal(event["harness"], self._harness):
+            raise ProtocolError("Occurrence harness conflicts with configured harness")
         from ._content import normalized_content_slots, normalized_values
 
         paths, _ = normalized_content_slots().get(event_name, ((), ()))
@@ -1218,6 +1234,7 @@ class Hooks(BoundaryMixin):
         event.update(
             id=event_id if event_id is not None else event.get("id", str(uuid4())),
             source=self.source,
+            harness=deepcopy(self._harness),
             type=event_name,
             time=event.get("time", datetime.now(timezone.utc).isoformat()),
         )

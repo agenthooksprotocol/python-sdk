@@ -40,6 +40,7 @@ class IntegrationEdgeTests(unittest.TestCase):
             event = {
                 "id": ident,
                 "source": "urn:test",
+                "harness": {"name": "test-host", "version": "1"},
                 "time": "2026-01-01T00:00:00Z",
                 "type": "user.elicitation." + stage,
                 "session": {"id": "session"},

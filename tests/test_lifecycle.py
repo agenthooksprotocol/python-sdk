@@ -1,3 +1,4 @@
+from agenthooksprotocol import event as protocol_event
 from copy import deepcopy
 import base64
 from hashlib import sha256
@@ -61,6 +62,7 @@ class LifecycleTests(unittest.TestCase):
         hooks = Hooks(
             config(),
             source=req["params"]["event"]["source"],
+            harness=protocol_event.Harness(name="test-host", version="1"),
             capabilities=capabilities(),
         )
         pending = hooks.begin(req)

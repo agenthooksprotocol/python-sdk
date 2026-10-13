@@ -73,6 +73,7 @@ class CorrectedSchemaTests(unittest.TestCase):
             "id": req["id"],
             "type": "model.response.after",
             "source": "urn:python:model",
+            "harness": {"name": "test-host", "version": "1"},
             "time": "2026-01-01T00:00:00Z",
             "synthesized": True,
             "model": {"id": "model-1", "provider": "test"},

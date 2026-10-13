@@ -1,5 +1,6 @@
 """Public API tests: no private network bridge and both AnyIO backends."""
 
+from agenthooksprotocol import event as protocol_event
 from agenthooksprotocol import capability
 
 from copy import deepcopy
@@ -86,11 +87,21 @@ class PublicHooksTests(unittest.TestCase):
 
     def test_constructor_checks_registration_and_explicit_modes(self):
         with self.assertRaises(ProtocolError):
-            Hooks({}, source="urn:test", capabilities=capability.HostCapabilities())
+            Hooks(
+                {},
+                source="urn:test",
+                harness=protocol_event.Harness(name="test-host", version="1"),
+                capabilities=capability.HostCapabilities(),
+            )
         with self.assertRaises(TypeError):
             capability.ToolBeforeCapabilities(effects=[])
         with self.assertRaises(ProtocolError):
-            Hooks(config(), source="relative", capabilities=capabilities())
+            Hooks(
+                config(),
+                source="relative",
+                harness=protocol_event.Harness(name="test-host", version="1"),
+                capabilities=capabilities(),
+            )
 
     def test_serial_input_invalidation_and_decode_failure(self):
         async def run():
@@ -108,6 +119,7 @@ class PublicHooksTests(unittest.TestCase):
             async with Hooks(
                 config(count=2),
                 source="urn:host",
+                harness=protocol_event.Harness(name="test-host", version="1"),
                 capabilities=capabilities(),
                 transport=transport,
             ) as hooks:
@@ -142,6 +154,7 @@ class PublicHooksTests(unittest.TestCase):
             hooks = Hooks(
                 config(policy="fail-closed", count=2),
                 source="urn:host",
+                harness=protocol_event.Harness(name="test-host", version="1"),
                 capabilities=capabilities(),
                 transport=transport,
             )
@@ -167,6 +180,7 @@ class PublicHooksTests(unittest.TestCase):
             hooks = Hooks(
                 config(count=3),
                 source="urn:host",
+                harness=protocol_event.Harness(name="test-host", version="1"),
                 capabilities=capabilities(),
                 transport=transport,
             )
@@ -183,6 +197,7 @@ class PublicHooksTests(unittest.TestCase):
             hooks = Hooks(
                 config(),
                 source=request()["params"]["event"]["source"],
+                harness=protocol_event.Harness(name="test-host", version="1"),
                 capabilities=capabilities(),
                 transport=transport,
             )
@@ -231,6 +246,7 @@ class PublicHooksTests(unittest.TestCase):
             async with Hooks(
                 config(mode="observe"),
                 source=note["params"]["event"]["source"],
+                harness=protocol_event.Harness(name="test-host", version="1"),
                 capabilities=capabilities(),
                 transport=transport,
             ) as hooks:
@@ -257,6 +273,7 @@ class PublicHooksTests(unittest.TestCase):
             async with Hooks(
                 config(),
                 source=req["params"]["event"]["source"],
+                harness=protocol_event.Harness(name="test-host", version="1"),
                 capabilities=declared,
                 transport=transport,
             ) as hooks:
@@ -288,6 +305,7 @@ class PublicHooksTests(unittest.TestCase):
             async with Hooks(
                 config(mode="observe"),
                 source=req["params"]["event"]["source"],
+                harness=protocol_event.Harness(name="test-host", version="1"),
                 capabilities=observed,
                 transport=transport,
             ) as hooks:
@@ -303,6 +321,7 @@ class PublicHooksTests(unittest.TestCase):
                 async with Hooks(
                     config(mode=mode),
                     source="urn:host",
+                    harness=protocol_event.Harness(name="test-host", version="1"),
                     capabilities=capabilities(),
                     transport=transport,
                 ) as hooks:
@@ -360,7 +379,10 @@ class PublicHooksTests(unittest.TestCase):
             ) as client:
                 with patch.dict("os.environ", {"AHP_TEST_BEARER": "test-token"}):
                     async with Hooks(
-                        registration, source="urn:host", capabilities=capabilities()
+                        registration,
+                        source="urn:host",
+                        harness=protocol_event.Harness(name="test-host", version="1"),
+                        capabilities=capabilities(),
                     ) as hooks:
                         hooks._transports[backend["id"]]._client = client
                         hooks._transports[backend["id"]]._owned = False
@@ -371,6 +393,7 @@ class PublicHooksTests(unittest.TestCase):
                 async with Hooks(
                     registration,
                     source="urn:host",
+                    harness=protocol_event.Harness(name="test-host", version="1"),
                     capabilities=capabilities(),
                     resolve_credential=lambda ref: "ref-token",
                 ) as hooks:
@@ -388,6 +411,7 @@ class PublicHooksTests(unittest.TestCase):
             hooks = Hooks(
                 config(),
                 source=request()["params"]["event"]["source"],
+                harness=protocol_event.Harness(name="test-host", version="1"),
                 capabilities=capabilities(),
                 transport=transport,
             )
@@ -409,6 +433,7 @@ class PublicHooksTests(unittest.TestCase):
             hooks = Hooks(
                 config(mode="observe"),
                 source="urn:host",
+                harness=protocol_event.Harness(name="test-host", version="1"),
                 capabilities=capabilities(),
                 transport=transport,
             )
@@ -450,6 +475,7 @@ class PublicHooksTests(unittest.TestCase):
                     async with Hooks(
                         registration,
                         source="urn:host",
+                        harness=protocol_event.Harness(name="test-host", version="1"),
                         capabilities=capabilities(),
                         transport=transport,
                     ) as hooks:
@@ -477,6 +503,7 @@ class PublicHooksTests(unittest.TestCase):
                 async with Hooks(
                     registration,
                     source="urn:host",
+                    harness=protocol_event.Harness(name="test-host", version="1"),
                     capabilities=capabilities(),
                     transport=transport,
                 ) as hooks:
@@ -491,6 +518,7 @@ class PublicHooksTests(unittest.TestCase):
             async with Hooks(
                 config(mode="observe"),
                 source="urn:host",
+                harness=protocol_event.Harness(name="test-host", version="1"),
                 capabilities=capabilities(),
                 transport=transport,
             ) as hooks:
@@ -527,6 +555,7 @@ class PublicHooksTests(unittest.TestCase):
             hooks = Hooks(
                 config(mode="observe"),
                 source="urn:host",
+                harness=protocol_event.Harness(name="test-host", version="1"),
                 capabilities=capabilities(),
                 transport=transport,
             )
@@ -566,6 +595,7 @@ class PublicHooksTests(unittest.TestCase):
             async with Hooks(
                 config(mode="observe"),
                 source="urn:host",
+                harness=protocol_event.Harness(name="test-host", version="1"),
                 capabilities=capabilities(),
                 transport=Hanging(),
             ) as hooks:
@@ -600,7 +630,11 @@ class PublicHooksTests(unittest.TestCase):
             )
             transport = Hanging()
             hooks = Hooks(
-                cfg, source="urn:host", capabilities=capabilities(), transport=transport
+                cfg,
+                source="urn:host",
+                harness=protocol_event.Harness(name="test-host", version="1"),
+                capabilities=capabilities(),
+                transport=transport,
             )
 
             async def deliver():
@@ -628,6 +662,7 @@ class PublicHooksTests(unittest.TestCase):
             hooks = Hooks(
                 config(mode="observe"),
                 source="urn:host",
+                harness=protocol_event.Harness(name="test-host", version="1"),
                 capabilities=capabilities(),
                 transport=Broken(),
             )
@@ -719,6 +754,7 @@ class PublicHooksTests(unittest.TestCase):
                 async with Hooks(
                     config(mode="observe"),
                     source="urn:host",
+                    harness=protocol_event.Harness(name="test-host", version="1"),
                     capabilities=capabilities(),
                     transport=transport,
                 ) as hooks:
@@ -786,6 +822,7 @@ class PublicHooksTests(unittest.TestCase):
                     async with Hooks(
                         config(count=2),
                         source="urn:host",
+                        harness=protocol_event.Harness(name="test-host", version="1"),
                         capabilities=capabilities(),
                         transport=transport,
                     ) as hooks:

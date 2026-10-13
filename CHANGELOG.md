@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.7.0](https://github.com/agenthooksprotocol/python-sdk/compare/v0.6.0...v0.7.0) (2026-10-13)
+
+
+### ⚠ BREAKING CHANGES
+
+* report harness identity on every event ([#36](https://github.com/agenthooksprotocol/python-sdk/issues/36))
+
+### Features
+
+* report harness identity on every event ([#36](https://github.com/agenthooksprotocol/python-sdk/issues/36)) ([f124532](https://github.com/agenthooksprotocol/python-sdk/commit/f124532f5fcd61b5643c2ec19f616ebe0d2e3215))
+
 ## [0.6.0](https://github.com/agenthooksprotocol/python-sdk/compare/v0.5.0...v0.6.0) (2026-10-13)
 
 

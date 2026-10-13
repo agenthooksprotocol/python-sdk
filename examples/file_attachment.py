@@ -61,7 +61,9 @@ async def main(path: Path) -> None:
         source="urn:example:file-review",
         max_concurrent_uploads=8,
         capabilities=capability.HostCapabilities(
-            context_compact_after=capability.Observe(),
+            context_compact_after=capability.ContextCompactAfterCapabilities(
+                observe=True
+            ),
             context_compact_before=capability.ContextCompactBeforeCapabilities(
                 intercept=capability.ContextCompactBeforeIntercept(message=True)
             ),

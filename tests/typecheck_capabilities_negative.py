@@ -12,7 +12,7 @@ from agenthooksprotocol import Hooks, capability
 # fmt: off
 def invalid_hosts(registration: dict[str, Any]) -> None:
     Hooks(registration, source="urn:typed", capabilities={})  # type-error
-    capability.HostCapabilities(unknown_event=capability.Observe())  # type-error
+    capability.HostCapabilities(unknown_event=capability.ToolBeforeCapabilities(observe=True))  # type-error
     capability.HostCapabilities(tool_before={"modes": ["observe"]})  # type-error
     capability.ToolBeforeIntercept(modify_summary=capability.Modify.REPLACE)  # type-error
     capability.ToolBeforeIntercept(deny="yes")  # type-error

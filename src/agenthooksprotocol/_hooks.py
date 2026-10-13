@@ -654,6 +654,7 @@ class Hooks(BoundaryMixin):
         resolve_credential: Any = None,
         auth_provider: Any = None,
         max_concurrent_uploads: int = 8,
+        inherit_environment: bool = False,
     ) -> None:
         if not isinstance(capabilities, HostCapabilities):
             raise TypeError("capabilities must be HostCapabilities")
@@ -670,6 +671,7 @@ class Hooks(BoundaryMixin):
             resolve_credential=resolve_credential,
             auth_provider=auth_provider,
             max_concurrent_uploads=max_concurrent_uploads,
+            inherit_environment=inherit_environment,
         )
 
     def _configure(
@@ -683,7 +685,11 @@ class Hooks(BoundaryMixin):
         resolve_credential: Any = None,
         auth_provider: Any = None,
         max_concurrent_uploads: int = 8,
+        inherit_environment: bool = False,
     ) -> None:
+        if not isinstance(inherit_environment, bool):
+            raise TypeError("inherit_environment must be a bool")
+        self._inherit_environment = inherit_environment
         if (
             isinstance(max_concurrent_uploads, bool)
             or not isinstance(max_concurrent_uploads, int)
@@ -855,6 +861,8 @@ class Hooks(BoundaryMixin):
                             config.get("args", []),
                             lifecycle=config["lifecycle"],
                             cwd=config.get("cwd"),
+                            env=config.get("env"),
+                            inherit_environment=self._inherit_environment,
                         )
                     else:
                         from .auth import AuthenticatedHTTPTransport

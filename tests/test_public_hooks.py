@@ -282,7 +282,9 @@ class PublicHooksTests(unittest.TestCase):
                 self.assertEqual(transport.requests, [])
                 self.assertEqual(transport.notifications, [])
                 self.assertIsNotNone(await hooks.exchange(req))
-            observed = capability.HostCapabilities(tool_before=capability.Observe())
+            observed = capability.HostCapabilities(
+                tool_before=capability.ToolBeforeCapabilities(observe=True)
+            )
             async with Hooks(
                 config(mode="observe"),
                 source=req["params"]["event"]["source"],

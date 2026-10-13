@@ -22,7 +22,8 @@ def typed_hosts(registration: dict[str, Any]) -> tuple[Hooks, Hooks, Hooks]:
         registration,
         source="urn:typed",
         capabilities=capability.HostCapabilities(
-            tool_before=capability.Observe(), session_start=capability.Observe()
+            tool_before=capability.ToolBeforeCapabilities(observe=True),
+            session_start=capability.SessionStartCapabilities(observe=True),
         ),
     )
     elicitation_only = Hooks(

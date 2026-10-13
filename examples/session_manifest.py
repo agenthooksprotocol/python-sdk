@@ -66,7 +66,9 @@ async def main() -> dict[str, Any]:
         config,
         source="urn:example:manifest",
         manifest_metadata=configured,
-        capabilities=capability.HostCapabilities(session_start=capability.Observe()),
+        capabilities=capability.HostCapabilities(
+            session_start=capability.SessionStartCapabilities(observe=True)
+        ),
         transport=InProcessTransport(),
     ) as harness:
         await harness.session_start(

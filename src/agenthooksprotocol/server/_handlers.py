@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from collections.abc import Awaitable, Callable, Mapping
 from dataclasses import dataclass
-from typing import Any, TypeVar, overload
+from typing import Any, TypeAlias, TypeVar, overload
 
 from ..codec import Codec
 from ._slots import _ToolInput, _ToolCandidate
@@ -690,9 +690,52 @@ class InterceptHandlers:
     ) = None
 
 
+AnyObserveContext: TypeAlias = (
+    ConfigChangeAfterObserveContext
+    | ConfigChangeBeforeObserveContext
+    | ContextCompactAfterObserveContext
+    | ContextCompactBeforeObserveContext
+    | FileChangedObserveContext
+    | HookFailureObserveContext
+    | ModelErrorObserveContext
+    | ModelRequestBeforeObserveContext
+    | ModelResponseAfterObserveContext
+    | ModelSwitchAfterObserveContext
+    | ModelSwitchBeforeObserveContext
+    | SessionEndObserveContext
+    | SessionStartObserveContext
+    | TaskChangeAfterObserveContext
+    | TaskChangeBeforeObserveContext
+    | ToolAfterObserveContext
+    | ToolBatchAfterObserveContext
+    | ToolBeforeObserveContext
+    | ToolPermissionRequestObserveContext
+    | ToolPermissionResolvedObserveContext
+    | ToolProgressObserveContext
+    | TurnEndObserveContext
+    | TurnFinishBeforeObserveContext
+    | TurnProgressObserveContext
+    | TurnStartObserveContext
+    | UserAttentionObserveContext
+    | UserElicitationRequestObserveContext
+    | UserElicitationResultObserveContext
+    | UserMessageInboundObserveContext
+    | UserMessageOutboundObserveContext
+    | WorkspaceChangeAfterObserveContext
+    | WorkspaceChangeBeforeObserveContext
+)
+"""Any event-specific observation context, as passed to ``ObserveHandlers.any``."""
+
+
 @dataclass(frozen=True, slots=True, kw_only=True)
 class ObserveHandlers:
-    """Observation callbacks cannot return protocol controls."""
+    """Observation callbacks cannot return protocol controls.
+
+    ``any`` is an optional catch-all invoked with the event-specific context only
+    when no per-event callback is registered for the observed event.
+    """
+
+    any: Callable[[AnyObserveContext], None | Awaitable[None]] | None = None
 
     config_change_after: (
         Callable[[ConfigChangeAfterObserveContext], None | Awaitable[None]] | None
@@ -944,6 +987,7 @@ _OBSERVE_CONTEXTS: dict[str, Any] = {
 __all__ = [
     "InterceptHandlers",
     "ObserveHandlers",
+    "AnyObserveContext",
     "ReplaceInput",
     "MergeInput",
     "ConfigChangeAfterObserveContext",

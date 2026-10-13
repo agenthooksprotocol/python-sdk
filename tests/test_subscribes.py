@@ -54,7 +54,8 @@ class SubscriptionInterestTests(unittest.TestCase):
 
     def test_no_subscribers_and_unrelated_selectors(self):
         declarations = capability.HostCapabilities(
-            tool_before=capabilities().tool_before, tool_after=capability.Observe()
+            tool_before=capabilities().tool_before,
+            tool_after=capability.ToolAfterCapabilities(observe=True),
         )
         registration = config(mode="observe")
         registration["hooks"][0]["subscriptions"][0]["events"] = ["tool.after"]

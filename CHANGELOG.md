@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.1](https://github.com/agenthooksprotocol/python-sdk/compare/v0.7.0...v0.7.1) (2026-10-14)
+
+
+### Performance Improvements
+
+* accelerate canonical schema validation with scoped union plans ([#38](https://github.com/agenthooksprotocol/python-sdk/issues/38)) ([2033b99](https://github.com/agenthooksprotocol/python-sdk/commit/2033b995484ce775627eed803dfd31b0b3e0c358))
+
 ## [0.7.0](https://github.com/agenthooksprotocol/python-sdk/compare/v0.6.0...v0.7.0) (2026-10-13)
 
 

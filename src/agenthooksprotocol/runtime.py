@@ -10,6 +10,7 @@ from referencing import Registry, Resource
 from . import generated, _models as models
 from .response import response_for_request
 from .diagnostics import Code as DiagnosticCode
+from ._validator import canonical_backend
 
 
 __all__ = ["ProtocolError", "OperationCancelledError", "BackendRPCError", "Validator"]
@@ -66,12 +67,20 @@ class Validator:
         registry = Registry().with_resources(
             (s["$id"], Resource.from_contents(s)) for s in schemas.values()
         )
+        backend = canonical_backend(schemas.values(), registry)
         self.validators = {
-            n: Draft202012Validator(
-                s, registry=registry, format_checker=FormatChecker()
-            )
+            n: backend(s, registry=registry, format_checker=FormatChecker())
             for n, s in schemas.items()
         }
+        self._fragments = {}
+        root = self.validators.get("mcp-elicitation.schema.json")
+        if root is not None:
+            self._fragments = {
+                "mcp-elicitation#" + fragment: root.evolve(
+                    schema={"$ref": root.schema["$id"] + "#/$defs/" + fragment}
+                )
+                for fragment in ("request", "result")
+            }
 
     def validate(self, kind: str, value: Any) -> Any:
         if kind == "form-answer":
@@ -82,11 +91,7 @@ class Validator:
             ).validate(value["value"])
             return value
         if kind in ("mcp-elicitation#request", "mcp-elicitation#result"):
-            name, fragment = kind.split("#")
-            root = self.validators[name + ".schema.json"]
-            body = root.evolve(
-                schema={"$ref": root.schema["$id"] + "#/$defs/" + fragment}
-            )
+            body = self._fragments[kind]
             if not body.is_valid(value):
                 raise ProtocolError("Canonical schema rejected " + kind)
             return value
@@ -106,8 +111,10 @@ class Validator:
         codec = getattr(generated, "parse_" + kind.replace("-", "_"), None)
         if codec is None:
             raise ProtocolError("Generated codec unavailable: " + kind)
-        if not self.validators[kind + ".schema.json"].is_valid(value):
-            error = next(self.validators[kind + ".schema.json"].iter_errors(value))
+        error = next(
+            self.validators[kind + ".schema.json"].iter_errors(value), None
+        )
+        if error is not None:
             raise ProtocolError(
                 "Canonical schema rejected "
                 + kind

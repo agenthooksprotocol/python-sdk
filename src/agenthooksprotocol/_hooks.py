@@ -654,6 +654,7 @@ class Hooks(BoundaryMixin):
         transport: Any = None,
         resolve_credential: Any = None,
         auth_provider: Any = None,
+        header_resolver: Any = None,
         max_concurrent_uploads: int = 8,
         inherit_environment: bool = False,
     ) -> None:
@@ -672,6 +673,7 @@ class Hooks(BoundaryMixin):
             transport=transport,
             resolve_credential=resolve_credential,
             auth_provider=auth_provider,
+            header_resolver=header_resolver,
             max_concurrent_uploads=max_concurrent_uploads,
             inherit_environment=inherit_environment,
         )
@@ -687,6 +689,7 @@ class Hooks(BoundaryMixin):
         transport: Any = None,
         resolve_credential: Any = None,
         auth_provider: Any = None,
+        header_resolver: Any = None,
         max_concurrent_uploads: int = 8,
         inherit_environment: bool = False,
     ) -> None:
@@ -703,6 +706,16 @@ class Hooks(BoundaryMixin):
         self._upload_limiter = anyio.Semaphore(max_concurrent_uploads)
         self.validator = Validator()
         self._lineage = TaskLineage(self.validator)
+        from .headers import validate_headers
+
+        registered_backends = config.get("hooks", []) if isinstance(config, dict) else []
+        for backend in registered_backends if isinstance(registered_backends, list) else []:
+            transport_config = (
+                backend.get("transport", {}) if isinstance(backend, dict) else {}
+            )
+            if isinstance(transport_config, dict) and transport_config.get("type") == "http":
+                validate_headers(transport_config.get("headers", {}))
+        self._header_resolver = header_resolver
         self.validator.validate("registration", config)
         if (
             not isinstance(source, str)
@@ -883,6 +896,7 @@ class Hooks(BoundaryMixin):
                             config["url"],
                             backend=backend,
                             auth_provider=self._auth_provider,
+                            header_resolver=self._header_resolver,
                             validator=self.validator,
                         )
                     self._owned.append(transport)

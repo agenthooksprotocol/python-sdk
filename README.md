@@ -119,6 +119,19 @@ The same remaining budget covers queue/readiness waits, provider waits, selected
 
 The default `auth.EnvironmentAuthProvider` resolves bearer `tokenEnv` or optional `resolve_credential` tokenRef callbacks at delivery time. OAuth bindings require an explicit provider. Missing configured secrets and unsupported mechanisms fail closed. Anonymous success stays anonymous; an explicit provider can authorize challenge discovery under host trust policy. Interception may replay at most once after an eligible 401 Bearer challenge, retaining request identity and serialized body; observations/uploads are never automatically replayed. Upload bindings are independent: event credentials are never an upload fallback. Transport-owned TLS/workload integration is not replaced by this provider.
 
+HTTP registrations accept `transport.headers`, for example:
+
+```json
+{"type":"http","url":"https://policy.example/hooks","headers":{"X-Tenant":"engineering","X-Api-Key":{"valueEnv":"POLICY_API_KEY"},"X-Gateway":{"valueRef":"vault/policy"}}}
+```
+
+Use literals only for non-secret metadata; credentials must use `valueEnv` or `valueRef`. Values are printable ASCII (space through tilde); names are ASCII HTTP tokens. Case-insensitive duplicates and auth, framing, security, and reserved protocol headers are rejected, including `Authorization`, `Cookie`, `Host`, `Content-Type`, `Accept`, `Proxy-*`, `Sec-*`, and `AHP-*`. Bearer credentials remain in `authentication`. Additional programmatic headers on `AuthenticatedHTTPTransport` follow these rules; registration values override non-reserved defaults case-insensitively. Borrowed HTTP client defaults are deliberately not inherited, and low-level `HTTPTransport` behavior is unchanged.
+
+Pass `Hooks(..., header_resolver=resolver)` for `valueRef` sources. The resolver implements asynchronous `resolve(context) -> str`; `headers.HeaderContext` carries the backend, exact destination, event purpose, opaque `source`, cancellation scope, and effective AnyIO deadline. Environment and reference values are resolved once per dispatch, reused on an authorized auth retry, and refreshed on the next dispatch. Missing, empty, invalid, or failed secret sources fail closed before event delivery. Header maps are limited to 64 KiB in aggregate, including names and framing overhead; limit errors never truncate values. Diagnostics omit configured values and references.
+
+Headers apply only to event POSTs at the registered endpoint, not discovery, token requests, uploads, or other backends. Redirects are not followed. Resolver and auth-provider resources remain harness-owned. Custom injected transports retain their existing responsibility for implementing the configured transport contract.
+
+
 Registered stdio backends start with a minimal base environment rather than the full host environment. The base is an allowlist of host variables: `PATH`, `HOME`, `USER`, `LOGNAME`, `SHELL`, `LANG`, `LC_*`, `TZ`, `TMPDIR`, `TEMP` and `TMP`, plus `SYSTEMROOT`, `WINDIR`, `COMSPEC`, `PATHEXT`, `USERPROFILE`, `APPDATA`, `LOCALAPPDATA` and `PROGRAMDATA` on Windows, where names match case-insensitively. The registration's `transport.env` entries are applied on top as literal strings, with no interpolation, and override base values. `tokenEnv` is still resolved in the host environment and credentials are never copied into the child. Env values are never logged. `Hooks(..., inherit_environment=True)` is an SDK-level opt-out that starts from the full host environment instead. `transports.StdioTransport(..., env=..., inherit_environment=...)` exposes the same controls.
 
 ## Static host manifest

@@ -20,6 +20,7 @@ from .runtime import (
     _validate_intercept_response,
 )
 from .transports.http import HTTPTransport
+from .headers import HeaderFailure, validate_headers, resolve_headers
 
 
 class TransportFailure(ProtocolError):
@@ -139,9 +140,18 @@ class AuthenticatedHTTPTransport(HTTPTransport):
         client: Any = None,
         headers: dict[str, str] | None = None,
         validator: Any = None,
+        header_resolver: Any = None,
     ) -> None:
         super().__init__(url, client=client, headers=headers, validator=validator)
         self.backend = deepcopy(backend)
+        self._header_destination = self.backend.get("transport", {}).get("url", url)
+        if url != self._header_destination:
+            raise HeaderFailure("HTTP registration endpoint mismatch")
+        self.header_resolver = header_resolver
+        self.headers = validate_headers(self.headers, sources=False)
+        self._registration_headers = validate_headers(
+            self.backend.get("transport", {}).get("headers", {})
+        )
         self.auth_provider = (
             auth_provider if auth_provider is not None else EnvironmentAuthProvider()
         )
@@ -256,11 +266,28 @@ class AuthenticatedHTTPTransport(HTTPTransport):
         import httpx
 
         ident = message.get("id")
+        if self.url != self._header_destination:
+            raise HeaderFailure("HTTP registration endpoint mismatch")
+        configured = {
+            name.lower(): value
+            for name, value in validate_headers(self.headers, sources=False).items()
+        }
+        configured.update(
+            {name.lower(): value for name, value in self._registration_headers.items()}
+        )
+        resolved = await resolve_headers(
+            configured,
+            backend=self.backend,
+            destination=self.url,
+            resolver=self.header_resolver,
+        )
         request = httpx.Request(
             "POST",
             self.url,
             content=json.dumps(message, allow_nan=False).encode(),
-            headers={**self.headers, "Content-Type": "application/json"},
+            headers={
+                **resolved, "Content-Type": "application/json", "Accept": "application/json"
+            },
         )
         response = await self._send(
             request,

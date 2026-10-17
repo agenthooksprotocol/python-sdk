@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.0](https://github.com/agenthooksprotocol/python-sdk/compare/v0.8.0...v0.9.0) (2026-10-17)
+
+
+### Features
+
+* add intercepts static lookup ([#43](https://github.com/agenthooksprotocol/python-sdk/issues/43)) ([fb049d2](https://github.com/agenthooksprotocol/python-sdk/commit/fb049d2d71551b26019d71df2190ea3d01374089))
+
 ## [0.8.0](https://github.com/agenthooksprotocol/python-sdk/compare/v0.7.1...v0.8.0) (2026-10-17)
 
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.0](https://github.com/agenthooksprotocol/python-sdk/compare/v0.7.1...v0.8.0) (2026-10-17)
+
+
+### Features
+
+* deliver scoped HTTP registration headers ([#41](https://github.com/agenthooksprotocol/python-sdk/issues/41)) ([6e0acd3](https://github.com/agenthooksprotocol/python-sdk/commit/6e0acd3171af298ee07f56e7313fbfcbb2c1e37f))
+
 ## [0.7.1](https://github.com/agenthooksprotocol/python-sdk/compare/v0.7.0...v0.7.1) (2026-10-14)
 
 

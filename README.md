@@ -119,6 +119,21 @@ The same remaining budget covers queue/readiness waits, provider waits, selected
 
 The default `auth.EnvironmentAuthProvider` resolves bearer `tokenEnv` or optional `resolve_credential` tokenRef callbacks at delivery time. OAuth bindings require an explicit provider. Missing configured secrets and unsupported mechanisms fail closed. Anonymous success stays anonymous; an explicit provider can authorize challenge discovery under host trust policy. Interception may replay at most once after an eligible 401 Bearer challenge, retaining request identity and serialized body; observations/uploads are never automatically replayed. Upload bindings are independent: event credentials are never an upload fallback. Transport-owned TLS/workload integration is not replaced by this provider.
 
+HTTP registrations accept `transport.headers`, for example:
+
+```json
+{"type":"http","url":"https://policy.example/hooks","headers":{"X-Tenant":"engineering","X-Api-Key":{"valueEnv":"POLICY_API_KEY"},"X-Gateway":{"valueRef":"vault/policy"}}}
+```
+
+All valid HTTP field names are supported, including `Authorization`, `Cookie`, `Origin`, and protocol headers. Literal API keys and cookies are supported. Values must be safe HTTP field values (no CR, LF, or NUL); this HTTPX transport supports Latin-1 header bytes, including non-ASCII values such as `café`. There is no additional SDK header-size limit. Duplicate names are compared case-insensitively: the last property in configuration iteration order wins.
+
+Transport defaults and authentication are applied first, then configured registration headers override them case-insensitively, including `Content-Type` and `Authorization`. Configured `Authorization`, whether literal or referenced, suppresses provider acquisition, discovery, challenges, and retries. A failed explicit secret lookup fails delivery; it never falls back to OAuth.
+
+`valueEnv` and `valueRef` reuse the bearer secret lookup helper and `Hooks(..., resolve_credential=callback)` callback. The optional contextual `header_resolver.resolve(context)` API remains available for harnesses needing backend, destination, purpose, cancellation, and deadline context. Values resolve once per event or upload operation, are reused on an allowed authentication retry, and rotate on subsequent operations. Errors redact values and references.
+
+Configured headers apply to both event POSTs and backend content uploads, overriding upload defaults and authentication as well. They are not installed globally on borrowed clients, discovery/token requests, or other backends. Existing transport redirect behavior is unchanged (SDK HTTP transports already disable automatic redirects). Custom injected transports retain responsibility for their transport contract.
+
+
 Registered stdio backends start with a minimal base environment rather than the full host environment. The base is an allowlist of host variables: `PATH`, `HOME`, `USER`, `LOGNAME`, `SHELL`, `LANG`, `LC_*`, `TZ`, `TMPDIR`, `TEMP` and `TMP`, plus `SYSTEMROOT`, `WINDIR`, `COMSPEC`, `PATHEXT`, `USERPROFILE`, `APPDATA`, `LOCALAPPDATA` and `PROGRAMDATA` on Windows, where names match case-insensitively. The registration's `transport.env` entries are applied on top as literal strings, with no interpolation, and override base values. `tokenEnv` is still resolved in the host environment and credentials are never copied into the child. Env values are never logged. `Hooks(..., inherit_environment=True)` is an SDK-level opt-out that starts from the full host environment instead. `transports.StdioTransport(..., env=..., inherit_environment=...)` exposes the same controls.
 
 ## Static host manifest

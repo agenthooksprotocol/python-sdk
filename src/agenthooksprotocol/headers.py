@@ -3,7 +3,6 @@
 from copy import deepcopy
 from dataclasses import dataclass, field
 import inspect
-import os
 import re
 from typing import Any, Protocol
 
@@ -30,59 +29,32 @@ class HeaderResolver(Protocol):
     async def resolve(self, context: HeaderContext) -> str: ...
 
 
-_RESERVED = {
-    "authorization",
-    "cookie",
-    "set-cookie",
-    "host",
-    "content-type",
-    "accept",
-    "content-length",
-    "content-encoding",
-    "connection",
-    "keep-alive",
-    "transfer-encoding",
-    "te",
-    "trailer",
-    "upgrade",
-    "expect",
-    "origin",
-    "referer",
-}
-_MAX_BYTES = 65536
-
-
 def _value(value: Any, *, secret: bool = False) -> str:
     if (
         not isinstance(value, str)
         or (secret and not value)
-        or any(not 0x20 <= ord(char) <= 0x7E for char in value)
+        or any(char in value for char in "\r\n\x00")
     ):
         raise HeaderFailure("Invalid HTTP header value")
+    try:
+        value.encode("latin-1")
+    except UnicodeError:
+        raise HeaderFailure("Unsupported HTTP header encoding") from None
     return value
 
 
 def validate_headers(headers: Any, *, sources: bool = True) -> dict[str, Any]:
     if not isinstance(headers, dict):
         raise HeaderFailure("HTTP headers must be a map")
-    seen = set()
-    size = 0
+    normalized = {}
     for name, value in headers.items():
         if not isinstance(name, str) or not re.fullmatch(
             r"[!#$%&'*+.^_`|~0-9A-Za-z-]+", name
         ):
             raise HeaderFailure("Invalid HTTP header name")
         key = name.lower()
-        if (
-            key in seen
-            or key in _RESERVED
-            or key.startswith(("proxy-", "sec-", "ahp-"))
-        ):
-            raise HeaderFailure("Duplicate or reserved HTTP header name")
-        seen.add(key)
         if isinstance(value, str):
             _value(value)
-            size += len(name) + len(value) + 4
         elif sources and isinstance(value, dict):
             recognized = [key for key in ("valueEnv", "valueRef") if key in value]
             if len(recognized) != 1:
@@ -99,17 +71,24 @@ def validate_headers(headers: Any, *, sources: bool = True) -> dict[str, Any]:
                 r"[A-Za-z_][A-Za-z0-9_]*", reference
             ):
                 raise HeaderFailure("Invalid HTTP header source")
-            size += len(name) + len(reference) + 4
         else:
             raise HeaderFailure("Invalid HTTP header source")
-        if size > _MAX_BYTES:
-            raise HeaderFailure("HTTP header size limit exceeded")
-    return deepcopy(headers)
+        normalized[key] = deepcopy(value)
+    return normalized
 
 
-async def resolve_headers(headers, *, backend, destination, resolver=None):
+async def resolve_headers(
+    headers,
+    *,
+    backend,
+    destination,
+    resolver=None,
+    resolve_credential=None,
+    purpose="event",
+):
+    from .auth import _resolve_secret
+
     resolved = {}
-    size = 0
     with anyio.CancelScope() as cancellation:
         for name, source in headers.items():
             if isinstance(source, str):
@@ -117,7 +96,9 @@ async def resolve_headers(headers, *, backend, destination, resolver=None):
             else:
                 try:
                     if "valueEnv" in source:
-                        value = os.environ.get(source["valueEnv"])
+                        value = await _resolve_secret(
+                            source, "valueEnv", "valueRef", resolve_credential
+                        )
                     elif resolver is not None:
                         context = HeaderContext(
                             deepcopy(backend),
@@ -125,12 +106,15 @@ async def resolve_headers(headers, *, backend, destination, resolver=None):
                             source["valueRef"],
                             cancellation,
                             anyio.current_effective_deadline(),
+                            purpose,
                         )
                         value = resolver.resolve(context)
                         if inspect.isawaitable(value):
                             value = await value
                     else:
-                        raise HeaderFailure("HTTP header resolver required")
+                        value = await _resolve_secret(
+                            source, "valueEnv", "valueRef", resolve_credential
+                        )
                     value = _value(value, secret=True)
                 except OperationCancelledError:
                     raise
@@ -139,9 +123,6 @@ async def resolve_headers(headers, *, backend, destination, resolver=None):
                         "Cannot resolve configured HTTP header"
                     ) from None
             await anyio.lowlevel.checkpoint()
-            size += len(name) + len(value) + 4
-            if size > _MAX_BYTES:
-                raise HeaderFailure("HTTP header size limit exceeded")
             resolved[name] = value
     if cancellation.cancel_called:
         raise OperationCancelledError("HTTP header resolution cancelled")

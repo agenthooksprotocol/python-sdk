@@ -38,36 +38,12 @@ class RegistrationHeaderTests(unittest.TestCase):
             {"X": {"valueEnv": "1X"}},
             {"X": {"valueRef": ""}},
             {"X": {"unknown": "x"}},
-            {"X": "a", "x": "a"},
             {"X\n": "x"},
             {"X é": "x"},
             {"": "x"},
         ]
-        for char in ("\r", "\n", "\t", "\x00", "\x7f", "é"):
+        for char in ("\r", "\n", "\x00"):
             invalid.append({"X": "secret" + char})
-        for name in (
-            "Authorization",
-            "Proxy-Foo",
-            "Cookie",
-            "Set-Cookie",
-            "Host",
-            "Content-Type",
-            "Accept",
-            "Content-Length",
-            "Content-Encoding",
-            "Connection",
-            "Keep-Alive",
-            "Transfer-Encoding",
-            "TE",
-            "Trailer",
-            "Upgrade",
-            "Expect",
-            "Origin",
-            "Referer",
-            "Sec-Foo",
-            "AHP-Foo",
-        ):
-            invalid.append({name.swapcase(): "secret"})
         for headers in invalid:
             with (
                 self.subTest(headers=headers),
@@ -75,10 +51,10 @@ class RegistrationHeaderTests(unittest.TestCase):
             ):
                 validate_headers(headers)
             self.assertNotIn("secret", str(caught.exception))
-        self.assertEqual(validate_headers({"X": ""}), {"X": ""})
+        self.assertEqual(validate_headers({"X": ""}), {"x": ""})
         validate_headers({"X": {"valueEnv": "KEY", "extension": True}})
-        with self.assertRaises(HeaderFailure):
-            validate_headers({"X": "x" * 65536})
+        validate_headers({"X": "x" * 65536})
+        self.assertEqual(validate_headers({"X": "first", "x": "last"}), {"x": "last"})
 
     def test_emitted_merge_and_rotation(self):
         async def run():
@@ -200,8 +176,6 @@ class RegistrationHeaderTests(unittest.TestCase):
                     "",
                     42,
                     "secret\n",
-                    "secret\t",
-                    "é",
                     ValueError("sensitive"),
                 ):
                     sdk = transport(
@@ -250,7 +224,7 @@ class RegistrationHeaderTests(unittest.TestCase):
 
         anyio.run(run)
 
-    def test_redirect_and_backend_isolation(self):
+    def test_existing_no_redirect_behavior_and_backend_isolation(self):
         async def run():
             seen = []
 
@@ -274,11 +248,7 @@ class RegistrationHeaderTests(unittest.TestCase):
         anyio.run(run)
 
     def test_programmatic_defaults_rejected_on_registration_path(self):
-        for headers in (
-            {"Authorization": "secret"},
-            {"X": "a", "x": "b"},
-            {"X": "bad\n"},
-        ):
+        for headers in ({"X": "bad\n"},):
             with self.assertRaises(HeaderFailure):
                 transport(None, headers=headers)
 
@@ -291,7 +261,12 @@ class RegistrationHeaderTests(unittest.TestCase):
             registration["hooks"][0]["transport"] = {
                 "type": "http",
                 "url": URL,
-                "headers": {"X-Tenant": "public"},
+                "headers": {
+                    "X-Tenant": "public",
+                    "Authorization": "Bearer abc123",
+                    "Cookie": "key=value",
+                    "X-Label": "café",
+                },
             }
             seen = []
 
@@ -313,9 +288,11 @@ class RegistrationHeaderTests(unittest.TestCase):
                 registered._client = client
                 await registered.notify({"method": "hooks/observe"})
                 self.assertEqual(seen[0].headers["x-tenant"], "public")
+                self.assertEqual(seen[0].headers["authorization"], "Bearer abc123")
+                self.assertEqual(seen[0].headers["x-label"], "café")
                 await hooks.aclose()
             registration["hooks"][0]["transport"]["headers"] = {
-                "Authorization": "sensitive"
+                "Authorization": "sensitive\n"
             }
             with self.assertRaises(HeaderFailure):
                 Hooks(
@@ -327,7 +304,7 @@ class RegistrationHeaderTests(unittest.TestCase):
 
         anyio.run(run)
 
-    def test_upload_and_provider_discovery_do_not_receive_event_headers(self):
+    def test_upload_receives_headers_but_provider_discovery_does_not(self):
         async def run():
             seen = []
 
@@ -352,11 +329,11 @@ class RegistrationHeaderTests(unittest.TestCase):
                 )
                 with patch.dict(os.environ, {"SECRET": "event-only"}):
                     await sdk.notify({"method": "hooks/observe"})
-                with self.assertRaises(ProtocolError):
-                    await sdk.upload(URL + "/upload", b"body")
+                    with self.assertRaises(ProtocolError):
+                        await sdk.upload(URL + "/upload", b"body")
                 self.assertEqual(
                     [r.headers.get("x-key") for r in seen],
-                    [None, "event-only", None, None],
+                    [None, "event-only", None, "event-only"],
                 )
 
         anyio.run(run)
@@ -376,21 +353,6 @@ class RegistrationHeaderTests(unittest.TestCase):
             with self.assertRaises(OperationCancelledError):
                 await sdk.notify({"method": "hooks/observe"})
             self.assertIsNone(sdk._client)
-
-        anyio.run(run)
-
-    def test_endpoint_change_and_resolved_size_fail_before_io(self):
-        async def run():
-            sdk = transport(None, {"X-Tenant": "private"})
-            sdk.url = URL + "/other"
-            with self.assertRaises(HeaderFailure):
-                await sdk.notify({"method": "hooks/observe"})
-            self.assertIsNone(sdk._client)
-            with patch.dict(os.environ, {"KEY": "x" * 65536}):
-                sdk = transport(None, {"X-Key": {"valueEnv": "KEY"}})
-                with self.assertRaises(HeaderFailure):
-                    await sdk.notify({"method": "hooks/observe"})
-                self.assertIsNone(sdk._client)
 
         anyio.run(run)
 
@@ -453,5 +415,113 @@ class RegistrationHeaderTests(unittest.TestCase):
                 await hooks.aclose()
                 self.assertFalse(client.is_closed)
                 self.assertEqual(injected.headers["x-tenant"], "default")
+
+        anyio.run(run)
+
+    def test_configured_credentials_override_defaults_and_suppress_oauth(self):
+        async def run():
+            seen = []
+
+            class ForbiddenProvider:
+                async def credential(self, context):
+                    raise AssertionError("OAuth must not run")
+
+                async def challenge(self, context, challenge):
+                    raise AssertionError("OAuth challenge must not run")
+
+            async def handle(request):
+                await request.aread()
+                seen.append(request)
+                return httpx.Response(401, headers={"WWW-Authenticate": "Bearer"})
+
+            async with httpx.AsyncClient(
+                transport=httpx.MockTransport(handle)
+            ) as client:
+                sdk = transport(
+                    client,
+                    {
+                        "Authorization": "ignored",
+                        "aUtHoRiZaTiOn": "Bearer abc123",
+                        "Cookie": "session=literal-secret",
+                        "X-Api-Key": "literal-key",
+                        "Content-Type": "custom/type",
+                        "Origin": "https://custom.test",
+                        "X-Label": "café",
+                        "AHP-Custom": "override",
+                    },
+                    authenticated=True,
+                    auth_provider=ForbiddenProvider(),
+                    headers={"X-Api-Key": "default"},
+                )
+                with self.assertRaises(ProtocolError):
+                    await sdk.request(intercept_request())
+                with self.assertRaises(ProtocolError):
+                    await sdk.upload(
+                        URL + "/upload", b"body", authentication={"type": "oauth"}
+                    )
+                self.assertEqual(len(seen), 2)
+                for request in seen:
+                    self.assertEqual(request.headers["authorization"], "Bearer abc123")
+                    self.assertEqual(
+                        request.headers["cookie"], "session=literal-secret"
+                    )
+                    self.assertEqual(request.headers["x-api-key"], "literal-key")
+                    self.assertEqual(request.headers["content-type"], "custom/type")
+                    self.assertEqual(request.headers["x-label"], "café")
+                    self.assertEqual(request.headers["origin"], "https://custom.test")
+                self.assertNotIn("authorization", client.headers)
+
+        anyio.run(run)
+
+    def test_existing_secret_resolver_for_authorization_and_fail_closed(self):
+        async def run():
+            seen, calls = [], []
+
+            async def resolve(reference):
+                calls.append(reference)
+                return "Bearer abc123"
+
+            async def handle(request):
+                await request.aread()
+                seen.append(request)
+                if request.url.path.endswith("/upload"):
+                    import hashlib
+
+                    return httpx.Response(
+                        201,
+                        json={
+                            "ref": "uploaded",
+                            "size": len(request.content),
+                            "sha256": hashlib.sha256(request.content).hexdigest(),
+                        },
+                    )
+                return httpx.Response(204)
+
+            async with httpx.AsyncClient(
+                transport=httpx.MockTransport(handle)
+            ) as client:
+                sdk = transport(
+                    client,
+                    {"Authorization": {"valueRef": "vault/key"}},
+                    resolve_credential=resolve,
+                )
+                await sdk.notify({"method": "hooks/observe"})
+                receipt = await sdk.upload(URL + "/upload", b"body")
+                self.assertEqual(receipt.ref, "uploaded")
+                self.assertEqual(calls, ["vault/key", "vault/key"])
+                self.assertTrue(
+                    all(r.headers["authorization"] == "Bearer abc123" for r in seen)
+                )
+                sdk = transport(
+                    client,
+                    {"Authorization": {"valueEnv": "MISSING_HEADER"}},
+                    auth_provider=Provider(),
+                )
+                with (
+                    patch.dict(os.environ, {}, clear=True),
+                    self.assertRaises(HeaderFailure),
+                ):
+                    await sdk.notify({"method": "hooks/observe"})
+                self.assertEqual(len(seen), 2)
 
         anyio.run(run)

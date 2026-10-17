@@ -716,6 +716,7 @@ class Hooks(BoundaryMixin):
             if isinstance(transport_config, dict) and transport_config.get("type") == "http":
                 validate_headers(transport_config.get("headers", {}))
         self._header_resolver = header_resolver
+        self._resolve_credential = resolve_credential
         self.validator.validate("registration", config)
         if (
             not isinstance(source, str)
@@ -893,6 +894,7 @@ class Hooks(BoundaryMixin):
                         transport = AuthenticatedHTTPTransport(
                             config["url"],
                             backend=backend,
+                            resolve_credential=self._resolve_credential,
                             client=transport._ready(),
                             headers=transport.headers,
                             auth_provider=getattr(
@@ -922,6 +924,7 @@ class Hooks(BoundaryMixin):
                         transport = AuthenticatedHTTPTransport(
                             config["url"],
                             backend=backend,
+                            resolve_credential=self._resolve_credential,
                             auth_provider=self._auth_provider,
                             header_resolver=self._header_resolver,
                             validator=self.validator,

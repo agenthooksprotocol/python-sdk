@@ -20,7 +20,7 @@ from .runtime import (
     _validate_intercept_response,
 )
 from .transports.http import HTTPTransport
-from .headers import HeaderFailure, validate_headers, resolve_headers
+from .headers import validate_headers, resolve_headers
 
 
 class TransportFailure(ProtocolError):
@@ -69,6 +69,15 @@ class AuthProvider(Protocol):
     ) -> BearerCredential | None: ...
 
 
+async def _resolve_secret(binding, env_key, ref_key, resolver=None):
+    if env_key in binding:
+        return os.environ.get(binding[env_key])
+    if ref_key in binding and resolver is not None:
+        value = resolver(binding[ref_key])
+        return await value if inspect.isawaitable(value) else value
+    return None
+
+
 class EnvironmentAuthProvider:
     """Optional bearer adapter; no discovery, refresh worker, or owned resources."""
 
@@ -85,12 +94,9 @@ class EnvironmentAuthProvider:
             )
         token = None
         try:
-            if "tokenEnv" in binding:
-                token = os.environ.get(binding["tokenEnv"])
-            elif "tokenRef" in binding and self.resolve_credential is not None:
-                token = self.resolve_credential(binding["tokenRef"])
-                if inspect.isawaitable(token):
-                    token = await token
+            token = await _resolve_secret(
+                binding, "tokenEnv", "tokenRef", self.resolve_credential
+            )
         except OperationCancelledError:
             raise
         except Exception:
@@ -141,13 +147,12 @@ class AuthenticatedHTTPTransport(HTTPTransport):
         headers: dict[str, str] | None = None,
         validator: Any = None,
         header_resolver: Any = None,
+        resolve_credential: Any = None,
     ) -> None:
         super().__init__(url, client=client, headers=headers, validator=validator)
         self.backend = deepcopy(backend)
-        self._header_destination = self.backend.get("transport", {}).get("url", url)
-        if url != self._header_destination:
-            raise HeaderFailure("HTTP registration endpoint mismatch")
         self.header_resolver = header_resolver
+        self.resolve_credential = resolve_credential
         self.headers = validate_headers(self.headers, sources=False)
         self._registration_headers = validate_headers(
             self.backend.get("transport", {}).get("headers", {})
@@ -155,7 +160,8 @@ class AuthenticatedHTTPTransport(HTTPTransport):
         self.auth_provider = (
             auth_provider if auth_provider is not None else EnvironmentAuthProvider()
         )
-        _validate_binding(self.backend.get("authentication"))
+        if "authorization" not in self._registration_headers:
+            _validate_binding(self.backend.get("authentication"))
 
     async def _credential(self, context, challenge=None):
         try:
@@ -184,7 +190,19 @@ class AuthenticatedHTTPTransport(HTTPTransport):
     async def _send(self, request, *, purpose, binding, retry_allowed=False):
         import httpx
 
-        _validate_binding(binding)
+        resolved = await resolve_headers(
+            self._registration_headers,
+            backend=self.backend,
+            destination=str(request.url),
+            resolver=self.header_resolver,
+            resolve_credential=self.resolve_credential or getattr(
+                self.auth_provider, "resolve_credential", None
+            ),
+            purpose=purpose,
+        )
+        explicit_auth = "authorization" in resolved
+        if not explicit_auth:
+            _validate_binding(binding)
         with anyio.CancelScope() as cancellation:
             context = AuthContext(
                 deepcopy(self.backend),
@@ -193,10 +211,12 @@ class AuthenticatedHTTPTransport(HTTPTransport):
                 purpose,
                 cancellation,
             )
-            credential = await self._credential(context)
+            credential = None if explicit_auth else await self._credential(context)
             request.headers.pop("Authorization", None)
             if credential is not None:
                 request.headers["Authorization"] = "Bearer " + credential.token
+            request.headers.update(httpx.Headers(resolved, encoding="latin-1"))
+            request.headers.encoding = "latin-1"
             try:
                 response = await self._ready().send(
                     request, auth=None, follow_redirects=False
@@ -209,7 +229,7 @@ class AuthenticatedHTTPTransport(HTTPTransport):
                 raise
             except Exception:
                 raise TransportFailure("HTTP delivery failed") from None
-            if response.status_code not in (401, 403):
+            if explicit_auth or response.status_code not in (401, 403):
                 return response
             challenges = response.headers.get("www-authenticate", "")
             safe = (
@@ -266,28 +286,14 @@ class AuthenticatedHTTPTransport(HTTPTransport):
         import httpx
 
         ident = message.get("id")
-        if self.url != self._header_destination:
-            raise HeaderFailure("HTTP registration endpoint mismatch")
-        configured = {
-            name.lower(): value
-            for name, value in validate_headers(self.headers, sources=False).items()
-        }
-        configured.update(
-            {name.lower(): value for name, value in self._registration_headers.items()}
-        )
-        resolved = await resolve_headers(
-            configured,
-            backend=self.backend,
-            destination=self.url,
-            resolver=self.header_resolver,
-        )
         request = httpx.Request(
             "POST",
             self.url,
             content=json.dumps(message, allow_nan=False).encode(),
-            headers={
-                **resolved, "Content-Type": "application/json", "Accept": "application/json"
-            },
+            headers=httpx.Headers(
+                {**self.headers, "content-type": "application/json", "accept": "application/json"},
+                encoding="latin-1",
+            ),
         )
         response = await self._send(
             request,

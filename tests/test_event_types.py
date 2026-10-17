@@ -18,6 +18,7 @@ class EventTypeTests(unittest.TestCase):
         self.assertIs(EventType, EventModuleType)
         self.assertEqual(len(get_args(EventType)), 32)
         self.assertIs(get_type_hints(Hooks.subscribes)["event"], EventType)
+        self.assertIs(get_type_hints(Hooks.intercepts)["event"], EventType)
         methods = get_overloads(Hooks.dispatch) + [Hooks.dispatch]
         self.assertEqual(len(methods), 9)
         for method in methods:

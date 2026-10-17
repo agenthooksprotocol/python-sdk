@@ -795,6 +795,23 @@ class Hooks(BoundaryMixin):
             for subscription in backend["subscriptions"]
         )
 
+    def intercepts(self, event: EventType) -> bool:
+        """Report static intercept interest, not delivery or permission.
+
+        Observation subscriptions never count. Payload-dependent filters are
+        conservatively ignored. This lookup does not prepare input, initialize
+        transports, or contact a backend.
+        """
+        declaration = self.capabilities.get(event)
+        if declaration is None or "intercept" not in declaration["modes"]:
+            return False
+        return any(
+            subscription["mode"] == "intercept"
+            and any(_matches(selector, event) for selector in subscription["events"])
+            for backend in self.config["hooks"]
+            for subscription in backend["subscriptions"]
+        )
+
     @property
     def manifest(self) -> dict[str, Any]:
         """Return a detached snapshot of the configured static host manifest."""

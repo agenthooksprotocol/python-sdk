@@ -27,6 +27,7 @@ def main() -> None:
                 if name == names[0]
                 else f"    name = {name!r}",
                 "    assert_type(h.subscribes(name), bool)",
+                "    assert_type(h.intercepts(name), bool)",
                 "    await h.dispatch(name, {})",
                 "    response_for_request(name, {})",
             ]
@@ -37,6 +38,8 @@ def main() -> None:
             "    h.subscribes(dynamic)  # type-error",
             "    h.subscribes('unknown.event')  # type-error",
             "    h.subscribes('tool.*')  # type-error",
+            "    h.intercepts(dynamic)  # type-error",
+            "    h.intercepts('model.*')  # type-error",
             "    await h.dispatch(dynamic, {})  # type-error",
             "    await h.dispatch('unknown.event', {})  # type-error",
             "    response_for_request(dynamic, {})  # type-error",
@@ -69,7 +72,7 @@ def main() -> None:
             result.stdout + result.stderr
         )
     print(
-        "EventType consumers: all 32 names pass; all 7 dynamic/unknown/selector negatives rejected"
+        "EventType consumers: all 32 names pass; all 9 dynamic/unknown/selector negatives rejected"
     )
 
 

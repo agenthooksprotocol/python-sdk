@@ -17,6 +17,7 @@ from agenthooksprotocol.state import Flow
 
 def subscription_contract(hooks: Hooks, event: EventType) -> None:
     assert_type(hooks.subscribes(event), bool)
+    assert_type(hooks.intercepts(event), bool)
 
 
 def contracts(outcome: HookResult[dict[str, int], str, dict[str, str]]) -> None:

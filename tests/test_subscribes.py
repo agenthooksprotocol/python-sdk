@@ -74,3 +74,104 @@ class SubscriptionInterestTests(unittest.TestCase):
         self.assertIs(hooks.subscribes("tool.before"), False)
         self.assertIs(hooks.subscribes("tool.after"), True)
         self.assertIs(hooks.subscribes("unknown.event"), False)
+
+
+def model_capabilities():
+    return capability.HostCapabilities(
+        tool_before=capabilities().tool_before,
+        model_request_before=capability.ModelRequestBeforeCapabilities(observe=True),
+        model_response_after=capability.ModelResponseAfterCapabilities(
+            intercept=capability.ModelResponseAfterIntercept(message=True),
+            observe=True,
+        ),
+    )
+
+
+def subscription(events, mode):
+    result = {"events": events, "mode": mode, "content": {"default": "metadata"}}
+    if mode == "intercept":
+        result.update(timeoutMs=1000, failurePolicy="fail-open")
+    return result
+
+
+def hooks_for(subscriptions, declarations):
+    registration = config()
+    registration["hooks"][0]["subscriptions"] = subscriptions
+    return Hooks(
+        registration,
+        source="urn:test",
+        harness=protocol_event.Harness(name="test-host", version="1"),
+        capabilities=declarations,
+    )
+
+
+class InterceptInterestTests(unittest.TestCase):
+    def test_intercept_only(self):
+        for selector in ("tool.before", "tool.*", "*"):
+            with self.subTest(selector=selector):
+                hooks = hooks_for(
+                    [subscription([selector], "intercept")], capabilities()
+                )
+                before = deepcopy((hooks.config, hooks.capabilities))
+                with (
+                    patch.object(
+                        hooks, "_ensure_ready", side_effect=AssertionError("transport")
+                    ),
+                    patch.object(
+                        hooks,
+                        "_project_delivery",
+                        side_effect=AssertionError("input preparation"),
+                    ),
+                    patch.object(
+                        hooks.validator,
+                        "validate",
+                        side_effect=AssertionError("input validation"),
+                    ),
+                ):
+                    for _ in range(2):
+                        self.assertIs(hooks.intercepts("tool.before"), True)
+                        self.assertIs(hooks.intercepts("tool.after"), False)
+                        self.assertIs(hooks.intercepts("unknown.event"), False)
+                        self.assertIs(hooks.intercepts(""), False)
+                self.assertEqual((hooks.config, hooks.capabilities), before)
+
+    def test_observe_only(self):
+        for selector in ("tool.before", "tool.*", "*"):
+            with self.subTest(selector=selector):
+                hooks = hooks_for([subscription([selector], "observe")], capabilities())
+                self.assertIs(hooks.subscribes("tool.before"), True)
+                self.assertIs(hooks.intercepts("tool.before"), False)
+
+    def test_intercept_and_observe(self):
+        hooks = hooks_for(
+            [
+                subscription(["model.*"], "observe"),
+                subscription(["model.response.after"], "intercept"),
+            ],
+            model_capabilities(),
+        )
+        self.assertIs(hooks.intercepts("model.response.after"), True)
+        self.assertIs(hooks.subscribes("model.request.before"), True)
+        self.assertIs(hooks.intercepts("model.request.before"), False)
+        self.assertIs(hooks.intercepts("tool.before"), False)
+
+    def test_prefix_selector(self):
+        declarations = capability.HostCapabilities(
+            model_response_after=model_capabilities().model_response_after
+        )
+        hooks = hooks_for([subscription(["model.*"], "intercept")], declarations)
+        self.assertIs(hooks.intercepts("model.response.after"), True)
+        self.assertIs(hooks.intercepts("model.request.before"), False)
+        self.assertIs(hooks.intercepts("tool.before"), False)
+
+    def test_event_without_intercept_grant(self):
+        hooks = hooks_for(
+            [
+                subscription(["tool.before"], "intercept"),
+                subscription(["model.request.before"], "observe"),
+            ],
+            model_capabilities(),
+        )
+        self.assertIs(hooks.intercepts("tool.before"), True)
+        self.assertIs(hooks.subscribes("model.request.before"), True)
+        self.assertIs(hooks.intercepts("model.request.before"), False)

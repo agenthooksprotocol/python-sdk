@@ -894,7 +894,11 @@ class Hooks(BoundaryMixin):
                         transport = AuthenticatedHTTPTransport(
                             config["url"],
                             backend=backend,
-                            resolve_credential=self._resolve_credential,
+                            resolve_credential=(
+                                self._resolve_credential
+                                if self._resolve_credential is not None
+                                else getattr(transport, "resolve_credential", None)
+                            ),
                             client=transport._ready(),
                             headers=transport.headers,
                             auth_provider=getattr(

@@ -876,6 +876,33 @@ class Hooks(BoundaryMixin):
                         if isinstance(self._injected, dict)
                         else self._injected
                     )
+                    from .transports.http import HTTPTransport
+
+                    config = backend["transport"]
+                    if (
+                        config["type"] == "http"
+                        and config.get("headers")
+                        and isinstance(transport, HTTPTransport)
+                    ):
+                        from .auth import AuthenticatedHTTPTransport
+
+                        # Keep borrowed client lifetime and programmatic metadata,
+                        # but do not bypass the registration's endpoint scope.
+                        if transport.url != config["url"]:
+                            raise ProtocolError("HTTP registration endpoint mismatch")
+                        transport = AuthenticatedHTTPTransport(
+                            config["url"],
+                            backend=backend,
+                            client=transport._ready(),
+                            headers=transport.headers,
+                            auth_provider=getattr(
+                                transport, "auth_provider", self._auth_provider
+                            ),
+                            header_resolver=self._header_resolver or getattr(
+                                transport, "header_resolver", None
+                            ),
+                            validator=self.validator,
+                        )
                 else:
                     config = backend["transport"]
                     if config["type"] == "stdio":

@@ -393,3 +393,65 @@ class RegistrationHeaderTests(unittest.TestCase):
                 self.assertIsNone(sdk._client)
 
         anyio.run(run)
+
+    def test_generated_header_types_round_trip(self):
+        from agenthooksprotocol._models import HttpHeaderSource, HttpTransport
+        from agenthooksprotocol.runtime import Validator
+        from test_public_hooks import config
+
+        endpoint = HttpTransport(
+            url=URL,
+            headers={
+                "X-Tenant": "team",
+                "X-Key": HttpHeaderSource(value_env="API_KEY"),
+            },
+        )
+        self.assertEqual(endpoint.headers["X-Key"].value_env, "API_KEY")
+        registration = config()
+        registration["hooks"][0]["transport"] = dict(endpoint)
+        Validator().validate("registration", registration)
+
+    def test_injected_http_transport_preserves_programmatic_metadata(self):
+        from agenthooksprotocol import Hooks, event
+        from agenthooksprotocol.transports import HTTPTransport
+        from test_public_hooks import config, capabilities
+
+        async def run():
+            registration = config()
+            registration["hooks"][0]["transport"] = {
+                "type": "http",
+                "url": URL,
+                "headers": {"X-Tenant": "registered"},
+            }
+            seen = []
+
+            async def handle(request):
+                seen.append(request)
+                return httpx.Response(204)
+
+            async with httpx.AsyncClient(
+                transport=httpx.MockTransport(handle)
+            ) as client:
+                injected = HTTPTransport(
+                    URL,
+                    client=client,
+                    headers={"x-tenant": "default", "X-Default": "kept"},
+                )
+                hooks = Hooks(
+                    registration,
+                    source="urn:test",
+                    harness=event.Harness(name="test", version="1"),
+                    capabilities=capabilities(),
+                    transport=injected,
+                )
+                await hooks._ensure_ready()
+                await hooks._transports["org.example.hook"].notify(
+                    {"method": "hooks/observe"}
+                )
+                self.assertEqual(seen[0].headers["x-tenant"], "registered")
+                self.assertEqual(seen[0].headers["x-default"], "kept")
+                await hooks.aclose()
+                self.assertFalse(client.is_closed)
+                self.assertEqual(injected.headers["x-tenant"], "default")
+
+        anyio.run(run)

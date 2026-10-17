@@ -796,11 +796,9 @@ class Hooks(BoundaryMixin):
         )
 
     def intercepts(self, event: EventType) -> bool:
-        """Report static intercept interest, not delivery or permission.
+        """Report whether any intercept subscription the host granted selects the event.
 
-        Observation subscriptions never count. Payload-dependent filters are
-        conservatively ignored. This lookup does not prepare input, initialize
-        transports, or contact a backend.
+        Payload-dependent filters are not evaluated.
         """
         declaration = self.capabilities.get(event)
         if declaration is None or "intercept" not in declaration["modes"]:

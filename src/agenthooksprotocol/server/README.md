@@ -74,10 +74,35 @@ callbacks cannot set response correlation. Dispatch never executes effects.
 The harness is responsible for native authorization, approval, declared caller
 payload contracts, atomic application, and runtime settlement.
 
-`hooks.Engine(handlers, validator=None, harness_manifest=None).handle(bytes)` is
-the common HTTP/stdio dispatcher. The optional static manifest describes a
-**harness**, not backend discovery. Configuring it enables `hooks/capabilities`.
-Use an explicit Engine when supplying a validator or static manifest.
+`hooks.Engine(handlers, validator=None, harness_manifest=None,
+configuration=None).handle(bytes)` is the common HTTP/stdio dispatcher. The
+optional static manifest describes a **harness** and enables `hooks/capabilities`.
+The separate `configuration` argument accepts a shared public `Configuration`
+and enables backend `hooks/configuration` discovery. It is validated and copied
+at setup, independently of event callbacks. Omission leaves discovery unsupported.
+Both `asgi.App(handlers, configuration=configuration)` and
+`stdio.serve(handlers, configuration=configuration)` forward this option.
+
+```python
+from datetime import timedelta
+from agenthooksprotocol import Configuration, content, event, subscription
+
+configuration = Configuration(subscriptions=[
+    subscription.Intercept(
+        events=[event.TOOL_BEFORE],
+        timeout=timedelta(milliseconds=750),
+        failure_policy=subscription.FailurePolicy.FAIL_OPEN,
+        content=content.metadata(),
+    ),
+])
+app = asgi.App(handlers, configuration=configuration)
+```
+
+The declaration provides defaults only: a client can select a supported subset
+or replace it with explicit subscriptions. It does not grant effects or promise
+that every requested event will be delivered. Event callbacks still obey each
+request's actual capabilities. Transport credentials and destinations remain
+client-owned.
 
 JSON-RPC error responses retain request IDs when valid. Valid notification
 envelopes never produce a response, including malformed params, unknown methods,

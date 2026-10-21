@@ -12,6 +12,67 @@ python -m pip install 'agenthooksprotocol[http]'
 
 HTTPX is an opt-in dependency (`[http]`). Pydantic is an independent opt-in integration (`[pydantic]`); neither a web framework nor Pydantic is needed for the core SDK or stdio.
 
+## Shared subscription configuration
+
+Declare subscriptions with typed event constants, keyword arguments, and native
+`timedelta` values. The same `Configuration` is usable by a backend and by a
+client registration; JSON files use the equivalent `timeoutMs` wire field.
+
+```python
+from datetime import timedelta
+from agenthooksprotocol import Configuration, content, event, subscription
+from agenthooksprotocol.server import asgi, hooks
+
+configuration = Configuration(subscriptions=[
+    subscription.Intercept(
+        events=[event.TOOL_BEFORE],
+        timeout=timedelta(milliseconds=750),
+        failure_policy=subscription.FailurePolicy.FAIL_OPEN,
+        content=content.metadata(),
+    ),
+])
+
+# Attach to the backend's existing handlers. The SDK serves hooks/configuration.
+app = asgi.App(hooks.Handlers(), configuration=configuration)
+
+# A client can use the same subscription objects as an explicit override.
+registration = {
+    "protocolVersion": "draft",
+    "hooks": [{
+        "id": "com.example.policy",
+        "transport": {"type": "http", "url": "https://policy.example/hooks"},
+        "subscriptions": configuration.subscriptions,
+    }],
+}
+```
+
+Omit a backend's `subscriptions` field to adopt its advertised defaults. During
+asynchronous initialization (`async with` or the first hook operation), the
+client makes one `hooks/configuration` request using that backend's event
+transport, authentication, and configured headers. Each exchange has a five-second
+budget including authentication. There is no separate public initialization call.
+
+Explicit subscriptions replace backend defaults completely and bypass discovery;
+an explicit empty list is invalid. Discovered selectors are resolved against the
+host's supported events and delivery modes without changing their other settings.
+A failed discovery or a result with no applicable subscriptions skips only that
+backend. `hooks.configuration_diagnostics` returns detached, credential-free skip
+reasons. Cancellation propagates. Reinitialize to reload; no background refresh
+occurs. Per-request capability grants remain authoritative.
+
+Any advertised `upload` requires explicit client authorization, including uploads
+without an `auth` binding: configured backend headers can contain credentials and
+are forwarded to upload destinations. Pass
+`Hooks(..., authorize_configuration=callback)` to approve the complete discovered
+configuration. The callback receives detached `(backend, configuration)` snapshots
+and returns `True` (or awaits to `True`) only after checking every upload endpoint,
+credential binding, and forwarded header. No callback, denial, or callback failure
+skips the backend without resolving upload credentials or sending uploads. The
+callback also runs for upload-free advertisements when supplied. Its mutations do
+not alter the admitted configuration; it must not block synchronously. Callback
+awaiting shares the discovery deadline and cancellation. Explicit client
+subscriptions bypass this callback and retain their configured upload behavior.
+
 ## Harness ownership
 
 Read trusted registration JSON with the standard library and construct `Hooks` from the resulting dictionary. Registration validation occurs at construction; each asynchronous boundary ensures readiness. There is no mandatory separate initialization call or special configuration-file loader. Registration can launch processes: **do not load untrusted registrations**.
@@ -138,7 +199,7 @@ Registered stdio backends start with a minimal base environment rather than the 
 
 ## Static host manifest
 
-`hooks.subscribes("tool.before")` is a pure synchronous static-interest lookup. Use it before expensive input preparation: `False` means no eligible intercept or observe subscription selects the configured event. Exact selectors, `*`, and prefix selectors such as `tool.*` use the same matching as dispatch. Unknown or unconfigured events return `False`. Payload filters are conservatively ignored, so `True` means potential interest, not permission or guaranteed delivery. The lookup does not prepare input, authenticate, upload content, initialize transports, or contact backends.
+`hooks.subscribes("tool.before")` is a pure synchronous static-interest lookup. Use it before expensive input preparation: `False` means no eligible intercept or observe subscription selects the configured event. Exact selectors, `*`, and prefix selectors such as `tool.*` use the same matching as dispatch. Unknown or unconfigured events return `False`. Before discovery completes, omitted subscriptions conservatively report interest in host-supported events so interest checks cannot suppress initialization. Payload filters are conservatively ignored, so `True` means potential interest, not permission or guaranteed delivery. The lookup does not prepare input, authenticate, upload content, initialize transports, or contact backends.
 
 `hooks.intercepts("model.response.after")` is `subscribes` restricted to intercept subscriptions. Use it to decide whether to withhold streamed output until interceptors settle.
 

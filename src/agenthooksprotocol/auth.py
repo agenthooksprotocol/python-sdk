@@ -195,9 +195,8 @@ class AuthenticatedHTTPTransport(HTTPTransport):
             backend=self.backend,
             destination=str(request.url),
             resolver=self.header_resolver,
-            resolve_credential=self.resolve_credential or getattr(
-                self.auth_provider, "resolve_credential", None
-            ),
+            resolve_credential=self.resolve_credential
+            or getattr(self.auth_provider, "resolve_credential", None),
             purpose=purpose,
         )
         explicit_auth = "authorization" in resolved
@@ -291,7 +290,11 @@ class AuthenticatedHTTPTransport(HTTPTransport):
             self.url,
             content=json.dumps(message, allow_nan=False).encode(),
             headers=httpx.Headers(
-                {**self.headers, "content-type": "application/json", "accept": "application/json"},
+                {
+                    **self.headers,
+                    "content-type": "application/json",
+                    "accept": "application/json",
+                },
                 encoding="latin-1",
             ),
         )
@@ -323,8 +326,9 @@ class AuthenticatedHTTPTransport(HTTPTransport):
         correlation = deepcopy(message)
         response = await self._event(
             message,
-            retry_allowed=message.get("method") == "hooks/intercept",
-            intercept_response=True,
+            retry_allowed=message.get("method")
+            in ("hooks/intercept", "hooks/configuration"),
+            intercept_response=message.get("method") == "hooks/intercept",
         )
         try:
             result = response.json()
@@ -332,7 +336,12 @@ class AuthenticatedHTTPTransport(HTTPTransport):
             raise ProtocolError("Malformed HTTP protocol response") from None
         if not isinstance(result, dict) or result.get("id") != ident:
             raise ProtocolError("HTTP response correlation mismatch")
-        _validate_intercept_response(self._validator, correlation, result)
+        if message.get("method") == "hooks/configuration":
+            if response.status_code != 200:
+                raise ProtocolError("Unexpected configuration HTTP status")
+            self._validator.validate("configuration-response", result)
+        else:
+            _validate_intercept_response(self._validator, correlation, result)
         return result
 
     async def notify(self, message: dict[str, Any]) -> None:

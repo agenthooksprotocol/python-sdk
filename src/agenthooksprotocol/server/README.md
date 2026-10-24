@@ -77,11 +77,13 @@ payload contracts, atomic application, and runtime settlement.
 `hooks.Engine(handlers, validator=None, harness_manifest=None,
 configuration=None).handle(bytes)` is the common HTTP/stdio dispatcher. The
 optional static manifest describes a **harness** and enables `hooks/capabilities`.
-The separate `configuration` argument accepts a shared public `Configuration`
-and enables backend `hooks/configuration` discovery. It is validated and copied
-at setup, independently of event callbacks. Omission leaves discovery unsupported.
-Both `asgi.App(handlers, configuration=configuration)` and
-`stdio.serve(handlers, configuration=configuration)` forward this option.
+`Handlers.configuration` accepts a shared public `Configuration` or a sync/async
+callback receiving `hooks.ConfigurationContext` and returning `Configuration`.
+Static declarations are validated and copied at engine setup; dynamic callbacks
+run for each valid `hooks/configuration` request. Omission leaves the method
+unsupported. The `configuration=` keyword on `Engine`, `asgi.App`, and
+`stdio.serve` accepts the same sources. Supplying non-`None` sources both on
+`Handlers` and through the keyword raises `ValueError`.
 
 ```python
 from datetime import timedelta
@@ -95,8 +97,37 @@ configuration = Configuration(subscriptions=[
         content=content.metadata(),
     ),
 ])
-app = asgi.App(handlers, configuration=configuration)
+app = asgi.App(hooks.Handlers(configuration=configuration))
 ```
+
+A dynamic declaration uses the same handler registration field:
+
+```python
+from contextvars import ContextVar
+
+# Application authentication middleware sets the selected policy for its request.
+request_configuration: ContextVar[Configuration] = ContextVar("request_configuration")
+
+async def configure(ctx: hooks.ConfigurationContext) -> Configuration:
+    return request_configuration.get()
+
+handlers = hooks.Handlers(configuration=configure)
+app = asgi.App(handlers)
+# await stdio.serve(handlers)
+```
+
+`ConfigurationContext.params`, `.envelope`, and `.raw` expose detached validated
+request evidence, following event-handler conventions. They are not authenticated
+identity. HTTP authentication remains application middleware; stdio trust remains
+application-owned. Callbacks execute in the caller's task, retain its context
+variables, and propagate cancellation without detached work. Callable objects and
+custom awaitable results are supported.
+
+Each callback must return `Configuration`, not a raw dictionary or `None`.
+Returned declarations are copied and validated before serialization. Callback
+exceptions (including `HTTPError`), invalid results, and `None` produce a fixed
+`backend_internal_error` without exception details. Malformed discovery requests
+never invoke the callback. Discovery does not create sessions or apply effects.
 
 The declaration provides defaults only: a client can select a supported subset
 or replace it with explicit subscriptions. It does not grant effects or promise

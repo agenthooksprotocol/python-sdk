@@ -33,7 +33,7 @@ configuration = Configuration(subscriptions=[
 ])
 
 # Attach to the backend's existing handlers. The SDK serves hooks/configuration.
-app = asgi.App(hooks.Handlers(), configuration=configuration)
+app = asgi.App(hooks.Handlers(configuration=configuration))
 
 # A client can use the same subscription objects as an explicit override.
 registration = {
@@ -45,6 +45,16 @@ registration = {
     }],
 }
 ```
+
+A backend's `Handlers.configuration` accepts either a static `Configuration` or
+an ordinary sync/async callback receiving `hooks.ConfigurationContext` and
+returning `Configuration`. Dynamic callbacks run once per validated discovery
+request in the caller's task and application context; authentication middleware
+can select request-local policy through context variables. The SDK handles
+routing, correlation, validation, and response serialization. See
+[`examples/dynamic_configuration.py`](examples/dynamic_configuration.py).
+The `configuration=` keyword on `Engine`, `asgi.App`, and `stdio.serve` also
+accepts either source; supply it there or on `Handlers`, not both.
 
 Omit a backend's `subscriptions` field to adopt its advertised defaults. During
 asynchronous initialization (`async with` or the first hook operation), the

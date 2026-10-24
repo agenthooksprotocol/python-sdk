@@ -1,7 +1,8 @@
 """Canonical request dispatch shared by every public server transport.
 
 Callbacks receive event-specific contexts with lossless generated wire models.
-Capabilities describe a harness, not a backend; no discovery callback is exposed.
+Capabilities describe a harness. Backend configuration is a separate static
+advertisement; neither discovery operation invokes event callbacks.
 """
 
 from __future__ import annotations
@@ -102,7 +103,8 @@ class Engine:
     """Validate and dispatch one JSON-RPC message (batches are unsupported).
 
     ``harness_manifest`` is an optional *static harness* manifest. It is never
-    synthesized from backend callbacks. Cancellation always propagates.
+    synthesized from backend callbacks. ``configuration`` is an optional static
+    backend subscription declaration. Cancellation always propagates.
     """
 
     def __init__(
@@ -111,10 +113,14 @@ class Engine:
         *,
         validator: Validator | None = None,
         harness_manifest: dict[str, Any] | None = None,
+        configuration: models.Configuration | None = None,
     ) -> None:
         self.handler = handler
         self.validator = validator if validator is not None else Validator()
         self.harness_manifest = deepcopy(harness_manifest)
+        self.configuration = deepcopy(configuration)
+        if self.configuration is not None:
+            self.validator.validate("configuration", self.configuration)
 
     async def handle(self, body: bytes) -> dict[str, Any] | None:
         try:
@@ -147,6 +153,8 @@ class Engine:
         }
         if method == "hooks/capabilities" and self.harness_manifest is not None:
             kinds[method] = "capabilities-request"
+        if method == "hooks/configuration" and self.configuration is not None:
+            kinds[method] = "configuration-request"
         if method not in kinds:
             return None if notification else _error(-32601, "Method not found", id)
         params = message.get("params")
@@ -242,6 +250,12 @@ class Engine:
                 if result.extensions is not None:
                     payload["extensions"] = deepcopy(result.extensions)
                 kind = "intercept-response"
+            elif method == "hooks/configuration":
+                payload = {
+                    "protocolVersion": message["params"]["protocolVersion"],
+                    "configuration": deepcopy(self.configuration),
+                }
+                kind = "configuration-response"
             else:
                 payload = {
                     "protocolVersion": message["params"]["protocolVersion"],

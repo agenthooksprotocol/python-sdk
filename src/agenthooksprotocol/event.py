@@ -127,6 +127,67 @@ from ._models.event import WorkspaceChangeBefore as WorkspaceChangeBefore
 from ._models.event import WorkspaceChangeBeforeEvent as WorkspaceChangeBeforeEvent
 from ._models.event import WorkspaceChangeBeforeInput as WorkspaceChangeBeforeInput
 
+from typing import Final, Literal
+
+CONFIG_CHANGE_AFTER: Final[Literal["config.change.after"]] = "config.change.after"
+CONFIG_CHANGE_BEFORE: Final[Literal["config.change.before"]] = "config.change.before"
+CONTEXT_COMPACT_AFTER: Final[Literal["context.compact.after"]] = "context.compact.after"
+CONTEXT_COMPACT_BEFORE: Final[Literal["context.compact.before"]] = (
+    "context.compact.before"
+)
+FILE_CHANGED: Final[Literal["file.changed"]] = "file.changed"
+HOOK_FAILURE: Final[Literal["hook.failure"]] = "hook.failure"
+MODEL_ERROR: Final[Literal["model.error"]] = "model.error"
+MODEL_REQUEST_BEFORE: Final[Literal["model.request.before"]] = "model.request.before"
+MODEL_RESPONSE_AFTER: Final[Literal["model.response.after"]] = "model.response.after"
+MODEL_SWITCH_AFTER: Final[Literal["model.switch.after"]] = "model.switch.after"
+MODEL_SWITCH_BEFORE: Final[Literal["model.switch.before"]] = "model.switch.before"
+SESSION_END: Final[Literal["session.end"]] = "session.end"
+SESSION_START: Final[Literal["session.start"]] = "session.start"
+TASK_CHANGE_AFTER: Final[Literal["task.change.after"]] = "task.change.after"
+TASK_CHANGE_BEFORE: Final[Literal["task.change.before"]] = "task.change.before"
+TOOL_AFTER: Final[Literal["tool.after"]] = "tool.after"
+TOOL_BATCH_AFTER: Final[Literal["tool.batch.after"]] = "tool.batch.after"
+TOOL_BEFORE: Final[Literal["tool.before"]] = "tool.before"
+TOOL_PERMISSION_REQUEST: Final[Literal["tool.permission.request"]] = (
+    "tool.permission.request"
+)
+TOOL_PERMISSION_RESOLVED: Final[Literal["tool.permission.resolved"]] = (
+    "tool.permission.resolved"
+)
+TOOL_PROGRESS: Final[Literal["tool.progress"]] = "tool.progress"
+TURN_END: Final[Literal["turn.end"]] = "turn.end"
+TURN_FINISH_BEFORE: Final[Literal["turn.finish.before"]] = "turn.finish.before"
+TURN_PROGRESS: Final[Literal["turn.progress"]] = "turn.progress"
+TURN_START: Final[Literal["turn.start"]] = "turn.start"
+USER_ATTENTION: Final[Literal["user.attention"]] = "user.attention"
+USER_ELICITATION_REQUEST: Final[Literal["user.elicitation.request"]] = (
+    "user.elicitation.request"
+)
+USER_ELICITATION_RESULT: Final[Literal["user.elicitation.result"]] = (
+    "user.elicitation.result"
+)
+USER_MESSAGE_INBOUND: Final[Literal["user.message.inbound"]] = "user.message.inbound"
+USER_MESSAGE_OUTBOUND: Final[Literal["user.message.outbound"]] = "user.message.outbound"
+WORKSPACE_CHANGE_AFTER: Final[Literal["workspace.change.after"]] = (
+    "workspace.change.after"
+)
+WORKSPACE_CHANGE_BEFORE: Final[Literal["workspace.change.before"]] = (
+    "workspace.change.before"
+)
+ALL: Final[Literal["*"]] = "*"
+CONFIG_ALL: Final[Literal["config.*"]] = "config.*"
+CONTEXT_ALL: Final[Literal["context.*"]] = "context.*"
+FILE_ALL: Final[Literal["file.*"]] = "file.*"
+HOOK_ALL: Final[Literal["hook.*"]] = "hook.*"
+MODEL_ALL: Final[Literal["model.*"]] = "model.*"
+SESSION_ALL: Final[Literal["session.*"]] = "session.*"
+TASK_ALL: Final[Literal["task.*"]] = "task.*"
+TOOL_ALL: Final[Literal["tool.*"]] = "tool.*"
+TURN_ALL: Final[Literal["turn.*"]] = "turn.*"
+USER_ALL: Final[Literal["user.*"]] = "user.*"
+WORKSPACE_ALL: Final[Literal["workspace.*"]] = "workspace.*"
+
 from typing import overload, Any
 from . import _models
 

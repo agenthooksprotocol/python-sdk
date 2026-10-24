@@ -56,6 +56,10 @@ class HTTPTransport:
             raise ProtocolError("HTTP response correlation mismatch")
         if message.get("method") == "hooks/intercept":
             _validate_intercept_response(self._validator, message, result)
+        elif message.get("method") == "hooks/configuration":
+            if response.status_code != 200:
+                raise ProtocolError("Unexpected configuration HTTP status")
+            self._validator.validate("configuration-response", result)
         return result
 
     async def notify(self, message: dict[str, Any]) -> None:

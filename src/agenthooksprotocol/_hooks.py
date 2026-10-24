@@ -7,7 +7,7 @@ Ordinary host authorization and domain validation remain the caller's job.
 
 from __future__ import annotations
 
-from typing import Any, Callable, Generic, Mapping, TypeVar, cast, overload
+from typing import Any, Awaitable, Callable, Generic, Mapping, TypeVar, cast, overload
 from types import TracebackType
 from .codec import ValueCodecs, Codec, Candidate, _decode_preserving
 from .response import ContextualResponse
@@ -30,6 +30,7 @@ from copy import deepcopy
 from collections import deque
 from contextlib import asynccontextmanager
 from functools import wraps
+from inspect import isawaitable
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from uuid import uuid4
@@ -46,6 +47,7 @@ from .runtime import (
     _json_equal,
     _merge_effect_value,
 )
+from .generated import PROTOCOL_VERSION
 from .lifecycle import Lifecycle
 from .lineage import TaskLineage
 from ._boundaries import BoundaryMixin
@@ -642,6 +644,9 @@ def _narrows(value, maximum):
 _project = project_content
 
 
+_CONFIGURATION_TIMEOUT_SECONDS = 5.0
+
+
 class Hooks(BoundaryMixin):
     def __init__(
         self,
@@ -655,6 +660,10 @@ class Hooks(BoundaryMixin):
         resolve_credential: Any = None,
         auth_provider: Any = None,
         header_resolver: Any = None,
+        authorize_configuration: Callable[
+            [dict[str, Any], models.Configuration], bool | Awaitable[bool]
+        ]
+        | None = None,
         max_concurrent_uploads: int = 8,
         inherit_environment: bool = False,
     ) -> None:
@@ -674,6 +683,7 @@ class Hooks(BoundaryMixin):
             resolve_credential=resolve_credential,
             auth_provider=auth_provider,
             header_resolver=header_resolver,
+            authorize_configuration=authorize_configuration,
             max_concurrent_uploads=max_concurrent_uploads,
             inherit_environment=inherit_environment,
         )
@@ -690,12 +700,21 @@ class Hooks(BoundaryMixin):
         resolve_credential: Any = None,
         auth_provider: Any = None,
         header_resolver: Any = None,
+        authorize_configuration: Callable[
+            [dict[str, Any], models.Configuration], bool | Awaitable[bool]
+        ]
+        | None = None,
         max_concurrent_uploads: int = 8,
         inherit_environment: bool = False,
     ) -> None:
         if not isinstance(inherit_environment, bool):
             raise TypeError("inherit_environment must be a bool")
         self._inherit_environment = inherit_environment
+        if authorize_configuration is not None and not callable(
+            authorize_configuration
+        ):
+            raise TypeError("authorize_configuration must be callable")
+        self._authorize_configuration = authorize_configuration
         if (
             isinstance(max_concurrent_uploads, bool)
             or not isinstance(max_concurrent_uploads, int)
@@ -708,12 +727,19 @@ class Hooks(BoundaryMixin):
         self._lineage = TaskLineage(self.validator)
         from .headers import validate_headers
 
-        registered_backends = config.get("hooks", []) if isinstance(config, dict) else []
-        for backend in registered_backends if isinstance(registered_backends, list) else []:
+        registered_backends = (
+            config.get("hooks", []) if isinstance(config, dict) else []
+        )
+        for backend in (
+            registered_backends if isinstance(registered_backends, list) else []
+        ):
             transport_config = (
                 backend.get("transport", {}) if isinstance(backend, dict) else {}
             )
-            if isinstance(transport_config, dict) and transport_config.get("type") == "http":
+            if (
+                isinstance(transport_config, dict)
+                and transport_config.get("type") == "http"
+            ):
                 validate_headers(transport_config.get("headers", {}))
         self._header_resolver = header_resolver
         self._resolve_credential = resolve_credential
@@ -761,7 +787,7 @@ class Hooks(BoundaryMixin):
             if backend["id"] in ids:
                 raise ProtocolError("Duplicate backend ID")
             ids.add(backend["id"])
-            for subscription in backend["subscriptions"]:
+            for subscription in backend.get("subscriptions", []):
                 for selector in subscription["events"]:
                     matched = [e for e in self.capabilities if _matches(selector, e)]
                     if not matched or any(
@@ -771,6 +797,8 @@ class Hooks(BoundaryMixin):
                         raise ProtocolError("Unsupported event or delivery mode")
         self._injected = transport
         self._transports = {}
+        self._ready = False
+        self._configuration_diagnostics: list[dict[str, str]] = []
         self._owned = []
         self._ready_lock = anyio.Lock()
         self._closed = False
@@ -788,11 +816,15 @@ class Hooks(BoundaryMixin):
         declaration = self.capabilities.get(event)
         if declaration is None:
             return False
+        if not self._ready and any(
+            "subscriptions" not in b for b in self.config["hooks"]
+        ):
+            return True
         return any(
             subscription["mode"] in declaration["modes"]
             and any(_matches(selector, event) for selector in subscription["events"])
             for backend in self.config["hooks"]
-            for subscription in backend["subscriptions"]
+            for subscription in backend.get("subscriptions", [])
         )
 
     def intercepts(self, event: EventType) -> bool:
@@ -803,11 +835,15 @@ class Hooks(BoundaryMixin):
         declaration = self.capabilities.get(event)
         if declaration is None or "intercept" not in declaration["modes"]:
             return False
+        if not self._ready and any(
+            "subscriptions" not in b for b in self.config["hooks"]
+        ):
+            return True
         return any(
             subscription["mode"] == "intercept"
             and any(_matches(selector, event) for selector in subscription["events"])
             for backend in self.config["hooks"]
-            for subscription in backend["subscriptions"]
+            for subscription in backend.get("subscriptions", [])
         )
 
     @property
@@ -868,7 +904,8 @@ class Hooks(BoundaryMixin):
         return result
 
     async def __aenter__(self) -> Hooks:
-        await self._ensure_ready()
+        async with self._operation():
+            await self._ensure_ready()
         return self
 
     async def __aexit__(
@@ -883,8 +920,9 @@ class Hooks(BoundaryMixin):
         async with self._ready_lock:
             if self._closed:
                 raise RuntimeError("Hooks is closed")
-            if self._transports:
+            if self._ready:
                 return
+            active = []
             for backend in self.config["hooks"]:
                 if self._injected is not None:
                     transport = (
@@ -919,9 +957,8 @@ class Hooks(BoundaryMixin):
                             auth_provider=getattr(
                                 transport, "auth_provider", self._auth_provider
                             ),
-                            header_resolver=self._header_resolver or getattr(
-                                transport, "header_resolver", None
-                            ),
+                            header_resolver=self._header_resolver
+                            or getattr(transport, "header_resolver", None),
                             validator=self.validator,
                         )
                 else:
@@ -949,7 +986,91 @@ class Hooks(BoundaryMixin):
                             validator=self.validator,
                         )
                     self._owned.append(transport)
+                if "subscriptions" not in backend:
+                    subscriptions = await self._discover_configuration(
+                        backend, transport
+                    )
+                    if not subscriptions:
+                        if transport in self._owned:
+                            with anyio.CancelScope(shield=True):
+                                await transport.aclose()
+                            self._owned.remove(transport)
+                        continue
+                    backend = deepcopy(backend)
+                    backend["subscriptions"] = subscriptions
                 self._transports[backend["id"]] = transport
+                active.append(backend)
+            self.config["hooks"] = active
+            self._ready = True
+
+    @property
+    def configuration_diagnostics(self) -> list[dict[str, str]]:
+        """Detached, credential-free reasons for skipped discovered backends."""
+        return deepcopy(self._configuration_diagnostics)
+
+    async def _discover_configuration(self, backend, transport):
+        ident = str(uuid4())
+        request = {
+            "jsonrpc": "2.0",
+            "id": ident,
+            "method": "hooks/configuration",
+            "params": {"protocolVersion": PROTOCOL_VERSION},
+        }
+        try:
+            # One bounded initialization exchange, including transport/auth work.
+            with anyio.fail_after(_CONFIGURATION_TIMEOUT_SECONDS):
+                response = deepcopy(await transport.request(request))
+                self.validator.validate("configuration-response", response)
+                if response["id"] != ident:
+                    raise ProtocolError("Configuration response correlation mismatch")
+                configuration = response["result"]["configuration"]
+                has_upload = any(
+                    "upload" in sub for sub in configuration["subscriptions"]
+                )
+                if has_upload or self._authorize_configuration is not None:
+                    authorized = False
+                    if self._authorize_configuration is not None:
+                        authorized = self._authorize_configuration(
+                            deepcopy(backend),
+                            models.Configuration.from_dict(deepcopy(configuration)),
+                        )
+                        if isawaitable(authorized):
+                            authorized = await authorized
+                    if authorized is not True:
+                        self._configuration_diagnostics.append(
+                            {
+                                "backend": backend["id"],
+                                "reason": "configuration_not_authorized",
+                            }
+                        )
+                        return []
+                subscriptions = []
+                for subscription in configuration["subscriptions"]:
+                    events = [
+                        event
+                        for event, declaration in self.capabilities.items()
+                        if subscription["mode"] in declaration["modes"]
+                        and any(
+                            _matches(selector, event)
+                            for selector in subscription["events"]
+                        )
+                    ]
+                    if events:
+                        resolved = deepcopy(subscription)
+                        resolved["events"] = events
+                        subscriptions.append(resolved)
+            if subscriptions:
+                return subscriptions
+            reason = "no_applicable_subscriptions"
+        except OperationCancelledError:
+            raise
+        except Exception:
+            # Cancellation is a BaseException and must propagate, never turn into skip.
+            reason = "configuration_unavailable"
+        self._configuration_diagnostics.append(
+            {"backend": backend["id"], "reason": reason}
+        )
+        return []
 
     async def wait_observations(self) -> list[dict[str, Any]]:
         """Drain retained observation errors; calls already own their deliveries."""

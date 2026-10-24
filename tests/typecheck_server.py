@@ -6,7 +6,15 @@ silently permits one of these calls produces an unused-ignore diagnostic.
 
 from typing import assert_type
 
-from agenthooksprotocol import effect, event
+from agenthooksprotocol import (
+    Configuration,
+    ConfigurationRequest,
+    ConfigurationRequestParams,
+    content,
+    effect,
+    event,
+    subscription,
+)
 from agenthooksprotocol.codec import Codec
 from agenthooksprotocol.contract import Candidate
 from agenthooksprotocol.server import hooks
@@ -85,3 +93,50 @@ def candidate_slot(
     ctx: hooks.ToolBeforeContext, result: Codec[str], provenance: Codec[bool]
 ) -> None:
     assert_type(ctx.decode_candidate(result, provenance), Candidate[str, bool] | None)
+
+
+def configuration(ctx: hooks.ConfigurationContext) -> Configuration:
+    assert_type(ctx.params, ConfigurationRequestParams)
+    assert_type(ctx.envelope, ConfigurationRequest)
+    return Configuration(
+        subscriptions=[
+            subscription.Observe(
+                events=[event.SESSION_END],
+                content=content.metadata(),
+            )
+        ]
+    )
+
+
+async def async_configuration(ctx: hooks.ConfigurationContext) -> Configuration:
+    return configuration(ctx)
+
+
+class ConfigurationProvider:
+    def __call__(self, ctx: hooks.ConfigurationContext) -> Configuration:
+        return configuration(ctx)
+
+
+hooks.Handlers(configuration=configuration)
+hooks.Handlers(configuration=async_configuration)
+hooks.Handlers(configuration=ConfigurationProvider())
+hooks.Handlers(
+    configuration=Configuration(
+        subscriptions=[
+            subscription.Observe(
+                events=[event.SESSION_END],
+                content=content.metadata(),
+            )
+        ]
+    )
+)
+hooks.Engine(hooks.Handlers(), configuration=configuration)
+
+
+def invalid_configuration(ctx: hooks.ConfigurationContext) -> None:
+    return None
+
+
+hooks.Handlers(configuration=invalid_configuration)  # type: ignore[arg-type]
+hooks.Handlers(configuration=before)  # type: ignore[arg-type]
+hooks.Handlers(configuration={})  # type: ignore[arg-type]

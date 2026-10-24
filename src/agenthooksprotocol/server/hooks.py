@@ -1,23 +1,28 @@
 """Canonical request dispatch shared by every public server transport.
 
 Callbacks receive event-specific contexts with lossless generated wire models.
-Capabilities describe a harness. Backend configuration is a separate static
-advertisement; neither discovery operation invokes event callbacks.
+Capabilities describe a harness. Backend configuration is a separate declaration
+or request-scoped callback; discovery never invokes event callbacks.
 """
 
 from __future__ import annotations
 
 import inspect
 import json
-from collections.abc import Mapping
+from collections.abc import Awaitable, Callable, Mapping
 from copy import deepcopy
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, TypeAlias
 
 from .. import _models as models
 from .._outcomes import decode_event
 from ..generated import PROTOCOL_VERSION
-from ..runtime import ProtocolError, Validator, _validate_intercept_response
+from ..runtime import (
+    OperationCancelledError,
+    ProtocolError,
+    Validator,
+    _validate_intercept_response,
+)
 from ._admission import validate_grants
 from ._handlers import *  # noqa: F403 - explicit event-specific public facade
 from ._handlers import (
@@ -30,12 +35,32 @@ from ._handlers import (
 from ._json import loads
 
 
+@dataclass(frozen=True, slots=True, kw_only=True)
+class ConfigurationContext:
+    """Validated request evidence; authentication remains application-owned.
+
+    The callback executes in the caller's task and cancellation context. Ambient
+    application contextvars remain available; request fields are not identity.
+    """
+
+    params: models.ConfigurationRequestParams
+    envelope: models.ConfigurationRequest
+    raw: dict[str, Any]
+
+
+ConfigurationCallback: TypeAlias = Callable[
+    [ConfigurationContext], models.Configuration | Awaitable[models.Configuration]
+]
+ConfigurationSource: TypeAlias = models.Configuration | ConfigurationCallback
+
+
 @dataclass(slots=True, kw_only=True)
 class Handlers:
     """Declarative, event-specific callbacks shared by all server transports."""
 
     intercept: InterceptHandlers = field(default_factory=InterceptHandlers)
     observe: ObserveHandlers = field(default_factory=ObserveHandlers)
+    configuration: ConfigurationSource | None = None
     _engine: Engine | None = field(default=None, init=False, repr=False, compare=False)
 
     async def __call__(self, body: bytes) -> dict[str, Any] | None:
@@ -51,7 +76,15 @@ class Handlers:
         return await self._engine.process(request)
 
 
-__all__ = ["Handlers", "Engine", "HTTPError", *_handler_exports]
+__all__ = [
+    "Handlers",
+    "Engine",
+    "HTTPError",
+    "ConfigurationContext",
+    "ConfigurationCallback",
+    "ConfigurationSource",
+    *_handler_exports,
+]
 
 
 class HTTPError(Exception):
@@ -103,8 +136,9 @@ class Engine:
     """Validate and dispatch one JSON-RPC message (batches are unsupported).
 
     ``harness_manifest`` is an optional *static harness* manifest. It is never
-    synthesized from backend callbacks. ``configuration`` is an optional static
-    backend subscription declaration. Cancellation always propagates.
+    synthesized from backend callbacks. Backend configuration is a static
+    declaration or request-scoped callback, supplied on ``Handlers`` or through
+    the ``configuration`` keyword, but not both. Cancellation always propagates.
     """
 
     def __init__(
@@ -113,14 +147,46 @@ class Engine:
         *,
         validator: Validator | None = None,
         harness_manifest: dict[str, Any] | None = None,
-        configuration: models.Configuration | None = None,
+        configuration: ConfigurationSource | None = None,
     ) -> None:
         self.handler = handler
         self.validator = validator if validator is not None else Validator()
         self.harness_manifest = deepcopy(harness_manifest)
-        self.configuration = deepcopy(configuration)
-        if self.configuration is not None:
+        if handler.configuration is not None and configuration is not None:
+            raise ValueError("Supply configuration on Handlers or Engine, not both")
+        source = (
+            handler.configuration
+            if handler.configuration is not None
+            else configuration
+        )
+        self.configuration = source if callable(source) else deepcopy(source)
+        if self.configuration is not None and not callable(self.configuration):
             self.validator.validate("configuration", self.configuration)
+
+    async def _resolve_configuration(self, request: dict[str, Any]) -> dict[str, Any]:
+        if not callable(self.configuration):
+            return deepcopy(self.configuration)
+        try:
+            envelope = models.ConfigurationRequest.from_dict(deepcopy(request))
+            context = ConfigurationContext(
+                params=envelope.params, envelope=envelope, raw=deepcopy(request)
+            )
+            result = self.configuration(context)
+            if inspect.isawaitable(result):
+                result = await result
+            if not isinstance(result, models.Configuration):
+                raise TypeError("Configuration callback must return Configuration")
+            # Detach before admission: caller mutation cannot affect serialization.
+            configuration = deepcopy(dict(result))
+            self.validator.validate("configuration", configuration)
+            _encode(configuration)
+            return configuration
+        except OperationCancelledError:
+            raise
+        except Exception as exc:
+            # Even HTTPError from a configuration callback is a backend failure;
+            # do not disclose its potentially credential-bearing body or message.
+            raise _CallbackError from exc
 
     async def handle(self, body: bytes) -> dict[str, Any] | None:
         try:
@@ -253,7 +319,7 @@ class Engine:
             elif method == "hooks/configuration":
                 payload = {
                     "protocolVersion": message["params"]["protocolVersion"],
-                    "configuration": deepcopy(self.configuration),
+                    "configuration": await self._resolve_configuration(original),
                 }
                 kind = "configuration-response"
             else:
@@ -269,6 +335,8 @@ class Engine:
                 validate_grants(original, response)
             _encode(response)
             return response
+        except OperationCancelledError:
+            raise
         except HTTPError:
             if notification:
                 return None

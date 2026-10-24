@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.10.0](https://github.com/agenthooksprotocol/python-sdk/compare/v0.9.0...v0.10.0) (2026-10-24)
+
+
+### Features
+
+* discover backend configuration with shared typed declarations ([#45](https://github.com/agenthooksprotocol/python-sdk/issues/45)) ([2ed016a](https://github.com/agenthooksprotocol/python-sdk/commit/2ed016a0bb0dda58d3f74a223d12fed15a472cf8))
+
 ## [0.9.0](https://github.com/agenthooksprotocol/python-sdk/compare/v0.8.0...v0.9.0) (2026-10-17)
 
 

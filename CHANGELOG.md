@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.10.1](https://github.com/agenthooksprotocol/python-sdk/compare/v0.10.0...v0.10.1) (2026-10-24)
+
+
+### Bug Fixes
+
+* support dynamic configuration in Python server handlers ([#47](https://github.com/agenthooksprotocol/python-sdk/issues/47)) ([935efda](https://github.com/agenthooksprotocol/python-sdk/commit/935efda939fc1c73482963754d7c5c3e193e2055))
+
 ## [0.10.0](https://github.com/agenthooksprotocol/python-sdk/compare/v0.9.0...v0.10.0) (2026-10-24)
 
 

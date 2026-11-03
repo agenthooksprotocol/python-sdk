@@ -70,18 +70,14 @@ backend. `hooks.configuration_diagnostics` returns detached, credential-free ski
 reasons. Cancellation propagates. Reinitialize to reload; no background refresh
 occurs. Per-request capability grants remain authoritative.
 
-Any advertised `upload` requires explicit client authorization, including uploads
-without an `auth` binding: configured backend headers can contain credentials and
-are forwarded to upload destinations. Pass
-`Hooks(..., authorize_configuration=callback)` to approve the complete discovered
-configuration. The callback receives detached `(backend, configuration)` snapshots
-and returns `True` (or awaits to `True`) only after checking every upload endpoint,
-credential binding, and forwarded header. No callback, denial, or callback failure
-skips the backend without resolving upload credentials or sending uploads. The
-callback also runs for upload-free advertisements when supplied. Its mutations do
-not alter the admitted configuration; it must not block synchronously. Callback
-awaiting shares the discovery deadline and cancellation. Explicit client
-subscriptions bypass this callback and retain their configured upload behavior.
+Discovered `upload` settings are admitted like any other discovered subscription
+setting, with no separate approval. Configured backend headers apply to discovered
+uploads as they do to any other upload of that backend. If any advertised
+subscription's upload `auth` names a local secret reference (`tokenEnv`, `tokenRef`,
+or `clientSecretRef`), the entire backend is skipped with the diagnostic reason
+`configuration_local_secret`: the reference is not resolved or stripped, and no
+upload or event is sent. Explicit client subscriptions are unaffected and retain
+their configured upload behavior, including local secret references.
 
 ## Harness ownership
 

@@ -1,7 +1,9 @@
 """Server configuration discovery is initialization, not an event or grant."""
 
 from copy import deepcopy
+from dataclasses import dataclass
 import json
+import os
 import sys
 import unittest
 from datetime import timedelta
@@ -69,6 +71,122 @@ def client(reg=None, **options):
         capabilities=capabilities(),
         **options,
     )
+
+
+POLICY_URL = "https://policy.example/hooks"
+UPLOAD_ENDPOINT = "https://upload.example/content"
+OAUTH = {
+    "type": "oauth",
+    "issuer": "https://issuer.example",
+    "resource": "https://upload.example",
+    "clientId": "client",
+    "flow": "authorization_code_pkce",
+}
+
+
+def upload_settings(**extra):
+    return {"endpoint": UPLOAD_ENDPOINT, "timeoutMs": 1000, "maxBytes": 1000, **extra}
+
+
+def compaction_subscription(upload):
+    return {
+        "events": ["context.compact.before"],
+        "mode": "intercept",
+        "timeoutMs": 1000,
+        "failurePolicy": "fail-closed",
+        "content": {"default": "body"},
+        "upload": upload,
+    }
+
+
+def http_registration(headers=None):
+    value = registration()
+    value["hooks"][0]["transport"] = {"type": "http", "url": POLICY_URL}
+    if headers:
+        value["hooks"][0]["transport"]["headers"] = headers
+    return value
+
+
+@dataclass
+class CompactOutcome:
+    active: list
+    configuration_diagnostics: list
+    diagnostics: list
+    uploads: int
+
+
+async def compact(
+    value, seen, *, configuration=None, auth_provider=None, resolve_credential=None
+):
+    """Run one binary compaction over real HTTP transport code, recording requests."""
+    import hashlib
+    import httpx
+    from agenthooksprotocol import capability
+    from agenthooksprotocol.auth import AuthenticatedHTTPTransport
+    from test_owned_content_hooks import Stream, owned_payload
+
+    async def respond(request):
+        seen.append(request)
+        if str(request.url) == UPLOAD_ENDPOINT:
+            return httpx.Response(
+                201,
+                json={
+                    "ref": "urn:uploaded:pdf",
+                    "size": len(request.content),
+                    "sha256": hashlib.sha256(request.content).hexdigest(),
+                },
+            )
+        message = json.loads(request.content)
+        result = (
+            {"protocolVersion": "draft", "configuration": configuration}
+            if message["method"] == "hooks/configuration"
+            else {"protocolVersion": "draft", "effects": []}
+        )
+        return httpx.Response(
+            200, json={"jsonrpc": "2.0", "id": message["id"], "result": result}
+        )
+
+    backend = value["hooks"][0]
+    uploads = 0
+    async with httpx.AsyncClient(transport=httpx.MockTransport(respond)) as http:
+        transport = AuthenticatedHTTPTransport(
+            POLICY_URL,
+            backend=backend,
+            client=http,
+            auth_provider=auth_provider,
+            resolve_credential=resolve_credential,
+        )
+        async with Hooks(
+            value,
+            source="urn:test",
+            harness=event.Harness(name="test", version="1"),
+            capabilities=capability.HostCapabilities(
+                context_compact_before=capability.ContextCompactBeforeCapabilities(
+                    intercept=capability.ContextCompactBeforeIntercept(message=True)
+                )
+            ),
+            transport=transport,
+            resolve_credential=resolve_credential,
+        ) as hooks:
+
+            async def upload(data):
+                nonlocal uploads
+                uploads += 1
+                settings = hooks.config["hooks"][0]["subscriptions"][0]["upload"]
+                return await transport.upload(
+                    settings["endpoint"], data, authentication=settings.get("auth")
+                )
+
+            result = await hooks.context_compact_before(
+                owned_payload(Stream()), uploads={backend["id"]: upload}
+            )
+            await result.aclose()
+            return CompactOutcome(
+                deepcopy(hooks.config["hooks"]),
+                hooks.configuration_diagnostics,
+                result.diagnostics,
+                uploads,
+            )
 
 
 class ConfigurationTests(unittest.TestCase):
@@ -214,318 +332,156 @@ class ConfigurationTests(unittest.TestCase):
 
         self.run_async(run)
 
-    def test_remote_configuration_cannot_resolve_client_upload_secrets(self):
+    def test_discovered_local_secret_reference_skips_backend(self):
         async def run():
+            from test_registration_auth import Provider
+
             bindings = [
                 {"type": "bearer", "tokenEnv": "UNRELATED_CLIENT_SECRET"},
                 {"type": "bearer", "tokenRef": "unrelated/secret"},
-                {
-                    "type": "oauth",
-                    "issuer": "https://issuer.example",
-                    "resource": "https://upload.example",
-                    "clientId": "client",
-                    "flow": "client_credentials",
-                    "clientSecretRef": "unrelated/oauth-secret",
-                },
+                {**OAUTH, "clientSecretRef": "unrelated/oauth-secret"},
             ]
+
+            def resolve(reference):
+                raise AssertionError("must not resolve remote credential references")
+
             for binding in bindings:
-                value = advertised()
-                value["subscriptions"][0]["upload"] = {
-                    "endpoint": "https://upload.example/content",
-                    "timeoutMs": 1000,
-                    "maxBytes": 1000,
-                    "auth": binding,
-                }
-                resolved = []
-
-                def resolve(reference):
-                    resolved.append(reference)
-                    raise AssertionError(
-                        "must not resolve remote credential references"
-                    )
-
-                async with client(
-                    transport=Transport(value), resolve_credential=resolve
-                ) as hooks:
-                    self.assertEqual(hooks.config["hooks"], [])
-                    self.assertEqual(
-                        hooks.configuration_diagnostics[0]["reason"],
-                        "configuration_not_authorized",
-                    )
-                self.assertEqual(resolved, [])
+                seen, provider = [], Provider()
+                outcome = await compact(
+                    http_registration(),
+                    seen,
+                    configuration={
+                        "subscriptions": [
+                            compaction_subscription(upload_settings(auth=binding))
+                        ]
+                    },
+                    auth_provider=provider,
+                    resolve_credential=resolve,
+                )
+                self.assertEqual(outcome.active, [])
+                self.assertEqual(
+                    outcome.configuration_diagnostics,
+                    [
+                        {
+                            "backend": "org.example.hook",
+                            "reason": "configuration_local_secret",
+                        }
+                    ],
+                )
+                self.assertEqual(outcome.uploads, 0)
+                # The configuration exchange is the only request of any kind.
+                self.assertEqual(
+                    [json.loads(request.content)["method"] for request in seen],
+                    ["hooks/configuration"],
+                )
+                self.assertEqual(
+                    [context.binding for context in provider.contexts], [None]
+                )
 
         self.run_async(run)
 
-    def test_discovered_upload_without_auth_cannot_forward_secret_headers(self):
+    def test_local_secret_reference_on_any_subscription_skips_entire_backend(self):
         async def run():
-            import httpx
-            from agenthooksprotocol.auth import AuthenticatedHTTPTransport
-
+            # The reference is on an entry this host does not even support.
             value = advertised()
-            value["subscriptions"][0]["upload"] = {
-                "endpoint": "https://attacker.example/upload",
-                "timeoutMs": 1000,
-                "maxBytes": 1000,
-            }
-            engine = Engine(Handlers(), configuration=value)
-            seen = []
-
-            async def respond(request):
-                seen.append(request)
-                self.assertEqual(str(request.url), "https://policy.example/hooks")
-                return httpx.Response(
-                    200, json=await engine.process(json.loads(request.content))
-                )
-
-            registration_value = registration()
-            backend = registration_value["hooks"][0]
-            backend["transport"] = {
-                "type": "http",
-                "url": "https://policy.example/hooks",
-                "headers": {
-                    "Authorization": "Bearer secret",
-                    "X-Private": "private-value",
-                },
-            }
-            async with httpx.AsyncClient(
-                transport=httpx.MockTransport(respond)
-            ) as http:
-                transport = AuthenticatedHTTPTransport(
-                    backend["transport"]["url"], backend=backend, client=http
-                )
-                async with client(registration_value, transport=transport) as hooks:
-                    self.assertEqual(hooks.config["hooks"], [])
-                    self.assertEqual(
-                        hooks.configuration_diagnostics[0]["reason"],
-                        "configuration_not_authorized",
-                    )
-                    result = await hooks.tool_before(
-                        event.ToolBeforeInput(
-                            call_id="call-1",
-                            name="read_file",
-                            input={},
-                            path="native",
-                            origin="native",
-                        )
-                    )
-                    await result.aclose()
-            self.assertEqual(len(seen), 1)
-            self.assertEqual(seen[0].headers["authorization"], "Bearer secret")
-            self.assertEqual(seen[0].headers["x-private"], "private-value")
-
-        self.run_async(run)
-
-    def test_configuration_authorizer_approves_detached_complete_snapshot(self):
-        async def run():
-            value = advertised()
-            upload = {
-                "endpoint": "https://upload.example/content",
-                "timeoutMs": 1000,
-                "maxBytes": 1000,
-                "auth": {"type": "bearer", "tokenRef": "approved/secret"},
-            }
-            value["subscriptions"][0]["upload"] = deepcopy(upload)
-            # Authorization sees all entries, even ones unsupported by the host.
             value["subscriptions"].append(
                 {
                     "events": ["session.end"],
                     "mode": "observe",
                     "content": {"default": "metadata"},
+                    "upload": upload_settings(
+                        auth={"type": "bearer", "tokenRef": "unrelated/secret"}
+                    ),
                 }
             )
-            received = []
-
-            async def authorize(backend, configuration):
-                received.append((deepcopy(backend), deepcopy(configuration)))
-                self.assertIsInstance(configuration, Configuration)
-                self.assertEqual(configuration.subscriptions[0]["upload"], upload)
-                configuration.subscriptions[0]["upload"]["endpoint"] = (
-                    "https://mutated.example"
+            transport = Transport(value)
+            async with client(transport=transport) as hooks:
+                self.assertEqual(hooks.config["hooks"], [])
+                self.assertFalse(hooks.intercepts(event.TOOL_BEFORE))
+                self.assertEqual(
+                    hooks.configuration_diagnostics[0]["reason"],
+                    "configuration_local_secret",
                 )
-                backend["id"] = "mutated"
-                await anyio.sleep(0)
-                return True
+                result = await hooks.tool_before(
+                    event.ToolBeforeInput(
+                        call_id="call-1",
+                        name="read_file",
+                        input={},
+                        path="native",
+                        origin="native",
+                    )
+                )
+                await result.aclose()
+            self.assertEqual(len(transport.calls), 1)
 
-            async with client(
-                transport=Transport(value), authorize_configuration=authorize
-            ) as hooks:
+        self.run_async(run)
+
+    def test_discovered_upload_without_auth_uses_advertised_endpoint_and_headers(self):
+        async def run():
+            seen = []
+            outcome = await compact(
+                http_registration({"Authorization": "Bearer configured-header"}),
+                seen,
+                configuration={
+                    "subscriptions": [compaction_subscription(upload_settings())]
+                },
+            )
+            self.assertEqual(outcome.configuration_diagnostics, [])
+            self.assertEqual(outcome.diagnostics, [])
+            self.assertEqual(outcome.uploads, 1)
+            self.assertEqual(
+                [str(request.url) for request in seen],
+                [POLICY_URL, UPLOAD_ENDPOINT, POLICY_URL],
+            )
+            self.assertEqual(seen[1].content, b"hello")
+            self.assertEqual(
+                json.loads(seen[2].content)["params"]["event"]["items"][0]["parts"][0][
+                    "body"
+                ],
+                {"ref": "urn:uploaded:pdf"},
+            )
+            for request in seen:
+                self.assertEqual(
+                    request.headers["authorization"], "Bearer configured-header"
+                )
+
+        self.run_async(run)
+
+    def test_discovered_oauth_upload_without_client_secret_is_admitted(self):
+        async def run():
+            value = advertised()
+            upload = upload_settings(auth=OAUTH)
+            value["subscriptions"][0]["upload"] = upload
+            async with client(transport=Transport(value)) as hooks:
+                self.assertEqual(hooks.configuration_diagnostics, [])
                 self.assertTrue(hooks.intercepts(event.TOOL_BEFORE))
-                self.assertEqual(hooks.config["hooks"][0]["id"], "org.example.hook")
                 self.assertEqual(
                     hooks.config["hooks"][0]["subscriptions"][0]["upload"], upload
                 )
-            self.assertEqual(len(received), 1)
-            self.assertEqual(len(received[0][1].subscriptions), 2)
 
         self.run_async(run)
 
-    def test_authorized_discovered_upload_delivers_body_and_headers(self):
+    def test_explicit_upload_keeps_local_secret_reference_without_discovery(self):
         async def run():
-            import hashlib
-            import httpx
-            from agenthooksprotocol import capability
-            from agenthooksprotocol.auth import AuthenticatedHTTPTransport
-            from test_owned_content_hooks import Stream, owned_payload
-
-            config_value = {
-                "subscriptions": [
-                    {
-                        "events": ["context.compact.before"],
-                        "mode": "intercept",
-                        "timeoutMs": 1000,
-                        "failurePolicy": "fail-closed",
-                        "content": {"default": "body"},
-                        "upload": {
-                            "endpoint": "https://approved.example/upload",
-                            "timeoutMs": 1000,
-                            "maxBytes": 1000,
-                        },
-                    }
-                ]
-            }
+            value = http_registration()
+            value["hooks"][0]["subscriptions"] = [
+                compaction_subscription(
+                    upload_settings(
+                        auth={"type": "bearer", "tokenEnv": "AHP_TEST_UPLOAD_TOKEN"}
+                    )
+                )
+            ]
             seen = []
-
-            async def respond(request):
-                seen.append(request)
-                if str(request.url) == "https://approved.example/upload":
-                    data = request.content
-                    self.assertEqual(data, b"hello")
-                    return httpx.Response(
-                        201,
-                        json={
-                            "ref": "urn:uploaded:pdf",
-                            "size": len(data),
-                            "sha256": hashlib.sha256(data).hexdigest(),
-                        },
-                    )
-                message = json.loads(request.content)
-                if message["method"] == "hooks/configuration":
-                    return httpx.Response(
-                        200,
-                        json={
-                            "jsonrpc": "2.0",
-                            "id": message["id"],
-                            "result": {
-                                "protocolVersion": "draft",
-                                "configuration": config_value,
-                            },
-                        },
-                    )
-                body = message["params"]["event"]["items"][0]["parts"][0]["body"]
-                self.assertEqual(body, {"ref": "urn:uploaded:pdf"})
-                return httpx.Response(
-                    200,
-                    json={
-                        "jsonrpc": "2.0",
-                        "id": message["id"],
-                        "result": {"protocolVersion": "draft", "effects": []},
-                    },
-                )
-
-            value = registration()
-            backend = value["hooks"][0]
-            backend["transport"] = {
-                "type": "http",
-                "url": "https://policy.example/hooks",
-                "headers": {"Authorization": "Bearer approved-header"},
-            }
-
-            def authorize(backend_snapshot, configuration):
-                return (
-                    configuration.subscriptions[0]["upload"]["endpoint"]
-                    == "https://approved.example/upload"
-                    and backend_snapshot["transport"]["headers"]["Authorization"]
-                    == "Bearer approved-header"
-                )
-
-            async with httpx.AsyncClient(
-                transport=httpx.MockTransport(respond)
-            ) as http:
-                transport = AuthenticatedHTTPTransport(
-                    backend["transport"]["url"], backend=backend, client=http
-                )
-                async with Hooks(
-                    value,
-                    source="urn:test",
-                    harness=event.Harness(name="test", version="1"),
-                    capabilities=capability.HostCapabilities(
-                        context_compact_before=capability.ContextCompactBeforeCapabilities(
-                            intercept=capability.ContextCompactBeforeIntercept(
-                                message=True
-                            )
-                        )
-                    ),
-                    transport=transport,
-                    authorize_configuration=authorize,
-                ) as hooks:
-                    upload_config = hooks.config["hooks"][0]["subscriptions"][0][
-                        "upload"
-                    ]
-
-                    async def upload(data):
-                        return await transport.upload(upload_config["endpoint"], data)
-
-                    result = await hooks.context_compact_before(
-                        owned_payload(Stream()), uploads={"org.example.hook": upload}
-                    )
-                    self.assertEqual(result.diagnostics, [])
-                    await result.aclose()
-            self.assertEqual(len(seen), 3)
-            self.assertTrue(
-                all(
-                    request.headers["authorization"] == "Bearer approved-header"
-                    for request in seen
-                )
+            with patch.dict(os.environ, {"AHP_TEST_UPLOAD_TOKEN": "explicit-secret"}):
+                outcome = await compact(value, seen)
+            self.assertEqual(outcome.configuration_diagnostics, [])
+            self.assertEqual(outcome.diagnostics, [])
+            self.assertEqual(outcome.uploads, 1)
+            self.assertEqual(
+                [str(request.url) for request in seen], [UPLOAD_ENDPOINT, POLICY_URL]
             )
-
-        self.run_async(run)
-
-    def test_configuration_authorizer_denial_and_failure_skip(self):
-        async def run():
-            value = advertised()
-            value["subscriptions"][0]["upload"] = {
-                "endpoint": "https://upload.example/content",
-                "timeoutMs": 1000,
-                "maxBytes": 1000,
-            }
-
-            def denied(backend, configuration):
-                return False
-
-            def failed(backend, configuration):
-                raise RuntimeError("do not expose secret failure text")
-
-            for callback in (denied, failed):
-                async with client(
-                    transport=Transport(value), authorize_configuration=callback
-                ) as hooks:
-                    self.assertEqual(hooks.config["hooks"], [])
-                    self.assertNotIn("secret", repr(hooks.configuration_diagnostics))
-
-        self.run_async(run)
-
-    def test_explicit_upload_configuration_bypasses_authorizer(self):
-        async def run():
-            value = config()
-            value["hooks"][0]["subscriptions"][0]["upload"] = {
-                "endpoint": "https://upload.example/content",
-                "timeoutMs": 1000,
-                "maxBytes": 1000,
-            }
-
-            def forbidden(backend, configuration):
-                raise AssertionError(
-                    "explicit configuration must not invoke authorization"
-                )
-
-            transport = Transport(
-                error=AssertionError("explicit configuration must not discover")
-            )
-            async with client(
-                value, transport=transport, authorize_configuration=forbidden
-            ) as hooks:
-                self.assertTrue(hooks.intercepts(event.TOOL_BEFORE))
-                self.assertEqual(transport.calls, [])
+            self.assertEqual(seen[0].headers["authorization"], "Bearer explicit-secret")
+            self.assertNotIn("authorization", seen[1].headers)
 
         self.run_async(run)
 

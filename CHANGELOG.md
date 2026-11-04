@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.11.0](https://github.com/agenthooksprotocol/python-sdk/compare/v0.10.1...v0.11.0) (2026-11-04)
+
+
+### ⚠ BREAKING CHANGES
+
+* admit discovered uploads without separate approval ([#49](https://github.com/agenthooksprotocol/python-sdk/issues/49))
+
+### Features
+
+* admit discovered uploads without separate approval ([#49](https://github.com/agenthooksprotocol/python-sdk/issues/49)) ([7414f56](https://github.com/agenthooksprotocol/python-sdk/commit/7414f56e2d653faf90729cf11214e0826c7a89ca))
+
 ## [0.10.1](https://github.com/agenthooksprotocol/python-sdk/compare/v0.10.0...v0.10.1) (2026-10-24)
 
 

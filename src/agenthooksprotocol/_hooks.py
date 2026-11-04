@@ -7,7 +7,7 @@ Ordinary host authorization and domain validation remain the caller's job.
 
 from __future__ import annotations
 
-from typing import Any, Awaitable, Callable, Generic, Mapping, TypeVar, cast, overload
+from typing import Any, Callable, Generic, Mapping, TypeVar, cast, overload
 from types import TracebackType
 from .codec import ValueCodecs, Codec, Candidate, _decode_preserving
 from .response import ContextualResponse
@@ -30,7 +30,6 @@ from copy import deepcopy
 from collections import deque
 from contextlib import asynccontextmanager
 from functools import wraps
-from inspect import isawaitable
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from uuid import uuid4
@@ -645,6 +644,7 @@ _project = project_content
 
 
 _CONFIGURATION_TIMEOUT_SECONDS = 5.0
+_LOCAL_SECRET_REFERENCES = ("tokenEnv", "tokenRef", "clientSecretRef")
 
 
 class Hooks(BoundaryMixin):
@@ -660,10 +660,6 @@ class Hooks(BoundaryMixin):
         resolve_credential: Any = None,
         auth_provider: Any = None,
         header_resolver: Any = None,
-        authorize_configuration: Callable[
-            [dict[str, Any], models.Configuration], bool | Awaitable[bool]
-        ]
-        | None = None,
         max_concurrent_uploads: int = 8,
         inherit_environment: bool = False,
     ) -> None:
@@ -683,7 +679,6 @@ class Hooks(BoundaryMixin):
             resolve_credential=resolve_credential,
             auth_provider=auth_provider,
             header_resolver=header_resolver,
-            authorize_configuration=authorize_configuration,
             max_concurrent_uploads=max_concurrent_uploads,
             inherit_environment=inherit_environment,
         )
@@ -700,21 +695,12 @@ class Hooks(BoundaryMixin):
         resolve_credential: Any = None,
         auth_provider: Any = None,
         header_resolver: Any = None,
-        authorize_configuration: Callable[
-            [dict[str, Any], models.Configuration], bool | Awaitable[bool]
-        ]
-        | None = None,
         max_concurrent_uploads: int = 8,
         inherit_environment: bool = False,
     ) -> None:
         if not isinstance(inherit_environment, bool):
             raise TypeError("inherit_environment must be a bool")
         self._inherit_environment = inherit_environment
-        if authorize_configuration is not None and not callable(
-            authorize_configuration
-        ):
-            raise TypeError("authorize_configuration must be callable")
-        self._authorize_configuration = authorize_configuration
         if (
             isinstance(max_concurrent_uploads, bool)
             or not isinstance(max_concurrent_uploads, int)
@@ -1024,26 +1010,20 @@ class Hooks(BoundaryMixin):
                 if response["id"] != ident:
                     raise ProtocolError("Configuration response correlation mismatch")
                 configuration = response["result"]["configuration"]
-                has_upload = any(
-                    "upload" in sub for sub in configuration["subscriptions"]
-                )
-                if has_upload or self._authorize_configuration is not None:
-                    authorized = False
-                    if self._authorize_configuration is not None:
-                        authorized = self._authorize_configuration(
-                            deepcopy(backend),
-                            models.Configuration.from_dict(deepcopy(configuration)),
-                        )
-                        if isawaitable(authorized):
-                            authorized = await authorized
-                    if authorized is not True:
-                        self._configuration_diagnostics.append(
-                            {
-                                "backend": backend["id"],
-                                "reason": "configuration_not_authorized",
-                            }
-                        )
-                        return []
+                # A discovered reference would read a value the backend never held.
+                # Skip the whole backend, never strip the reference and admit the rest.
+                if any(
+                    key in sub.get("upload", {}).get("auth", {})
+                    for sub in configuration["subscriptions"]
+                    for key in _LOCAL_SECRET_REFERENCES
+                ):
+                    self._configuration_diagnostics.append(
+                        {
+                            "backend": backend["id"],
+                            "reason": "configuration_local_secret",
+                        }
+                    )
+                    return []
                 subscriptions = []
                 for subscription in configuration["subscriptions"]:
                     events = [

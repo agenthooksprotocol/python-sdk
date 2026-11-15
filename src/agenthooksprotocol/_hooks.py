@@ -17,6 +17,7 @@ from ._host_metadata import HostManifestMetadata
 from . import _models as models
 from ._outcomes import decode_event, decode_candidate, decode_response
 from .permission import Permission
+from .auth import AuthProvider, SecretResolver
 from .state import Flow
 from .diagnostics import Code
 from ._diagnostics import (
@@ -657,8 +658,8 @@ class Hooks(BoundaryMixin):
         capabilities: HostCapabilities,
         manifest_metadata: HostManifestMetadata | None = None,
         transport: Any = None,
-        resolve_credential: Any = None,
-        auth_provider: Any = None,
+        resolve_credential: SecretResolver | None = None,
+        auth_provider: AuthProvider | None = None,
         header_resolver: Any = None,
         max_concurrent_uploads: int = 8,
         inherit_environment: bool = False,
@@ -692,8 +693,8 @@ class Hooks(BoundaryMixin):
         declarations: dict[EventType, Any],
         manifest_metadata: HostManifestMetadata | None = None,
         transport: Any = None,
-        resolve_credential: Any = None,
-        auth_provider: Any = None,
+        resolve_credential: SecretResolver | None = None,
+        auth_provider: AuthProvider | None = None,
         header_resolver: Any = None,
         max_concurrent_uploads: int = 8,
         inherit_environment: bool = False,

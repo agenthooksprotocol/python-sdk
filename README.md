@@ -182,6 +182,10 @@ The same remaining budget covers queue/readiness waits, provider waits, selected
 
 ### Registration-aware credentials
 
+For opt-in bearer/OAuth composition, typed targets, safe error codes, and the
+explicit managed-OAuth security gate, see [Authentication routing](docs/authentication.md)
+and [the typed example](examples/auth_routing.py).
+
 `Hooks(..., auth_provider=provider)` borrows one provider implementing asynchronous `credential(context)` and `challenge(context, challenge)`. It returns `auth.BearerCredential(token, identity=opaque_attempt_id)` or no credential for an anonymous binding. Context includes the complete selected backend and binding, destination, event/upload purpose, and native cancellation scope. Challenges contain actual status/headers and attempted credential identity, never secret tokens. The harness owns discovery/trust, consent, token exchange/refresh, rotation, caching, and provider lifetime; no SDK OAuth manager or browser worker is required.
 
 The default `auth.EnvironmentAuthProvider` resolves bearer `tokenEnv` or optional `resolve_credential` tokenRef callbacks at delivery time. OAuth bindings require an explicit provider. Missing configured secrets and unsupported mechanisms fail closed. Anonymous success stays anonymous; an explicit provider can authorize challenge discovery under host trust policy. Interception may replay at most once after an eligible 401 Bearer challenge, retaining request identity and serialized body; observations/uploads are never automatically replayed. Upload bindings are independent: event credentials are never an upload fallback. Transport-owned TLS/workload integration is not replaced by this provider.

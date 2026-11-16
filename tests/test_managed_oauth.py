@@ -1,18 +1,16 @@
-"""Opt-in Authlib compatibility/security spike, NOT a managed OAuth adapter.
+"""Opt-in Authlib compatibility/security probes, not adapter acceptance tests.
 
 Run with:
-  uv run --with 'authlib==1.6.12' python -m unittest discover -s tests \
+  uv run --extra oauth python -m unittest discover -s tests \
       -p test_managed_oauth.py
 
 The base installation has no Authlib dependency; these tests skip without it.
-Verified library mechanics do NOT establish protocol compliance. Delivery is held
-until MCP 2025-11-25/RFC 9728 discovery order, exact resource/issuer validation,
-locally permitted scopes, DNS/redirect policy for ALL endpoints, coordinated
-persistence, generation-safe login completion and sanitized errors are integrated.
-See spec/draft/capability-auth.md:101-155 in the protocol repository.
+The managed adapter is tested separately by test_managed_oauth_runtime.py and
+test_oauth_discovery.py against capability-auth.md:101-155. These lower-level
+probes retain evidence of library behavior that the adapter must constrain.
 
 Shared parity IDs exercised as library primitives: pkce-completion,
-client-credentials, deadline-cancel, redaction. No end-to-end parity is claimed.
+client-credentials, deadline-cancel, redaction.
 """
 
 import hashlib

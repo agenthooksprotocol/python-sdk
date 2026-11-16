@@ -26,6 +26,7 @@ agenthooksprotocol = ["py.typed", "schemas.json", "ahp-codegen.lock.json"]
 
 [project.optional-dependencies]
 http = ["httpx>=0.28,<1"]
+oauth = ["authlib>=1.9.6,<2", "httpx>=0.28,<1"]
 pydantic = ["pydantic>=2.10,<3"]
 
 [dependency-groups]

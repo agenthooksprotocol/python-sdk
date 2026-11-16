@@ -10,7 +10,10 @@ Install the published `agenthooksprotocol` package from [PyPI](https://pypi.org/
 python -m pip install 'agenthooksprotocol[http]'
 ```
 
-HTTPX is an opt-in dependency (`[http]`). Pydantic is an independent opt-in integration (`[pydantic]`); neither a web framework nor Pydantic is needed for the core SDK or stdio.
+HTTPX is an opt-in dependency (`[http]`). Managed OAuth adds Authlib and HTTPX
+through `[oauth]` (`python -m pip install 'agenthooksprotocol[oauth]'`).
+Pydantic is an independent opt-in integration (`[pydantic]`); neither a web
+framework nor Pydantic is needed for the core SDK or stdio.
 
 ## Shared subscription configuration
 
@@ -183,10 +186,10 @@ The same remaining budget covers queue/readiness waits, provider waits, selected
 ### Registration-aware credentials
 
 For opt-in bearer/OAuth composition, typed targets, safe error codes, and the
-explicit managed-OAuth security gate, see [Authentication routing](docs/authentication.md)
+optional host-controlled managed OAuth provider, see [Authentication routing](docs/authentication.md)
 and [the typed example](examples/auth_routing.py).
 
-`Hooks(..., auth_provider=provider)` borrows one provider implementing asynchronous `credential(context)` and `challenge(context, challenge)`. It returns `auth.BearerCredential(token, identity=opaque_attempt_id)` or no credential for an anonymous binding. Context includes the complete selected backend and binding, destination, event/upload purpose, and native cancellation scope. Challenges contain actual status/headers and attempted credential identity, never secret tokens. The harness owns discovery/trust, consent, token exchange/refresh, rotation, caching, and provider lifetime; no SDK OAuth manager or browser worker is required.
+`Hooks(..., auth_provider=provider)` borrows one provider implementing asynchronous `credential(context)` and `challenge(context, challenge)`. It returns `auth.BearerCredential(token, identity=opaque_attempt_id)` or no credential for an anonymous binding. Context includes the complete selected backend and binding, destination, event/upload purpose, and native cancellation scope. Challenges contain actual status/headers and attempted credential identity, never secret tokens. Custom providers can own all OAuth mechanics. Alternatively, `oauth.ManagedOAuthProvider` handles discovery, PKCE, exchange and refresh with host-supplied trust, network and coordinated storage capabilities. The host always owns consent, callback transport and provider lifetime; the SDK starts no browser, listener or background worker.
 
 The default `auth.EnvironmentAuthProvider` resolves bearer `tokenEnv` or optional `resolve_credential` tokenRef callbacks at delivery time. OAuth bindings require an explicit provider. Missing configured secrets and unsupported mechanisms fail closed. Anonymous success stays anonymous; an explicit provider can authorize challenge discovery under host trust policy. Interception may replay at most once after an eligible 401 Bearer challenge, retaining request identity and serialized body; observations/uploads are never automatically replayed. Upload bindings are independent: event credentials are never an upload fallback. Transport-owned TLS/workload integration is not replaced by this provider.
 

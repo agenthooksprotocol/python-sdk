@@ -24,10 +24,11 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: "3.11"
-      - run: python -m pip install -e ".[http,pydantic]" build trio mypy ruff==0.12.12
+      - run: python -m pip install -e ".[http,pydantic,oauth]" build trio trustme mypy ruff==0.12.12
       - run: python -m build
       - run: python -m compileall -q src tests
       - run: PYTHONPATH=src python -m unittest discover -s tests
       - run: mypy
+      - run: mypy --strict src/agenthooksprotocol/oauth.py src/agenthooksprotocol/_oauth_discovery.py src/agenthooksprotocol/_oauth_types.py
       - run: PYTHONPATH=src python tests/typecheck_named_boundary_codecs.py
       - run: python ../agent-hooks-protocol/tools/generate_sdk.py --python-sdk . --check

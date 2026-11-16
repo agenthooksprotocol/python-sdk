@@ -20,8 +20,9 @@ provider = auth.RoutingAuthProvider(
 `vault.resolve(reference)` can return a secret or await one. `host_oauth` supplies
 the existing async `credential(context)` and `challenge(context, challenge)`
 methods; see [the typed composition example](../examples/auth_routing.py).
-It remains responsible for OAuth discovery, trust policy, token storage,
-coordination, consent UI, callback transport, exchange and refresh.
+A custom provider owns its OAuth mechanics. The optional managed provider below
+implements discovery, exchange and refresh while keeping trust policy, network
+access, storage/coordination, consent UI and callback transport host-controlled.
 
 ## Routes and failures
 
@@ -62,34 +63,122 @@ Structured provider classifications survive the transport boundary, without
 retaining secret-bearing exception contexts. Cancellation remains native under
 asyncio and Trio, and provider calls stay inside the enclosing operation budget.
 
-## Managed OAuth: security gate, not an available feature
+## Optional managed OAuth
 
-This change does **not** ship a managed OAuth provider or an `oauth` extra.
-Both authorization-code PKCE and client-credentials registrations still need a
-host provider. Without one they return typed `unsupported_binding`, not an
-apparently successful login or an anonymous fallback. No implicit browser,
-listener, background worker, file store, or new persistent schema is introduced.
+Install `agenthooksprotocol[oauth]` to use `agenthooksprotocol.oauth`. The extra
+adds Authlib and HTTPX; core and stdio installs do not need them. Importing the
+module does not start network activity or require Authlib. Exchanges require the
+extra. The older Authlib compatibility probes remain library-level tests;
+`tests/test_managed_oauth_runtime.py` and `tests/test_oauth_discovery.py` exercise
+the managed implementation on asyncio and Trio.
 
-The opt-in compatibility spike in `tests/test_managed_oauth.py` verifies Authlib
-1.6.12 `AsyncOAuth2Client` with HTTPX on asyncio and Trio: S256/state validation,
-resource-bound PKCE completion and client-credentials exchange, explicit refresh
-resource propagation, native cancellation, raw OAuth error descriptions, and
-secret-bearing POST forwarding under a cross-origin 307. These are library
-behavior probes, **not** end-to-end managed-provider acceptance tests. Authlib
-alone neither supplies the AHP/MCP trust contract nor makes redirects safe.
+```python
+from agenthooksprotocol import auth, oauth
 
-Before exposing an adapter, it must implement MCP 2025-11-25 discovery ordering
-(`resource_metadata`, path-specific/root fallback), RFC 9728 resource validation,
-exact issuer validation, locally allowed scopes, RFC 8707 resource binding on
-exchange and refresh, and host-controlled DNS/destination/redirect policy for
-all metadata/registration/authorization/token endpoints. It also needs a
-host-injected coordinated store with generation-safe refresh and pending-login
-completion, stale-401 handling, cancellation during coordination/discovery,
-bounded login attempts, and full redaction and parity evidence. No store
-boundary or single-flight/refresh-rotation guarantee is claimed by this PR.
+# network, policy and store are host implementations of the protocols below.
+managed = oauth.ManagedOAuthProvider(
+    network=network,
+    policy=policy,
+    store=store,
+    namespace="host-account/session-owner",
+)
+provider = auth.RoutingAuthProvider(
+    bearer=auth.BearerAuthProvider(resolve_credential=vault.resolve),
+    oauth=managed,
+    discover=managed,
+    namespace="host-account/session-owner",
+)
+# Hooks(..., auth_provider=provider)
+```
 
-Reproduce the isolated dependency probes without changing the base install:
+Use the same namespace for normalization, the router and the managed provider;
+a namespace represents a credential owner, not a globally shared default.
+See [the typed host-controlled example](../examples/managed_oauth.py). It takes
+host capabilities rather than offering an unsafe sample DNS policy or token store.
+No persistent schema changes or dynamic client registration are introduced.
+
+### Prepare, interact, complete
+
+`managed.prepare(target, budget, challenge=None)` accepts a normalized
+`auth.AuthTarget` and returns either `oauth.Ready` (with a `credential`) or
+`oauth.PendingLogin`. Client credentials exchange without interaction; the
+`authorization_code_pkce` flow creates an S256 authorization URL. The host must
+supply locally configured client details and a callback URI for PKCE.
+
+For a pending login, the host displays `authorization_url`, receives a callback
+through its own authenticated application flow, and calls
+`managed.complete(target, pending, callback_url, budget)`, which returns `Ready`.
+Do not log the authorization URL, callback, store keys, credential identity,
+client secrets or tokens. Retain the pending handle for that target and user;
+it is not a wire value. Completion validates the pending generation, lifetime,
+callback, state and issuer requirements before exchanging the code. Repeated
+prepare calls share the pending generation rather than launching new logins.
+
+Create `oauth.OperationBudget.after(seconds)` inside an active AnyIO task.
+Its absolute monotonic deadline includes coordination, discovery and exchange;
+nested work cannot reset it or extend an enclosing cancellation deadline. User
+interaction happens outside these bounded operations. Give completion a new
+budget after the callback arrives, still within the pending login lifetime
+(`OAuthClientConfiguration.login_lifetime`, default 300 seconds).
+
+The provider also implements `credential` and `challenge` for `Hooks` routing.
+These calls have a default 30-second `operation_timeout`, capped by the enclosing
+operation. A pending login raises `AuthenticationFailure` with
+`code="interaction_required"` and `recovery="login"`; it does not open UI or
+return a pending handle through the transport. The host uses `prepare` to obtain
+that handle. Unbound acquisition stays anonymous until a challenge.
+
+### Required host capabilities
+
+- **`OAuthTrustPolicy`**: `resource(target, budget)` selects the protected
+  resource; `select(target, resource, issuers, required_scopes, budget)` returns
+  an `OAuthClientConfiguration`. The host authorizes the resource, exact issuer,
+  client, flow and scopes from local policy. Remote metadata is not authority.
+  Supported flows are `authorization_code_pkce` and `client_credentials`;
+  endpoint authentication is `none`, `client_secret_basic` or
+  `client_secret_post`. The host provisions client IDs/secrets and redirect URIs.
+- **`OAuthNetwork`**: `authorize(url, purpose, budget)` checks metadata, token
+  and browser-bound authorization URLs. `send(request, purpose, budget)` must
+  enforce TLS, DNS/egress policy (including rebinding protection) for the actual
+  connection, reject redirects, and avoid ambient cookies or credentials. It
+  must not close a borrowed host client. Merely validating a URL string is not
+  a safe production implementation. The SDK rejects redirect responses and
+  bounds response size, but cannot enforce the host's network boundary for it.
+- **`OAuthTokenStore`**: `coordinate(key, budget)` yields an exclusive guard
+  with `load()` and atomic `compare_and_swap(expected_generation, record)`.
+  Exclusion must cover all providers/processes sharing the key, including
+  network awaits under that guard. Host callbacks must not reenter the same
+  key. Persist secrets securely, and make acquisition cancellation-aware.
+  A plain dictionary or per-provider lock does not satisfy shared coordination.
+
+The helper performs protected-resource metadata discovery with challenged
+`resource_metadata` and path-specific/root fallback, resource/issuer validation,
+local scope checks, and RFC 8707 resource binding on exchange and refresh.
+The store key separates credential namespace, backend, event/upload purpose,
+destination, binding, resource, issuer and client configuration. Do not reuse
+event credentials as an upload fallback.
+
+### Rotation, failure and repair
+
+Guarded generation reservations coalesce exchange/refresh and protect against
+stale 401s invalidating a newer credential. A failed or cancelled refresh/code
+exchange can leave a reservation unusable rather than risk reusing a rotated
+refresh token. Definitive rejection is classified separately from transient
+failure; native cancellation still propagates. Host storage may have committed
+a cancelled write, so never restore an old token blindly.
+
+`managed.reset(target, budget, handle=pending_or_credential)` is an explicit host
+repair/logout action. A retained handle avoids discovery; without one, reset
+performs discovery (and accepts an optional `challenge`). Reset clears the
+**current** generation, not merely the handle's old generation. Do not call it
+automatically for stale 401s. The host decides whether and when to start a new
+login. `expiry_skew` defaults to 30 seconds. There is no background refresh,
+browser, listener, worker, implicit file store or application-request replay.
+
+CI installs the OAuth extra, Trio and `trustme` for the local TLS test; the unittest suites exercise both AnyIO
+backends internally. Run the focused checks with:
 
 ```sh
-uv run --with 'authlib==1.6.12' python -m unittest discover -s tests -p test_managed_oauth.py
+python -m pip install -e '.[oauth]' trio trustme
+python -m unittest discover -s tests -p 'test_*oauth*.py'
 ```

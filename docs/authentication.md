@@ -256,3 +256,18 @@ for explicit host logout/repair, never automatically for a stale 401. It can
 affect other bindings sharing an explicit grant partition. Use `cancel` instead
 to abandon only a pending login. The SDK has no background refresh or implicit
 file store, and the transport alone owns application-request replay.
+
+
+### Verify a host integration
+
+Run the native asyncio/Trio HTTP, coordinated-store and TLS transport regressions:
+
+```sh
+uv sync --locked --all-extras
+PYTHONPATH=src:tests uv run --locked --all-extras python -m unittest test_oauth_contracts test_auth_routing test_managed_oauth test_managed_oauth_runtime test_oauth_discovery
+```
+
+The vendored `tests/fixtures/sdk-auth-lifecycle.json` comes from
+`agent-hooks-protocol/conformance/draft/sdk-auth-lifecycle.json`. Its lifecycle
+entries are a coverage manifest, not executable proof of SDK behavior; native
+tests exercise the key/token vectors through actual HTTP, storage and dispatch.

@@ -1,4 +1,7 @@
-"""Dependency-light validation of bounded managed OAuth contracts."""
+"""Dependency-light validation of bounded managed OAuth contracts.
+
+Canonical vector source: agent-hooks-protocol/conformance/draft/sdk-auth-lifecycle.json.
+"""
 
 import json
 from pathlib import Path

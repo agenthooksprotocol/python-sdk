@@ -1,4 +1,8 @@
-"""Real host-boundary tests. Run: uv run --extra oauth python -m unittest discover -s tests -p test_managed_oauth_runtime.py."""
+"""Real host-boundary lifecycle tests using vendored canonical vectors.
+
+Source: agent-hooks-protocol/conformance/draft/sdk-auth-lifecycle.json.
+Run: uv run --locked --all-extras python -m unittest discover -s tests -p test_managed_oauth_runtime.py.
+"""
 
 import hashlib
 import importlib.util

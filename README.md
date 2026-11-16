@@ -308,10 +308,10 @@ The `wire` namespace exposes canonical JSON-shaped request, notification, effect
 ## Development
 
 ```sh
-uv sync --group dev --extra http --extra pydantic
-uv run python -m unittest discover -s tests
-uv run mypy
-uv run python -m build
+uv sync --locked --all-extras
+uv run --locked --all-extras python -m unittest discover -s tests
+uv run --locked --all-extras mypy
+uv run --locked --all-extras python -m build
 ```
 
 Integration tests also use a matching sibling `../agent-hooks-protocol` checkout for shared fixtures and public synthetic certificates. The installed runtime uses its bundled schemas and does not need that checkout. No SDK API executes host tools on your behalf.

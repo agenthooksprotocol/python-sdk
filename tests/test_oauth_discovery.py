@@ -208,6 +208,92 @@ class OAuthDiscoveryTests(unittest.TestCase):
                     await self.run_discovery(auth=challenge(header))
         self.both(run)
 
+    def test_challenge_parser_ignores_unknown_schemes_and_accepts_padded_token68(self):
+        async def run():
+            for header in (
+                'Basic dXNlcjpwYXNz==, Bearer scope="read"',
+                'Newauth abc==, Bearer scope="read", Digest realm="other"',
+                'Bearer abc==',
+                'Newauth abc==',
+            ):
+                with self.subTest(header=header):
+                    policy = Policy()
+                    result, network = await self.run_discovery(auth=challenge(header), policy=policy)
+                    self.assertEqual(result.resource, RESOURCE)
+                    self.assertEqual(policy.requirements, ("read",) if 'scope="read"' in header else ())
+                    self.assertTrue(network.sent)
+        self.both(run)
+
+    def test_bearer_403_requires_insufficient_scope_and_scope_syntax_is_strict(self):
+        async def run():
+            for header in (
+                'Bearer error="access_denied", scope="read"',
+                'Basic realm="denied"',
+                'Bearer scope="read"',
+            ):
+                auth = AuthChallenge(403, {"WWW-Authenticate": header}, RESOURCE, None, True)
+                with self.assertRaises(AuthenticationFailure) as failure:
+                    await self.run_discovery(auth=auth)
+                self.assertEqual(failure.exception.code, "access_denied")
+            for scope in ("read  write", " read", "read ", "read\twrite", "read\\write", 'read"write'):
+                # HTTP quoted-pair escaping does not make an invalid OAuth scope valid.
+                escaped = scope.replace("\\", "\\\\").replace('"', '\\"')
+                with self.subTest(scope=scope):
+                    with self.assertRaises(AuthenticationFailure):
+                        await self.run_discovery(auth=challenge('Bearer scope="' + escaped + '"'))
+            policy = Policy(allowed_scopes=("read", "write"))
+            result, _ = await self.run_discovery(
+                auth=AuthChallenge(403, {"WWW-Authenticate": 'Bearer error=insufficient_scope, scope="write"'}, RESOURCE, None, True),
+                policy=policy,
+            )
+            self.assertEqual(policy.requirements, ("write",))
+            self.assertEqual(result.configuration.scopes, ("read",))
+            self.assertEqual(result.configuration.allowed_scopes, ("read", "write"))
+        self.both(run)
+
+    def test_requested_allowed_and_explicit_required_scopes_are_distinct(self):
+        async def run():
+            policy = Policy(allowed_scopes=("read", "write"), required_scopes=("write",))
+            metadata, _ = await self.run_discovery(policy=policy)
+            self.assertEqual(policy.requirements, ())
+            self.assertEqual(metadata.configuration.scopes, ("read",))
+            self.assertEqual(metadata.configuration.required_scopes, ("write",))
+            metadata, _ = await self.run_discovery(
+                policy=Policy(allowed_scopes=("read", "write")),
+                auth=challenge('Bearer scope="write"'),
+                binding=OAuthBinding(ISSUER, RESOURCE, "local-client", "client_credentials", ("read",)),
+            )
+            self.assertEqual(metadata.configuration.scopes, ("read",))
+            with self.assertRaises(AuthenticationFailure) as failure:
+                await self.run_discovery(auth=challenge('Bearer scope="write"'))
+            self.assertEqual(failure.exception.code, "access_denied")
+        self.both(run)
+
+    def test_pkce_literal_loopback_redirects_and_remote_http_rejection(self):
+        async def run():
+            docs = documents()
+            docs[AS_PATH].update(
+                authorization_endpoint="https://browser.test/authorize",
+                code_challenge_methods_supported=["S256"], response_types_supported=["code"],
+                grant_types_supported=["authorization_code"], token_endpoint_auth_methods_supported=["none"],
+            )
+            for redirect in ("http://127.0.0.1:8123/callback", "http://[::1]:8123/callback", "https://host.test/callback"):
+                with self.subTest(redirect=redirect):
+                    metadata, _ = await self.run_discovery(docs, policy=Policy(
+                        flow="authorization_code_pkce", redirect_uri=redirect,
+                        token_endpoint_auth_method="none", client_secret=None,
+                    ))
+                    self.assertEqual(metadata.configuration.redirect_uri, redirect)
+                    self.assertIsNone(metadata.configuration.client_secret)
+            for redirect in ("http://localhost:8123/callback", "http://remote.test/callback", "http://192.0.2.1/callback", "http://127.0.0.1:bad/callback", "https://host.test/callback#fragment"):
+                with self.subTest(redirect=redirect):
+                    with self.assertRaises(AuthenticationFailure):
+                        await self.run_discovery(docs, policy=Policy(
+                            flow="authorization_code_pkce", redirect_uri=redirect,
+                            token_endpoint_auth_method="none", client_secret=None,
+                        ))
+        self.both(run)
+
     def test_exact_resource_issuer_and_unadvertised_selection(self):
         async def run():
             for location, key, value in ((PR_PATH, "resource", RESOURCE + "/"),
@@ -256,7 +342,7 @@ class OAuthDiscoveryTests(unittest.TestCase):
             docs[AS_PATH].update(authorization_endpoint="https://browser.test/authorize",
                 code_challenge_methods_supported=["S256"], response_types_supported=["code"],
                 grant_types_supported=["authorization_code"], token_endpoint_auth_methods_supported=["none"])
-            policy = Policy(flow="authorization_code_pkce", token_endpoint_auth_method="none", client_secret=None)
+            policy = Policy(flow="authorization_code_pkce", redirect_uri="https://host.test/callback", token_endpoint_auth_method="none", client_secret=None)
             result, network = await self.run_discovery(docs, policy=policy)
             self.assertEqual(result.authorization_endpoint, "https://browser.test/authorize")
             self.assertIn((result.authorization_endpoint, "authorization"), network.allowed)

@@ -20,22 +20,38 @@ class OperationBudget:
     """Absolute AnyIO monotonic deadline, never reset by nested operations."""
 
     deadline: float
+    cancel_scope: anyio.CancelScope | None = field(
+        default=None, repr=False, compare=False
+    )
+
+    @property
+    def cancelled(self) -> bool:
+        return self.cancel_scope is not None and self.cancel_scope.cancel_called
 
     def __post_init__(self) -> None:
         if not math.isfinite(self.deadline):
             raise ValueError("Deadline must be finite")
 
     @classmethod
-    def after(cls, seconds: float) -> "OperationBudget":
+    def after(
+        cls, seconds: float, *, cancel_scope: anyio.CancelScope | None = None
+    ) -> "OperationBudget":
         if not math.isfinite(seconds) or seconds <= 0:
             raise ValueError("Budget must be finite and positive")
         now = anyio.current_time()
         enclosing = anyio.current_effective_deadline()
         # AnyIO reports -inf after cancellation. Keep a finite expired budget;
         # the operation's cancellation checkpoint propagates native cancellation.
-        return cls(min(now + seconds, now if enclosing == -math.inf else enclosing))
+        return cls(
+            min(now + seconds, now if enclosing == -math.inf else enclosing),
+            cancel_scope,
+        )
 
     def remaining(self) -> float:
+        if self.cancelled:
+            from .runtime import OperationCancelledError
+
+            raise OperationCancelledError("Authentication operation cancelled")
         remaining = (
             min(self.deadline, anyio.current_effective_deadline())
             - anyio.current_time()
@@ -76,10 +92,35 @@ class OAuthClientConfiguration:
         "none", "client_secret_basic", "client_secret_post"
     ] = "none"
     login_lifetime: float = 300
+    allowed_scopes: tuple[str, ...] | None = None
+    required_scopes: tuple[str, ...] = ()
+    grant_partition: str | None = None
 
     def __post_init__(self) -> None:
         if not math.isfinite(self.login_lifetime) or self.login_lifetime <= 0:
             raise ValueError("Login lifetime must be finite and positive")
+        for scopes in (self.scopes, self.allowed_scopes, self.required_scopes):
+            if scopes is not None and any(
+                not isinstance(scope, str)
+                or not scope
+                or any(
+                    not (ord(c) == 33 or 35 <= ord(c) <= 91 or 93 <= ord(c) <= 126)
+                    for c in scope
+                )
+                for scope in scopes
+            ):
+                raise ValueError("Invalid OAuth scope")
+        allowed = set(
+            self.scopes if self.allowed_scopes is None else self.allowed_scopes
+        )
+        if not set(self.scopes).issubset(allowed) or not set(
+            self.required_scopes
+        ).issubset(allowed):
+            raise ValueError("Requested and required scopes must be locally allowed")
+        if self.grant_partition is not None and (
+            not isinstance(self.grant_partition, str) or not self.grant_partition
+        ):
+            raise ValueError("Grant partition must be nonempty")
 
 
 class OAuthTrustPolicy(Protocol):
@@ -108,7 +149,7 @@ class OAuthMetadata:
 @dataclass(frozen=True)
 class StoredToken:
     access_token: str = field(repr=False)
-    expires_at: float
+    expires_at: float | None = None
     refresh_token: str | None = field(default=None, repr=False)
     scopes: tuple[str, ...] = ()
 
@@ -120,6 +161,7 @@ class PendingState:
     verifier: str = field(repr=False)
     authorization_url: str = field(repr=False)
     expires_at: float
+    deadline: float = 0
 
 
 @dataclass(frozen=True)
@@ -131,7 +173,49 @@ class OAuthRecord:
     pending: PendingState | None = field(default=None, repr=False)
 
 
-StoreKey = tuple[object, ...]
+StoreKey = str
+
+
+def _frame(prefix: str, fields: tuple[str, ...]) -> str:
+    return prefix + "".join(f"{len(value.encode('utf-8'))}:{value}" for value in fields)
+
+
+def binding_key(target: AuthTarget) -> str:
+    """Exact destination binding identity, without mutable credential material."""
+    if not target.namespace:
+        raise ValueError("A credential namespace is required")
+    return _frame(
+        "ahp.oauth.binding:",
+        (
+            target.namespace,
+            target.backend_id,
+            target.purpose,
+            target.destination,
+        ),
+    )
+
+
+def grant_key(target: AuthTarget, metadata: OAuthMetadata) -> str:
+    """OAuth principal and allowed-policy identity; isolated by binding by default."""
+    config = metadata.configuration
+    allowed = config.scopes if config.allowed_scopes is None else config.allowed_scopes
+    partition = (
+        "binding:" + binding_key(target)
+        if config.grant_partition is None
+        else "shared:" + config.grant_partition
+    )
+    return _frame(
+        "ahp.oauth.grant:",
+        (
+            target.namespace,
+            config.issuer,
+            metadata.resource,
+            config.client_id,
+            config.flow,
+            " ".join(sorted(set(allowed))),
+            partition,
+        ),
+    )
 
 
 class OAuthStoreGuard(Protocol):
@@ -139,7 +223,7 @@ class OAuthStoreGuard(Protocol):
 
     CAS must commit atomically or reject. Failed/cancelled writes may have
     committed: callers reload rather than blindly restoring previous tokens.
-    A reservation left by cancellation blocks stale refresh reuse until reset.
+    Ambiguous exchanges retain refresh material for explicit retry/host repair.
     """
 
     async def load(self) -> OAuthRecord | None: ...
@@ -149,6 +233,14 @@ class OAuthStoreGuard(Protocol):
 
 
 class OAuthTokenStore(Protocol):
+    async def load_binding(
+        self, key: str, budget: OperationBudget
+    ) -> OAuthMetadata | None: ...
+
+    async def save_binding(
+        self, key: str, metadata: OAuthMetadata, budget: OperationBudget
+    ) -> None: ...
+
     def coordinate(
         self, key: StoreKey, budget: OperationBudget
     ) -> AbstractAsyncContextManager[OAuthStoreGuard]: ...

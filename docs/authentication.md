@@ -32,17 +32,21 @@ access, storage/coordination, consent UI and callback transport host-controlled.
 - A bearer binding uses only `bearer` (environment/reference resolution by
   default). An OAuth binding uses only `oauth`. A missing OAuth route raises
   `unsupported_binding` for either registered OAuth flow.
-- An unbound endpoint starts anonymously. Only its challenge is sent to
-  `discover`, when supplied. Successful anonymous requests stay anonymous.
+- An unbound endpoint asks `discover.credential(context)` for an already
+  authorized credential. The managed provider uses persisted binding metadata
+  and grants, including for notifications and uploads that cannot be replayed.
+  An unknown first contact starts anonymously; its challenge can trigger trusted
+  discovery. Use host `prepare` before the first unsafe call if it needs auth.
 - Missing configured credentials raise `credential_unavailable` before HTTP
   delivery. Failure never falls through to another route or anonymous delivery.
 - Opaque attempt identities retain the issuing provider and original identity,
   even if the router's configured route changes while HTTP is in flight.
   Attempts cannot cross namespaces, destinations, backends, or event/upload
   purposes. The router itself owns no cache or coordinated registry.
-- The transport still owns bounded replay: eligible interception/configuration
-  requests can replay once; observations and uploads never replay. Providers
-  must not independently resend the application request.
+- The transport owns replay: eligible interception/configuration requests can
+  retry once after a Bearer 401 or a valid Bearer 403 `insufficient_scope`
+  challenge. Other 403 responses are denied. Notifications, observations and
+  uploads never replay; providers must not resend application requests.
 
 `auth.normalize_auth_target(context, namespace=...)` returns a frozen
 `AuthTarget`, with a deeply read-only wire `binding` (including extensions) and
@@ -54,11 +58,15 @@ binding; it is an isolation key, not a persistent record or log-safe string.
 Normalization validates syntax only, not DNS/egress authorization.
 
 `AuthenticationFailure` remains a `ProtocolError` and adds safe `code` and
-optional `recovery` (`configure`, `login`, `retry`, `stop`). Codes are
+`recovery` (`configure`, `login`, `retry`, `none`). Codes are
 `invalid_configuration`, `unsupported_binding`, `credential_unavailable`,
 `interaction_required`, `access_denied`, `refresh_rejected`, `discovery_failed`,
 `untrusted_destination`, and `provider_failed`. Public exception text is fixed;
 legacy positional messages and raw provider exceptions are not exposed.
+Defaults are `configure` for configuration, unsupported binding, unavailable
+credential and untrusted destination; `login` for required interaction and
+rejected refresh; `retry` for discovery/provider failure; and `none` for denied
+access. Hosts can use these values to choose configuration, consent or retry UI.
 Structured provider classifications survive the transport boundary, without
 retaining secret-bearing exception contexts. Cancellation remains native under
 asyncio and Trio, and provider calls stay inside the enclosing operation budget.
@@ -66,18 +74,10 @@ asyncio and Trio, and provider calls stay inside the enclosing operation budget.
 ## Optional managed OAuth
 
 Install `agenthooksprotocol[oauth]` to use `agenthooksprotocol.oauth`. The extra
-adds Authlib, HTTPX2 and HTTPX; core and stdio installs do not need them. Importing the
-module does not start network activity or require Authlib. Exchanges require the
-extra. Authlib 1.9.6 uses its supported HTTPX2 integration, not the deprecated
-HTTPX fallback. HTTPX2 and HTTPX have distinct request, response and stream
-classes: the adapter explicitly bridges buffered OAuth messages to the existing
-HTTPX-based host network contract. Hosts do not need to migrate their clients.
-HTTPX2's HTTPcore2/truststore dependencies are confined to the optional extra;
-actual OAuth connections still pass through the host's TLS/DNS/egress boundary,
-with environment trust disabled and no redirect following.
-The older Authlib compatibility probes remain library-level tests;
-`tests/test_managed_oauth_runtime.py` and `tests/test_oauth_discovery.py` exercise
-the managed implementation on asyncio and Trio.
+adds Authlib and HTTPX; core and stdio installs do not need them. Importing the
+module starts no network activity and does not require Authlib. Exchanges use
+Authlib's OAuth/PKCE and client-authentication primitives through the host's
+HTTPX network boundary, not a separate HTTP client stack.
 
 ```python
 from agenthooksprotocol import auth, oauth
@@ -100,40 +100,70 @@ provider = auth.RoutingAuthProvider(
 
 Use the same namespace for normalization, the router and the managed provider;
 a namespace represents a credential owner, not a globally shared default.
+Managed OAuth requires a nonempty backend `id`; unidentified backends fail
+configuration rather than sharing an invented identity.
 See [the typed host-controlled example](../examples/managed_oauth.py). It takes
 host capabilities rather than offering an unsafe sample DNS policy or token store.
-No persistent schema changes or dynamic client registration are introduced.
+No AHP wire-schema fields or dynamic client registration are introduced.
+Host-store key and record compatibility is described below.
 
 ### Prepare, interact, complete
 
-`managed.prepare(target, budget, challenge=None)` accepts a normalized
-`auth.AuthTarget` and returns either `oauth.Ready` (with a `credential`) or
-`oauth.PendingLogin`. Client credentials exchange without interaction; the
-`authorization_code_pkce` flow creates an S256 authorization URL. The host must
-supply locally configured client details and a callback URI for PKCE.
+`await managed.prepare(target, budget, challenge=challenge)` accepts a normalized
+`auth.AuthTarget` and returns `oauth.Ready` (with a `credential`) or
+`oauth.PendingLogin`. Client credentials exchange without interaction. For
+`authorization_code_pkce`, configure a client and redirect URI; the host displays
+the S256 authorization URL and receives the callback through its own UI and
+transport. HTTPS redirects are required except HTTP to literal loopback IPs for
+desktop/CLI clients. The SDK starts no browser or listener.
 
-For a pending login, the host displays `authorization_url`, receives a callback
-through its own authenticated application flow, and calls
-`managed.complete(target, pending, callback_url, budget)`, which returns `Ready`.
-Do not log the authorization URL, callback, store keys, credential identity,
-client secrets or tokens. Retain the pending handle for that target and user;
-it is not a wire value. Completion validates the pending generation, lifetime,
-callback, state and issuer requirements before exchanging the code. Repeated
-prepare calls share the pending generation rather than launching new logins.
+Create one consent budget inside an active AnyIO task, including time for user
+interaction. Supply the host's native cancellation scope explicitly:
 
-Create `oauth.OperationBudget.after(seconds)` inside an active AnyIO task.
-Its absolute monotonic deadline includes coordination, discovery and exchange;
-nested work cannot reset it or extend an enclosing cancellation deadline. User
-interaction happens outside these bounded operations. Give completion a new
-budget after the callback arrives, still within the pending login lifetime
-(`OAuthClientConfiguration.login_lifetime`, default 300 seconds).
+```python
+import anyio
+from agenthooksprotocol import oauth
 
-The provider also implements `credential` and `challenge` for `Hooks` routing.
-These calls have a default 30-second `operation_timeout`, capped by the enclosing
-operation. A pending login raises `AuthenticationFailure` with
-`code="interaction_required"` and `recovery="login"`; it does not open UI or
-return a pending handle through the transport. The host uses `prepare` to obtain
-that handle. Unbound acquisition stays anonymous until a challenge.
+async def authorize(managed, target, receive_callback):
+    with anyio.fail_after(300) as owner:
+        budget = oauth.OperationBudget.after(300, cancel_scope=owner)
+        try:
+            result = await managed.prepare(target, budget)
+            if isinstance(result, oauth.Ready):
+                return result
+            # Host UI displays the URL; never log it or the callback.
+            callback_url = await receive_callback(result)
+            return await managed.complete(target, result, callback_url, budget)
+        finally:
+            owner.cancel()  # Mark the consent context ended, including normal exit.
+
+```
+
+The host must enforce its deadline and cancellation while waiting for user input.
+Reuse the **original budget** when polling `prepare`. A pending login is reused
+only while its original owner is eligible, its original deadline covers the
+requested budget, and requested/required scopes and redirect URI match. Giving
+completion a new budget cannot extend the original deadline or login lifetime
+(`login_lifetime` defaults to 300 seconds). Invalid state, redirect or issuer does
+not consume a valid pending login; valid completion can claim it only once.
+
+Keep the same provider instance for interactive preparation and completion.
+Consent ownership is process-local: native scopes are not persisted, and a
+recreated provider must prepare fresh consent. Persisted binding metadata and
+valid tokens remain usable by recreated providers without rediscovery. Retain
+the pending handle for its target/user; do not serialize it as an AHP message or
+log URLs, store keys, credential identities, client secrets or tokens.
+
+Use `await managed.cancel(target, pending, budget)` to abandon that pending
+operation without deleting a valid stored grant. For cancellation cleanup, supply
+an active cleanup budget; do not reuse a canceled scope as its owner. `reset` is
+a separate explicit logout/repair action described below.
+
+Delivery `credential`/`challenge` calls use a default 30-second `operation_timeout`,
+capped by the enclosing operation. They never create pending interactive logins:
+`interaction_required` / `login` tells the host to call `prepare` with its own
+consent budget. Unknown unbound first contact can remain anonymous; an already
+authorized unbound target sends cached credentials up front.
 
 ### Required host capabilities
 
@@ -151,41 +181,78 @@ that handle. Unbound acquisition stays anonymous until a challenge.
   must not close a borrowed host client. Merely validating a URL string is not
   a safe production implementation. The SDK rejects redirect responses and
   bounds response size, but cannot enforce the host's network boundary for it.
-- **`OAuthTokenStore`**: `coordinate(key, budget)` yields an exclusive guard
-  with `load()` and atomic `compare_and_swap(expected_generation, record)`.
-  Exclusion must cover all providers/processes sharing the key, including
-  network awaits under that guard. Host callbacks must not reenter the same
-  key. Persist secrets securely, and make acquisition cancellation-aware.
-  A plain dictionary or per-provider lock does not satisfy shared coordination.
+- **`OAuthTokenStore`**: implement all three entry points:
+  `await load_binding(key, budget) -> OAuthMetadata | None`,
+  `await save_binding(key, metadata, budget) -> None`, and
+  `coordinate(key, budget)`, an async context manager yielding an exclusive guard
+  with `await load()` and atomic
+  `await compare_and_swap(expected_generation, record) -> bool`.
+  Binding metadata contains trusted principal/endpoint information but no client
+  secret. Persist it alongside securely stored grants so a recreated provider
+  can locate credentials without rediscovery. Resolve current client secrets
+  through policy selection when exchanges need them; secret rotation does not
+  change grant identity. Guard exclusion must cover every provider/process
+  sharing the grant key, including token network awaits. Make lock acquisition
+  cancellation-aware, and do not reenter the same key from host callbacks.
+  A per-provider lock or plain dictionary is not sufficient for shared storage.
 
-The helper performs protected-resource metadata discovery with challenged
-`resource_metadata` and path-specific/root fallback, resource/issuer validation,
-local scope checks, and RFC 8707 resource binding on exchange and refresh.
-The store key separates credential namespace, backend, event/upload purpose,
-destination, binding, resource, issuer and client configuration. Do not reuse
-event credentials as an upload fallback.
+Explicit OAuth presets use issuer metadata without first requiring protected-
+resource metadata. Unbound discovery uses protected-resource metadata with
+`resource_metadata` challenge support and validates its exact source identity.
+Local policy remains authoritative. Resource indicators are sent on token
+exchange and refresh; destination/resource/issuer identifiers are exact, including
+trailing slashes and queries where permitted. Do not normalize mismatches away.
+
+### Configure scopes and storage isolation
+
+`OAuthClientConfiguration.scopes` is the requested set. `allowed_scopes` is the
+local ceiling and defaults to requested scopes when omitted. `required_scopes`
+contains explicit operation requirements. All scopes use OAuth's ASCII grammar;
+requested and required scopes must be inside the ceiling. A response may narrow
+requested scopes or add only locally allowed scopes. Omitted response `scope`
+inherits requested scopes on acquisition and the previous granted scopes on
+refresh. Requested scopes alone are not mandatory for delivery.
+
+A Bearer 403 `insufficient_scope` records permitted step-up requirements for the
+binding. Forbidden scopes fail with `access_denied`. If the challenge omits
+`scope`, explicit host requirements must identify the needed scopes; otherwise
+access is denied. PKCE advises host-owned consent; client credentials can acquire
+approved scopes without human login. No effectful operation is replayed.
+
+The binding key identifies namespace, backend ID, purpose and exact destination.
+The separate grant key identifies namespace, issuer, resource, client ID, flow,
+**allowed scope ceiling**, and partition. Requested/granted scopes, client
+secrets/references, auth method and mutable metadata are not grant identity.
+Default partitions isolate bindings, including event and upload targets. Set the
+same nonempty `grant_partition` only when local policy independently authorizes
+both bindings to share the same OAuth principal and allowed ceiling. An upload
+never implicitly inherits event authorization.
+
+Store keys are opaque strings using length-prefixed UTF-8 fields. If adapting a
+store with tuple keys, explicitly migrate both binding lookup metadata and grants
+to these keys, or clear the old entries and prepare authorization again. Do not
+silently alias old tuple keys or unrelated destinations to a shared grant.
 
 ### Rotation, failure and repair
 
-Guarded generation reservations coalesce exchange/refresh and protect against
-stale 401s invalidating a newer credential. A failed or cancelled refresh/code
-exchange can leave a reservation unusable rather than risk reusing a rotated
-refresh token. Definitive rejection is classified separately from transient
-failure; native cancellation still propagates. Host storage may have committed
-a cancelled write, so never restore an old token blindly.
+Unknown expiry is usable: an omitted `expires_in` does not force refresh or
+invalidate a token. Explicit invalid expiry is rejected; known expiry uses an
+`expiry_skew` of 30 seconds by default. A successfully received rotated refresh
+credential is persisted before reporting operation-level scope insufficiency.
+Tokens outside local permission policy are not dispatched.
 
-`managed.reset(target, budget, handle=pending_or_credential)` is an explicit host
-repair/logout action. A retained handle avoids discovery; without one, reset
-performs discovery (and accepts an optional `challenge`). Reset clears the
-**current** generation, not merely the handle's old generation. Do not call it
-automatically for stale 401s. The host decides whether and when to start a new
-login. `expiry_skew` defaults to 30 seconds. There is no background refresh,
-browser, listener, worker, implicit file store or application-request replay.
+A timeout, 5xx, non-OAuth response or transient OAuth error retains refresh
+material and advises retry, not automatic login. An ambiguous exchange may have
+rotated credentials externally; a retry can ultimately return `invalid_grant`.
+There is no promise of rollback at the authorization server. Definitive PKCE
+refresh rejection advises a new login. Client credentials remain noninteractive.
+Storage writes may commit before cancellation is observed: never restore old
+refresh tokens blindly.
 
-CI installs the OAuth extra, Trio and `trustme` for the local TLS test; the unittest suites exercise both AnyIO
-backends internally. Run the focused checks with:
-
-```sh
-python -m pip install -e '.[oauth]' trio trustme
-python -m unittest discover -s tests -p 'test_*oauth*.py'
-```
+`await managed.reset(target, budget, handle=pending_or_credential)` deliberately
+clears the **current** grant, not just the handle's generation. Without a handle,
+it uses cached binding metadata; it does not discover an unknown target. Use it
+for explicit host logout/repair, never automatically for a stale 401. It can
+affect other bindings sharing an explicit grant partition. Use `cancel` instead
+to abandon only a pending login. The SDK has no background refresh or implicit
+file store, and the transport alone owns application-request replay.

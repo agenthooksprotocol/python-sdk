@@ -53,7 +53,20 @@ _ERROR_MESSAGES = {
 }
 
 
-AuthRecovery: TypeAlias = Literal["configure", "login", "retry", "stop"]
+AuthRecovery: TypeAlias = Literal["configure", "login", "retry", "none"]
+
+
+_DEFAULT_RECOVERY: dict[str, AuthRecovery] = {
+    "invalid_configuration": "configure",
+    "unsupported_binding": "configure",
+    "credential_unavailable": "configure",
+    "interaction_required": "login",
+    "access_denied": "none",
+    "refresh_rejected": "login",
+    "discovery_failed": "retry",
+    "untrusted_destination": "configure",
+    "provider_failed": "retry",
+}
 
 
 class AuthenticationFailure(ProtocolError):
@@ -72,7 +85,9 @@ class AuthenticationFailure(ProtocolError):
         super().__init__(_ERROR_MESSAGES[code])
         self.code = code
         self.recovery = (
-            recovery if recovery in ("configure", "login", "retry", "stop") else None
+            recovery
+            if recovery in ("configure", "login", "retry", "none")
+            else _DEFAULT_RECOVERY[code]
         )
 
 
@@ -285,9 +300,22 @@ class AuthenticatedHTTPTransport(HTTPTransport):
             if explicit_auth or response.status_code not in (401, 403):
                 return response
             challenges = response.headers.get("www-authenticate", "")
+            scope_challenge = False
+            if response.status_code == 403:
+                from ._oauth_discovery import _challenge
+
+                try:
+                    _challenge(
+                        AuthChallenge(
+                            403, dict(response.headers), str(response.url), None, False
+                        )
+                    )
+                    scope_challenge = True
+                except AuthenticationFailure:
+                    pass
             safe = (
                 retry_allowed
-                and response.status_code == 401
+                and (response.status_code == 401 or scope_challenge)
                 and re.search(r"(?:^|,)\s*Bearer(?:\s|$)", challenges, re.I) is not None
             )
             challenge = AuthChallenge(

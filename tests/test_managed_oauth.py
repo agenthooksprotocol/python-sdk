@@ -1,17 +1,4 @@
-"""Opt-in Authlib compatibility/security probes, not adapter acceptance tests.
-
-Run with:
-  uv run --extra oauth python -m unittest discover -s tests \
-      -p test_managed_oauth.py
-
-The base installation has no Authlib dependency; these tests skip without it.
-The managed adapter is tested separately by test_managed_oauth_runtime.py and
-test_oauth_discovery.py against capability-auth.md:101-155. These lower-level
-probes retain evidence of library behavior that the adapter must constrain.
-
-Shared parity IDs exercised as library primitives: pkce-completion,
-client-credentials, deadline-cancel, redaction.
-"""
+"""Compatibility probes for Authlib's supported transport-independent API."""
 
 import hashlib
 import importlib.util
@@ -21,269 +8,77 @@ import unittest
 from base64 import urlsafe_b64encode
 from urllib.parse import parse_qs, urlsplit
 
-import anyio
 
-
-@unittest.skipUnless(
-    importlib.util.find_spec("authlib") and importlib.util.find_spec("httpx2"),
-    "requires optional oauth extra",
-)
-class AuthlibCompatibilitySpike(unittest.TestCase):
-    def test_supported_integration_import_has_no_deprecated_fallback(self):
-        # A fresh process exercises Authlib's import-time compatibility choice.
-        # Record warnings rather than suppressing or filtering the warning away.
+@unittest.skipUnless(importlib.util.find_spec("authlib"), "requires optional oauth extra")
+class AuthlibProtocolCompatibilityTests(unittest.TestCase):
+    def test_protocol_imports_do_not_load_http_client_integrations(self):
         code = """
-import warnings
-with warnings.catch_warnings(record=True) as captured:
-    warnings.simplefilter('always')
-    import httpx
-    import httpx2
-    from authlib.integrations.httpx_client import AsyncOAuth2Client
-assert issubclass(AsyncOAuth2Client, httpx2.AsyncClient)
-assert not issubclass(AsyncOAuth2Client, httpx.AsyncClient)
-assert not any('httpx module is deprecated' in str(item.message) for item in captured)
+import sys
+from authlib.oauth2.auth import ClientAuth
+from authlib.oauth2.rfc6749.parameters import prepare_grant_uri, prepare_token_request
+from authlib.oauth2.rfc7636 import create_s256_code_challenge
+assert not any(name.startswith('authlib.integrations') for name in sys.modules)
+assert not any(name == 'httpx2' or name.startswith('httpcore2') for name in sys.modules)
 """
-        result = subprocess.run(
-            [sys.executable, "-c", code], capture_output=True, text=True, check=False,
-        )
+        result = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, check=False)
         self.assertEqual(result.returncode, 0, result.stderr)
 
-    def both_backends(self, operation):
-        for backend in ("asyncio", "trio"):
-            with self.subTest(backend=backend):
-                anyio.run(operation, backend=backend)
-
     def test_pkce_s256_state_and_resource_are_explicit(self):
-        async def run():
-            import httpx2 as httpx
-            from authlib.integrations.httpx_client import AsyncOAuth2Client
+        from authlib.oauth2.rfc6749.parameters import (
+            parse_authorization_code_response, prepare_grant_uri, prepare_token_request,
+        )
+        from authlib.oauth2.rfc7636 import create_s256_code_challenge
 
-            requests = []
+        verifier = "a" * 64
+        challenge = urlsafe_b64encode(hashlib.sha256(verifier.encode()).digest()).rstrip(b"=").decode()
+        self.assertEqual(create_s256_code_challenge(verifier), challenge)
+        url = prepare_grant_uri(
+            "https://issuer.test/authorize", "client", "code",
+            redirect_uri="https://host.test/callback", scope="read", state="host-state",
+            code_challenge=challenge, code_challenge_method="S256", resource="https://resource.test/api",
+        )
+        params = parse_qs(urlsplit(url).query)
+        self.assertEqual(params["code_challenge"], [challenge])
+        self.assertEqual(params["code_challenge_method"], ["S256"])
+        self.assertEqual(params["resource"], ["https://resource.test/api"])
+        callback = "https://host.test/callback?code=one-use-code&state=host-state"
+        response = parse_authorization_code_response(callback, state="host-state")
+        self.assertEqual(response["code"], "one-use-code")
+        with self.assertRaises(Exception):
+            parse_authorization_code_response(callback, state="wrong-state")
+        form = parse_qs(prepare_token_request(
+            "authorization_code", code=response["code"], code_verifier=verifier,
+            redirect_uri="https://host.test/callback", resource="https://resource.test/api",
+        ))
+        self.assertEqual(form["code_verifier"], [verifier])
+        self.assertEqual(form["resource"], ["https://resource.test/api"])
 
-            def handle(request):
-                requests.append(request)
-                return httpx.Response(
-                    200,
-                    json={
-                        "access_token": "test-access",
-                        "token_type": "Bearer",
-                        "expires_in": 3600,
-                    },
-                )
+    def test_client_auth_methods_and_resource_binding(self):
+        from authlib.oauth2.auth import ClientAuth
+        from authlib.oauth2.rfc6749.parameters import prepare_token_request
 
-            async with AsyncOAuth2Client(
-                "client",
-                redirect_uri="https://host.test/callback",
-                scope="read",
-                code_challenge_method="S256",
-                token_endpoint_auth_method="none",
-                transport=httpx.MockTransport(handle),
-            ) as client:
-                verifier = "a" * 64
-                url, state = client.create_authorization_url(
-                    "https://issuer.test/authorize",
-                    state="host-state",
-                    code_verifier=verifier,
-                    resource="https://resource.test/api",
-                )
-                params = parse_qs(urlsplit(url).query)
-                challenge = (
-                    urlsafe_b64encode(hashlib.sha256(verifier.encode()).digest())
-                    .rstrip(b"=")
-                    .decode()
-                )
-                self.assertEqual(state, "host-state")
-                self.assertEqual(params["code_challenge"], [challenge])
-                self.assertEqual(params["code_challenge_method"], ["S256"])
-                self.assertEqual(params["resource"], ["https://resource.test/api"])
-                # Authlib validates state only when authorization_response is used.
-                # The host must separately validate callback endpoint and issuer.
-                with self.assertRaises(Exception):
-                    await client.fetch_token(
-                        "https://issuer.test/token",
-                        state=state,
-                        authorization_response="https://host.test/callback?code=c&state=wrong",
-                        code_verifier=verifier,
-                        resource="https://resource.test/api",
+        for method in ("none", "client_secret_basic", "client_secret_post"):
+            for grant in ("client_credentials", "refresh_token"):
+                with self.subTest(method=method, grant=grant):
+                    body = prepare_token_request(
+                        grant, scope="read", resource="https://resource.test/api",
+                        **({"refresh_token": "rotating-refresh"} if grant == "refresh_token" else {}),
                     )
-                self.assertEqual(requests, [])
-                token = await client.fetch_token(
-                    "https://issuer.test/token",
-                    state=state,
-                    authorization_response="https://host.test/callback?code=c&state=host-state",
-                    code_verifier=verifier,
-                    resource="https://resource.test/api",
-                )
-                body = parse_qs(requests[0].content.decode())
-                self.assertEqual(body["grant_type"], ["authorization_code"])
-                self.assertEqual(body["code_verifier"], [verifier])
-                self.assertEqual(body["resource"], ["https://resource.test/api"])
-                self.assertEqual(body["redirect_uri"], ["https://host.test/callback"])
-                self.assertEqual(token["access_token"], "test-access")
-                self.assertIn("expires_at", token)
-
-        self.both_backends(run)
-
-    def test_client_credentials_and_refresh_require_resource_each_time(self):
-        async def run():
-            import httpx2 as httpx
-            from authlib.integrations.httpx_client import AsyncOAuth2Client
-
-            requests = []
-
-            def handle(request):
-                requests.append(request)
-                return httpx.Response(
-                    200,
-                    json={
-                        "access_token": "test-access",
-                        "token_type": "Bearer",
-                        "refresh_token": "test-refresh",
-                        "expires_in": 3600,
-                    },
-                )
-
-            async with AsyncOAuth2Client(
-                "client",
-                "test-secret",
-                scope="read",
-                transport=httpx.MockTransport(handle),
-            ) as client:
-                token = await client.fetch_token(
-                    "https://issuer.test/token",
-                    grant_type="client_credentials",
-                    resource="https://resource.test/api",
-                )
-                self.assertEqual(
-                    parse_qs(requests[0].content.decode())["resource"],
-                    ["https://resource.test/api"],
-                )
-                self.assertTrue(
-                    requests[0].headers["authorization"].startswith("Basic ")
-                )
-                await client.refresh_token(
-                    "https://issuer.test/token",
-                    refresh_token=token["refresh_token"],
-                    resource="https://resource.test/api",
-                )
-                self.assertEqual(
-                    parse_qs(requests[1].content.decode())["resource"],
-                    ["https://resource.test/api"],
-                )
-                # Resource is NOT remembered/enforced by the library on refresh.
-                await client.refresh_token(
-                    "https://issuer.test/token",
-                    refresh_token="test-refresh",
-                )
-                self.assertNotIn("resource", parse_qs(requests[2].content.decode()))
-                self.assertEqual(client.token["access_token"], "test-access")
-
-        self.both_backends(run)
-
-    def test_native_cancel_propagates_from_real_httpx2_transport(self):
-        async def run():
-            import httpx2 as httpx
-            from authlib.integrations.httpx_client import AsyncOAuth2Client
-
-            entered = anyio.Event()
-
-            async def handle(request):
-                entered.set()
-                await anyio.sleep_forever()
-
-            async with AsyncOAuth2Client(
-                "client",
-                "test-secret",
-                transport=httpx.MockTransport(handle),
-            ) as client:
-                cancelled = []
-
-                async def exchange():
-                    try:
-                        await client.fetch_token(
-                            "https://issuer.test/token",
-                            grant_type="client_credentials",
-                            resource="https://resource.test/api",
-                        )
-                    except anyio.get_cancelled_exc_class():
-                        cancelled.append(True)
-                        raise
-
-                async with anyio.create_task_group() as tasks:
-                    tasks.start_soon(exchange)
-                    await entered.wait()
-                    tasks.cancel_scope.cancel()
-                self.assertEqual(cancelled, [True])
-                self.assertFalse(client.is_closed)
-
-        self.both_backends(run)
-
-    def test_library_errors_are_not_safe_public_errors(self):
-        async def run():
-            import httpx2 as httpx
-            from authlib.integrations.httpx_client import AsyncOAuth2Client
-
-            def handle(request):
-                return httpx.Response(
-                    400,
-                    json={
-                        "error": "invalid_grant",
-                        "error_description": "private-token-marker",
-                    },
-                )
-
-            async with AsyncOAuth2Client(
-                "client",
-                "test-secret",
-                transport=httpx.MockTransport(handle),
-            ) as client:
-                with self.assertRaises(Exception) as caught:
-                    await client.fetch_token(
-                        "https://issuer.test/token",
-                        grant_type="client_credentials",
+                    url, headers, body = ClientAuth("client", "secret", method).prepare(
+                        "POST", "https://issuer.test/token", {}, body,
                     )
-                self.assertIn("private-token-marker", str(caught.exception))
-                # A shipping adapter must replace this error and suppress its chain.
-
-        self.both_backends(run)
-
-    def test_redirects_need_host_policy_not_just_oauth_library(self):
-        async def run():
-            import httpx2 as httpx
-            from authlib.integrations.httpx_client import AsyncOAuth2Client
-
-            seen = []
-
-            def handle(request):
-                seen.append(request)
-                if len(seen) == 1:
-                    return httpx.Response(
-                        307, headers={"location": "https://other.test/token"}
-                    )
-                return httpx.Response(
-                    200, json={"access_token": "test-access", "token_type": "Bearer"}
-                )
-
-            async with AsyncOAuth2Client(
-                "client",
-                "test-secret",
-                token_endpoint_auth_method="client_secret_post",
-                follow_redirects=True,
-                transport=httpx.MockTransport(handle),
-            ) as client:
-                await client.fetch_token(
-                    "https://issuer.test/token",
-                    grant_type="client_credentials",
-                    resource="https://resource.test/api",
-                )
-                self.assertEqual(seen[1].url.host, "other.test")
-                # HTTPX strips cross-origin Authorization headers, but 307 preserves
-                # the body, including client_secret_post. Explicit policy is vital.
-                self.assertEqual(
-                    parse_qs(seen[1].content.decode())["client_secret"], ["test-secret"]
-                )
-
-        self.both_backends(run)
+                    self.assertEqual(url, "https://issuer.test/token")
+                    form = parse_qs(body)
+                    self.assertEqual(form["resource"], ["https://resource.test/api"])
+                    self.assertEqual(form["grant_type"], [grant])
+                    if method == "client_secret_basic":
+                        self.assertEqual(headers["Authorization"], "Basic Y2xpZW50OnNlY3JldA==")
+                        self.assertNotIn("client_secret", form)
+                    elif method == "client_secret_post":
+                        self.assertEqual(form["client_secret"], ["secret"])
+                    else:
+                        self.assertEqual(form["client_id"], ["client"])
+                        self.assertNotIn("client_secret", form)
 
 
 if __name__ == "__main__":

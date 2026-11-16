@@ -3,6 +3,8 @@
 Metadata supplies candidates, never trust. DNS/TLS and egress enforcement remain
 at the host's OAuthNetwork boundary; no client or browser is owned here.
 """
+
+from dataclasses import replace
 import json
 import re
 from urllib.parse import parse_qsl, urlsplit
@@ -12,7 +14,12 @@ import httpx
 
 from .auth import AuthChallenge, AuthenticationFailure, AuthTarget, OAuthBinding
 from ._oauth_types import (
-    EndpointPurpose, OAuthMetadata, OAuthNetwork, OAuthTrustPolicy, OperationBudget,
+    EndpointPurpose,
+    OAuthClientConfiguration,
+    OAuthMetadata,
+    OAuthNetwork,
+    OAuthTrustPolicy,
+    OperationBudget,
 )
 from .runtime import OperationCancelledError
 
@@ -31,9 +38,12 @@ def validate_url(value: object, *, issuer: bool = False) -> str:
     try:
         parts = urlsplit(value)
         valid = (
-            parts.scheme == "https" and parts.hostname is not None
-            and parts.username is None and parts.password is None
-            and "#" not in value and "\\" not in value
+            parts.scheme == "https"
+            and parts.hostname is not None
+            and parts.username is None
+            and parts.password is None
+            and "#" not in value
+            and "\\" not in value
             and not any(ord(c) <= 32 or ord(c) == 127 for c in value)
             and (not issuer or "?" not in value)
         )
@@ -49,11 +59,21 @@ def _validate_endpoint(value: object, *, authorization: bool = False) -> str:
     url = validate_url(value)
     reserved = {"client_id", "redirect_uri", "scope", "resource"}
     reserved.update(
-        {"response_type", "state", "code_challenge", "code_challenge_method",
-         "response_mode", "nonce"} if authorization else
-        {"grant_type", "client_secret", "refresh_token", "code", "code_verifier"}
+        {
+            "response_type",
+            "state",
+            "code_challenge",
+            "code_challenge_method",
+            "response_mode",
+            "nonce",
+        }
+        if authorization
+        else {"grant_type", "client_secret", "refresh_token", "code", "code_verifier"}
     )
-    if any(key in reserved for key, _ in parse_qsl(urlsplit(url).query, keep_blank_values=True)):
+    if any(
+        key in reserved
+        for key, _ in parse_qsl(urlsplit(url).query, keep_blank_values=True)
+    ):
         raise _fail()
     return url
 
@@ -73,7 +93,9 @@ def _public_error(error: BaseException) -> BaseException:
 
 
 async def safe_request(
-    network: OAuthNetwork, request: httpx.Request, purpose: EndpointPurpose,
+    network: OAuthNetwork,
+    request: httpx.Request,
+    purpose: EndpointPurpose,
     budget: OperationBudget,
 ) -> httpx.Response:
     """Authorize before sending; return bounded bytes and close only the response.
@@ -93,17 +115,27 @@ async def safe_request(
             if response.history or 300 <= response.status_code < 400:
                 raise _fail()
             length = response.headers.get("content-length")
-            if length is not None and (not length.isdecimal() or int(length) > MAX_RESPONSE_BYTES):
+            if length is not None and (
+                not length.isdecimal() or int(length) > MAX_RESPONSE_BYTES
+            ):
                 raise _fail()
             content = bytearray()
             async for chunk in response.aiter_bytes():
                 if len(content) + len(chunk) > MAX_RESPONSE_BYTES:
                     raise _fail()
                 content.extend(chunk)
-            headers = [(key, value) for key, value in response.headers.multi_items()
-                       if key.lower() not in ("content-encoding", "content-length", "transfer-encoding")]
-            result = httpx.Response(response.status_code, headers=headers,
-                                    content=bytes(content), request=request)
+            headers = [
+                (key, value)
+                for key, value in response.headers.multi_items()
+                if key.lower()
+                not in ("content-encoding", "content-length", "transfer-encoding")
+            ]
+            result = httpx.Response(
+                response.status_code,
+                headers=headers,
+                content=bytes(content),
+                request=request,
+            )
     except BaseException as caught:
         error = caught
     if response is not None:
@@ -126,12 +158,16 @@ async def safe_request(
 
 
 def _challenge(challenge: AuthChallenge | None) -> tuple[str | None, tuple[str, ...]]:
-    if challenge is None or challenge.status != 401:
+    if challenge is None or challenge.status not in (401, 403):
         return None, ()
-    values = [v for k, v in challenge.headers.items() if k.lower() == "www-authenticate"]
+    values = [
+        v for k, v in challenge.headers.items() if k.lower() == "www-authenticate"
+    ]
     if len(values) > 1:
         raise _fail()
     if not values:
+        if challenge.status == 403:
+            raise AuthenticationFailure(code="access_denied")
         return None, ()
     # Split only unquoted commas. Quoted-pairs may contain commas and quotes.
     pieces, start, quoted, escaped = [], 0, False, False
@@ -167,8 +203,12 @@ def _challenge(challenge: AuthChallenge | None) -> tuple[str | None, tuple[str, 
             continue
         if not active:
             continue
-        match = re.fullmatch(rf'({_TOKEN})\s*=\s*({_TOKEN}|"(?:[^"\\\r\n]|\\[^\r\n])*")', piece)
+        match = re.fullmatch(
+            rf'({_TOKEN})\s*=\s*({_TOKEN}|"(?:[^"\\\r\n]|\\[^\r\n])*")', piece
+        )
         if match is None:
+            if re.fullmatch(r"[A-Za-z0-9._~+/-]+=*", piece):
+                continue
             raise _fail()
         key, value = match[1].lower(), match[2]
         if key in params:
@@ -176,8 +216,14 @@ def _challenge(challenge: AuthChallenge | None) -> tuple[str | None, tuple[str, 
         if value.startswith('"'):
             value = re.sub(r"\\(.)", r"\1", value[1:-1])
         params[key] = value
+    if challenge.status == 403 and (
+        bearer != 1 or params.get("error") != "insufficient_scope"
+    ):
+        raise AuthenticationFailure(code="access_denied")
     scope = params.get("scope", "")
-    if scope and not re.fullmatch(r"[\x21\x23-\x5b\x5d-\x7e]+(?: [\x21\x23-\x5b\x5d-\x7e]+)*", scope):
+    if scope and not re.fullmatch(
+        r"[\x21\x23-\x5b\x5d-\x7e]+(?: [\x21\x23-\x5b\x5d-\x7e]+)*", scope
+    ):
         raise _fail()
     return params.get("resource_metadata"), tuple(scope.split())
 
@@ -194,17 +240,26 @@ def _well_known(identifier: str, name: str) -> list[tuple[str, str]]:
 
 
 async def _metadata(
-    urls: list[str], network: OAuthNetwork, budget: OperationBudget,
+    urls: list[str],
+    network: OAuthNetwork,
+    budget: OperationBudget,
 ) -> tuple[dict[str, object], str]:
     for url in urls:
-        response = await safe_request(network, httpx.Request("GET", validate_url(url),
-                                      headers={"accept": "application/json"}), "metadata", budget)
+        response = await safe_request(
+            network,
+            httpx.Request(
+                "GET", validate_url(url), headers={"accept": "application/json"}
+            ),
+            "metadata",
+            budget,
+        )
         # Only absence permits a fallback. A published but invalid document fails closed.
         if response.status_code in (404, 405):
             continue
         if response.status_code != 200:
             raise _fail()
         try:
+
             def unique(pairs: list[tuple[str, object]]) -> dict[str, object]:
                 result: dict[str, object] = {}
                 for key, value in pairs:
@@ -212,6 +267,7 @@ async def _metadata(
                         raise ValueError()
                     result[key] = value
                 return result
+
             document = json.loads(response.content, object_pairs_hook=unique)
         except (ValueError, UnicodeError):
             raise _fail() from None
@@ -223,14 +279,101 @@ async def _metadata(
 
 def _strings(document: dict[str, object], key: str) -> tuple[str, ...]:
     value = document.get(key, [])
-    if not isinstance(value, list) or not all(isinstance(item, str) and item for item in value):
+    if not isinstance(value, list) or not all(
+        isinstance(item, str) and item for item in value
+    ):
         raise _fail()
     return tuple(value)
 
 
+def _scope_set(scopes: tuple[str, ...]) -> set[str]:
+    """Validate RFC 6749 scope tokens before comparing local policy sets."""
+    if not isinstance(scopes, tuple) or any(
+        not isinstance(scope, str)
+        or re.fullmatch(r"[\x21\x23-\x5b\x5d-\x7e]+", scope) is None
+        for scope in scopes
+    ):
+        raise _fail()
+    return set(scopes)
+
+
+def validate_configuration(
+    target: AuthTarget,
+    resource: str,
+    issuers: tuple[str, ...],
+    required: tuple[str, ...],
+    configuration: OAuthClientConfiguration,
+) -> None:
+    """Revalidate host policy without fetching metadata or holding a grant lock."""
+    validate_url(resource)
+    validate_url(configuration.issuer, issuer=True)
+    requested = _scope_set(configuration.scopes)
+    allowed = (
+        requested
+        if configuration.allowed_scopes is None
+        else _scope_set(configuration.allowed_scopes)
+    )
+    mandatory = _scope_set(configuration.required_scopes) | _scope_set(required)
+    if not requested.issubset(allowed) or not mandatory.issubset(allowed):
+        raise AuthenticationFailure(code="access_denied")
+    if configuration.issuer not in issuers or not configuration.client_id:
+        raise _fail()
+    binding = target.typed_binding
+    if binding is not None and (
+        not isinstance(binding, OAuthBinding)
+        or binding.resource != resource
+        or configuration.issuer != binding.issuer
+        or configuration.client_id != binding.client_id
+        or configuration.flow != binding.flow
+        or requested != _scope_set(binding.scopes)
+    ):
+        raise AuthenticationFailure(code="invalid_configuration")
+    if configuration.flow == "authorization_code_pkce":
+        redirect = configuration.redirect_uri
+        if not isinstance(redirect, str):
+            raise AuthenticationFailure(code="invalid_configuration")
+        try:
+            parts = urlsplit(redirect)
+            valid = (
+                bool(parts.hostname)
+                and parts.username is None
+                and parts.password is None
+                and "#" not in redirect
+                and "\\" not in redirect
+                and not any(ord(c) <= 32 or ord(c) == 127 for c in redirect)
+            )
+            _ = parts.port
+            if parts.scheme == "http":
+                import ipaddress
+
+                valid = valid and ipaddress.ip_address(parts.hostname or "").is_loopback
+            elif parts.scheme != "https":
+                valid = False
+            if any(
+                key in ("code", "state", "iss", "error", "error_description")
+                for key, _ in parse_qsl(parts.query, keep_blank_values=True)
+            ):
+                valid = False
+        except ValueError:
+            valid = False
+        if not valid:
+            raise AuthenticationFailure(code="invalid_configuration")
+    elif configuration.flow != "client_credentials":
+        raise AuthenticationFailure(code="unsupported_binding")
+    if (
+        configuration.token_endpoint_auth_method != "none"
+        and not configuration.client_secret
+    ):
+        # This function only receives current runtime policy, never sanitized records.
+        raise AuthenticationFailure(code="credential_unavailable")
+
+
 async def discover(
-    target: AuthTarget, challenge: AuthChallenge | None, network: OAuthNetwork,
-    policy: OAuthTrustPolicy, budget: OperationBudget,
+    target: AuthTarget,
+    challenge: AuthChallenge | None,
+    network: OAuthNetwork,
+    policy: OAuthTrustPolicy,
+    budget: OperationBudget,
 ) -> OAuthMetadata:
     """Resolve locally bound resource and issuer without acquiring credentials."""
     error: BaseException | None = None
@@ -252,8 +395,11 @@ async def discover(
 
 
 async def _discover(
-    target: AuthTarget, challenge: AuthChallenge | None, network: OAuthNetwork,
-    policy: OAuthTrustPolicy, budget: OperationBudget,
+    target: AuthTarget,
+    challenge: AuthChallenge | None,
+    network: OAuthNetwork,
+    policy: OAuthTrustPolicy,
+    budget: OperationBudget,
 ) -> OAuthMetadata:
     resource = validate_url(await policy.resource(target, budget))
     binding = target.typed_binding
@@ -267,13 +413,21 @@ async def _discover(
         issuers = (validate_url(binding.issuer, issuer=True),)
     else:
         destination = validate_url(target.destination)
-        candidates = ([(validate_url(metadata_url), destination)] if metadata_url is not None else
-                      _well_known(destination, "oauth-protected-resource"))
-        document, retrieved_url = await _metadata([url for url, _ in candidates], network, budget)
+        candidates = (
+            [(validate_url(metadata_url), destination)]
+            if metadata_url is not None
+            else _well_known(destination, "oauth-protected-resource")
+        )
+        document, retrieved_url = await _metadata(
+            [url for url, _ in candidates], network, budget
+        )
         expected_resource = dict(candidates)[retrieved_url]
         # RFC 9728 section 3.3 binds metadata to its discovery source,
         # independently of the host's local resource authorization.
-        if document.get("resource") != expected_resource or expected_resource != resource:
+        if (
+            document.get("resource") != expected_resource
+            or expected_resource != resource
+        ):
             raise _fail()
         issuers = _strings(document, "authorization_servers")
         if not issuers:
@@ -281,20 +435,15 @@ async def _discover(
         for issuer in issuers:
             validate_url(issuer, issuer=True)
     configuration = await policy.select(target, resource, issuers, required, budget)
-    if (configuration.issuer not in issuers or not configuration.client_id
-            or not set(required).issubset(configuration.scopes)):
-        raise _fail()
-    if binding is not None and (
-        configuration.issuer != binding.issuer or configuration.client_id != binding.client_id
-        or configuration.flow != binding.flow or set(configuration.scopes) != set(binding.scopes)
-    ):
-        raise _fail()
+    validate_configuration(target, resource, issuers, required, configuration)
     issuer = validate_url(configuration.issuer, issuer=True)
     parts = urlsplit(issuer)
     origin = f"{parts.scheme}://{parts.netloc}"
     path = parts.path.rstrip("/")
-    urls = [f"{origin}/.well-known/oauth-authorization-server{path}",
-            f"{origin}/.well-known/openid-configuration{path}"]
+    urls = [
+        f"{origin}/.well-known/oauth-authorization-server{path}",
+        f"{origin}/.well-known/openid-configuration{path}",
+    ]
     if path:
         urls.append(f"{origin}{path}/.well-known/openid-configuration")
     document, _ = await _metadata(urls, network, budget)
@@ -314,14 +463,29 @@ async def _discover(
         grants = _strings(document, "grant_types_supported")
         if grants and "authorization_code" not in grants:
             raise _fail()
-        authorization_endpoint = _validate_endpoint(document.get("authorization_endpoint"), authorization=True)
+        authorization_endpoint = _validate_endpoint(
+            document.get("authorization_endpoint"), authorization=True
+        )
         await network.authorize(authorization_endpoint, "authorization", budget)
     else:
         raise _fail()
-    methods = _strings(document, "token_endpoint_auth_methods_supported") or ("client_secret_basic",)
+    methods = _strings(document, "token_endpoint_auth_methods_supported") or (
+        "client_secret_basic",
+    )
     if configuration.token_endpoint_auth_method not in methods:
         raise _fail()
-    response_issuer = document.get("authorization_response_iss_parameter_supported", False)
+    response_issuer = document.get(
+        "authorization_response_iss_parameter_supported", False
+    )
     if not isinstance(response_issuer, bool):
         raise _fail()
-    return OAuthMetadata(resource, configuration, token_endpoint, authorization_endpoint, response_issuer)
+    # Metadata can outlive this request in host storage. Resolve secrets again
+    # through the current policy when a token exchange actually needs them.
+    public_configuration = replace(configuration, client_secret=None)
+    return OAuthMetadata(
+        resource,
+        public_configuration,
+        token_endpoint,
+        authorization_endpoint,
+        response_issuer,
+    )

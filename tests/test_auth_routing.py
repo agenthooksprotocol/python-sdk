@@ -159,7 +159,7 @@ class RoutingTests(unittest.TestCase):
 
     def test_unconfigured_challenge_and_bounded_replay(self):
         async def run():
-            discovery = Provider()
+            discovery = Provider(token=None)
             seen = []
 
             async def handle(request):
@@ -179,7 +179,7 @@ class RoutingTests(unittest.TestCase):
                     await transport.request(MESSAGE)
             self.assertNotIn("authorization", seen[0].headers)
             self.assertEqual(len(seen), 2)
-            self.assertEqual(discovery.contexts, [])
+            self.assertEqual(len(discovery.contexts), 1)
             self.assertIsNone(discovery.challenges[0].attempted_identity)
             self.assertFalse(discovery.challenges[1].retry_allowed)
 
@@ -344,7 +344,7 @@ class RoutingTests(unittest.TestCase):
                 bearer, oauth, discover = (
                     Provider("upload-secret"),
                     Provider("event-secret"),
-                    Provider(),
+                    Provider(token=None),
                 )
                 router = RoutingAuthProvider(
                     bearer=bearer, oauth=oauth, discover=discover
@@ -437,5 +437,63 @@ class RoutingTests(unittest.TestCase):
                     with self.assertRaises(AuthenticationFailure) as caught:
                         await transport.request(MESSAGE)
                     self.assertEqual(caught.exception.code, "unsupported_binding")
+
+        self.run_async(run)
+
+    def test_unbound_cached_credentials_are_sent_before_unsafe_calls(self):
+        async def run():
+            provider = Provider("cached")
+            seen = []
+
+            async def handle(request):
+                seen.append(request)
+                self.assertEqual(request.headers["authorization"], "Bearer cached")
+                return httpx.Response(204)
+
+            async with httpx.AsyncClient(
+                transport=httpx.MockTransport(handle)
+            ) as client:
+                transport = AuthenticatedHTTPTransport(
+                    "https://event.test",
+                    backend={"id": "unbound"},
+                    auth_provider=RoutingAuthProvider(discover=provider),
+                    client=client,
+                )
+                notification = {**MESSAGE}
+                notification.pop("id", None)
+                await transport.notify(notification)
+                from agenthooksprotocol.runtime import ProtocolError
+
+                with self.assertRaises(ProtocolError):
+                    await transport.upload("https://upload.test", b"body")
+            self.assertEqual(len(seen), 2)
+            self.assertEqual(
+                [c.purpose for c in provider.contexts], ["event", "upload"]
+            )
+            self.assertEqual(provider.challenges, [])
+
+        self.run_async(run)
+
+    def test_explicit_authorization_overrides_malformed_binding(self):
+        async def run():
+            provider = Provider()
+
+            async def handle(request):
+                self.assertEqual(request.headers["authorization"], "Bearer explicit")
+                return httpx.Response(200, json=SUCCESS)
+
+            async with httpx.AsyncClient(
+                transport=httpx.MockTransport(handle)
+            ) as client:
+                transport = AuthenticatedHTTPTransport(
+                    "https://event.test",
+                    backend={"authentication": {"type": "unknown"}},
+                    headers={"Authorization": "Bearer explicit"},
+                    auth_provider=RoutingAuthProvider(discover=provider),
+                    client=client,
+                )
+                await transport.request(MESSAGE)
+            self.assertEqual(provider.contexts, [])
+            self.assertEqual(provider.challenges, [])
 
         self.run_async(run)

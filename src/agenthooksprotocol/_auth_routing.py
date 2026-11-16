@@ -171,7 +171,7 @@ class _RoutedAttempt:
 
 
 class RoutingAuthProvider:
-    """Opt-in routes; no binding starts anonymously, then may challenge discover.
+    """Opt-in routes with preemptive discovery-cache lookup for unbound targets.
 
     Attempts carry their issuing provider without a shared mutable registry.
     A configured route never falls through to another provider on failure.
@@ -229,7 +229,9 @@ class RoutingAuthProvider:
     async def credential(self, context: AuthContext) -> BearerCredential | None:
         target = normalize_auth_target(context, namespace=self.namespace)
         if target.kind == "discover":
-            return None
+            if self.discover is None:
+                return None
+            return await self._invoke(self.discover, context, target)
         provider = self.bearer if target.kind == "bearer" else self.oauth
         if provider is None:
             raise AuthenticationFailure(code="unsupported_binding")

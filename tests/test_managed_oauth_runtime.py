@@ -1167,6 +1167,183 @@ class ManagedOAuthRuntimeTests(unittest.TestCase):
             self.assertEqual(n.tokens[-1]["grant_type"], ["refresh_token"])
         self.run_async(run)
 
+    def test_refresh_forbids_grant_broadening_quarantines_across_recreation_and_cancel(self):
+        """Canonical lifecycle: refresh-forbids-grant-broadening."""
+        async def run(p, n, s, policy, target, now):
+            policy.configuration = replace(
+                Policy("authorization_code_pkce").configuration,
+                scopes=("read", "write"), allowed_scopes=("read", "write"),
+            )
+            async def token(request):
+                initial = len(n.tokens) == 1
+                return httpx.Response(200, json={
+                    "access_token": "initial-read" if initial else "unauthorized-broad",
+                    "token_type": "Bearer", "refresh_token": "r1" if initial else "r2",
+                    "scope": "read" if initial else "read write",
+                    "expires_in": 1 if initial else 60,
+                })
+            n.token_hook = token
+            login = await p.prepare(target, OperationBudget.after(5))
+            initial = await self.complete_login(p, target, login)
+            self.assertIsInstance(initial, Ready)
+            self.assertEqual(next(iter(s.records.values())).token.scopes, ("read",))
+            now[0] += 2
+            with self.assertRaises(AuthenticationFailure) as failure:
+                await p.prepare(target, OperationBudget.after(5))
+            self.assertEqual(failure.exception.code, "access_denied")
+            self.assertEqual(n.tokens[-1]["grant_type"], ["refresh_token"])
+            self.assertEqual(n.tokens[-1]["refresh_token"], ["r1"])
+            self.assertNotIn("scope", n.tokens[-1])
+
+            def assert_quarantined(status):
+                record = next(iter(s.records.values()))
+                self.assertEqual(record.status, status)
+                self.assertEqual(record.token.refresh_token, "r2")
+                self.assertEqual(record.token.access_token, "unauthorized-broad")
+                self.assertTrue(record.token.quarantined)
+
+            assert_quarantined("quarantined")
+            def recreate():
+                return ManagedOAuthProvider(
+                    network=n, store=s, policy=policy, namespace="tenant",
+                    clock=lambda: now[0], expiry_skew=0,
+                )
+
+            async def assert_no_credential(provider):
+                with anyio.CancelScope() as scope:
+                    with self.assertRaises(AuthenticationFailure):
+                        await provider.credential(AuthContext(
+                            {"id": "backend"}, None, RESOURCE, "event", scope,
+                        ))
+
+            async def assert_no_dispatch(provider):
+                delivered = []
+                async def deliver(request):
+                    delivered.append(request.headers.get("authorization"))
+                    return httpx.Response(204)
+                async with httpx.AsyncClient(transport=httpx.MockTransport(deliver)) as client:
+                    transport = AuthenticatedHTTPTransport(
+                        RESOURCE, backend={"id": "backend"}, client=client,
+                        auth_provider=RoutingAuthProvider(
+                            discover=provider, oauth=provider, namespace="tenant",
+                        ),
+                    )
+                    with self.assertRaises(AuthenticationFailure):
+                        await transport.notify({"jsonrpc": "2.0", "method": "hooks/observe", "params": {}})
+                    await transport.aclose()
+                self.assertEqual(delivered, [])
+
+            fresh = recreate()
+            for provider in (p, fresh):
+                await assert_no_credential(provider)
+                await assert_no_dispatch(provider)
+            assert_quarantined("quarantined")
+            now[0] += 120
+            pending = await fresh.prepare(target, OperationBudget.after(5))
+            self.assertIsInstance(pending, PendingLogin)
+            assert_quarantined("pending")
+            await assert_no_credential(fresh)
+            await fresh.cancel(target, pending, OperationBudget.after(5))
+            assert_quarantined("quarantined")
+            fresh = recreate()
+            await assert_no_credential(fresh)
+            await assert_no_dispatch(fresh)
+            later = await fresh.prepare(target, OperationBudget.after(5))
+            self.assertIsInstance(later, PendingLogin)
+            assert_quarantined("pending")
+            await assert_no_dispatch(recreate())
+            self.assertEqual(len(n.tokens), 2)
+        self.run_async(run)
+
+    async def seed_quarantined_refresh(self, p, n, s, policy, target, now, scope):
+        policy.configuration = replace(
+            Policy("authorization_code_pkce").configuration,
+            scopes=("read", "write"), allowed_scopes=("read", "write"),
+        )
+        async def token(request):
+            initial = len(n.tokens) == 1
+            return httpx.Response(200, json={
+                "access_token": "initial-read" if initial else "quarantined-access",
+                "token_type": "Bearer", "refresh_token": "r1" if initial else "r2",
+                "scope": "read" if initial else scope,
+                "expires_in": 1 if initial else 60,
+            })
+        n.token_hook = token
+        login = await p.prepare(target, OperationBudget.after(5))
+        self.assertIsInstance(await self.complete_login(p, target, login), Ready)
+        now[0] += 2
+        with self.assertRaises(AuthenticationFailure) as failure:
+            await p.prepare(target, OperationBudget.after(5))
+        self.assertEqual(failure.exception.code, "access_denied")
+        record = next(iter(s.records.values()))
+        self.assertEqual(record.status, "quarantined")
+        self.assertTrue(record.token.quarantined)
+        self.assertEqual(record.token.refresh_token, "r2")
+        self.assertEqual(len(n.tokens), 2)
+        return record
+
+    def test_malformed_refresh_scope_preserves_rotated_refresh_and_quarantine(self):
+        for scope in (None, 7, "read  write", "réad", ""):
+            with self.subTest(scope=scope):
+                async def run(p, n, s, policy, target, now):
+                    record = await self.seed_quarantined_refresh(p, n, s, policy, target, now, scope)
+                    self.assertEqual(record.token.scopes, ())
+                    fresh = ManagedOAuthProvider(
+                        network=n, store=s, policy=policy, namespace="tenant",
+                        clock=lambda: now[0], expiry_skew=0,
+                    )
+                    with anyio.CancelScope() as cancel_scope:
+                        with self.assertRaises(AuthenticationFailure):
+                            await fresh.credential(AuthContext(
+                                {"id": "backend"}, None, RESOURCE, "event", cancel_scope,
+                            ))
+                    self.assertEqual(next(iter(s.records.values())), record)
+                    self.assertEqual(len(n.tokens), 2)
+                self.run_async(run)
+
+    def test_cancelled_pending_publication_restores_quarantine_and_rejects_old_callback(self):
+        async def run(p, n, s, policy, target, now):
+            await self.seed_quarantined_refresh(p, n, s, policy, target, now, "read write")
+            entered = anyio.Event()
+            unpublished = []
+            async def commit_then_block(key, record):
+                if record is not None and record.status == "pending":
+                    s.records[key] = record
+                    unpublished.append(PendingLogin(
+                        key, record.generation, record.pending.authorization_url,
+                        record.pending.expires_at,
+                    ))
+                    entered.set()
+                    await anyio.sleep_forever()
+                return True
+            s.cas_hook = commit_then_block
+            async def prepare():
+                await p.prepare(target, OperationBudget.after(10))
+            async with anyio.create_task_group() as tasks:
+                tasks.start_soon(prepare)
+                await entered.wait()
+                tasks.cancel_scope.cancel()
+            s.cas_hook = None
+            record = next(iter(s.records.values()))
+            self.assertEqual(record.status, "quarantined")
+            self.assertTrue(record.token.quarantined)
+            self.assertEqual(record.token.refresh_token, "r2")
+            self.assertNotEqual(record.generation, unpublished[0].generation)
+            fresh = ManagedOAuthProvider(
+                network=n, store=s, policy=policy, namespace="tenant",
+                clock=lambda: now[0], expiry_skew=0,
+            )
+            with self.assertRaises(AuthenticationFailure):
+                await self.complete_login(fresh, target, unpublished[0])
+            with anyio.CancelScope() as cancel_scope:
+                with self.assertRaises(AuthenticationFailure):
+                    await fresh.credential(AuthContext(
+                        {"id": "backend"}, None, RESOURCE, "event", cancel_scope,
+                    ))
+            self.assertEqual(next(iter(s.records.values())), record)
+            self.assertEqual(len(n.tokens), 2)
+        self.run_async(run)
+
     def test_pending_requested_and_required_scope_context_replaces_old_handle(self):
         async def run(p, n, s, policy, target, now):
             policy.configuration = replace(
@@ -1404,7 +1581,7 @@ class ManagedOAuthRuntimeTests(unittest.TestCase):
                         required_scopes=tuple(vector["required"]),
                     )
                     responses = []
-                    refreshing = vector.get("exchange") == "refresh"
+                    refreshing = "previous_granted" in vector
                     if refreshing:
                         responses.append({
                             "access_token": "seed-access", "token_type": "Bearer",
@@ -1447,7 +1624,10 @@ class ManagedOAuthRuntimeTests(unittest.TestCase):
                             self.assertFalse(client.is_closed)
                         self.assertEqual(len(store.records), 1)
                         record = next(iter(store.records.values()))
-                        self.assertEqual(record.status, "active")
+                        self.assertEqual(record.status, "active" if vector["accepted"] else "quarantined")
+                        self.assertEqual(record.token.quarantined, not vector["accepted"])
+                        if not vector["accepted"]:
+                            self.assertEqual(delivered, [])
                         self.assertEqual(record.token.access_token, vector["response"]["access_token"])
                         if "granted" in vector:
                             self.assertEqual(set(record.token.scopes), set(vector["granted"]))

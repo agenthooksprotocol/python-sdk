@@ -3,6 +3,7 @@
 Canonical vector source: agent-hooks-protocol/conformance/draft/sdk-auth-lifecycle.json.
 """
 
+import hashlib
 import json
 from pathlib import Path
 import unittest
@@ -60,6 +61,16 @@ class OAuthContractTests(unittest.TestCase):
 
 
 class CanonicalVectorTests(unittest.TestCase):
+    def test_canonical_fixture_matches_pinned_bytes(self):
+        # agent-hooks-protocol commit 88055d2623a06dff8dede79f4cbee8ac5e73f0e9.
+        source = Path(__file__).parent / "fixtures/sdk-auth-lifecycle.json"
+        self.assertEqual(
+            hashlib.sha256(source.read_bytes()).hexdigest(),
+            "ef3d8f5ea5ef9c0036dfd23fcd65131f9c9a0a7e465c931d0265fc03f4938e2f",
+        )
+        self.assertEqual(len(FIXTURES["token_responses"]), 9)
+        self.assertEqual(len(FIXTURES["lifecycle"]), 17)
+
     def test_recovery_vectors(self):
         for vector in FIXTURES["recovery"]:
             with self.subTest(code=vector["code"]):

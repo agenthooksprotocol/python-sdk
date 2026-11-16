@@ -208,10 +208,13 @@ trailing slashes and queries where permitted. Do not normalize mismatches away.
 `OAuthClientConfiguration.scopes` is the requested set. `allowed_scopes` is the
 local ceiling and defaults to requested scopes when omitted. `required_scopes`
 contains explicit operation requirements. All scopes use OAuth's ASCII grammar;
-requested and required scopes must be inside the ceiling. A response may narrow
-requested scopes or add only locally allowed scopes. Omitted response `scope`
-inherits requested scopes on acquisition and the previous granted scopes on
-refresh. Requested scopes alone are not mandatory for delivery.
+requested and required scopes must be inside the ceiling. An initial response
+may narrow requested scopes or add only locally allowed scopes. A refresh response
+can only retain or narrow the **previously granted** scopes, even when the local
+ceiling allows more. Omitted response `scope` inherits requested scopes on
+acquisition and the previous granted scopes on refresh. Broader scopes require
+fresh PKCE consent or a new client-credentials grant. Requested scopes alone are
+not mandatory for delivery.
 
 A Bearer 403 `insufficient_scope` records permitted step-up requirements for the
 binding. Forbidden scopes fail with `access_denied`. If the challenge omits
@@ -239,7 +242,15 @@ Unknown expiry is usable: an omitted `expires_in` does not force refresh or
 invalidate a token. Explicit invalid expiry is rejected; known expiry uses an
 `expiry_skew` of 30 seconds by default. A successfully received rotated refresh
 credential is persisted before reporting operation-level scope insufficiency.
-Tokens outside local permission policy are not dispatched.
+Tokens outside local permission policy or the prior refresh grant are persisted
+with `StoredToken.quarantined=True` and a `quarantined` grant status, retaining
+rotated refresh material before `access_denied` is reported. Stores must preserve
+this marker when serializing records. The SDK does not dispatch or refresh a
+quarantined access token, including after provider recreation or pending-login
+cancellation. Explicit fresh consent or client-credentials acquisition can
+replace it with a valid grant; reset deliberately discards the retained grant.
+Adapters accepting experimental records from before this marker must invalidate
+any records whose refresh-scope history cannot be established.
 
 A timeout, 5xx, non-OAuth response or transient OAuth error retains refresh
 material and advises retry, not automatic login. An ambiguous exchange may have

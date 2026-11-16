@@ -152,6 +152,8 @@ class StoredToken:
     expires_at: float | None = None
     refresh_token: str | None = field(default=None, repr=False)
     scopes: tuple[str, ...] = ()
+    # Persist with the rotated credential; never dispatch this access token.
+    quarantined: bool = False
 
 
 @dataclass(frozen=True)
@@ -167,7 +169,7 @@ class PendingState:
 @dataclass(frozen=True)
 class OAuthRecord:
     generation: str
-    status: Literal["active", "refreshing", "pending", "rejected"]
+    status: Literal["active", "refreshing", "pending", "rejected", "quarantined"]
     metadata: OAuthMetadata = field(repr=False)
     token: StoredToken | None = field(default=None, repr=False)
     pending: PendingState | None = field(default=None, repr=False)

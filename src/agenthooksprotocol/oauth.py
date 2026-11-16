@@ -271,6 +271,8 @@ class ManagedOAuthProvider:
     def _ready(self, target: AuthTarget, key: StoreKey, record: OAuthRecord) -> Ready:
         if record.token is None:
             raise AuthenticationFailure(code="credential_unavailable")
+        if record.token.quarantined or record.status == "quarantined":
+            raise AuthenticationFailure(code="access_denied")
         return Ready(
             BearerCredential(
                 record.token.access_token,
@@ -290,7 +292,12 @@ class ManagedOAuthProvider:
     async def _commit_token(
         self, guard: OAuthStoreGuard, reserved: OAuthRecord, token: StoredToken
     ) -> OAuthRecord:
-        active = OAuthRecord(uuid4().hex, "active", reserved.metadata, token)
+        active = OAuthRecord(
+            uuid4().hex,
+            "quarantined" if token.quarantined else "active",
+            reserved.metadata,
+            token,
+        )
         # Rotation may already have occurred externally. Finish one bounded
         # atomic store commit before honoring cancellation; never restore stale
         # credentials from a broad exception/finally cleanup path.
@@ -343,12 +350,13 @@ class ManagedOAuthProvider:
         config = metadata.configuration
         scopes = previous.scopes if previous is not None else config.scopes
         granted = response.get("scope")
-        if "scope" in response and granted is None:
-            raise AuthenticationFailure(code="access_denied")
-        if granted is not None:
-            if not isinstance(granted, str):
-                raise AuthenticationFailure(code="access_denied")
-            scopes = tuple(granted.split(" ")) if granted else ()
+        malformed_scope = False
+        if "scope" in response:
+            if not isinstance(granted, str) or not granted:
+                malformed_scope = True
+                scopes = ()
+            else:
+                scopes = tuple(granted.split(" "))
         allowed = (
             config.allowed_scopes
             if config.allowed_scopes is not None
@@ -359,8 +367,20 @@ class ManagedOAuthProvider:
             or any(ord(c) < 0x21 or ord(c) > 0x7E or c in '"\\' for c in scope)
             for scope in scopes
         ):
-            raise AuthenticationFailure(code="access_denied")
-        if enforce_allowed and not set(scopes).issubset(allowed):
+            malformed_scope = True
+            scopes = ()
+        # A refresh remains inside the actual prior grant, even when local
+        # policy permits a broader new consent. Persist rejected rotations with
+        # an intrinsic marker so pending/cancel/repair cannot reactivate access.
+        quarantined = (
+            malformed_scope
+            or not set(scopes).issubset(allowed)
+            or (
+                previous is not None
+                and (previous.quarantined or not set(scopes).issubset(previous.scopes))
+            )
+        )
+        if enforce_allowed and quarantined:
             raise AuthenticationFailure(code="access_denied")
         refresh = response.get(
             "refresh_token", previous.refresh_token if previous else None
@@ -372,6 +392,7 @@ class ManagedOAuthProvider:
             self.clock() + lifetime if lifetime is not None else None,
             refresh,
             scopes,
+            quarantined=quarantined,
         )
 
     async def _exchange(
@@ -387,6 +408,8 @@ class ManagedOAuthProvider:
     ) -> OAuthRecord:
         config = config or metadata.configuration
         old_token = previous.token if previous else None
+        if old_token is not None and old_token.quarantined:
+            old_token = None
         if (
             config.flow == "client_credentials"
             and old_token is not None
@@ -447,7 +470,11 @@ class ManagedOAuthProvider:
                             reserved,
                             OAuthRecord(
                                 uuid4().hex,
-                                "active" if retained else "rejected",
+                                "quarantined"
+                                if retained is not None and retained.quarantined
+                                else "active"
+                                if retained
+                                else "rejected",
                                 metadata,
                                 retained,
                             ),
@@ -466,10 +493,7 @@ class ManagedOAuthProvider:
                 raise AuthenticationFailure(code="credential_unavailable") from None
             raise AuthenticationFailure(code="provider_failed") from None
         active = await self._commit_token(guard, reserved, token)
-        allowed = (
-            config.scopes if config.allowed_scopes is None else config.allowed_scopes
-        )
-        if not set(token.scopes).issubset(allowed):
+        if token.quarantined:
             raise AuthenticationFailure(code="access_denied")
         return active
 
@@ -552,7 +576,9 @@ class ManagedOAuthProvider:
                                 retained = (
                                     OAuthRecord(
                                         uuid4().hex,
-                                        "active",
+                                        "quarantined"
+                                        if current.token.quarantined
+                                        else "active",
                                         current.metadata,
                                         current.token,
                                     )
@@ -680,6 +706,7 @@ class ManagedOAuthProvider:
                 token = existing.token if existing else None
                 adequate = (
                     token is not None
+                    and not token.quarantined
                     and set(required).issubset(token.scopes)
                     and set(token.scopes).issubset(allowed)
                 )
@@ -718,9 +745,11 @@ class ManagedOAuthProvider:
                 and record.status in ("active", "refreshing", "pending")
             ):
                 token = record.token
-                adequate = set(required).issubset(token.scopes) and set(
-                    token.scopes
-                ).issubset(allowed)
+                adequate = (
+                    not token.quarantined
+                    and set(required).issubset(token.scopes)
+                    and set(token.scopes).issubset(allowed)
+                )
                 valid = (
                     token.expires_at is None
                     or token.expires_at > self.clock() + self.expiry_skew
@@ -882,7 +911,11 @@ class ManagedOAuthProvider:
                         record,
                         OAuthRecord(
                             uuid4().hex,
-                            "active" if record.token else "rejected",
+                            "quarantined"
+                            if record.token is not None and record.token.quarantined
+                            else "active"
+                            if record.token
+                            else "rejected",
                             record.metadata,
                             record.token,
                         ),
@@ -1001,7 +1034,10 @@ class ManagedOAuthProvider:
                 if record.status == "pending":
                     retained = (
                         OAuthRecord(
-                            uuid4().hex, "active", record.metadata, record.token
+                            uuid4().hex,
+                            "quarantined" if record.token.quarantined else "active",
+                            record.metadata,
+                            record.token,
                         )
                         if record.token
                         else None

@@ -130,6 +130,7 @@ class ManagedOAuthProvider:
     def _dependencies() -> None:
         try:
             importlib.import_module("httpx")
+            importlib.import_module("httpx2")
             importlib.import_module("authlib.integrations.httpx_client")
         except ImportError:
             raise AuthenticationFailure(
@@ -190,6 +191,7 @@ class ManagedOAuthProvider:
     ) -> AbstractAsyncContextManager[_OAuthOperations]:
         try:
             import httpx
+            import httpx2
             from authlib.integrations.httpx_client import AsyncOAuth2Client  # type: ignore[import-untyped]
         except ImportError:
             raise AuthenticationFailure(
@@ -199,11 +201,24 @@ class ManagedOAuthProvider:
 
         network = self.network
 
-        class HostTransport(httpx.AsyncBaseTransport):
+        class HostTransport(httpx2.AsyncBaseTransport):
             async def handle_async_request(
-                self, request: httpx.Request
-            ) -> httpx.Response:
-                return await safe_request(network, request, "token", budget)
+                self, request: httpx2.Request
+            ) -> httpx2.Response:
+                # Authlib uses HTTPX2, whose request/response/stream classes are
+                # distinct from HTTPX. Keep the established host network boundary
+                # on HTTPX and explicitly bridge fully buffered OAuth messages.
+                host_request = httpx.Request(
+                    request.method, str(request.url),
+                    headers=request.headers.multi_items(),
+                    content=await request.aread(),
+                    extensions=dict(request.extensions),
+                )
+                response = await safe_request(network, host_request, "token", budget)
+                return httpx2.Response(
+                    response.status_code, headers=response.headers.multi_items(),
+                    content=response.content,
+                )
 
             async def aclose(self) -> None:
                 # The host network and its injected client remain borrowed.

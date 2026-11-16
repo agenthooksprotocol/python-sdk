@@ -10,7 +10,7 @@ Install the published `agenthooksprotocol` package from [PyPI](https://pypi.org/
 python -m pip install 'agenthooksprotocol[http]'
 ```
 
-HTTPX is an opt-in dependency (`[http]`). Managed OAuth adds Authlib and HTTPX
+HTTPX is an opt-in dependency (`[http]`). Managed OAuth adds Authlib, HTTPX2 and HTTPX
 through `[oauth]` (`python -m pip install 'agenthooksprotocol[oauth]'`).
 Pydantic is an independent opt-in integration (`[pydantic]`); neither a web
 framework nor Pydantic is needed for the core SDK or stdio.

@@ -15,16 +15,39 @@ client-credentials, deadline-cancel, redaction.
 
 import hashlib
 import importlib.util
+import subprocess
+import sys
 import unittest
 from base64 import urlsafe_b64encode
 from urllib.parse import parse_qs, urlsplit
 
 import anyio
-import httpx
 
 
-@unittest.skipUnless(importlib.util.find_spec("authlib"), "optional Authlib spike")
+@unittest.skipUnless(
+    importlib.util.find_spec("authlib") and importlib.util.find_spec("httpx2"),
+    "requires optional oauth extra",
+)
 class AuthlibCompatibilitySpike(unittest.TestCase):
+    def test_supported_integration_import_has_no_deprecated_fallback(self):
+        # A fresh process exercises Authlib's import-time compatibility choice.
+        # Record warnings rather than suppressing or filtering the warning away.
+        code = """
+import warnings
+with warnings.catch_warnings(record=True) as captured:
+    warnings.simplefilter('always')
+    import httpx
+    import httpx2
+    from authlib.integrations.httpx_client import AsyncOAuth2Client
+assert issubclass(AsyncOAuth2Client, httpx2.AsyncClient)
+assert not issubclass(AsyncOAuth2Client, httpx.AsyncClient)
+assert not any('httpx module is deprecated' in str(item.message) for item in captured)
+"""
+        result = subprocess.run(
+            [sys.executable, "-c", code], capture_output=True, text=True, check=False,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+
     def both_backends(self, operation):
         for backend in ("asyncio", "trio"):
             with self.subTest(backend=backend):
@@ -32,6 +55,7 @@ class AuthlibCompatibilitySpike(unittest.TestCase):
 
     def test_pkce_s256_state_and_resource_are_explicit(self):
         async def run():
+            import httpx2 as httpx
             from authlib.integrations.httpx_client import AsyncOAuth2Client
 
             requests = []
@@ -102,6 +126,7 @@ class AuthlibCompatibilitySpike(unittest.TestCase):
 
     def test_client_credentials_and_refresh_require_resource_each_time(self):
         async def run():
+            import httpx2 as httpx
             from authlib.integrations.httpx_client import AsyncOAuth2Client
 
             requests = []
@@ -155,8 +180,9 @@ class AuthlibCompatibilitySpike(unittest.TestCase):
 
         self.both_backends(run)
 
-    def test_native_cancel_propagates_from_real_httpx_transport(self):
+    def test_native_cancel_propagates_from_real_httpx2_transport(self):
         async def run():
+            import httpx2 as httpx
             from authlib.integrations.httpx_client import AsyncOAuth2Client
 
             entered = anyio.Event()
@@ -194,6 +220,7 @@ class AuthlibCompatibilitySpike(unittest.TestCase):
 
     def test_library_errors_are_not_safe_public_errors(self):
         async def run():
+            import httpx2 as httpx
             from authlib.integrations.httpx_client import AsyncOAuth2Client
 
             def handle(request):
@@ -222,6 +249,7 @@ class AuthlibCompatibilitySpike(unittest.TestCase):
 
     def test_redirects_need_host_policy_not_just_oauth_library(self):
         async def run():
+            import httpx2 as httpx
             from authlib.integrations.httpx_client import AsyncOAuth2Client
 
             seen = []

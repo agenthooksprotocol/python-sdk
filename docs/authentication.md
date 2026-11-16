@@ -66,9 +66,16 @@ asyncio and Trio, and provider calls stay inside the enclosing operation budget.
 ## Optional managed OAuth
 
 Install `agenthooksprotocol[oauth]` to use `agenthooksprotocol.oauth`. The extra
-adds Authlib and HTTPX; core and stdio installs do not need them. Importing the
+adds Authlib, HTTPX2 and HTTPX; core and stdio installs do not need them. Importing the
 module does not start network activity or require Authlib. Exchanges require the
-extra. The older Authlib compatibility probes remain library-level tests;
+extra. Authlib 1.9.6 uses its supported HTTPX2 integration, not the deprecated
+HTTPX fallback. HTTPX2 and HTTPX have distinct request, response and stream
+classes: the adapter explicitly bridges buffered OAuth messages to the existing
+HTTPX-based host network contract. Hosts do not need to migrate their clients.
+HTTPX2's HTTPcore2/truststore dependencies are confined to the optional extra;
+actual OAuth connections still pass through the host's TLS/DNS/egress boundary,
+with environment trust disabled and no redirect following.
+The older Authlib compatibility probes remain library-level tests;
 `tests/test_managed_oauth_runtime.py` and `tests/test_oauth_discovery.py` exercise
 the managed implementation on asyncio and Trio.
 

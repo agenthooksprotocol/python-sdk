@@ -173,7 +173,8 @@ class Network:
 
 
 @unittest.skipUnless(
-    importlib.util.find_spec("authlib"), "requires optional oauth extra"
+    importlib.util.find_spec("authlib") and importlib.util.find_spec("httpx2"),
+    "requires optional oauth extra",
 )
 class ManagedOAuthRuntimeTests(unittest.TestCase):
     def run_async(self, test):
@@ -198,6 +199,25 @@ class ManagedOAuthRuntimeTests(unittest.TestCase):
                         await n.client.aclose()
 
                 anyio.run(run, backend=backend)
+
+    def test_supported_authlib_transport_keeps_host_httpx_types(self):
+        async def run(p, n, s, policy, target, now):
+            import httpx2
+
+            from authlib.integrations.httpx_client import AsyncOAuth2Client
+
+            self.assertTrue(issubclass(AsyncOAuth2Client, httpx2.AsyncClient))
+            self.assertFalse(issubclass(AsyncOAuth2Client, httpx.AsyncClient))
+            await p.prepare(target, OperationBudget.after(5))
+            for request, purpose in n.requests:
+                self.assertIsInstance(request, httpx.Request)
+                self.assertNotIsInstance(request, httpx2.Request)
+                if purpose == "token":
+                    self.assertIn("timeout", request.extensions)
+                    self.assertEqual(parse_qs(request.content.decode())["resource"], [RESOURCE])
+                    self.assertIn("authorization", request.headers)
+            self.assertFalse(n.client.is_closed)
+        self.run_async(run)
 
     def test_pkce_complete_wrong_state_verifier_and_replay(self):
         async def run(p, n, s, policy, target, now):

@@ -126,6 +126,8 @@ async def safe_request(
             await network.authorize(str(request.url), purpose, budget)
             response = await network.send(request, purpose, budget)
             if response.history or 300 <= response.status_code < 400:
+                if purpose == "registration":
+                    raise AuthenticationFailure(code="untrusted_destination")
                 raise _fail()
             length = response.headers.get("content-length")
             if length is not None and (
@@ -270,7 +272,9 @@ def validate_configuration(
     mandatory = _scope_set(configuration.required_scopes) | _scope_set(required)
     if not requested.issubset(allowed) or not mandatory.issubset(allowed):
         raise AuthenticationFailure(code="access_denied")
-    if configuration.issuer not in issuers or not configuration.client_id:
+    # An empty client_id asks client selection for CIMD or DCR.
+    registered = not configuration.client_id
+    if configuration.issuer not in issuers:
         raise _fail()
     binding = target.typed_binding
     if binding is not None and (
@@ -315,7 +319,8 @@ def validate_configuration(
     elif configuration.flow != "client_credentials":
         raise AuthenticationFailure(code="unsupported_binding")
     if (
-        configuration.token_endpoint_auth_method != "none"
+        not registered
+        and configuration.token_endpoint_auth_method != "none"
         and not configuration.client_secret
     ):
         # This function only receives current runtime policy, never sanitized records.
@@ -412,17 +417,25 @@ async def issuer_metadata(
     methods = _strings(document, "token_endpoint_auth_methods_supported") or (
         "client_secret_basic",
     )
-    if configuration.token_endpoint_auth_method not in methods:
+    if (
+        configuration.client_id
+        and configuration.token_endpoint_auth_method not in methods
+    ):
         raise _fail()
     response_issuer = document.get(
         "authorization_response_iss_parameter_supported", False
     )
     if not isinstance(response_issuer, bool):
         raise _fail()
+    # Client registration inputs; selection validates the endpoint.
+    registration = document.get("registration_endpoint")
     return OAuthMetadata(
         resource,
         configuration,
         token_endpoint,
         authorization_endpoint,
         response_issuer,
+        registration if isinstance(registration, str) and registration else None,
+        document.get("client_id_metadata_document_supported") is True,
+        methods,
     )

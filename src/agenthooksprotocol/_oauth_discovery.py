@@ -77,8 +77,18 @@ def _validate_endpoint(value: object, *, authorization: bool = False) -> str:
     return url
 
 
+class NotSent(AuthenticationFailure):
+    """DNS, TCP connect or TLS handshake failure: the request provably never
+    reached the server, so a renewal may safely refetch metadata and retry."""
+
+    def __init__(self) -> None:
+        super().__init__(code="discovery_failed")
+
+
 def _public_error(error: BaseException) -> BaseException:
     """Construct sanitized failures outside the original exception handler."""
+    if isinstance(error, (httpx.ConnectError, httpx.ConnectTimeout, NotSent)):
+        return NotSent()
     if isinstance(error, (httpx.TimeoutException, TimeoutError)):
         return TimeoutError("Authentication operation timed out")
     if isinstance(error, AuthenticationFailure):

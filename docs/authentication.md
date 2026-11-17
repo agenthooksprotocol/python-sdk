@@ -41,10 +41,13 @@ access, storage/coordination, consent UI and callback transport host-controlled.
   metadata if it is missing). A known binding that cannot be renewed fails the
   operation, with `interaction_required` when consent is needed. Only a store
   miss or a host policy refusal sends anonymously. Full discovery runs only on a
-  cache miss, a host `prepare` or challenge handling. If a renewal fails on
-  persisted metadata without an OAuth error response (network, redirect, 404),
-  the provider refetches the stored issuer's metadata once and retries; a
-  changed issuer or failed refetch reports `discovery_failed`, repaired by `prepare`. A 401 marks the rejected
+  cache miss, a host `prepare` or challenge handling. If the token endpoint
+  provably did not process a renewal (DNS, connect or TLS-handshake failure, or
+  404/410), the provider refetches the stored issuer's metadata once and retries;
+  a changed issuer or failed refetch reports `discovery_failed`, repaired by
+  `prepare`. Ambiguous failures after sending (read timeout or reset, 5xx,
+  non-OAuth body, redirect) report `provider_failed` with no immediate retry,
+  so a rotated refresh token is never replayed. A 401 marks the rejected
   token stale even if it has not expired, so it is renewed, never resent. An unknown first contact's
   challenge can trigger trusted discovery. Use host `prepare` before the first
   unsafe call if it needs auth.

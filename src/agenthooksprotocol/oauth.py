@@ -65,7 +65,8 @@ _SCOPE = re.compile(r"[\x21\x23-\x5b\x5d-\x7e]+")
 
 
 class _StaleMetadata(AuthenticationFailure):
-    """A non-OAuth token endpoint failure; persisted metadata may be stale."""
+    """The token endpoint provably did not process the request (DNS/connect/
+    TLS failure or 404/410); persisted metadata may be stale."""
 
     def __init__(self) -> None:
         super().__init__(code="discovery_failed")
@@ -143,11 +144,13 @@ async def _token_endpoint(
         data = None
     if response.status_code >= 500:
         raise _ExchangeError("transient")
-    if not isinstance(data, dict) or (
-        "error" not in data and not 200 <= response.status_code < 300
+    if response.status_code in (404, 410) and not (
+        isinstance(data, dict) and "error" in data
     ):
-        # Not an OAuth response (404/410, HTML): the endpoint may have moved.
+        # The endpoint did not process the request: it may have moved.
         raise _ExchangeError("stale")
+    if not isinstance(data, dict):
+        raise _ExchangeError("transient")
     error = data.get("error")
     if error is not None or not 200 <= response.status_code < 300:
         raise _ExchangeError(error if error in _DEFINITIVE else "transient")
@@ -384,12 +387,19 @@ class ManagedOAuthProvider:
             if outcome is None:
                 raise
         await anyio.lowlevel.checkpoint()
+        from ._oauth_discovery import NotSent
+
+        if isinstance(outcome, NotSent) or (
+            isinstance(outcome, _ExchangeError) and outcome.code == "stale"
+        ):
+            raise _StaleMetadata()
         if (
             isinstance(outcome, AuthenticationFailure)
             and outcome.code == "discovery_failed"
-        ) or (isinstance(outcome, _ExchangeError) and outcome.code == "stale"):
-            # Connection, redirect or non-OAuth response: never an OAuth error.
-            raise _StaleMetadata()
+        ):
+            # Ambiguous post-send failure (read timeout/reset, redirect): the
+            # refresh token may be spent, so never retry or refetch here.
+            raise AuthenticationFailure(code="provider_failed")
         if outcome is not None and not isinstance(outcome, _ExchangeError):
             raise outcome
         if isinstance(outcome, _ExchangeError):

@@ -2199,6 +2199,58 @@ class ManagedOAuthRuntimeTests(unittest.TestCase):
         self.run_async(run)
 
 
+    def test_ambiguous_renewal_failure_neither_refetches_nor_retries(self):
+        """Canonical lifecycle: ambiguous-renewal-failure-no-refetch."""
+        def raising(error_type):
+            def respond(request):
+                raise error_type("after send", request=request)
+            return respond
+
+        failures = (
+            ("read-reset", raising(httpx.ReadError), AuthenticationFailure),
+            ("read-timeout", raising(httpx.ReadTimeout), TimeoutError),
+            ("5xx", lambda request: httpx.Response(503, text="busy"), AuthenticationFailure),
+            ("non-oauth", lambda request: httpx.Response(200, text="<html>"), AuthenticationFailure),
+            ("redirect", lambda request: httpx.Response(307, headers={"location": ISSUER + "/elsewhere"}), AuthenticationFailure),
+        )
+        for name, respond, expected in failures:
+            with self.subTest(failure=name):
+                async def run(p, n, s, policy, target, now):
+                    await p.prepare(target, OperationBudget.after(5))
+                    old = next(iter(s.records.values())).token
+                    now[0] += 61
+                    before, tokens = len(n.requests), len(n.tokens)
+                    async def fail(request):
+                        return respond(request)
+                    n.token_hook = fail
+                    with self.assertRaises(expected) as failure:
+                        await p.credential(self.unbound())
+                    if expected is AuthenticationFailure:
+                        self.assertEqual((failure.exception.code, failure.exception.recovery), ("provider_failed", "retry"))
+                    self.assertEqual(len(n.tokens), tokens + 1)
+                    self.assertFalse([r for r, purpose in n.requests[before:] if purpose == "metadata"])
+                    record = next(iter(s.records.values()))
+                    self.assertEqual((record.status, record.token.refresh_token), ("active", old.refresh_token))
+                self.run_async(run)
+
+    def test_connect_failure_refetches_issuer_metadata_once(self):
+        """A connect failure provably sent nothing, so one refetch and retry is safe."""
+        async def run(p, n, s, policy, target, now):
+            await p.prepare(target, OperationBudget.after(5))
+            now[0] += 61
+            calls = []
+            async def connect_once(request):
+                calls.append(request)
+                if len(calls) == 1:
+                    raise httpx.ConnectError("refused", request=request)
+                return httpx.Response(200, json={"access_token": "retried", "token_type": "Bearer", "expires_in": 60})
+            n.token_hook = connect_once
+            before = len(n.requests)
+            self.assertEqual((await p.credential(self.unbound())).token, "retried")
+            self.assertEqual([str(r.url) for r, purpose in n.requests[before:] if purpose == "metadata"], [ISSUER + "/.well-known/oauth-authorization-server"])
+        self.run_async(run)
+
+
 LIFECYCLE_TESTS = {
     "cached-token-metadata-outage": "test_endpoint_and_capability_rotation_renews_outside_grant_lock_with_current_secret",
     "unbound-preemptive-unsafe-delivery": "test_fresh_provider_uses_persistent_binding_offline_and_sends_upfront",
@@ -2241,6 +2293,7 @@ LIFECYCLE_TESTS = {
     "challenge-renews-rejected-unexpired-token": "test_challenge_renews_rejected_unexpired_token",
     "step-up-keeps-previous-grant": "test_step_up_reacquisition_keeps_previous_grant",
     "stale-metadata-refetch-once": "test_stale_issuer_metadata_is_refetched_once",
+    "ambiguous-renewal-failure-no-refetch": "test_ambiguous_renewal_failure_neither_refetches_nor_retries",
 }
 
 

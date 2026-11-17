@@ -163,6 +163,20 @@ async def _token_endpoint(
         # The endpoint did not process the request: it may have moved.
         raise _ExchangeError("stale")
     if not isinstance(data, dict):
+        kind = response.headers.get("content-type", "").split(";")[0].strip().lower()
+        if 200 <= response.status_code < 300 and kind in (
+            "application/x-www-form-urlencoded",
+            "text/plain",
+        ):
+            # A form-encoded success body is invalid, but a valid rotated
+            # refresh token in it must still be kept.
+            try:
+                values = parse_qs(response.content.decode("ascii"), strict_parsing=True)
+            except (UnicodeDecodeError, ValueError):
+                values = {}
+            rotated = values.get("refresh_token", [])
+            valid = len(rotated) == 1 and re.fullmatch(r"[\x20-\x7e]+", rotated[0])
+            raise _ExchangeError("invalid", rotated[0] if valid else None)
         raise _ExchangeError("transient")
     error = data.get("error")
     if error is not None or not 200 <= response.status_code < 300:

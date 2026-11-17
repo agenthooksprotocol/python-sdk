@@ -3726,6 +3726,37 @@ class ManagedOAuthRuntimeTests(unittest.TestCase):
 
         self.run_async(run)
 
+    def test_form_encoded_refresh_body_keeps_rotated_refresh(self):
+        for kind in ("application/x-www-form-urlencoded", "text/plain; charset=utf-8"):
+            with self.subTest(kind=kind):
+
+                async def run(p, n, s, policy, target, now, kind=kind):
+                    await self.pkce_grant(p, n, policy, target)
+                    now[0] += 61
+
+                    async def form(request):
+                        return httpx.Response(
+                            200,
+                            content=b"access_token=new&token_type=Bearer&refresh_token=ROTATED",
+                            headers={"content-type": kind},
+                        )
+
+                    n.token_hook = form
+                    with self.assertRaises(AuthenticationFailure) as failure:
+                        await p.prepare(target, OperationBudget.after(5))
+                    self.assertEqual(failure.exception.code, "provider_failed")
+                    record = next(iter(s.records.values()))
+                    self.assertEqual(
+                        (
+                            record.status,
+                            record.token.access_token,
+                            record.token.refresh_token,
+                        ),
+                        ("active", None, "ROTATED"),
+                    )
+
+                self.run_async(run)
+
 
 LIFECYCLE_TESTS = {
     "cached-token-metadata-outage": "test_endpoint_and_capability_rotation_renews_outside_grant_lock_with_current_secret",

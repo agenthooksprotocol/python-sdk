@@ -69,9 +69,15 @@ class CanonicalVectorTests(unittest.TestCase):
         if not (protocol / ".git").exists():
             self.skipTest("requires the sibling protocol checkout")
         canonical = subprocess.run(
-            ["git", "-C", str(protocol), "show",
-             lock["sourceCommit"] + ":conformance/draft/sdk-auth-lifecycle.json"],
-            capture_output=True, check=True,
+            [
+                "git",
+                "-C",
+                str(protocol),
+                "show",
+                lock["sourceCommit"] + ":conformance/draft/sdk-auth-lifecycle.json",
+            ],
+            capture_output=True,
+            check=True,
         ).stdout
         self.assertEqual(FIXTURE.read_bytes(), canonical)
 
@@ -141,7 +147,9 @@ class CanonicalVectorTests(unittest.TestCase):
                 token = provider._token(*arguments)
                 self.assertEqual(set(token.scopes), set(vector["granted"]))
                 effective = set(token.scopes) & set(vector["allowed"])
-                self.assertEqual(effective, set(vector.get("effective", vector["granted"])))
+                self.assertEqual(
+                    effective, set(vector.get("effective", vector["granted"]))
+                )
                 self.assertEqual(
                     token.expires_at is None, vector["expiry"] == "unknown"
                 )

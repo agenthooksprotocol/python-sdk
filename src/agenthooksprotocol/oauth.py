@@ -154,6 +154,13 @@ async def _token_endpoint(
     error = data.get("error")
     if error is not None or not 200 <= response.status_code < 300:
         raise _ExchangeError(error if error in _DEFINITIVE else "transient")
+    if response.status_code != 200:
+        # RFC 6749 section 5.1 success is 200: any other 2xx is an invalid
+        # response that still keeps a valid rotated refresh token.
+        refresh = data.get("refresh_token")
+        raise _ExchangeError(
+            "invalid", refresh if isinstance(refresh, str) and refresh else None
+        )
     return data
 
 
@@ -291,6 +298,7 @@ class ManagedOAuthProvider:
         lifetime, scope = response.get("expires_in"), response.get("scope")
         refresh = response.get("refresh_token")
         # A positive JSON integer or ASCII-digit string; never fractional.
+        # Huge values are clamped (about 68 years) rather than overflowing.
         seconds = (
             lifetime
             if isinstance(lifetime, int) and not isinstance(lifetime, bool)
@@ -298,8 +306,8 @@ class ManagedOAuthProvider:
             if isinstance(lifetime, str) and lifetime.isascii() and lifetime.isdigit()
             else None
         )
-        if seconds is not None and seconds <= 0:
-            seconds = None
+        if seconds is not None:
+            seconds = min(seconds, 2**31) if seconds > 0 else None
         valid_refresh = refresh if isinstance(refresh, str) and refresh else None
         valid = (
             isinstance(value, str)
@@ -538,22 +546,37 @@ class ManagedOAuthProvider:
                     if isinstance(target.typed_binding, OAuthBinding)
                     else (metadata.configuration.issuer,)
                 )
+                candidate: OAuthMetadata | None = None
                 try:
                     resource = await self.policy.resource(target, budget)
                     config = await self.policy.select(
                         target, resource, issuers, challenged, budget
                     )
-                    validate_configuration(
-                        target, resource, issuers, challenged, config
-                    )
                 except AuthenticationFailure:
                     if lookup:
                         return None  # Host policy refusal: anonymous attempt.
-                    raise
-                candidate = replace(metadata, resource=resource, configuration=config)
-                # Policy rotation can legitimately rebind; never reuse the old principal.
-                same = grant_key(target, candidate) == grant_key(target, metadata)
-                metadata = candidate if same else None
+                else:
+                    try:
+                        validate_configuration(
+                            target, resource, issuers, challenged, config
+                        )
+                        candidate = replace(
+                            metadata, resource=resource, configuration=config
+                        )
+                    except AuthenticationFailure:
+                        if lookup:
+                            raise
+                # A failed cached check or a changed principal (issuer, client,
+                # flow or partition) rediscovers and repairs the binding; the
+                # lookup cannot discover, so it fails instead of going
+                # anonymous. Never reuse the old principal.
+                if candidate is not None and grant_key(target, candidate) != grant_key(
+                    target, metadata
+                ):
+                    if lookup:
+                        raise AuthenticationFailure(code="discovery_failed")
+                    candidate = None
+                metadata = candidate
                 if metadata is not None and not metadata.token_endpoint:
                     # Missing persisted authorization-server metadata: fetch
                     # the stored issuer's only, never protected-resource data.
@@ -593,6 +616,20 @@ class ManagedOAuthProvider:
                     )
                     stale = record is not None and record.generation == rejected
                     if (
+                        stale
+                        and record is not None
+                        and token is not None
+                        and token.access_token is not None
+                        and challenge is not None
+                        and challenge.status == 401
+                    ):
+                        # Persist the rejection before any renewal that can
+                        # fail, so a revoked token is never resent.
+                        token = replace(token, access_token=None)
+                        marked = replace(record, generation=uuid4().hex, token=token)
+                        await self._cas(guard, record, marked)
+                        record = marked
+                    if (
                         token is not None
                         and adequate
                         and not stale
@@ -612,14 +649,6 @@ class ManagedOAuthProvider:
                             # Renew endpoint metadata outside the lock, then reload.
                             renew = True
                             continue
-                        retained = token
-                        if (
-                            token is not None
-                            and stale
-                            and challenge is not None
-                            and challenge.status == 401
-                        ):
-                            retained = replace(token, access_token=None)
                         # Re-acquisition keeps the previous grant (step-up).
                         granted = set(token.scopes) if token is not None else set()
                         requested = tuple(
@@ -644,7 +673,7 @@ class ManagedOAuthProvider:
                             form,
                             requested,
                             previous=token if refresh else None,
-                            retained=retained,
+                            retained=token,
                             ceiling=tuple(sorted(granted | set(config.ceiling))),
                         )
                         assert active.token is not None
@@ -655,28 +684,14 @@ class ManagedOAuthProvider:
                                 code="access_denied", required_scopes=required
                             )
                         return self._ready(target, key, active)
-                    if (
-                        stale
-                        and record is not None
-                        and token is not None
-                        and token.access_token is not None
-                        and challenge is not None
-                        and challenge.status == 401
-                    ):
-                        # Never resend a rejected token; keep refresh/pending state.
-                        await self._cas(
-                            guard,
-                            record,
-                            replace(
-                                record,
-                                generation=uuid4().hex,
-                                token=replace(token, access_token=None),
-                            ),
-                        )
                     if not interactive:
                         raise AuthenticationFailure(
                             code="interaction_required", required_scopes=required
                         )
+                    if not discovered:
+                        # A login rebuilds binding metadata first.
+                        renew = True
+                        continue
                     return await self._pending(
                         guard, record, stored, config, required, key, budget
                     )

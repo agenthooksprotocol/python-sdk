@@ -282,8 +282,14 @@ class RoutingTests(unittest.TestCase):
                         "invalid_configuration",
                     ),
                     # OAuth identifiers are HTTPS-only, rejected at binding validation.
-                    ({**OAUTH, "issuer": "http://issuer.test"}, "invalid_configuration"),
-                    ({**OAUTH, "resource": "http://resource.test"}, "invalid_configuration"),
+                    (
+                        {**OAUTH, "issuer": "http://issuer.test"},
+                        "invalid_configuration",
+                    ),
+                    (
+                        {**OAUTH, "resource": "http://resource.test"},
+                        "invalid_configuration",
+                    ),
                 ):
                     with self.assertRaises(AuthenticationFailure) as caught:
                         normalize_auth_target(

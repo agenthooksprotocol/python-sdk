@@ -322,16 +322,15 @@ class AuthenticatedHTTPTransport(HTTPTransport):
             if explicit_auth or response.status_code not in (401, 403):
                 return response
             challenges = response.headers.get("www-authenticate", "")
-            scope_challenge = False
             if response.status_code == 403:
+                # Only a Bearer insufficient_scope 403 is an auth challenge;
+                # any other 403 is an operational failure for the caller.
                 try:
                     parse_challenge(403, response.headers)
-                    scope_challenge = True
                 except ChallengeError:
-                    pass
+                    return response
             safe = (
                 retry_allowed
-                and (response.status_code == 401 or scope_challenge)
                 and re.search(r"(?:^|,)\s*Bearer(?:\s|$)", challenges, re.I) is not None
             )
             challenge = AuthChallenge(

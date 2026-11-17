@@ -121,7 +121,6 @@ class OAuthClientConfiguration:
         ):
             raise ValueError("Grant partition must be nonempty")
 
-
     @property
     def ceiling(self) -> tuple[str, ...]:
         """Locally allowed scopes; defaults to the requested scopes."""

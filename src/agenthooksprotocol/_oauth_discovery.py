@@ -89,7 +89,11 @@ def _public_error(error: BaseException) -> BaseException:
     """Construct sanitized failures outside the original exception handler."""
     if isinstance(error, (httpx.ConnectError, httpx.ConnectTimeout, NotSent)):
         return NotSent()
-    if isinstance(error, (httpx.TimeoutException, TimeoutError)):
+    if isinstance(error, httpx.TimeoutException):
+        # A read/write timeout after connecting is an ambiguous network
+        # failure, not the caller's deadline (which stays TimeoutError).
+        return _fail()
+    if isinstance(error, TimeoutError):
         return TimeoutError("Authentication operation timed out")
     if isinstance(error, AuthenticationFailure):
         return AuthenticationFailure(code=error.code, recovery=error.recovery)

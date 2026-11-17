@@ -1,11 +1,21 @@
 """Discovery tests cross the real httpx host boundary on asyncio and Trio."""
+
 import unittest
 
 import anyio
 import httpx
 
-from agenthooksprotocol.auth import AuthChallenge, AuthenticationFailure, AuthTarget, OAuthBinding
-from agenthooksprotocol._oauth_discovery import MAX_RESPONSE_BYTES, discover, safe_request
+from agenthooksprotocol.auth import (
+    AuthChallenge,
+    AuthenticationFailure,
+    AuthTarget,
+    OAuthBinding,
+)
+from agenthooksprotocol._oauth_discovery import (
+    MAX_RESPONSE_BYTES,
+    discover,
+    safe_request,
+)
 from agenthooksprotocol._oauth_types import OAuthClientConfiguration, OperationBudget
 from agenthooksprotocol.oauth import ManagedOAuthProvider
 from agenthooksprotocol.runtime import OperationCancelledError
@@ -41,12 +51,16 @@ class Policy:
     def __init__(self, *, resource_value=RESOURCE, **changes):
         self.resource_value = resource_value
         self.configuration = OAuthClientConfiguration(
-            issuer=ISSUER, client_id="local-client", flow="client_credentials",
-            scopes=("read",), token_endpoint_auth_method="client_secret_basic",
+            issuer=ISSUER,
+            client_id="local-client",
+            flow="client_credentials",
+            scopes=("read",),
+            token_endpoint_auth_method="client_secret_basic",
             client_secret="local-test-secret",
         )
         if changes:
             from dataclasses import replace
+
             self.configuration = replace(self.configuration, **changes)
         self.requirements = None
 
@@ -68,10 +82,16 @@ def challenge(value):
 
 def documents():
     return {
-        PR_PATH: {"resource": RESOURCE, "authorization_servers": [ISSUER],
-                  "scopes_supported": ["admin"]},
-        AS_PATH: {"issuer": ISSUER, "token_endpoint": "https://issuer.test/token",
-                  "grant_types_supported": ["client_credentials"]},
+        PR_PATH: {
+            "resource": RESOURCE,
+            "authorization_servers": [ISSUER],
+            "scopes_supported": ["admin"],
+        },
+        AS_PATH: {
+            "issuer": ISSUER,
+            "token_endpoint": "https://issuer.test/token",
+            "grant_types_supported": ["client_credentials"],
+        },
     }
 
 
@@ -81,18 +101,37 @@ class OAuthDiscoveryTests(unittest.TestCase):
             with self.subTest(backend=backend):
                 anyio.run(operation, backend=backend)
 
-    async def run_discovery(self, docs=None, *, auth=None, policy=None, denied=(), binding=None, destination=RESOURCE):
+    async def run_discovery(
+        self,
+        docs=None,
+        *,
+        auth=None,
+        policy=None,
+        denied=(),
+        binding=None,
+        destination=RESOURCE,
+    ):
         docs = documents() if docs is None else docs
 
         def handle(request):
             value = docs.get(str(request.url))
             if isinstance(value, httpx.Response):
                 return value
-            return httpx.Response(404) if value is None else httpx.Response(200, json=value)
+            return (
+                httpx.Response(404)
+                if value is None
+                else httpx.Response(200, json=value)
+            )
 
         async with httpx.AsyncClient(transport=httpx.MockTransport(handle)) as client:
             network = HostNetwork(client, denied)
-            result = await discover(target(binding, destination), auth, network, policy or Policy(), OperationBudget.after(2))
+            result = await discover(
+                target(binding, destination),
+                auth,
+                network,
+                policy or Policy(),
+                OperationBudget.after(2),
+            )
             return result, network
 
     def test_path_then_root_and_oauth_oidc_order(self):
@@ -102,11 +141,15 @@ class OAuthDiscoveryTests(unittest.TestCase):
             docs[PR_ROOT]["resource"] = "https://resource.test"
             docs[OIDC_APPEND] = docs.pop(AS_PATH)
             result, network = await self.run_discovery(
-                docs, policy=Policy(resource_value="https://resource.test"),
+                docs,
+                policy=Policy(resource_value="https://resource.test"),
             )
             self.assertEqual(result.resource, "https://resource.test")
-            self.assertEqual(network.sent, [PR_PATH, PR_ROOT, AS_PATH, OIDC_INSERT, OIDC_APPEND])
+            self.assertEqual(
+                network.sent, [PR_PATH, PR_ROOT, AS_PATH, OIDC_INSERT, OIDC_APPEND]
+            )
             self.assertIn(("https://issuer.test/token", "token"), network.allowed)
+
         self.both(run)
 
     def test_resource_is_bound_to_successful_discovery_candidate(self):
@@ -126,11 +169,15 @@ class OAuthDiscoveryTests(unittest.TestCase):
             docs[url] = docs.pop(PR_ROOT)
             with self.assertRaises(AuthenticationFailure):
                 await self.run_discovery(
-                    docs, auth=challenge(f'Bearer resource_metadata="{url}"'),
+                    docs,
+                    auth=challenge(f'Bearer resource_metadata="{url}"'),
                     policy=Policy(resource_value="https://resource.test"),
                 )
             with self.assertRaises(AuthenticationFailure):
-                await self.run_discovery(policy=Policy(resource_value="https://resource.test"))
+                await self.run_discovery(
+                    policy=Policy(resource_value="https://resource.test")
+                )
+
         self.both(run)
 
     def test_well_known_preserves_exact_resource_path_and_query(self):
@@ -145,35 +192,70 @@ class OAuthDiscoveryTests(unittest.TestCase):
                 document["resource"] = resource
                 docs[metadata_url] = document
                 result, network = await self.run_discovery(
-                    docs, destination=resource, policy=Policy(resource_value=resource),
+                    docs,
+                    destination=resource,
+                    policy=Policy(resource_value=resource),
                 )
                 self.assertEqual(result.resource, resource)
                 self.assertEqual(network.sent[0], metadata_url)
                 document["resource"] = resource + "/"
                 with self.assertRaises(AuthenticationFailure):
                     await self.run_discovery(
-                        docs, destination=resource, policy=Policy(resource_value=resource + "/"),
+                        docs,
+                        destination=resource,
+                        policy=Policy(resource_value=resource + "/"),
                     )
+
         self.both(run)
 
     def test_endpoint_queries_reject_oauth_parameter_collisions(self):
         async def run():
             for authorization, names in (
-                (True, ("client_id", "redirect_uri", "scope", "resource", "response_type",
-                        "state", "code_challenge", "code_challenge_method", "response_mode", "nonce")),
-                (False, ("client_id", "redirect_uri", "scope", "resource", "grant_type",
-                         "client_secret", "refresh_token", "code", "code_verifier")),
+                (
+                    True,
+                    (
+                        "client_id",
+                        "redirect_uri",
+                        "scope",
+                        "resource",
+                        "response_type",
+                        "state",
+                        "code_challenge",
+                        "code_challenge_method",
+                        "response_mode",
+                        "nonce",
+                    ),
+                ),
+                (
+                    False,
+                    (
+                        "client_id",
+                        "redirect_uri",
+                        "scope",
+                        "resource",
+                        "grant_type",
+                        "client_secret",
+                        "refresh_token",
+                        "code",
+                        "code_verifier",
+                    ),
+                ),
             ):
                 key = "authorization_endpoint" if authorization else "token_endpoint"
-                policy = Policy(flow="authorization_code_pkce", redirect_uri="https://host.test/callback")
+                policy = Policy(
+                    flow="authorization_code_pkce",
+                    redirect_uri="https://host.test/callback",
+                )
                 for name in names + ("%63lient_id",):
                     docs = documents()
-                    docs[AS_PATH].update({
-                        "authorization_endpoint": "https://issuer.test/authorize",
-                        "code_challenge_methods_supported": ["S256"],
-                        "response_types_supported": ["code"],
-                        "grant_types_supported": ["authorization_code"],
-                    })
+                    docs[AS_PATH].update(
+                        {
+                            "authorization_endpoint": "https://issuer.test/authorize",
+                            "code_challenge_methods_supported": ["S256"],
+                            "response_types_supported": ["code"],
+                            "grant_types_supported": ["authorization_code"],
+                        }
+                    )
                     docs[AS_PATH][key] = "https://issuer.test/endpoint?" + name + "="
                     with self.subTest(endpoint=key, parameter=name):
                         with self.assertRaises(AuthenticationFailure):
@@ -181,9 +263,12 @@ class OAuthDiscoveryTests(unittest.TestCase):
                 docs[AS_PATH][key] = "https://issuer.test/endpoint?tenant=one&empty="
                 result, _ = await self.run_discovery(docs, policy=policy)
                 self.assertEqual(
-                    result.authorization_endpoint if authorization else result.token_endpoint,
+                    result.authorization_endpoint
+                    if authorization
+                    else result.token_endpoint,
                     docs[AS_PATH][key],
                 )
+
         self.both(run)
 
     def test_challenge_parsing_and_local_scopes(self):
@@ -193,7 +278,10 @@ class OAuthDiscoveryTests(unittest.TestCase):
             docs[url] = docs.pop(PR_PATH)
             policy = Policy()
             result, network = await self.run_discovery(
-                docs, auth=challenge(f'Basic realm="a,b", Bearer realm="a\\\"b", resource_metadata="{url}", scope="read"'),
+                docs,
+                auth=challenge(
+                    f'Basic realm="a,b", Bearer realm="a\\"b", resource_metadata="{url}", scope="read"'
+                ),
                 policy=policy,
             )
             self.assertEqual(network.sent[0], url)
@@ -201,12 +289,15 @@ class OAuthDiscoveryTests(unittest.TestCase):
             self.assertEqual(policy.requirements, ("read",))
             with self.assertRaises(AuthenticationFailure):
                 await self.run_discovery(auth=challenge('Bearer scope="admin"'))
-            for header in ('Bearer scope="read", scope="read"',
-                           'Bearer resource_metadata="https://a.test", RESOURCE_METADATA="https://b.test"',
-                           'Bearer scope="read", Bearer scope="read"',
-                           'Bearer scope="unterminated'):
+            for header in (
+                'Bearer scope="read", scope="read"',
+                'Bearer resource_metadata="https://a.test", RESOURCE_METADATA="https://b.test"',
+                'Bearer scope="read", Bearer scope="read"',
+                'Bearer scope="unterminated',
+            ):
                 with self.assertRaises(AuthenticationFailure):
                     await self.run_discovery(auth=challenge(header))
+
         self.both(run)
 
     def test_challenge_parser_ignores_unknown_schemes_and_accepts_padded_token68(self):
@@ -214,15 +305,21 @@ class OAuthDiscoveryTests(unittest.TestCase):
             for header in (
                 'Basic dXNlcjpwYXNz==, Bearer scope="read"',
                 'Newauth abc==, Bearer scope="read", Digest realm="other"',
-                'Bearer abc==',
-                'Newauth abc==',
+                "Bearer abc==",
+                "Newauth abc==",
             ):
                 with self.subTest(header=header):
                     policy = Policy()
-                    result, network = await self.run_discovery(auth=challenge(header), policy=policy)
+                    result, network = await self.run_discovery(
+                        auth=challenge(header), policy=policy
+                    )
                     self.assertEqual(result.resource, RESOURCE)
-                    self.assertEqual(policy.requirements, ("read",) if 'scope="read"' in header else ())
+                    self.assertEqual(
+                        policy.requirements,
+                        ("read",) if 'scope="read"' in header else (),
+                    )
                     self.assertTrue(network.sent)
+
         self.both(run)
 
     def test_bearer_403_requires_insufficient_scope_and_scope_syntax_is_strict(self):
@@ -232,29 +329,51 @@ class OAuthDiscoveryTests(unittest.TestCase):
                 'Basic realm="denied"',
                 'Bearer scope="read"',
             ):
-                auth = AuthChallenge(403, {"WWW-Authenticate": header}, RESOURCE, None, True)
+                auth = AuthChallenge(
+                    403, {"WWW-Authenticate": header}, RESOURCE, None, True
+                )
                 with self.assertRaises(AuthenticationFailure) as failure:
                     await self.run_discovery(auth=auth)
                 self.assertEqual(failure.exception.code, "access_denied")
-            for scope in ("read  write", " read", "read ", "read\twrite", "read\\write", 'read"write'):
+            for scope in (
+                "read  write",
+                " read",
+                "read ",
+                "read\twrite",
+                "read\\write",
+                'read"write',
+            ):
                 # HTTP quoted-pair escaping does not make an invalid OAuth scope valid.
                 escaped = scope.replace("\\", "\\\\").replace('"', '\\"')
                 with self.subTest(scope=scope):
                     with self.assertRaises(AuthenticationFailure):
-                        await self.run_discovery(auth=challenge('Bearer scope="' + escaped + '"'))
+                        await self.run_discovery(
+                            auth=challenge('Bearer scope="' + escaped + '"')
+                        )
             policy = Policy(allowed_scopes=("read", "write"))
             result, _ = await self.run_discovery(
-                auth=AuthChallenge(403, {"WWW-Authenticate": 'Bearer error=insufficient_scope, scope="write"'}, RESOURCE, None, True),
+                auth=AuthChallenge(
+                    403,
+                    {
+                        "WWW-Authenticate": 'Bearer error=insufficient_scope, scope="write"'
+                    },
+                    RESOURCE,
+                    None,
+                    True,
+                ),
                 policy=policy,
             )
             self.assertEqual(policy.requirements, ("write",))
             self.assertEqual(result.configuration.scopes, ("read",))
             self.assertEqual(result.configuration.allowed_scopes, ("read", "write"))
+
         self.both(run)
 
     def test_requested_allowed_and_explicit_required_scopes_are_distinct(self):
         async def run():
-            policy = Policy(allowed_scopes=("read", "write"), required_scopes=("write",))
+            policy = Policy(
+                allowed_scopes=("read", "write"), required_scopes=("write",)
+            )
             metadata, _ = await self.run_discovery(policy=policy)
             self.assertEqual(policy.requirements, ())
             self.assertEqual(metadata.configuration.scopes, ("read",))
@@ -262,12 +381,15 @@ class OAuthDiscoveryTests(unittest.TestCase):
             metadata, _ = await self.run_discovery(
                 policy=Policy(allowed_scopes=("read", "write")),
                 auth=challenge('Bearer scope="write"'),
-                binding=OAuthBinding(ISSUER, RESOURCE, "local-client", "client_credentials", ("read",)),
+                binding=OAuthBinding(
+                    ISSUER, RESOURCE, "local-client", "client_credentials", ("read",)
+                ),
             )
             self.assertEqual(metadata.configuration.scopes, ("read",))
             with self.assertRaises(AuthenticationFailure) as failure:
                 await self.run_discovery(auth=challenge('Bearer scope="write"'))
             self.assertEqual(failure.exception.code, "access_denied")
+
         self.both(run)
 
     def test_pkce_literal_loopback_redirects_and_remote_http_rejection(self):
@@ -275,58 +397,100 @@ class OAuthDiscoveryTests(unittest.TestCase):
             docs = documents()
             docs[AS_PATH].update(
                 authorization_endpoint="https://browser.test/authorize",
-                code_challenge_methods_supported=["S256"], response_types_supported=["code"],
-                grant_types_supported=["authorization_code"], token_endpoint_auth_methods_supported=["none"],
+                code_challenge_methods_supported=["S256"],
+                response_types_supported=["code"],
+                grant_types_supported=["authorization_code"],
+                token_endpoint_auth_methods_supported=["none"],
             )
-            for redirect in ("http://127.0.0.1:8123/callback", "http://[::1]:8123/callback", "https://host.test/callback"):
+            for redirect in (
+                "http://127.0.0.1:8123/callback",
+                "http://[::1]:8123/callback",
+                "https://host.test/callback",
+            ):
                 with self.subTest(redirect=redirect):
-                    metadata, _ = await self.run_discovery(docs, policy=Policy(
-                        flow="authorization_code_pkce", redirect_uri=redirect,
-                        token_endpoint_auth_method="none", client_secret=None,
-                    ))
+                    metadata, _ = await self.run_discovery(
+                        docs,
+                        policy=Policy(
+                            flow="authorization_code_pkce",
+                            redirect_uri=redirect,
+                            token_endpoint_auth_method="none",
+                            client_secret=None,
+                        ),
+                    )
                     self.assertEqual(metadata.configuration.redirect_uri, redirect)
                     self.assertIsNone(metadata.configuration.client_secret)
-            for redirect in ("http://localhost:8123/callback", "http://remote.test/callback", "http://192.0.2.1/callback", "http://127.0.0.1:bad/callback", "https://host.test/callback#fragment"):
+            for redirect in (
+                "http://localhost:8123/callback",
+                "http://remote.test/callback",
+                "http://192.0.2.1/callback",
+                "http://127.0.0.1:bad/callback",
+                "https://host.test/callback#fragment",
+            ):
                 with self.subTest(redirect=redirect):
                     with self.assertRaises(AuthenticationFailure):
-                        await self.run_discovery(docs, policy=Policy(
-                            flow="authorization_code_pkce", redirect_uri=redirect,
-                            token_endpoint_auth_method="none", client_secret=None,
-                        ))
+                        await self.run_discovery(
+                            docs,
+                            policy=Policy(
+                                flow="authorization_code_pkce",
+                                redirect_uri=redirect,
+                                token_endpoint_auth_method="none",
+                                client_secret=None,
+                            ),
+                        )
+
         self.both(run)
 
     def test_exact_resource_issuer_and_unadvertised_selection(self):
         async def run():
-            for location, key, value in ((PR_PATH, "resource", RESOURCE + "/"),
-                                         (AS_PATH, "issuer", ISSUER + "/")):
+            for location, key, value in (
+                (PR_PATH, "resource", RESOURCE + "/"),
+                (AS_PATH, "issuer", ISSUER + "/"),
+            ):
                 docs = documents()
                 docs[location][key] = value
                 with self.assertRaises(AuthenticationFailure):
                     await self.run_discovery(docs)
             with self.assertRaises(AuthenticationFailure):
                 await self.run_discovery(policy=Policy(issuer="https://other.test"))
+
         self.both(run)
 
     def test_explicit_binding_stays_with_local_constraints(self):
         async def run():
-            binding = OAuthBinding(ISSUER, RESOURCE, "local-client", "client_credentials", ("read",))
+            binding = OAuthBinding(
+                ISSUER, RESOURCE, "local-client", "client_credentials", ("read",)
+            )
             _, network = await self.run_discovery(binding=binding)
             self.assertEqual(network.sent, [AS_PATH])
             from dataclasses import replace
-            for bad in (replace(binding, resource=RESOURCE + "/"), replace(binding, client_id="other"),
-                        replace(binding, scopes=("admin",)), replace(binding, flow="authorization_code_pkce")):
+
+            for bad in (
+                replace(binding, resource=RESOURCE + "/"),
+                replace(binding, client_id="other"),
+                replace(binding, scopes=("admin",)),
+                replace(binding, flow="authorization_code_pkce"),
+            ):
                 with self.assertRaises(AuthenticationFailure):
                     await self.run_discovery(binding=bad)
+
         self.both(run)
 
     def test_all_destinations_need_local_authorization(self):
         async def run():
-            for denied in (("resource.test",), ("issuer.test/.well-known",), ("/token",)):
+            for denied in (
+                ("resource.test",),
+                ("issuer.test/.well-known",),
+                ("/token",),
+            ):
                 with self.assertRaises(AuthenticationFailure) as caught:
                     await self.run_discovery(denied=denied)
                 self.assertEqual(caught.exception.code, "untrusted_destination")
-            for url in ("http://issuer.test/token", "https://user:secret@issuer.test/token",
-                        "https://issuer.test/token#fragment", "https://issuer.test/\\evil"):
+            for url in (
+                "http://issuer.test/token",
+                "https://user:secret@issuer.test/token",
+                "https://issuer.test/token#fragment",
+                "https://issuer.test/\\evil",
+            ):
                 docs = documents()
                 docs[AS_PATH]["token_endpoint"] = url
                 with self.assertRaises(AuthenticationFailure):
@@ -335,30 +499,47 @@ class OAuthDiscoveryTests(unittest.TestCase):
             docs[PR_PATH]["authorization_servers"] = [ISSUER + "?query=yes"]
             with self.assertRaises(AuthenticationFailure):
                 await self.run_discovery(docs)
+
         self.both(run)
 
     def test_pkce_endpoint_policy_and_capabilities(self):
         async def run():
             docs = documents()
-            docs[AS_PATH].update(authorization_endpoint="https://browser.test/authorize",
-                code_challenge_methods_supported=["S256"], response_types_supported=["code"],
-                grant_types_supported=["authorization_code"], token_endpoint_auth_methods_supported=["none"])
-            policy = Policy(flow="authorization_code_pkce", redirect_uri="https://host.test/callback", token_endpoint_auth_method="none", client_secret=None)
+            docs[AS_PATH].update(
+                authorization_endpoint="https://browser.test/authorize",
+                code_challenge_methods_supported=["S256"],
+                response_types_supported=["code"],
+                grant_types_supported=["authorization_code"],
+                token_endpoint_auth_methods_supported=["none"],
+            )
+            policy = Policy(
+                flow="authorization_code_pkce",
+                redirect_uri="https://host.test/callback",
+                token_endpoint_auth_method="none",
+                client_secret=None,
+            )
             result, network = await self.run_discovery(docs, policy=policy)
-            self.assertEqual(result.authorization_endpoint, "https://browser.test/authorize")
-            self.assertIn((result.authorization_endpoint, "authorization"), network.allowed)
+            self.assertEqual(
+                result.authorization_endpoint, "https://browser.test/authorize"
+            )
+            self.assertIn(
+                (result.authorization_endpoint, "authorization"), network.allowed
+            )
             with self.assertRaises(AuthenticationFailure):
                 await self.run_discovery(docs, policy=policy, denied=("browser.test",))
             docs[AS_PATH]["code_challenge_methods_supported"] = ["plain"]
             with self.assertRaises(AuthenticationFailure):
                 await self.run_discovery(docs, policy=policy)
+
         self.both(run)
 
     def test_redirect_oversize_and_explicit_client_credentials_support(self):
         async def run():
-            for response in (httpx.Response(302, headers={"location": "https://evil.test"}),
-                             httpx.Response(200, content=b"x" * (MAX_RESPONSE_BYTES + 1)),
-                             httpx.Response(200, content=b'{"resource":1,"resource":2}')):
+            for response in (
+                httpx.Response(302, headers={"location": "https://evil.test"}),
+                httpx.Response(200, content=b"x" * (MAX_RESPONSE_BYTES + 1)),
+                httpx.Response(200, content=b'{"resource":1,"resource":2}'),
+            ):
                 docs = documents()
                 docs[PR_PATH] = response
                 with self.assertRaises(AuthenticationFailure):
@@ -367,27 +548,34 @@ class OAuthDiscoveryTests(unittest.TestCase):
             del docs[AS_PATH]["grant_types_supported"]
             with self.assertRaises(AuthenticationFailure):
                 await self.run_discovery(docs)
+
         self.both(run)
 
     def test_root_issuer_and_compressed_metadata(self):
         async def run():
             import gzip
             import json
+
             docs = documents()
             root = "https://issuer.test"
             docs[PR_PATH]["authorization_servers"] = [root]
             metadata = docs.pop(AS_PATH)
             metadata["issuer"] = root
             docs[root + "/.well-known/openid-configuration"] = httpx.Response(
-                200, headers={"content-encoding": "gzip"},
+                200,
+                headers={"content-encoding": "gzip"},
                 content=gzip.compress(json.dumps(metadata).encode()),
             )
             result, network = await self.run_discovery(docs, policy=Policy(issuer=root))
             self.assertEqual(result.configuration.issuer, root)
-            self.assertEqual(network.sent[-2:], [
-                root + "/.well-known/oauth-authorization-server",
-                root + "/.well-known/openid-configuration",
-            ])
+            self.assertEqual(
+                network.sent[-2:],
+                [
+                    root + "/.well-known/oauth-authorization-server",
+                    root + "/.well-known/openid-configuration",
+                ],
+            )
+
         self.both(run)
 
     def test_cancelled_stream_closes_response_without_closing_client(self):
@@ -411,19 +599,28 @@ class OAuthDiscoveryTests(unittest.TestCase):
                     return httpx.Response(200, text="ok")
                 return httpx.Response(200, stream=Stream())
 
-            async with httpx.AsyncClient(transport=httpx.MockTransport(handle)) as client:
+            async with httpx.AsyncClient(
+                transport=httpx.MockTransport(handle)
+            ) as client:
                 network = HostNetwork(client)
                 with scope:
                     try:
-                        await safe_request(network, httpx.Request("GET", RESOURCE),
-                                           "metadata", OperationBudget.after(2))
+                        await safe_request(
+                            network,
+                            httpx.Request("GET", RESOURCE),
+                            "metadata",
+                            OperationBudget.after(2),
+                        )
                     except anyio.get_cancelled_exc_class() as error:
                         self.assertIsNone(error.__context__)
                     else:
                         self.fail("native cancellation was lost")
                 self.assertEqual(closed, [True])
                 self.assertFalse(client.is_closed)
-                self.assertEqual((await client.get("https://resource.test/health")).text, "ok")
+                self.assertEqual(
+                    (await client.get("https://resource.test/health")).text, "ok"
+                )
+
         self.both(run)
 
     def test_cleanup_errors_are_bounded_and_do_not_mask_operation_error(self):
@@ -443,19 +640,27 @@ class OAuthDiscoveryTests(unittest.TestCase):
                     return Response(302, headers={"location": "https://evil.test"})
 
             with self.assertRaises(AuthenticationFailure) as caught:
-                await safe_request(Network(), httpx.Request("GET", RESOURCE),
-                                   "metadata", OperationBudget.after(1))
+                await safe_request(
+                    Network(),
+                    httpx.Request("GET", RESOURCE),
+                    "metadata",
+                    OperationBudget.after(1),
+                )
             self.assertEqual(caught.exception.code, "discovery_failed")
             self.assertIsNone(caught.exception.__context__)
             self.assertEqual(calls, [True])
 
             class SuccessfulNetwork(Network):
                 async def send(self, request, purpose, budget):
-                    return Response(200, content=b'{}')
+                    return Response(200, content=b"{}")
 
             with self.assertRaises(AuthenticationFailure) as caught:
-                await safe_request(SuccessfulNetwork(), httpx.Request("GET", RESOURCE),
-                                   "metadata", OperationBudget.after(1))
+                await safe_request(
+                    SuccessfulNetwork(),
+                    httpx.Request("GET", RESOURCE),
+                    "metadata",
+                    OperationBudget.after(1),
+                )
             self.assertIsNone(caught.exception.__context__)
             self.assertNotIn("secret", str(caught.exception))
 
@@ -474,10 +679,16 @@ class OAuthDiscoveryTests(unittest.TestCase):
                     return httpx.Response(200, stream=BrokenStream())
 
             with self.assertRaises(TimeoutError) as caught:
-                await safe_request(BrokenNetwork(), httpx.Request("GET", RESOURCE),
-                                   "metadata", OperationBudget.after(1))
+                await safe_request(
+                    BrokenNetwork(),
+                    httpx.Request("GET", RESOURCE),
+                    "metadata",
+                    OperationBudget.after(1),
+                )
             self.assertIsNot(caught.exception, original)
-            self.assertEqual(str(caught.exception), "Authentication operation timed out")
+            self.assertEqual(
+                str(caught.exception), "Authentication operation timed out"
+            )
             self.assertIsNone(caught.exception.__context__)
             self.assertIsNone(caught.exception.__cause__)
 
@@ -491,9 +702,14 @@ class OAuthDiscoveryTests(unittest.TestCase):
 
             started = anyio.current_time()
             with self.assertRaises(AuthenticationFailure):
-                await safe_request(SlowNetwork(), httpx.Request("GET", RESOURCE),
-                                   "metadata", OperationBudget.after(5))
+                await safe_request(
+                    SlowNetwork(),
+                    httpx.Request("GET", RESOURCE),
+                    "metadata",
+                    OperationBudget.after(5),
+                )
             self.assertLess(anyio.current_time() - started, 1.5)
+
         self.both(run)
 
     def test_native_cancellation_raised_by_close_is_preserved(self):
@@ -517,15 +733,20 @@ class OAuthDiscoveryTests(unittest.TestCase):
                     pass
 
                 async def send(self, request, purpose, budget):
-                    return Response(200, content=b'{}')
+                    return Response(200, content=b"{}")
 
             try:
-                await safe_request(Network(), httpx.Request("GET", RESOURCE),
-                                   "metadata", OperationBudget.after(1))
+                await safe_request(
+                    Network(),
+                    httpx.Request("GET", RESOURCE),
+                    "metadata",
+                    OperationBudget.after(1),
+                )
             except anyio.get_cancelled_exc_class() as caught:
                 self.assertIs(caught, cancellation)
             else:
                 self.fail("native cancellation from response close was swallowed")
+
         self.both(run)
 
     def test_direct_helpers_scrub_exception_context_and_translate_httpx_timeouts(self):
@@ -537,14 +758,23 @@ class OAuthDiscoveryTests(unittest.TestCase):
                     raise self.error
 
             network = Network()
-            for original, expected in ((RuntimeError("secret"), AuthenticationFailure),
-                                       (httpx.ReadTimeout("secret-url"), TimeoutError),
-                                       (TimeoutError("secret-token"), TimeoutError),
-                                       (OperationCancelledError("secret-token"), OperationCancelledError)):
+            for original, expected in (
+                (RuntimeError("secret"), AuthenticationFailure),
+                # A read timeout is an ambiguous network failure, not the
+                # caller's deadline; a connect timeout provably sent nothing.
+                (httpx.ReadTimeout("secret-url"), AuthenticationFailure),
+                (httpx.ConnectTimeout("secret-url"), AuthenticationFailure),
+                (TimeoutError("secret-token"), TimeoutError),
+                (OperationCancelledError("secret-token"), OperationCancelledError),
+            ):
                 network.error = original
                 with self.assertRaises(expected) as caught:
-                    await safe_request(network, httpx.Request("GET", RESOURCE),
-                                       "metadata", OperationBudget.after(1))
+                    await safe_request(
+                        network,
+                        httpx.Request("GET", RESOURCE),
+                        "metadata",
+                        OperationBudget.after(1),
+                    )
                 self.assertIsNone(caught.exception.__context__)
                 self.assertIsNone(caught.exception.__cause__)
                 self.assertNotIn("secret", str(caught.exception))
@@ -559,13 +789,17 @@ class OAuthDiscoveryTests(unittest.TestCase):
 
             # The provider is the single sanitising boundary for discovery.
             provider = ManagedOAuthProvider(
-                network=network, policy=FailingPolicy(), store=EmptyStore(), namespace="test"
+                network=network,
+                policy=FailingPolicy(),
+                store=EmptyStore(),
+                namespace="test",
             )
             with self.assertRaises(AuthenticationFailure) as caught:
                 await provider.prepare(target(), OperationBudget.after(1))
             self.assertIsNone(caught.exception.__context__)
             self.assertIsNone(caught.exception.__cause__)
             self.assertNotIn("secret", str(caught.exception))
+
         self.both(run)
 
     def test_timeout_cancellation_and_sanitized_host_failures(self):
@@ -575,7 +809,12 @@ class OAuthDiscoveryTests(unittest.TestCase):
                     raise RuntimeError("secret-diagnostic")
 
             with self.assertRaises(AuthenticationFailure) as caught:
-                await safe_request(FailingNetwork(), httpx.Request("GET", RESOURCE), "metadata", OperationBudget.after(1))
+                await safe_request(
+                    FailingNetwork(),
+                    httpx.Request("GET", RESOURCE),
+                    "metadata",
+                    OperationBudget.after(1),
+                )
             self.assertNotIn("secret", str(caught.exception))
 
             class SlowNetwork:
@@ -583,13 +822,24 @@ class OAuthDiscoveryTests(unittest.TestCase):
                     await anyio.sleep_forever()
 
             with self.assertRaises(TimeoutError):
-                await safe_request(SlowNetwork(), httpx.Request("GET", RESOURCE), "metadata", OperationBudget.after(.01))
+                await safe_request(
+                    SlowNetwork(),
+                    httpx.Request("GET", RESOURCE),
+                    "metadata",
+                    OperationBudget.after(0.01),
+                )
             with anyio.CancelScope() as scope:
                 scope.cancel()
                 try:
-                    await safe_request(SlowNetwork(), httpx.Request("GET", RESOURCE), "metadata", OperationBudget.after(1))
+                    await safe_request(
+                        SlowNetwork(),
+                        httpx.Request("GET", RESOURCE),
+                        "metadata",
+                        OperationBudget.after(1),
+                    )
                 except anyio.get_cancelled_exc_class():
                     pass
                 else:
                     self.fail("native cancellation swallowed")
+
         self.both(run)

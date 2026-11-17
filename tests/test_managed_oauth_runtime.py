@@ -265,6 +265,8 @@ class ManagedOAuthRuntimeTests(unittest.TestCase):
                         namespace="tenant",
                         clock=lambda: now[0],
                         expiry_skew=0,
+                        # Keeps tests with never-answering token endpoints fast.
+                        commit_timeout=0.5,
                     )
                     target = AuthTarget("tenant", "backend", RESOURCE, "event", None)
                     try:
@@ -3532,7 +3534,15 @@ class ManagedOAuthRuntimeTests(unittest.TestCase):
                 return True
 
             s.cas_hook = slow
-            self.assertIsNotNone(await p.credential(self.unbound()))
+            patient = ManagedOAuthProvider(
+                network=n,
+                policy=policy,
+                store=s,
+                namespace="tenant",
+                clock=lambda: now[0],
+                expiry_skew=0,
+            )
+            self.assertIsNotNone(await patient.credential(self.unbound()))
             record = next(iter(s.records.values()))
             self.assertEqual(
                 (record.status, record.token.refresh_token), ("active", "refresh-2")
@@ -3756,6 +3766,188 @@ class ManagedOAuthRuntimeTests(unittest.TestCase):
                     )
 
                 self.run_async(run)
+
+    def test_sent_token_request_completes_and_commits_despite_caller_cancel(self):
+        """A response body delayed past the caller's cancellation is still
+        received over real HTTP and its rotated refresh token persisted."""
+        import threading
+        from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+
+        received, release = threading.Event(), threading.Event()
+        posts = []
+
+        class Handler(BaseHTTPRequestHandler):
+            def log_message(self, *args):
+                pass
+
+            def do_POST(self):
+                self.rfile.read(int(self.headers["Content-Length"]))
+                body = json.dumps(
+                    {
+                        "access_token": f"late-{len(posts)}",
+                        "token_type": "Bearer",
+                        "expires_in": 60,
+                        "refresh_token": f"ROTATED-{len(posts)}",
+                    }
+                ).encode()
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body[:5])
+                self.wfile.flush()
+                if posts.append(True) or len(posts) > 1:
+                    # Delay the refresh body until after the caller cancels.
+                    received.set()
+                    release.wait(timeout=5)
+                self.wfile.write(body[5:])
+
+        server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+
+        class Local(httpx.AsyncBaseTransport):
+            def __init__(self):
+                self.inner = httpx.AsyncHTTPTransport()
+
+            async def handle_async_request(self, request):
+                if request.method == "GET":
+                    return httpx.Response(200, json=metadata(request))
+                mapped = httpx.Request(
+                    request.method,
+                    f"http://127.0.0.1:{server.server_port}/token",
+                    headers=request.headers,
+                    stream=request.stream,
+                    extensions=request.extensions,
+                )
+                return await self.inner.handle_async_request(mapped)
+
+            async def aclose(self):
+                await self.inner.aclose()
+
+        async def run():
+            release.clear()
+            received.clear()
+            posts.clear()
+            n, s = Network(), Store()
+            await n.client.aclose()
+            n.client = httpx.AsyncClient(transport=Local(), trust_env=False)
+            policy, now = Policy(), [1000.0]
+            p = ManagedOAuthProvider(
+                network=n,
+                policy=policy,
+                store=s,
+                namespace="tenant",
+                clock=lambda: now[0],
+                expiry_skew=0,
+                commit_timeout=5,
+            )
+            target = AuthTarget("tenant", "backend", RESOURCE, "event", None)
+            try:
+                await p.prepare(target, OperationBudget.after(5))
+                now[0] += 120
+                cancelled = []
+
+                async def refresh():
+                    try:
+                        await p.prepare(target, OperationBudget.after(5))
+                    except anyio.get_cancelled_exc_class():
+                        cancelled.append(True)
+                        raise
+
+                async with anyio.create_task_group() as tasks:
+                    tasks.start_soon(refresh)
+                    await anyio.to_thread.run_sync(lambda: received.wait(timeout=5))
+                    tasks.cancel_scope.cancel()
+                    release.set()
+                self.assertEqual(cancelled, [True])
+                self.assertEqual(len(posts), 2)
+                record = next(iter(s.records.values()))
+                self.assertEqual(
+                    (
+                        record.status,
+                        record.token.access_token,
+                        record.token.refresh_token,
+                    ),
+                    ("active", "late-1", "ROTATED-1"),
+                )
+            finally:
+                release.set()
+                await n.client.aclose()
+
+        try:
+            for backend in ("asyncio", "trio"):
+                with self.subTest(backend=backend):
+                    anyio.run(run, backend=backend)
+        finally:
+            release.set()
+            server.shutdown()
+            server.server_close()
+            thread.join(timeout=5)
+
+    def test_stalled_connect_is_cancelled_promptly_before_the_request_is_sent(self):
+        import socket
+        import time
+
+        # Accepts TCP but never answers the TLS handshake: nothing is sent.
+        listener = socket.socket()
+        listener.bind(("127.0.0.1", 0))
+        listener.listen(8)
+        port = listener.getsockname()[1]
+
+        class Stalled(httpx.AsyncBaseTransport):
+            def __init__(self):
+                self.inner = httpx.AsyncHTTPTransport()
+
+            async def handle_async_request(self, request):
+                if request.method == "GET":
+                    return httpx.Response(200, json=metadata(request))
+                mapped = httpx.Request(
+                    request.method,
+                    f"https://127.0.0.1:{port}/token",
+                    headers=request.headers,
+                    stream=request.stream,
+                    extensions=request.extensions,
+                )
+                return await self.inner.handle_async_request(mapped)
+
+            async def aclose(self):
+                await self.inner.aclose()
+
+        async def run():
+            n, s = Network(), Store()
+            first = n.client
+            policy, now = Policy(), [1000.0]
+            p = ManagedOAuthProvider(
+                network=n,
+                policy=policy,
+                store=s,
+                namespace="tenant",
+                clock=lambda: now[0],
+                expiry_skew=0,
+            )
+            target = AuthTarget("tenant", "backend", RESOURCE, "event", None)
+            try:
+                await p.prepare(target, OperationBudget.after(5))
+                old = next(iter(s.records.values())).token
+                n.client = httpx.AsyncClient(transport=Stalled(), trust_env=False)
+                now[0] += 61
+                started = time.monotonic()
+                with anyio.move_on_after(0.3):
+                    await p.prepare(target, OperationBudget.after(5))
+                self.assertLess(time.monotonic() - started, 2)
+                record = next(iter(s.records.values()))
+                self.assertEqual((record.status, record.token), ("active", old))
+            finally:
+                await first.aclose()
+                await n.client.aclose()
+
+        try:
+            for backend in ("asyncio", "trio"):
+                with self.subTest(backend=backend):
+                    anyio.run(run, backend=backend)
+        finally:
+            listener.close()
 
 
 LIFECYCLE_TESTS = {

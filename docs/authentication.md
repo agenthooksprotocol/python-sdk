@@ -47,7 +47,11 @@ access, storage/coordination, consent UI and callback transport host-controlled.
   a changed issuer or failed refetch reports `discovery_failed`, repaired by
   `prepare`. Ambiguous failures after sending (read timeout or reset, 5xx,
   non-OAuth body, redirect) report `provider_failed` with no immediate retry,
-  so a rotated refresh token is never replayed. A 401 marks the rejected
+  so a rotated refresh token is never replayed. Once a token request's bytes are written
+  (reported through HTTPX's request `trace` extension, which `send` must pass
+  through), receiving and storing its response is shielded from caller
+  cancellation and bounded by `commit_timeout` (default 30 seconds); before
+  that, cancellation stops the request promptly. A 401 marks the rejected
   token stale even if it has not expired, so it is renewed, never resent. An unknown first contact's
   challenge can trigger trusted discovery. Use host `prepare` before the first
   unsafe call if it needs auth.

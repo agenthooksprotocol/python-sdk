@@ -126,6 +126,7 @@ async def _token_endpoint(
     config: OAuthClientConfiguration,
     form: dict[str, str],
     budget: OperationBudget,
+    trace: Callable[[str, object], Awaitable[None]] | None = None,
 ) -> Mapping[str, object]:
     """One RFC 6749 token request with RFC 8707 resource and client auth."""
     import httpx
@@ -147,7 +148,12 @@ async def _token_endpoint(
         if config.token_endpoint_auth_method == "client_secret_post":
             form["client_secret"] = config.client_secret or ""
     request = httpx.Request(
-        "POST", metadata.token_endpoint, headers=headers, content=urlencode(form)
+        "POST",
+        metadata.token_endpoint,
+        headers=headers,
+        content=urlencode(form),
+        # HTTPX reports when the request bytes are written (httpcore trace).
+        extensions={"trace": trace} if trace is not None else None,
     )
     response = await safe_request(network, request, "token", budget)
     try:
@@ -398,18 +404,32 @@ class ManagedOAuthProvider:
         await self._cas(guard, record, reserved)
         token: StoredToken | None = None
         outcome: BaseException | None = None
+        cancel: BaseException | None = None
+        box: dict[str, object] = {}
         try:
-            response = await _token_endpoint(
-                self.network, metadata, config, form, budget
-            )
-            token = self._token(
-                response,
-                requested,
-                config.ceiling if ceiling is None else ceiling,
-                previous,
-            )
+            budget.remaining()
+            await anyio.lowlevel.checkpoint_if_cancelled()
+            await self._send_token_request(box, metadata, config, form)
+        except anyio.get_cancelled_exc_class() as error:
+            cancel = error  # The response may still have arrived (shielded).
         except BaseException as error:
             outcome = error
+        if outcome is None:
+            try:
+                failure, response = box.get("error"), box.get("response")
+                if isinstance(failure, BaseException):
+                    raise failure
+                if isinstance(response, Mapping):
+                    token = self._token(
+                        response,
+                        requested,
+                        config.ceiling if ceiling is None else ceiling,
+                        previous,
+                    )
+                else:
+                    outcome = cancel
+            except BaseException as error:
+                outcome = error
         final = token if token is not None else retained
         if isinstance(outcome, _ExchangeError):
             if outcome.code == "invalid_grant" and previous is not None:
@@ -427,6 +447,8 @@ class ManagedOAuthProvider:
             if outcome is None:
                 raise
         await anyio.lowlevel.checkpoint()
+        if cancel is not None:
+            raise cancel  # The caller sees its cancellation after the commit.
         from ._oauth_discovery import NotSent
 
         if isinstance(outcome, NotSent) or (
@@ -464,6 +486,54 @@ class ManagedOAuthProvider:
         if not committed or settled is None:
             raise AuthenticationFailure(code="provider_failed")
         return settled
+
+    async def _send_token_request(
+        self,
+        box: dict[str, object],
+        metadata: OAuthMetadata,
+        config: OAuthClientConfiguration,
+        form: dict[str, str],
+    ) -> None:
+        """Send one token request; once its bytes are written, finish it.
+
+        Before the request is written (policy check, DNS, connect, TLS) the
+        caller's cancellation stops it promptly. After that the grant may be
+        spent, so receiving the response is shielded and bounded by
+        `commit_timeout`; the caller's cancellation is re-raised afterwards.
+        """
+        written = False
+        done = anyio.Event()
+        send_scope = anyio.CancelScope()
+
+        async def trace(event: str, info: object) -> None:
+            nonlocal written
+            if event.endswith("send_request_body.complete"):
+                written = True
+
+        async def exchange() -> None:
+            with anyio.CancelScope(shield=True):
+                with send_scope:
+                    try:
+                        box["response"] = await _token_endpoint(
+                            self.network,
+                            metadata,
+                            config,
+                            form,
+                            OperationBudget(anyio.current_time() + self.commit_timeout),
+                            trace,
+                        )
+                    except Exception as error:
+                        box["error"] = error
+                done.set()
+
+        async with anyio.create_task_group() as tasks:
+            tasks.start_soon(exchange)
+            try:
+                await done.wait()
+            except anyio.get_cancelled_exc_class():
+                if not written:
+                    send_scope.cancel()
+                raise
 
     async def _pending(
         self,

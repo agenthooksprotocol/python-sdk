@@ -24,6 +24,10 @@ from .transports.http import HTTPTransport
 from .headers import validate_headers, resolve_headers
 
 
+# Challenged replay (HTTP binding): request/response methods only, at most once.
+_REPLAYABLE = ("hooks/intercept", "hooks/configuration", "hooks/capabilities")
+
+
 class TransportFailure(ProtocolError):
     """Sanitized delivery failure, distinct from invalid protocol data."""
 
@@ -78,6 +82,7 @@ class AuthenticationFailure(ProtocolError):
         *,
         code: AuthErrorCode = "provider_failed",
         recovery: AuthRecovery | None = None,
+        required_scopes: tuple[str, ...] = (),
     ) -> None:
         # Accept the legacy positional argument, but never expose provider text.
         if code not in _ERROR_MESSAGES:
@@ -88,6 +93,19 @@ class AuthenticationFailure(ProtocolError):
             recovery
             if recovery in ("configure", "login", "retry", "none")
             else _DEFAULT_RECOVERY[code]
+        )
+        # Validated, non-secret scope tokens a host can pass back to `prepare`
+        # (step-up). Only interaction_required/access_denied carry them.
+        self.required_scopes: tuple[str, ...] = (
+            tuple(sorted(set(required_scopes)))
+            if code in ("interaction_required", "access_denied")
+            and isinstance(required_scopes, tuple)
+            and all(
+                isinstance(scope, str)
+                and re.fullmatch(r"[\x21\x23-\x5b\x5d-\x7e]+", scope)
+                for scope in required_scopes
+            )
+            else ()
         )
 
 
@@ -192,8 +210,9 @@ class AuthenticatedHTTPTransport(HTTPTransport):
     """One provider, independent endpoint bindings, no hidden auth workers.
 
     Provider and injected client lifecycle belong to the harness. Client default
-    headers, cookies, auth and redirects are not inherited. Only a rejected
-    interception can retry, once. Notifications and uploads never replay.
+    headers, cookies, auth and redirects are not inherited. A challenged
+    intercept, configuration or capabilities request replays at most once, with
+    the same id and body. Notifications and uploads never replay.
     """
 
     def __init__(
@@ -228,6 +247,7 @@ class AuthenticatedHTTPTransport(HTTPTransport):
     async def _credential(self, context, challenge=None):
         failure: AuthErrorCode | None = None
         recovery: AuthRecovery | None = None
+        scopes: tuple[str, ...] = ()
         try:
             credential = (
                 await self.auth_provider.credential(context)
@@ -240,13 +260,15 @@ class AuthenticatedHTTPTransport(HTTPTransport):
         except OperationCancelledError:
             raise
         except AuthenticationFailure as exc:
-            failure, recovery = exc.code, exc.recovery
+            failure, recovery, scopes = exc.code, exc.recovery, exc.required_scopes
         except Exception:
             # Native cancellation is a BaseException and propagates. Raise only
             # after leaving the handler so even __context__ cannot retain secrets.
             failure = "provider_failed"
         if failure is not None:
-            raise AuthenticationFailure(code=failure, recovery=recovery)
+            raise AuthenticationFailure(
+                code=failure, recovery=recovery, required_scopes=scopes
+            )
         if credential is not None and not isinstance(credential, BearerCredential):
             raise AuthenticationFailure("Unsupported delivery credential")
         if challenge is None and context.binding is not None and credential is None:
@@ -302,16 +324,10 @@ class AuthenticatedHTTPTransport(HTTPTransport):
             challenges = response.headers.get("www-authenticate", "")
             scope_challenge = False
             if response.status_code == 403:
-                from ._oauth_discovery import _challenge
-
                 try:
-                    _challenge(
-                        AuthChallenge(
-                            403, dict(response.headers), str(response.url), None, False
-                        )
-                    )
+                    parse_challenge(403, response.headers)
                     scope_challenge = True
-                except AuthenticationFailure:
+                except ChallengeError:
                     pass
             safe = (
                 retry_allowed
@@ -408,8 +424,7 @@ class AuthenticatedHTTPTransport(HTTPTransport):
         correlation = deepcopy(message)
         response = await self._event(
             message,
-            retry_allowed=message.get("method")
-            in ("hooks/intercept", "hooks/configuration"),
+            retry_allowed=message.get("method") in _REPLAYABLE,
             intercept_response=message.get("method") == "hooks/intercept",
         )
         try:
@@ -418,10 +433,12 @@ class AuthenticatedHTTPTransport(HTTPTransport):
             raise ProtocolError("Malformed HTTP protocol response") from None
         if not isinstance(result, dict) or result.get("id") != ident:
             raise ProtocolError("HTTP response correlation mismatch")
-        if message.get("method") == "hooks/configuration":
+        if message.get("method") in ("hooks/configuration", "hooks/capabilities"):
             if response.status_code != 200:
-                raise ProtocolError("Unexpected configuration HTTP status")
-            self._validator.validate("configuration-response", result)
+                raise ProtocolError("Unexpected HTTP response status")
+            self._validator.validate(
+                message["method"].removeprefix("hooks/") + "-response", result
+            )
         else:
             _validate_intercept_response(self._validator, correlation, result)
         return result
@@ -477,6 +494,7 @@ class AuthenticatedHTTPTransport(HTTPTransport):
 
 # Kept separate from the transport implementation; all public providers above
 # retain their existing entry points and lifecycle ownership.
+from ._auth_challenge import ChallengeError, parse_challenge  # noqa: E402
 from ._auth_routing import (  # noqa: E402
     AuthTarget as AuthTarget,
     BearerBinding as BearerBinding,

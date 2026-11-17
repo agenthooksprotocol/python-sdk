@@ -50,13 +50,13 @@ def _freeze(value: object) -> object:
     return value
 
 
-def _url(value: object) -> str:
+def _url(value: object, schemes: tuple[str, ...] = ("https", "http")) -> str:
     if not isinstance(value, str):
         raise AuthenticationFailure(code="invalid_configuration")
     try:
         parsed = urlsplit(value)
         valid = (
-            parsed.scheme in ("https", "http")
+            parsed.scheme in schemes
             and parsed.hostname
             and parsed.username is None
             and parsed.password is None
@@ -131,9 +131,10 @@ def normalize_auth_target(
             flow = binding.get("flow")
             if flow not in ("authorization_code_pkce", "client_credentials"):
                 raise AuthenticationFailure(code="unsupported_binding")
+            # OAuth identifiers are HTTPS-only; reject here, not at discovery.
             issuer, resource = (
-                _url(binding.get("issuer")),
-                _url(binding.get("resource")),
+                _url(binding.get("issuer"), ("https",)),
+                _url(binding.get("resource"), ("https",)),
             )
             client_id = binding.get("clientId")
             scopes = binding.get("scopes", [])
@@ -200,6 +201,7 @@ class RoutingAuthProvider:
     ) -> BearerCredential | None:
         failure: AuthErrorCode | None = None
         recovery: AuthRecovery | None = None
+        scopes: tuple[str, ...] = ()
         try:
             credential = (
                 await provider.credential(context)
@@ -210,11 +212,13 @@ class RoutingAuthProvider:
         except OperationCancelledError:
             raise
         except AuthenticationFailure as exc:
-            failure, recovery = exc.code, exc.recovery
+            failure, recovery, scopes = exc.code, exc.recovery, exc.required_scopes
         except Exception:
             failure = "provider_failed"
         if failure is not None:
-            raise AuthenticationFailure(code=failure, recovery=recovery)
+            raise AuthenticationFailure(
+                code=failure, recovery=recovery, required_scopes=scopes
+            )
         if credential is None:
             if challenge is None and target.binding is not None:
                 raise AuthenticationFailure(code="credential_unavailable")

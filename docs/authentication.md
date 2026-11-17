@@ -205,8 +205,9 @@ authorized unbound target sends cached credentials up front.
 - **`OAuthTokenStore`**: implement all four entry points:
   `await load_binding(key, budget) -> OAuthMetadata | None`,
   `await save_binding(key, metadata, budget) -> None`,
-  `await load(key, budget)`, an uncoordinated (possibly stale) read of a key's
-  record that never waits on its lock, and
+  `await load(key, budget)`, an uncoordinated read of a key's record that never
+  waits on its lock; it may be stale but must return a fully committed record,
+  never a partially written one, and
   `coordinate(key, budget)`, an async context manager yielding an exclusive guard
   with `await load()` and atomic
   `await compare_and_swap(expected_generation, record) -> bool`.

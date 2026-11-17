@@ -899,6 +899,31 @@ class RegistrationLifecycleTests(unittest.TestCase):
         self.run_env(repeated)
         self.run_env(pkce, PKCE)
 
+    def test_invalid_client_retry_skips_stale_uncoordinated_read(self):
+        async def run(env):
+            await env.prepare()
+            stale = env.registration()
+            plain_load = env.s.load
+
+            async def eventually_consistent(key, budget):
+                if key.startswith("ahp.oauth.registration:"):
+                    return stale
+                return await plain_load(key, budget)
+
+            env.s.load = eventually_consistent  # Always serves dcr-1.
+
+            async def lagging_delete(reference, budget):
+                env.secrets.deleted.append(reference)  # Still resolvable.
+
+            env.secrets.delete = lagging_delete
+            env.n.token_hook = reject_client(env, "dcr-1")
+            env.now[0] += 61
+            self.assertIsNotNone(await env.lookup())
+            self.assertEqual(env.n.token_clients, ["dcr-1", "dcr-1", "dcr-2"])
+            self.assertEqual(len(env.n.registrations), 2)
+
+        self.run_env(run)
+
     def test_replacement_client_uses_new_grant_key(self):
         async def run(env):
             first = await env.prepare()

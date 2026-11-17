@@ -349,10 +349,11 @@ class OAuthTokenStore(Protocol):
     ) -> AbstractAsyncContextManager[OAuthStoreGuard]: ...
 
     async def load(self, key: StoreKey, budget: OperationBudget) -> StoredRecord | None:
-        """Uncoordinated (possibly stale) read of the record a guard would load.
+        """Uncoordinated read of the record a guard would load.
 
-        Never waits on `coordinate`; the SDK re-checks under the lock before
-        any write.
+        It may be stale, but must return a fully committed record (or None),
+        never a partially written one. Never waits on `coordinate`; the SDK
+        re-checks under the lock before any write.
         """
         ...
 

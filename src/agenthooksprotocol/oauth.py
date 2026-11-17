@@ -723,6 +723,7 @@ class ManagedOAuthProvider:
         *,
         interactive: bool,
         force: bool = False,
+        coordinated: bool = False,
     ) -> tuple[OAuthMetadata, _Client]:
         """Select a pre-registered client, else CIMD (PKCE), else permitted DCR.
 
@@ -805,6 +806,7 @@ class ManagedOAuthProvider:
             register=interactive or not pkce,
             prepare=interactive,
             force=force,
+            coordinated=coordinated,
         )
         if record is not None and record.client_id is not None:
             client_id = record.client_id
@@ -1002,6 +1004,7 @@ class ManagedOAuthProvider:
         prepare: bool,
         force: bool,
         renew: bool = False,
+        coordinated: bool = False,
     ) -> tuple[OAuthRegistration | None, str | None, AuthErrorCode]:
         """Load, and when needed and permitted (re-)register, under the key lock.
 
@@ -1013,7 +1016,7 @@ class ManagedOAuthProvider:
         blocked: AuthErrorCode = (
             "interaction_required" if pkce else "credential_unavailable"
         )
-        if not force:
+        if not force and not coordinated:
             # Serve an existing usable record without the registration lock,
             # so no caller ever waits on another's registration or renewal.
             seen = _registration_record(await self.store.load(key, budget))
@@ -1400,6 +1403,9 @@ class ManagedOAuthProvider:
                 budget,
                 interactive=interactive,
                 force=force,
+                # After invalid_client, read under the lock: an eventually
+                # consistent store must not serve the rejected record again.
+                coordinated=replaced,
             )
             if (
                 force

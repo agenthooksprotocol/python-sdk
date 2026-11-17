@@ -412,10 +412,16 @@ class ManagedOAuthProvider:
         Reuse needs only requested ∪ required ⊆ pending scopes (effective
         scopes are filtered by each caller's ceiling at use). A superseding
         login requests old pending ∪ previous grant ∪ ((requested ∪ required)
-        ∩ ceiling) and stores the union of the old and new ceilings.
+        ∩ ceiling) and stores the union of the old and new ceilings; with a
+        different redirect it uses only the new caller's scopes and ceiling.
         """
         wanted = set(config.scopes) | set(required)
         pending = record.pending if record is not None else None
+        if (
+            pending is not None
+            and pending.metadata.configuration.redirect_uri != config.redirect_uri
+        ):
+            pending = None  # Merge only for the same grant key and redirect.
         previous = set(pending.metadata.configuration.scopes) if pending else set()
         granted = set(record.token.scopes) if record and record.token else set()
         if (

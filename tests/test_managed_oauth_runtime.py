@@ -1284,6 +1284,8 @@ class ManagedOAuthRuntimeTests(unittest.TestCase):
             policy.configuration = replace(policy.configuration, redirect_uri="https://host.test/other")
             fourth = await p.prepare(target, budget)
             self.assertNotEqual(fourth.generation, third.generation)
+            # A different redirect does not merge the old pending scopes.
+            self.assertEqual(scopes(fourth), {"read", "admin"})
             policy.configuration = replace(policy.configuration, redirect_uri="https://host.test/callback")
             with self.assertRaises(AuthenticationFailure) as failure:
                 await self.complete_login(p, target, third)
@@ -1588,8 +1590,9 @@ class ManagedOAuthRuntimeTests(unittest.TestCase):
                                 self.assertIsNone(stored.refresh_token)
                         self.assertEqual(network.tokens[-1]["grant_type"], ["refresh_token" if refreshing else "client_credentials"])
                         if vector.get("exchange") == "reacquire":
-                            requested_scopes = set(vector["previous_granted"]) | (set(vector["requested"]) | set(vector["required"])) & set(vector["allowed"])
-                            self.assertEqual(set(network.tokens[-1]["scope"][0].split()), requested_scopes)
+                            wire = set(vector["previous_granted"]) | set(vector["requested"]) & set(vector["allowed"])
+                            self.assertEqual(set(vector["wire_request"]), wire)
+                            self.assertEqual(set(network.tokens[-1]["scope"][0].split()), wire)
                         if refreshing:
                             self.assertEqual(network.tokens[-1]["refresh_token"], ["r1"])
                             self.assertNotIn("scope", network.tokens[-1])

@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.13.0](https://github.com/agenthooksprotocol/python-sdk/compare/v0.12.0...v0.13.0) (2026-11-17)
+
+
+### ⚠ BREAKING CHANGES
+
+* **oauth:** add client registration via CIMD and DCR and typed auth diagnostics ([#54](https://github.com/agenthooksprotocol/python-sdk/issues/54))
+
+### Features
+
+* **oauth:** add client registration via CIMD and DCR and typed auth diagnostics ([#54](https://github.com/agenthooksprotocol/python-sdk/issues/54)) ([ebd774b](https://github.com/agenthooksprotocol/python-sdk/commit/ebd774b76b6ccf688e2afe1d1422be0ff83d3fa8))
+
 ## [0.12.0](https://github.com/agenthooksprotocol/python-sdk/compare/v0.11.0...v0.12.0) (2026-11-17)
 
 

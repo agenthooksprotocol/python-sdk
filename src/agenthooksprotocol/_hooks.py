@@ -24,6 +24,7 @@ from ._diagnostics import (
     Diagnostic,
     ContentPreparationError,
     ContentPreparationTimeout,
+    auth_failure,
     delivery_diagnostic,
 )
 
@@ -785,7 +786,7 @@ class Hooks(BoundaryMixin):
         self._injected = transport
         self._transports = {}
         self._ready = False
-        self._configuration_diagnostics: list[dict[str, str]] = []
+        self._configuration_diagnostics: list[dict[str, Any]] = []
         self._owned = []
         self._ready_lock = anyio.Lock()
         self._closed = False
@@ -991,8 +992,12 @@ class Hooks(BoundaryMixin):
             self._ready = True
 
     @property
-    def configuration_diagnostics(self) -> list[dict[str, str]]:
-        """Detached, credential-free reasons for skipped discovered backends."""
+    def configuration_diagnostics(self) -> list[dict[str, Any]]:
+        """Detached, credential-free reasons for skipped discovered backends.
+
+        An authentication failure adds its typed `auth_error` code and
+        validated `required_scopes`.
+        """
         return deepcopy(self._configuration_diagnostics)
 
     async def _discover_configuration(self, backend, transport):
@@ -1003,6 +1008,7 @@ class Hooks(BoundaryMixin):
             "method": "hooks/configuration",
             "params": {"protocolVersion": PROTOCOL_VERSION},
         }
+        auth = None
         try:
             # One bounded initialization exchange, including transport/auth work.
             with anyio.fail_after(_CONFIGURATION_TIMEOUT_SECONDS):
@@ -1045,12 +1051,15 @@ class Hooks(BoundaryMixin):
             reason = "no_applicable_subscriptions"
         except OperationCancelledError:
             raise
-        except Exception:
+        except Exception as exc:
             # Cancellation is a BaseException and must propagate, never turn into skip.
             reason = "configuration_unavailable"
-        self._configuration_diagnostics.append(
-            {"backend": backend["id"], "reason": reason}
-        )
+            auth = auth_failure(exc)
+        diagnostic: dict[str, Any] = {"backend": backend["id"], "reason": reason}
+        if auth is not None:
+            diagnostic["auth_error"] = auth.code
+            diagnostic["required_scopes"] = list(auth.required_scopes)
+        self._configuration_diagnostics.append(diagnostic)
         return []
 
     async def wait_observations(self) -> list[dict[str, Any]]:

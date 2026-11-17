@@ -68,6 +68,11 @@ class Store:
         await anyio.lowlevel.checkpoint()
         self.bindings[key] = metadata
 
+    async def load(self, key, budget):
+        budget.remaining()
+        await anyio.lowlevel.checkpoint()
+        return self.records.get(key)
+
     @asynccontextmanager
     async def coordinate(self, key, budget):
         budget.remaining()
@@ -3995,12 +4000,57 @@ LIFECYCLE_TESTS = {
     "ambiguous-renewal-failure-no-refetch": "test_ambiguous_renewal_failure_neither_refetches_nor_retries",
 }
 
+# Client registration ids map to test_oauth_registration.RegistrationLifecycleTests.
+REGISTRATION_TESTS = {
+    "registration-order-preregistered-cimd-dcr": "test_registration_order_preregistered_cimd_dcr",
+    "dcr-preregistered-wins": "test_preregistered_client_wins_and_obsoletes_recorded_selection",
+    "cimd-used-when-supported": "test_cimd_client_completes_as_public_client",
+    "cimd-not-supported-falls-back-to-dcr": "test_cimd_unadvertised_or_non_true_support_uses_dcr",
+    "cimd-redirect-mismatch-invalid-configuration": "test_cimd_redirect_mismatch_creates_no_login",
+    "cimd-never-fetched-by-sdk": "test_cimd_document_url_is_never_requested",
+    "cimd-client-credentials-not-used": "test_client_credentials_never_uses_cimd",
+    "cimd-invalid-client-no-dcr-fallback": "test_cimd_invalid_client_is_configuration_without_dcr",
+    "dcr-policy-disallows-registration": "test_dcr_requires_host_permission",
+    "dcr-registration-endpoint-destination-policy": "test_registration_endpoint_destination_policy",
+    "dcr-pkce-registers-only-in-prepare": "test_pkce_registers_only_in_prepare_cc_registers_anywhere",
+    "dcr-registers-once-across-processes": "test_concurrent_processes_register_once",
+    "dcr-registration-reused-across-grants": "test_registration_reused_across_bindings_and_partitions",
+    "dcr-expired-secret-reregisters": "test_expired_or_unresolvable_secret_reregisters_before_token_request",
+    "dcr-invalid-client-reregisters-once": "test_invalid_client_reregisters_once",
+    "dcr-new-client-id-new-grant": "test_replacement_client_uses_new_grant_key",
+    "dcr-secret-not-in-token-record": "test_client_secret_only_in_host_secret_store",
+    "dcr-no-secret-hook-no-confidential-registration": "test_without_secret_hook_cc_dcr_unavailable_pkce_unaffected",
+    "dcr-metadata-change-keeps-selection": "test_metadata_change_keeps_recorded_selection",
+    "dcr-management-fields-not-persisted": "test_registration_management_fields_ignored",
+    "dcr-initial-access-token-scoped": "test_initial_access_token_sent_only_to_its_issuer",
+    "lookup-never-registers-pkce": "test_lookup_never_registers_pkce",
+    "dcr-failed-marker-bounds-registration": "test_failed_marker_bounds_registration_until_backoff",
+    "dcr-response-validation-invalid-configuration": "test_registration_response_validation_persists_nothing",
+    "prepare-force-reregistration": "test_prepare_force_reregistration",
+    "dcr-policy-change-reregisters": "test_policy_change_reregisters_with_new_digest",
+    "dcr-replaced-secret-deleted": "test_replaced_or_deleted_registration_secret_is_deleted",
+    "cc-registration-auto-repairs-after-backoff": "test_cc_auto_repairs_after_backoff",
+    "cc-proactive-reregistration-before-expiry": "test_cc_proactive_reregistration_within_margin",
+    "marker-blocks-only-registration": "test_marker_blocks_only_registration_requests",
+    "stale-callback-does-not-delete-new-registration": "test_stale_callback_invalid_client_keeps_newer_registration",
+    "registration-transient-failure-backs-off": "test_transient_registration_failures_back_off",
+    "registration-retry-after-honoured": "test_retry_after_sets_next_attempt",
+    "marker-update-atomic-across-processes": "test_marker_updates_are_atomic_under_lock",
+    "proactive-reregistration-once-across-processes": "test_proactive_renewal_once_across_processes",
+    "proactive-renewal-failure-keeps-current-registration": "test_proactive_renewal_failure_keeps_current_registration",
+}
+
 
 class LifecycleCoverageTests(unittest.TestCase):
     def test_every_lifecycle_id_maps_to_an_existing_native_test(self):
+        from test_oauth_registration import RegistrationLifecycleTests
+
         ids = [entry["id"] for entry in FIXTURES["lifecycle"]]
-        self.assertEqual(set(ids), set(LIFECYCLE_TESTS))
-        for name in LIFECYCLE_TESTS.values():
-            self.assertTrue(
-                callable(getattr(ManagedOAuthRuntimeTests, name, None)), name
-            )
+        self.assertFalse(set(LIFECYCLE_TESTS) & set(REGISTRATION_TESTS))
+        self.assertEqual(set(ids), set(LIFECYCLE_TESTS) | set(REGISTRATION_TESTS))
+        for tests, names in (
+            (ManagedOAuthRuntimeTests, LIFECYCLE_TESTS.values()),
+            (RegistrationLifecycleTests, REGISTRATION_TESTS.values()),
+        ):
+            for name in names:
+                self.assertTrue(callable(getattr(tests, name, None)), name)

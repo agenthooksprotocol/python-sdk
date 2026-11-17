@@ -673,6 +673,59 @@ class PublicHooksTests(unittest.TestCase):
 
         self.run_async(run)
 
+    def test_delivery_diagnostics_carry_typed_auth_error_and_scopes(self):
+        from agenthooksprotocol.auth import AuthenticationFailure
+        from agenthooksprotocol._diagnostics import (
+            ContentPreparationError,
+            delivery_diagnostic,
+        )
+
+        def login_needed():
+            return AuthenticationFailure(
+                code="interaction_required", required_scopes=("write", "read")
+            )
+
+        async def run():
+            class NeedsLogin(MemoryTransport):
+                async def request(self, message):
+                    raise login_needed()
+
+                async def notify(self, message):
+                    raise login_needed()
+
+            for mode in ("intercept", "observe"):
+                hooks = Hooks(
+                    config(mode=mode),
+                    source="urn:host",
+                    harness=protocol_event.Harness(name="test-host", version="1"),
+                    capabilities=capabilities(),
+                    transport=NeedsLogin(),
+                )
+                result = await hooks.dispatch(
+                    "tool.before", request()["params"]["event"]
+                )
+                diagnostic = result.diagnostics[0]
+                self.assertEqual(diagnostic["stage"], "authentication")
+                self.assertEqual(diagnostic["auth_error"], "interaction_required")
+                self.assertEqual(diagnostic["required_scopes"], ["read", "write"])
+                if mode == "observe":
+                    self.assertEqual(await hooks.wait_observations(), [diagnostic])
+                await hooks.aclose()
+
+        self.run_async(run)
+        wrapped = delivery_diagnostic(
+            ContentPreparationError("upload failed", cause=login_needed()),
+            backend="b",
+            subscription=0,
+            mode="intercept",
+        )
+        self.assertEqual(wrapped["auth_error"], "interaction_required")
+        self.assertEqual(wrapped["required_scopes"], ["read", "write"])
+        plain = delivery_diagnostic(
+            RuntimeError("x"), backend="b", subscription=0, mode="observe"
+        )
+        self.assertEqual((plain["auth_error"], plain["required_scopes"]), (None, []))
+
     def test_stream_upload_eof_and_credential_isolation(self):
         import hashlib
         import httpx

@@ -126,7 +126,8 @@ Managed OAuth requires a nonempty backend `id`; unidentified backends fail
 configuration rather than sharing an invented identity.
 See [the typed host-controlled example](../examples/managed_oauth.py). It takes
 host capabilities rather than offering an unsafe sample DNS policy or token store.
-No AHP wire-schema fields or dynamic client registration are introduced.
+No AHP wire-schema fields are introduced; client registration is host policy
+(see [Client registration](#client-registration)).
 Host-store key and record compatibility is described below.
 
 ### Prepare, interact, complete
@@ -191,20 +192,27 @@ authorized unbound target sends cached credentials up front.
   client, flow and scopes from local policy. Remote metadata is not authority.
   Supported flows are `authorization_code_pkce` and `client_credentials`;
   endpoint authentication is `none`, `client_secret_basic` or
-  `client_secret_post`. The host provisions client IDs/secrets and redirect URIs.
-- **`OAuthNetwork`**: `authorize(url, purpose, budget)` checks metadata, token
-  and browser-bound authorization URLs. `send(request, purpose, budget)` must
+  `client_secret_post`. The host provisions redirect URIs and either a client
+  ID/secret or permission for the SDK to obtain one (below).
+- **`OAuthNetwork`**: `authorize(url, purpose, budget)` checks metadata, token,
+  registration and browser-bound authorization URLs. Refuse a destination by
+  raising `AuthenticationFailure(code="untrusted_destination")`. `send(request, purpose, budget)` must
   enforce TLS, DNS/egress policy (including rebinding protection) for the actual
   connection, reject redirects, and avoid ambient cookies or credentials. It
   must not close a borrowed host client. Merely validating a URL string is not
   a safe production implementation. The SDK rejects redirect responses and
   bounds response size, but cannot enforce the host's network boundary for it.
-- **`OAuthTokenStore`**: implement all three entry points:
+- **`OAuthTokenStore`**: implement all four entry points:
   `await load_binding(key, budget) -> OAuthMetadata | None`,
-  `await save_binding(key, metadata, budget) -> None`, and
+  `await save_binding(key, metadata, budget) -> None`,
+  `await load(key, budget)`, an uncoordinated read of a key's record that never
+  waits on its lock; it may be stale but must return a fully committed record,
+  never a partially written one, and
   `coordinate(key, budget)`, an async context manager yielding an exclusive guard
   with `await load()` and atomic
   `await compare_and_swap(expected_generation, record) -> bool`.
+  Grant keys hold `OAuthRecord`s and registration keys hold
+  `OAuthRegistration`s, through the same guard.
   Binding metadata contains trusted principal/endpoint information but no client
   secret. Persist it alongside securely stored grants so a recreated provider
   can locate credentials without rediscovery. Resolve current client secrets
@@ -224,6 +232,80 @@ is supported (so public clients need the server to advertise `none`). Unbound di
 Local policy remains authoritative. Resource indicators are sent on token
 exchange and refresh; destination/resource/issuer identifiers are exact, including
 trailing slashes and queries where permitted. Do not normalize mismatches away.
+
+### Client registration
+
+The SDK selects the client per exact issuer and flow, in this order:
+
+1. **Pre-registered**: a nonempty `OAuthClientConfiguration.client_id` (always
+   used for an explicit OAuth preset). CIMD and DCR are never attempted.
+2. **Client ID Metadata Document**: PKCE only, when the configuration sets
+   `client_metadata_document=OAuthClientMetadataDocument(url, redirect_uris)` and
+   the issuer metadata has `client_id_metadata_document_supported: true`. The URL
+   is the `client_id` (public client, auth method `none`). It must be HTTPS with a
+   path and no userinfo, fragment or dot segments, and the redirect must be one of
+   `redirect_uris`; otherwise `invalid_configuration`. The SDK never fetches it.
+   `invalid_client` for a CIMD client is `invalid_configuration`, with no DCR
+   fallback.
+3. **Dynamic Client Registration (RFC 7591)**: when the configuration for that
+   issuer sets `dynamic_registration=OAuthDynamicRegistration(client_name, ...)`
+   and the metadata advertises an HTTPS `registration_endpoint`. Client
+   credentials also need `secret_store` and a `client_secret_basic` or
+   `client_secret_post` method.
+4. Otherwise `credential_unavailable`.
+
+Leave `client_id` empty to opt into 2 and 3. A recorded CIMD or DCR selection
+stays in use when only issuer metadata changes; a host policy change (a
+pre-registered client, a different CIMD URL, removed DCR permission) reselects.
+A new `client_id` is a new grant key, so PKCE needs new consent. After an
+`invalid_client` replacement or a forced re-registration, the old grant is
+deleted unless it uses a shared `grant_partition`.
+
+```python
+managed = oauth.ManagedOAuthProvider(
+    network=network, policy=policy, store=store, namespace=namespace,
+    secret_store=secrets,  # store(value) -> ref, resolve(ref), delete(ref)
+)
+# policy.select(...) returns, for a permitted issuer:
+oauth.OAuthClientConfiguration(
+    issuer, "", "authorization_code_pkce", redirect_uri=redirect,
+    client_metadata_document=oauth.OAuthClientMetadataDocument(url, (redirect,)),
+    dynamic_registration=oauth.OAuthDynamicRegistration(
+        "My Adapter", software_id="my-adapter", software_version="1.2.3",
+        initial_access_token_ref="vault:iat",  # optional, sent only to this issuer
+    ),
+)
+```
+
+A PKCE client is registered only by host `prepare`; delivery paths return
+`interaction_required` instead. Client credentials register on any acquisition,
+including the up-front lookup. Registrations are stored under their own
+registration key (namespace, issuer, flow, redirect) through `store.coordinate`
+and shared by every grant with that key; keep redirects stable. Concurrent
+processes register once. Like a token request, a registration request whose
+bytes were written is received and committed despite caller cancellation. The client secret is written only to `secret_store`;
+the record holds its reference, and replaced or deleted records delete their
+reference. `registration_access_token` and `registration_client_uri` are
+ignored. Changing `client_name`, software identifiers, `scopes` or the initial
+access token reference re-registers.
+
+A token-endpoint `invalid_client` deletes that registration generation: client
+credentials re-register and retry once; PKCE returns `interaction_required`.
+Every failed registration records a backoff marker: `registration_backoff`
+(default 60 seconds) doubling to `registration_backoff_max` (default 1 hour), or
+a later `Retry-After` up to `retry_after_max` (default 1 hour). Until it elapses,
+only `prepare` sends a registration request; a still-valid stored token keeps
+working. Client credentials re-register within `min(10% of the secret lifetime,
+renewal_margin_max)` (default 1 hour) of `client_secret_expires_at`. The
+operation is served with the current registration first; renewal then runs as
+detached best-effort work bounded by `commit_timeout`, and a failed renewal
+only updates the failed marker; other failures are logged at warning level by
+the `agenthooksprotocol.oauth` logger, without secrets. A usable registration is
+read without its lock, so no operation waits on a renewal. Await
+`managed.renewals_settled()` before shutting down the event loop: on asyncio,
+shutdown after a renewal request was written loses the issued client. `prepare(..., force_registration=True)`
+discards the current registration, its secret and marker, and registers anew,
+for example after the authorization server deleted the client.
 
 ### Configure scopes and storage isolation
 
@@ -300,7 +382,7 @@ Run the native asyncio/Trio HTTP, coordinated-store and TLS transport regression
 
 ```sh
 uv sync --locked --all-extras
-PYTHONPATH=src:tests uv run --locked --all-extras python -m unittest test_oauth_contracts test_auth_routing test_managed_oauth_runtime test_oauth_discovery
+PYTHONPATH=src:tests uv run --locked --all-extras python -m unittest test_oauth_contracts test_auth_routing test_managed_oauth_runtime test_oauth_registration test_oauth_discovery
 ```
 
 The vendored `tests/fixtures/sdk-auth-lifecycle.json` comes from

@@ -12,7 +12,9 @@ from .auth import AuthTarget, BearerCredential
 if TYPE_CHECKING:
     import httpx
 
-EndpointPurpose = Literal["metadata", "token", "authorization"]
+EndpointPurpose = Literal["metadata", "token", "authorization", "registration"]
+TokenEndpointAuthMethod = Literal["none", "client_secret_basic", "client_secret_post"]
+ClientSource = Literal["preregistered", "cimd", "dcr"]
 
 
 @dataclass(frozen=True)
@@ -80,36 +82,76 @@ class OAuthNetwork(Protocol):
     ) -> "httpx.Response": ...
 
 
+def _valid_scopes(scopes: tuple[str, ...] | None) -> bool:
+    return scopes is None or all(
+        isinstance(scope, str)
+        and scope
+        and all(
+            ord(c) == 33 or 35 <= ord(c) <= 91 or 93 <= ord(c) <= 126 for c in scope
+        )
+        for scope in scopes
+    )
+
+
+@dataclass(frozen=True)
+class OAuthClientMetadataDocument:
+    """A host-published Client ID Metadata Document; the URL is the client_id.
+
+    `redirect_uris` are the document's declared redirects. The SDK never
+    fetches the URL.
+    """
+
+    url: str
+    redirect_uris: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class OAuthDynamicRegistration:
+    """Host permission to register (RFC 7591) at the configuration's exact issuer.
+
+    `scopes` is sent as the registration `scope` only when set. The initial
+    access token is resolved through the secret store by reference, sent only
+    to this issuer's registration endpoint, and never persisted.
+    """
+
+    client_name: str
+    software_id: str | None = None
+    software_version: str | None = None
+    scopes: tuple[str, ...] | None = None
+    initial_access_token_ref: str | None = field(default=None, repr=False)
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.client_name, str) or not self.client_name:
+            raise ValueError("Registration client_name must be nonempty")
+        if not _valid_scopes(self.scopes):
+            raise ValueError("Invalid OAuth scope")
+
+
 @dataclass(frozen=True)
 class OAuthClientConfiguration:
+    """`client_id` is a pre-registered client; leave it empty to let the SDK
+    use `client_metadata_document` (PKCE) or `dynamic_registration`."""
+
     issuer: str
     client_id: str
     flow: Literal["authorization_code_pkce", "client_credentials"]
     scopes: tuple[str, ...] = ()
     redirect_uri: str | None = field(default=None, repr=False)
     client_secret: str | None = field(default=None, repr=False)
-    token_endpoint_auth_method: Literal[
-        "none", "client_secret_basic", "client_secret_post"
-    ] = "none"
+    token_endpoint_auth_method: TokenEndpointAuthMethod = "none"
     # Stored pending-login lifetime in seconds (default and maximum 10 minutes).
     login_lifetime: float = 600
     allowed_scopes: tuple[str, ...] | None = None
     required_scopes: tuple[str, ...] = ()
     grant_partition: str | None = None
+    client_metadata_document: OAuthClientMetadataDocument | None = None
+    dynamic_registration: OAuthDynamicRegistration | None = None
 
     def __post_init__(self) -> None:
         if not 0 < self.login_lifetime <= 600:
             raise ValueError("Login lifetime must be positive and at most 600")
         for scopes in (self.scopes, self.allowed_scopes, self.required_scopes):
-            if scopes is not None and any(
-                not isinstance(scope, str)
-                or not scope
-                or any(
-                    not (ord(c) == 33 or 35 <= ord(c) <= 91 or 93 <= ord(c) <= 126)
-                    for c in scope
-                )
-                for scope in scopes
-            ):
+            if not _valid_scopes(scopes):
                 raise ValueError("Invalid OAuth scope")
         allowed = set(self.ceiling)
         if not set(self.scopes).issubset(allowed) or not set(
@@ -143,11 +185,19 @@ class OAuthTrustPolicy(Protocol):
 
 @dataclass(frozen=True)
 class OAuthMetadata:
+    """Binding metadata: the selected client, its source and, for DCR, the
+    registration key, plus authorization-server capabilities."""
+
     resource: str
     configuration: OAuthClientConfiguration = field(repr=False)
     token_endpoint: str = field(repr=False)
     authorization_endpoint: str | None = field(default=None, repr=False)
     require_response_issuer: bool = False
+    registration_endpoint: str | None = field(default=None, repr=False)
+    client_id_metadata_document_supported: bool = False
+    token_endpoint_auth_methods: tuple[str, ...] = ()
+    client_source: ClientSource = "preregistered"
+    registration_key: str | None = field(default=None, repr=False)
 
 
 @dataclass(frozen=True)
@@ -169,6 +219,8 @@ class PendingState:
     authorization_url: str = field(repr=False)
     # Wall-clock expiry fixed at creation; not tied to any caller's deadline.
     expires_at: float
+    # The DCR client generation this login was created under.
+    registration_generation: str | None = field(default=None, repr=False)
 
 
 @dataclass(frozen=True)
@@ -180,11 +232,40 @@ class OAuthRecord:
     pending: PendingState | None = field(default=None, repr=False)
 
 
+@dataclass(frozen=True)
+class OAuthRegistration:
+    """A DCR registration and/or failed-registration marker for one key.
+
+    `generation` changes on every write (compare-and-set); `client_generation`
+    identifies the issued client. The client secret lives only in the host
+    secret store under `secret_ref`.
+    """
+
+    generation: str
+    request_digest: str
+    client_id: str | None = field(default=None, repr=False)
+    client_generation: str | None = field(default=None, repr=False)
+    token_endpoint_auth_method: TokenEndpointAuthMethod = "none"
+    registered_at: float = 0
+    client_secret_expires_at: int | None = None
+    secret_ref: str | None = field(default=None, repr=False)
+    issued: dict[str, object] = field(default_factory=dict, repr=False)
+    failed_at: float | None = None
+    attempts: int = 0
+    next_attempt_at: float | None = None
+
+
+StoredRecord = OAuthRecord | OAuthRegistration
 StoreKey = str
 
 
 def _frame(prefix: str, fields: tuple[str, ...]) -> str:
     return prefix + "".join(f"{len(value.encode('utf-8'))}:{value}" for value in fields)
+
+
+def registration_key(namespace: str, issuer: str, flow: str, redirect: str) -> str:
+    """DCR registration identity; redirect is "" for client credentials."""
+    return _frame("ahp.oauth.registration:", (namespace, issuer, flow, redirect))
 
 
 def binding_key(target: AuthTarget) -> str:
@@ -229,15 +310,29 @@ def grant_key(target: AuthTarget, metadata: OAuthMetadata) -> str:
 class OAuthStoreGuard(Protocol):
     """Exclusion spans load/reserve/network/CAS. No callback may reenter this key.
 
+    Grant keys hold `OAuthRecord`s; registration keys hold `OAuthRegistration`s.
+
     CAS must commit atomically or reject. Failed/cancelled writes may have
     committed: callers reload rather than blindly restoring previous tokens.
     Ambiguous exchanges retain refresh material for explicit retry/host repair.
     """
 
-    async def load(self) -> OAuthRecord | None: ...
+    async def load(self) -> StoredRecord | None: ...
     async def compare_and_swap(
-        self, expected_generation: str | None, record: OAuthRecord | None
+        self, expected_generation: str | None, record: StoredRecord | None
     ) -> bool: ...
+
+
+class OAuthSecretStore(Protocol):
+    """Host secret storage for DCR client secrets (and initial access tokens).
+
+    `store` returns a fresh opaque reference; `resolve` returns None when the
+    reference no longer resolves.
+    """
+
+    async def store(self, value: str, budget: OperationBudget) -> str: ...
+    async def resolve(self, reference: str, budget: OperationBudget) -> str | None: ...
+    async def delete(self, reference: str, budget: OperationBudget) -> None: ...
 
 
 class OAuthTokenStore(Protocol):
@@ -252,6 +347,15 @@ class OAuthTokenStore(Protocol):
     def coordinate(
         self, key: StoreKey, budget: OperationBudget
     ) -> AbstractAsyncContextManager[OAuthStoreGuard]: ...
+
+    async def load(self, key: StoreKey, budget: OperationBudget) -> StoredRecord | None:
+        """Uncoordinated read of the record a guard would load.
+
+        It may be stale, but must return a fully committed record (or None),
+        never a partially written one. Never waits on `coordinate`; the SDK
+        re-checks under the lock before any write.
+        """
+        ...
 
 
 @dataclass(frozen=True)

@@ -352,6 +352,16 @@ async def discover(
             validate_url(issuer, issuer=True)
     configuration = await policy.select(target, resource, issuers, required, budget)
     validate_configuration(target, resource, issuers, required, configuration)
+    return await issuer_metadata(resource, configuration, network, budget)
+
+
+async def issuer_metadata(
+    resource: str,
+    configuration: OAuthClientConfiguration,
+    network: OAuthNetwork,
+    budget: OperationBudget,
+) -> OAuthMetadata:
+    """Fetch only the selected issuer's authorization-server metadata."""
     issuer = validate_url(configuration.issuer, issuer=True)
     parts = urlsplit(issuer)
     origin = f"{parts.scheme}://{parts.netloc}"

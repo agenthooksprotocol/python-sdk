@@ -411,12 +411,13 @@ class ManagedOAuthProvider:
 
         Reuse needs only requested ∪ required ⊆ pending scopes (effective
         scopes are filtered by each caller's ceiling at use). A superseding
-        login requests (old pending ∪ requested ∪ required) ∩ ceiling, so
-        alternating callers converge instead of looping.
+        login requests old pending ∪ previous grant ∪ ((requested ∪ required)
+        ∩ ceiling) and stores the union of the old and new ceilings.
         """
         wanted = set(config.scopes) | set(required)
         pending = record.pending if record is not None else None
         previous = set(pending.metadata.configuration.scopes) if pending else set()
+        granted = set(record.token.scopes) if record and record.token else set()
         if (
             pending is not None
             and pending.expires_at > self.clock()
@@ -426,7 +427,12 @@ class ManagedOAuthProvider:
             return PendingLogin(
                 key, pending.state, pending.authorization_url, pending.expires_at
             )
-        scopes = tuple(sorted((previous | wanted) & set(config.ceiling)))
+        # Step-up keeps the previous grant; old pending scopes and ceilings
+        # only grow, so alternating callers converge.
+        scopes = tuple(sorted(previous | granted | (wanted & set(config.ceiling))))
+        ceiling = set(config.ceiling) | set(scopes)
+        if pending is not None:
+            ceiling |= set(pending.metadata.configuration.ceiling)
         if (
             config.flow != "authorization_code_pkce"
             or not metadata.authorization_endpoint
@@ -443,8 +449,8 @@ class ManagedOAuthProvider:
                 configuration=replace(
                     metadata.configuration,
                     scopes=scopes,
-                    # The creating caller's ceiling bounds the completed grant.
-                    allowed_scopes=config.ceiling,
+                    # The acquisition ceiling bounds the completed grant.
+                    allowed_scopes=tuple(sorted(ceiling)),
                 ),
             ),
             state,
@@ -469,14 +475,18 @@ class ManagedOAuthProvider:
     ) -> Ready | PendingLogin | None:
         """Serve, refresh, reissue or (interactive only) start a login.
 
-        `lookup` (unbound up-front lookup) never discovers or starts a login:
-        it serves a usable stored token or refreshes it with cached metadata,
-        and returns None (anonymous) on a store miss or host policy refusal.
+        Full discovery runs only on a cache miss, a rebind, a host `prepare`
+        or challenge handling. `lookup` (unbound up-front lookup) never runs
+        protected-resource discovery or starts a login: it serves, refreshes
+        or re-acquires with persisted metadata, fails like any operation when
+        the binding is known, and returns None (anonymous) only on a store
+        miss or host policy refusal.
         `explicit` holds host-supplied required scopes (step-up round trip).
         """
         from ._oauth_discovery import (
             challenge_requirements,
             discover,
+            issuer_metadata,
             validate_configuration,
         )
 
@@ -509,6 +519,12 @@ class ManagedOAuthProvider:
                 # Policy rotation can legitimately rebind; never reuse the old principal.
                 same = grant_key(target, candidate) == grant_key(target, metadata)
                 metadata = candidate if same else None
+                if metadata is not None and not metadata.token_endpoint:
+                    # Missing persisted authorization-server metadata: fetch
+                    # the stored issuer's only, never protected-resource data.
+                    metadata = await issuer_metadata(
+                        resource, config, self.network, budget
+                    )
             discovered = metadata is None
             if metadata is None:
                 if lookup:
@@ -555,10 +571,8 @@ class ManagedOAuthProvider:
                 refresh = (
                     token.refresh_token if token is not None and adequate else None
                 )
-                if lookup and not refresh:
-                    return None
                 if config.flow == "client_credentials" or refresh:
-                    if not discovered and not lookup:
+                    if not discovered and (interactive or challenge is not None):
                         # Renew endpoint metadata outside the lock, then reload.
                         continue
                     retained = token
@@ -569,7 +583,11 @@ class ManagedOAuthProvider:
                         and challenge.status == 401
                     ):
                         retained = replace(token, access_token=None)
-                    requested = tuple(sorted(set(config.scopes) | set(required)))
+                    # Re-acquisition keeps the previous grant (step-up).
+                    granted = set(token.scopes) if token is not None else set()
+                    requested = tuple(
+                        sorted(granted | set(config.scopes) | set(required))
+                    )
                     form = (
                         {"grant_type": "refresh_token", "refresh_token": refresh}
                         if refresh
@@ -590,6 +608,7 @@ class ManagedOAuthProvider:
                         requested,
                         previous=token if refresh else None,
                         retained=retained,
+                        ceiling=tuple(sorted(granted | set(config.ceiling))),
                     )
                     assert active.token is not None
                     if not set(required) <= set(active.token.scopes) & set(
@@ -738,8 +757,13 @@ class ManagedOAuthProvider:
                 budget,
                 form,
                 requested.scopes,
-                # The creating caller's ceiling bounds the recorded grant.
-                ceiling=requested.ceiling,
+                # granted = response ∩ (previous grant ∪ acquisition ceiling).
+                ceiling=tuple(
+                    sorted(
+                        set(requested.ceiling)
+                        | set(record.token.scopes if record.token else ())
+                    )
+                ),
                 retained=record.token,
                 code=True,
             )

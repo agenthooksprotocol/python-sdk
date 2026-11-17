@@ -35,9 +35,14 @@ access, storage/coordination, consent UI and callback transport host-controlled.
 - An unbound endpoint asks `discover.credential(context)` for an already
   authorized credential. The managed provider uses persisted binding metadata
   and grants, including for notifications and uploads that cannot be replayed.
-  That lookup never discovers or starts a login; it may refresh an expired token
-  with cached metadata, and a failed refresh fails the operation. Only a store
-  miss or a host policy refusal sends anonymously. An unknown first contact's
+  That lookup never runs protected-resource discovery or starts a login. It may
+  refresh an expired token or re-acquire a client-credentials grant with the
+  persisted authorization-server metadata (fetching only the stored issuer's
+  metadata if it is missing). A known binding that cannot be renewed fails the
+  operation, with `interaction_required` when consent is needed. Only a store
+  miss or a host policy refusal sends anonymously. Full discovery runs only on a
+  cache miss, a host `prepare` or challenge handling. A 401 marks the rejected
+  token stale even if it has not expired, so it is renewed, never resent. An unknown first contact's
   challenge can trigger trusted discovery. Use host `prepare` before the first
   unsafe call if it needs auth.
 - Missing configured credentials raise `credential_unavailable` before HTTP
@@ -146,8 +151,9 @@ creating `prepare` call's deadline or cancellation. Any provider or process
 sharing the store can `complete` it with the `PendingLogin` handle. A later
 `prepare` reuses an unexpired pending login, whatever its deadline, when the
 redirect matches and its requested and required scopes are within the pending
-scopes. Otherwise it supersedes it with a login requesting the union of the old
-and new scopes within the caller's ceiling; the old callback then fails
+scopes. Otherwise it supersedes it with a login requesting the old pending
+scopes plus the new scopes within the caller's ceiling, storing the union of
+both ceilings; the old callback then fails
 `interaction_required`. A pending login ends once: completion (including
 consent denial), supersede, `cancel` or expiry. Invalid state, redirect or
 issuer does not consume it.
@@ -213,9 +219,12 @@ trailing slashes and queries where permitted. Do not normalize mismatches away.
 `OAuthClientConfiguration.scopes` is the requested set. `allowed_scopes` is the
 local ceiling and defaults to requested scopes when omitted. `required_scopes`
 contains explicit operation requirements. All scopes use OAuth's ASCII grammar;
-requested and required scopes must be inside the ceiling. An initial exchange
-records the response scopes within the acquisition ceiling (the ceiling stored
-on the pending login, or the client-credentials caller's). A refresh records the
+requested and required scopes must be inside the ceiling. An acquisition
+(including step-up or re-acquisition) requests the previous grant plus the
+requested and required scopes within the caller's ceiling, and records the
+response scopes within the previous grant plus the acquisition ceiling (the one
+stored on the pending login, or the client-credentials caller's), so step-up
+never loses earlier scopes. A refresh records the
 response scopes within the **previously granted** scopes, so it never broadens a
 grant. Extra scopes, such as `openid` or every scope a client holds, are ignored,
 not an error. Omitted response `scope` means the requested scopes on acquisition

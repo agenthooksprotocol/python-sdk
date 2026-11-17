@@ -116,19 +116,21 @@ class CanonicalVectorTests(unittest.TestCase):
         )
         for vector in FIXTURES["token_responses"]:
             with self.subTest(id=vector["id"]):
+                prior = tuple(vector.get("previous_granted", ()))
                 previous = (
                     StoredToken(
                         "previous-access",
                         refresh_token="previous-refresh",
-                        scopes=tuple(vector["previous_granted"]),
+                        scopes=prior,
                     )
-                    if "previous_granted" in vector
+                    if vector.get("exchange") == "refresh"
                     else None
                 )
+                # (Re)acquisition records within previous grant ∪ its ceiling.
                 arguments = (
                     vector["response"],
                     tuple(vector["requested"]),
-                    tuple(vector["allowed"]),
+                    tuple(sorted(set(prior) | set(vector["allowed"]))),
                     previous,
                 )
                 if not vector["accepted"]:

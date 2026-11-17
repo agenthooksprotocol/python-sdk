@@ -1041,8 +1041,11 @@ class ManagedOAuthRuntimeTests(unittest.TestCase):
             self.assertFalse(s.records)
             login = await p.prepare(target, OperationBudget.after(5))
             self.assertIsInstance(login, PendingLogin)
+            # A known binding needing consent fails; it is never sent anonymously.
             with anyio.CancelScope() as scope:
-                self.assertIsNone(await p.credential(AuthContext({"id": "backend"}, None, RESOURCE, "event", scope)))
+                with self.assertRaises(AuthenticationFailure) as failure:
+                    await p.credential(AuthContext({"id": "backend"}, None, RESOURCE, "event", scope))
+            self.assertEqual(failure.exception.code, "interaction_required")
             self.assertEqual(next(iter(s.records.values())).pending.state, login.generation)
             await p.cancel(target, login, OperationBudget.after(5))
             self.assertFalse(s.records)
@@ -1197,9 +1200,10 @@ class ManagedOAuthRuntimeTests(unittest.TestCase):
             record = next(iter(s.records.values()))
             self.assertEqual((record.status, record.token.scopes, record.token.refresh_token), ("active", ("read",), "r2"))
             policy.configuration = replace(policy.configuration, required_scopes=("write",))
-            with anyio.CancelScope() as scope:
-                self.assertIsNone(await p.credential(AuthContext({"id": "backend"}, None, RESOURCE, "event", scope)))
             # A write-requiring operation cannot fabricate write from a refresh.
+            with self.assertRaises(AuthenticationFailure) as failure:
+                await p.credential(self.unbound())
+            self.assertEqual(failure.exception.code, "interaction_required")
             with self.assertRaises(AuthenticationFailure) as failure:
                 await p.challenge(AuthContext({"id": "backend"}, None, RESOURCE, "event", anyio.CancelScope()),
                                   AuthChallenge(401, {}, RESOURCE, ready.credential.identity, True))
@@ -1270,7 +1274,8 @@ class ManagedOAuthRuntimeTests(unittest.TestCase):
             self.assertEqual(await p.prepare(target, budget), second)
             policy.configuration = replace(policy.configuration, scopes=("read", "admin"))
             third = await p.prepare(target, budget)
-            self.assertEqual(scopes(third), {"read", "admin"})
+            # Pending scopes and ceilings only grow.
+            self.assertEqual(scopes(third), {"read", "write", "admin"})
             for old in (first, second):
                 with self.assertRaises(AuthenticationFailure) as failure:
                     await self.complete_login(p, target, old)
@@ -1515,8 +1520,9 @@ class ManagedOAuthRuntimeTests(unittest.TestCase):
                         required_scopes=tuple(vector["required"]),
                     )
                     responses = []
-                    refreshing = "previous_granted" in vector
-                    if refreshing:
+                    refreshing = vector.get("exchange") == "refresh"
+                    seeded = "previous_granted" in vector
+                    if seeded:
                         responses.append({
                             "access_token": "seed-access", "token_type": "Bearer",
                             "expires_in": 1, "refresh_token": "r1",
@@ -1525,7 +1531,7 @@ class ManagedOAuthRuntimeTests(unittest.TestCase):
                     responses.append(vector["response"])
                     network = VectorNetwork(config, responses)
                     # The seed grant was acquired under a ceiling covering it.
-                    seed = replace(config, allowed_scopes=tuple(sorted(set(vector["allowed"]) | set(vector.get("previous_granted", [])))))
+                    seed = replace(config, required_scopes=(), allowed_scopes=tuple(sorted(set(vector["allowed"]) | set(vector.get("previous_granted", [])))))
                     store, policy, now = Store(), VectorPolicy(seed, RESOURCE), [1000.0]
                     provider = ManagedOAuthProvider(network=network, policy=policy, store=store, namespace="vectors", clock=lambda: now[0], expiry_skew=0)
                     typed = OAuthBinding(ISSUER, RESOURCE, "host-client", "client_credentials", tuple(requested))
@@ -1539,7 +1545,7 @@ class ManagedOAuthRuntimeTests(unittest.TestCase):
                         delivered.append(request.headers.get("authorization"))
                         return httpx.Response(204)
                     try:
-                        if refreshing:
+                        if seeded:
                             await provider.prepare(target, OperationBudget.after(5))
                             now[0] += 2
                         policy.configuration = config
@@ -1581,10 +1587,13 @@ class ManagedOAuthRuntimeTests(unittest.TestCase):
                             elif "refresh_token" not in vector["response"] and not refreshing:
                                 self.assertIsNone(stored.refresh_token)
                         self.assertEqual(network.tokens[-1]["grant_type"], ["refresh_token" if refreshing else "client_credentials"])
+                        if vector.get("exchange") == "reacquire":
+                            requested_scopes = set(vector["previous_granted"]) | (set(vector["requested"]) | set(vector["required"])) & set(vector["allowed"])
+                            self.assertEqual(set(network.tokens[-1]["scope"][0].split()), requested_scopes)
                         if refreshing:
                             self.assertEqual(network.tokens[-1]["refresh_token"], ["r1"])
                             self.assertNotIn("scope", network.tokens[-1])
-                        self.assertEqual(len(network.tokens), 2 if refreshing else 1)
+                        self.assertEqual(len(network.tokens), 2 if seeded else 1)
                         self.assertFalse(network.responses)
                         self.assertTrue(store.coordinated)
                     finally:
@@ -2041,6 +2050,104 @@ class ManagedOAuthRuntimeTests(unittest.TestCase):
         self.run_async(run)
 
 
+    def test_up_front_lookup_reacquires_client_credentials_with_persisted_metadata(self):
+        """Canonical lifecycle: up-front-client-credentials-reacquire."""
+        async def run(p, n, s, policy, target, now):
+            async def no_refresh(request):
+                return httpx.Response(200, json={"access_token": f"cc-{len(n.tokens)}", "token_type": "Bearer", "expires_in": 60})
+            n.token_hook = no_refresh
+            await p.prepare(target, OperationBudget.after(5))
+            metadata_requests = [r for r, purpose in n.requests if purpose == "metadata"]
+            now[0] += 61
+            self.assertEqual((await p.credential(self.unbound())).token, "cc-2")
+            self.assertEqual(n.tokens[-1]["grant_type"], ["client_credentials"])
+            self.assertEqual([r for r, purpose in n.requests if purpose == "metadata"], metadata_requests)
+        self.run_async(run)
+
+    def test_up_front_lookup_fetches_only_issuer_metadata_when_missing(self):
+        """Canonical lifecycle: up-front-lookup-issuer-metadata-only."""
+        async def run(p, n, s, policy, target, now):
+            await p.prepare(target, OperationBudget.after(5))
+            now[0] += 61
+            for key, value in list(s.bindings.items()):
+                s.bindings[key] = replace(value, token_endpoint="")
+            before = len(n.requests)
+            self.assertIsNotNone(await p.credential(self.unbound()))
+            urls = [str(r.url) for r, purpose in n.requests[before:] if purpose == "metadata"]
+            self.assertEqual(urls, [ISSUER + "/.well-known/oauth-authorization-server"])
+            self.assertTrue(all(value.token_endpoint for value in s.bindings.values()))
+            for key, value in list(s.bindings.items()):
+                s.bindings[key] = replace(value, token_endpoint="")
+            now[0] += 61
+            original = n.handle
+            async def outage(request):
+                if request.method == "GET":
+                    return httpx.Response(503)
+                return await original(request)
+            await n.client.aclose()
+            n.client = httpx.AsyncClient(transport=httpx.MockTransport(outage), trust_env=False)
+            with self.assertRaises(AuthenticationFailure) as failure:
+                await p.credential(self.unbound())
+            self.assertEqual(failure.exception.code, "discovery_failed")
+            self.assertFalse(any("oauth-protected-resource" in str(r.url) for r, _ in n.requests[before:]))
+        self.run_async(run)
+
+    def test_known_binding_without_token_requires_login_until_prepare(self):
+        """Canonical lifecycle: known-binding-without-token-requires-login."""
+        async def run(p, n, s, policy, target, now):
+            await self.pkce_grant(p, n, policy, target)
+            await p.reset(target, OperationBudget.after(5))
+            self.assertTrue(s.bindings)
+            with self.assertRaises(AuthenticationFailure) as failure:
+                await p.credential(self.unbound())
+            self.assertEqual(failure.exception.code, "interaction_required")
+            self.assertFalse(s.records)
+            ready = await self.complete_login(p, target, await p.prepare(target, OperationBudget.after(5)))
+            self.assertEqual((await p.credential(self.unbound())).token, ready.credential.token)
+        self.run_async(run)
+
+    def test_challenge_renews_rejected_unexpired_token(self):
+        """Canonical lifecycle: challenge-renews-rejected-unexpired-token."""
+        from agenthooksprotocol.runtime import ProtocolError
+        async def run(p, n, s, policy, target, now):
+            async def unknown_expiry(request):
+                return httpx.Response(200, json={"access_token": f"cc-{len(n.tokens)}", "token_type": "Bearer"})
+            n.token_hook = unknown_expiry
+            await p.prepare(target, OperationBudget.after(5))
+            sent = []
+            async def deliver(request):
+                sent.append(request.headers.get("authorization"))
+                if len(sent) == 1:
+                    return httpx.Response(401, headers={"www-authenticate": "Bearer"})
+                return httpx.Response(204)
+            async with httpx.AsyncClient(transport=httpx.MockTransport(deliver)) as client:
+                transport = AuthenticatedHTTPTransport(
+                    RESOURCE, backend={"id": "backend"}, client=client,
+                    auth_provider=RoutingAuthProvider(discover=p, namespace="tenant"),
+                )
+                message = {"jsonrpc": "2.0", "method": "hooks/observe", "params": {}}
+                with self.assertRaises(ProtocolError):
+                    await transport.notify(message)
+                await transport.notify(message)
+            self.assertEqual(sent, ["Bearer cc-1", "Bearer cc-2"])
+        self.run_async(run)
+
+    def test_step_up_reacquisition_keeps_previous_grant(self):
+        """Canonical lifecycle: step-up-keeps-previous-grant."""
+        async def run(p, n, s, policy, target, now):
+            policy.configuration = replace(policy.configuration, allowed_scopes=("read", "write"))
+            first = await p.prepare(target, OperationBudget.after(5))
+            async def granted(request):
+                return httpx.Response(200, json={"access_token": "stepped", "token_type": "Bearer", "scope": "read write openid"})
+            n.token_hook = granted
+            policy.configuration = replace(policy.configuration, scopes=("write",))
+            challenge = AuthChallenge(403, {"www-authenticate": 'Bearer error="insufficient_scope", scope="write"'}, RESOURCE, first.credential.identity, True)
+            self.assertEqual((await p.challenge(self.unbound(), challenge)).token, "stepped")
+            self.assertEqual(set(n.tokens[-1]["scope"][0].split()), {"read", "write"})
+            self.assertEqual(next(iter(s.records.values())).token.scopes, ("read", "write"))
+        self.run_async(run)
+
+
 LIFECYCLE_TESTS = {
     "cached-token-metadata-outage": "test_endpoint_and_capability_rotation_renews_outside_grant_lock_with_current_secret",
     "unbound-preemptive-unsafe-delivery": "test_fresh_provider_uses_persistent_binding_offline_and_sends_upfront",
@@ -2077,6 +2184,11 @@ LIFECYCLE_TESTS = {
     "unreplayed-challenge-prepares-next-attempt": "test_unreplayed_challenge_prepares_the_next_attempt",
     "up-front-refresh-failure-no-anonymous-fallback": "test_up_front_refresh_failure_has_no_anonymous_fallback",
     "prepare-required-outside-ceiling-denied": "test_prepare_required_scopes_outside_ceiling_are_denied",
+    "up-front-client-credentials-reacquire": "test_up_front_lookup_reacquires_client_credentials_with_persisted_metadata",
+    "up-front-lookup-issuer-metadata-only": "test_up_front_lookup_fetches_only_issuer_metadata_when_missing",
+    "known-binding-without-token-requires-login": "test_known_binding_without_token_requires_login_until_prepare",
+    "challenge-renews-rejected-unexpired-token": "test_challenge_renews_rejected_unexpired_token",
+    "step-up-keeps-previous-grant": "test_step_up_reacquisition_keeps_previous_grant",
 }
 
 

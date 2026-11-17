@@ -134,8 +134,12 @@ class RegistrationAuthTests(unittest.TestCase):
                     with self.assertRaises(ProtocolError):
                         await getattr(transport, method)(intercept_request())
                     self.assertEqual(len(seen), expected)
-                    self.assertEqual(len(provider.challenges), expected)
-                    self.assertFalse(provider.challenges[-1].retry_allowed)
+                    # A plain 403 is operational: no challenge handling.
+                    if status == 403:
+                        self.assertEqual(provider.challenges, [])
+                    else:
+                        self.assertEqual(len(provider.challenges), expected)
+                        self.assertFalse(provider.challenges[-1].retry_allowed)
 
         anyio.run(run)
 
@@ -347,6 +351,46 @@ class RegistrationAuthTests(unittest.TestCase):
                     backend={"authentication": {"type": "oauth", "flow": "unknown"}},
                     auth_provider=Provider(),
                 )
+
+        anyio.run(run)
+
+    def test_upload_challenge_keeps_typed_failure_for_401_and_scope_403(self):
+        from agenthooksprotocol.auth import AuthenticationFailure
+
+        class StepUp(Provider):
+            async def challenge(self, context, challenge):
+                self.challenges.append(challenge)
+                raise AuthenticationFailure(
+                    code="interaction_required", required_scopes=("write",)
+                )
+
+        async def run():
+            for status, header in (
+                (401, "Bearer"),
+                (403, 'Bearer error="insufficient_scope", scope="write"'),
+            ):
+                provider = StepUp()
+
+                async def handle(request):
+                    return httpx.Response(status, headers={"WWW-Authenticate": header})
+
+                async with httpx.AsyncClient(
+                    transport=httpx.MockTransport(handle)
+                ) as client:
+                    transport = AuthenticatedHTTPTransport(
+                        "https://event.test",
+                        backend=BACKEND,
+                        auth_provider=provider,
+                        client=client,
+                    )
+                    with self.assertRaises(AuthenticationFailure) as failure:
+                        await transport.upload(
+                            "https://event.test/upload", b"x", authentication=BINDING
+                        )
+                self.assertEqual(failure.exception.code, "interaction_required")
+                self.assertEqual(failure.exception.required_scopes, ("write",))
+                self.assertEqual([c.status for c in provider.challenges], [status])
+                self.assertFalse(provider.challenges[0].retry_allowed)
 
         anyio.run(run)
 

@@ -26,10 +26,11 @@ agenthooksprotocol = ["py.typed", "schemas.json", "ahp-codegen.lock.json"]
 
 [project.optional-dependencies]
 http = ["httpx>=0.28,<1"]
+oauth = ["httpx>=0.28,<1"]
 pydantic = ["pydantic>=2.10,<3"]
 
 [dependency-groups]
-dev = ["build>=1.2", "httpx>=0.28,<1", "trio>=0.29,<1", "mypy>=1.15,<2", "ruff==0.12.12", "pydantic>=2.10,<3"]
+dev = ["build>=1.2", "httpx>=0.28,<1", "trio>=0.29,<1", "trustme>=1.2,<2", "mypy>=1.15,<2", "ruff==0.12.12", "pydantic>=2.10,<3"]
 
 [tool.mypy]
 python_version = "3.11"

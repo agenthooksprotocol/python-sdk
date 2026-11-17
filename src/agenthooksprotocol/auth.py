@@ -6,7 +6,8 @@ import inspect
 import json
 import os
 import re
-from typing import Any, Literal, Protocol, TYPE_CHECKING
+from typing import Any, Literal, Protocol, TYPE_CHECKING, TypeAlias
+from collections.abc import Awaitable, Callable
 
 if TYPE_CHECKING:
     from .generated import ContentUploadReceipt
@@ -23,18 +24,106 @@ from .transports.http import HTTPTransport
 from .headers import validate_headers, resolve_headers
 
 
+# Challenged replay (HTTP binding): request/response methods only, at most once.
+_REPLAYABLE = ("hooks/intercept", "hooks/configuration", "hooks/capabilities")
+
+
+def _scope_challenge(headers: Any) -> bool:
+    try:
+        parse_challenge(403, headers)
+    except ChallengeError:
+        return False
+    return True
+
+
 class TransportFailure(ProtocolError):
     """Sanitized delivery failure, distinct from invalid protocol data."""
 
 
+AuthErrorCode: TypeAlias = Literal[
+    "invalid_configuration",
+    "unsupported_binding",
+    "credential_unavailable",
+    "interaction_required",
+    "access_denied",
+    "refresh_rejected",
+    "discovery_failed",
+    "untrusted_destination",
+    "provider_failed",
+]
+
+_ERROR_MESSAGES = {
+    "invalid_configuration": "Invalid authentication configuration",
+    "unsupported_binding": "Unsupported authentication binding",
+    "credential_unavailable": "Configured credential is unavailable",
+    "interaction_required": "Authentication requires host interaction",
+    "access_denied": "Authentication access denied",
+    "refresh_rejected": "Credential refresh rejected",
+    "discovery_failed": "Authentication discovery failed",
+    "untrusted_destination": "Authentication destination is not trusted",
+    "provider_failed": "Authentication provider failed",
+}
+
+
+AuthRecovery: TypeAlias = Literal["configure", "login", "retry", "none"]
+
+
+_DEFAULT_RECOVERY: dict[str, AuthRecovery] = {
+    "invalid_configuration": "configure",
+    "unsupported_binding": "configure",
+    "credential_unavailable": "configure",
+    "interaction_required": "login",
+    "access_denied": "none",
+    "refresh_rejected": "login",
+    "discovery_failed": "retry",
+    "untrusted_destination": "configure",
+    "provider_failed": "retry",
+}
+
+
 class AuthenticationFailure(ProtocolError):
-    """Sanitized provider, binding, or credential failure."""
+    """Safe auth classification; remains a ProtocolError for existing callers."""
+
+    def __init__(
+        self,
+        message: str = "Authentication provider failed",
+        *,
+        code: AuthErrorCode = "provider_failed",
+        recovery: AuthRecovery | None = None,
+        required_scopes: tuple[str, ...] = (),
+    ) -> None:
+        # Accept the legacy positional argument, but never expose provider text.
+        if code not in _ERROR_MESSAGES:
+            code = "provider_failed"
+        super().__init__(_ERROR_MESSAGES[code])
+        self.code = code
+        self.recovery = (
+            recovery
+            if recovery in ("configure", "login", "retry", "none")
+            else _DEFAULT_RECOVERY[code]
+        )
+        # Validated, non-secret scope tokens a host can pass back to `prepare`
+        # (step-up). Only interaction_required/access_denied carry them.
+        self.required_scopes: tuple[str, ...] = (
+            tuple(sorted(set(required_scopes)))
+            if code in ("interaction_required", "access_denied")
+            and isinstance(required_scopes, tuple)
+            and all(
+                isinstance(scope, str)
+                and re.fullmatch(r"[\x21\x23-\x5b\x5d-\x7e]+", scope)
+                for scope in required_scopes
+            )
+            else ()
+        )
+
+
+SecretResolver: TypeAlias = Callable[[str], str | None | Awaitable[str | None]]
 
 
 @dataclass(frozen=True)
 class BearerCredential:
     token: str = field(repr=False)
-    identity: Any = field(default_factory=lambda: uuid4().hex, repr=False)
+    identity: object = field(default_factory=lambda: uuid4().hex, repr=False)
 
     def __post_init__(self) -> None:
         if not isinstance(self.token, str) or not re.fullmatch(
@@ -45,8 +134,8 @@ class BearerCredential:
 
 @dataclass(frozen=True)
 class AuthContext:
-    backend: dict[str, Any] = field(repr=False)
-    binding: dict[str, Any] | None = field(repr=False)
+    backend: dict[str, object] = field(repr=False)
+    binding: dict[str, object] | None = field(repr=False)
     destination: str
     purpose: Literal["event", "upload"]
     cancellation: anyio.CancelScope = field(repr=False)
@@ -57,7 +146,7 @@ class AuthChallenge:
     status: int
     headers: dict[str, str] = field(repr=False)
     destination: str
-    attempted_identity: Any = field(repr=False)
+    attempted_identity: object = field(repr=False)
     retry_allowed: bool
 
 
@@ -81,7 +170,7 @@ async def _resolve_secret(binding, env_key, ref_key, resolver=None):
 class EnvironmentAuthProvider:
     """Optional bearer adapter; no discovery, refresh worker, or owned resources."""
 
-    def __init__(self, resolve_credential: Any = None) -> None:
+    def __init__(self, resolve_credential: SecretResolver | None = None) -> None:
         self.resolve_credential = resolve_credential
 
     async def credential(self, context: AuthContext) -> BearerCredential | None:
@@ -89,9 +178,7 @@ class EnvironmentAuthProvider:
         if binding is None:
             return None
         if binding.get("type") != "bearer":
-            raise AuthenticationFailure(
-                "Configured authentication requires a host provider"
-            )
+            raise AuthenticationFailure(code="unsupported_binding")
         token = None
         try:
             token = await _resolve_secret(
@@ -100,11 +187,9 @@ class EnvironmentAuthProvider:
         except OperationCancelledError:
             raise
         except Exception:
-            raise AuthenticationFailure(
-                "Cannot resolve configured credential"
-            ) from None
+            token = None
         if token is None:
-            raise AuthenticationFailure("Cannot resolve configured credential")
+            raise AuthenticationFailure(code="credential_unavailable")
         return BearerCredential(token)
 
     async def challenge(
@@ -126,15 +211,16 @@ def _validate_binding(binding: dict[str, Any] | None) -> None:
         # Registration validation checks OAuth details. The harness exchanges
         # secrets; clientSecretRef is never an AHP endpoint credential.
         return
-    raise AuthenticationFailure("Unsupported authentication binding")
+    raise AuthenticationFailure(code="unsupported_binding")
 
 
 class AuthenticatedHTTPTransport(HTTPTransport):
     """One provider, independent endpoint bindings, no hidden auth workers.
 
     Provider and injected client lifecycle belong to the harness. Client default
-    headers, cookies, auth and redirects are not inherited. Only a rejected
-    interception can retry, once. Notifications and uploads never replay.
+    headers, cookies, auth and redirects are not inherited. A challenged
+    intercept, configuration or capabilities request replays at most once, with
+    the same id and body. Notifications and uploads never replay.
     """
 
     def __init__(
@@ -147,7 +233,7 @@ class AuthenticatedHTTPTransport(HTTPTransport):
         headers: dict[str, str] | None = None,
         validator: Any = None,
         header_resolver: Any = None,
-        resolve_credential: Any = None,
+        resolve_credential: SecretResolver | None = None,
     ) -> None:
         super().__init__(url, client=client, headers=headers, validator=validator)
         self.backend = deepcopy(backend)
@@ -160,10 +246,16 @@ class AuthenticatedHTTPTransport(HTTPTransport):
         self.auth_provider = (
             auth_provider if auth_provider is not None else EnvironmentAuthProvider()
         )
-        if "authorization" not in self._registration_headers:
+        if (
+            "authorization" not in self._registration_headers
+            and "authorization" not in self.headers
+        ):
             _validate_binding(self.backend.get("authentication"))
 
     async def _credential(self, context, challenge=None):
+        failure: AuthErrorCode | None = None
+        recovery: AuthRecovery | None = None
+        scopes: tuple[str, ...] = ()
         try:
             credential = (
                 await self.auth_provider.credential(context)
@@ -175,16 +267,20 @@ class AuthenticatedHTTPTransport(HTTPTransport):
             await anyio.lowlevel.checkpoint()
         except OperationCancelledError:
             raise
+        except AuthenticationFailure as exc:
+            failure, recovery, scopes = exc.code, exc.recovery, exc.required_scopes
         except Exception:
-            # Cancellation is a BaseException and deliberately propagates.
-            # Provider exceptions may contain secrets.
-            raise AuthenticationFailure("Authentication provider failed") from None
+            # Native cancellation is a BaseException and propagates. Raise only
+            # after leaving the handler so even __context__ cannot retain secrets.
+            failure = "provider_failed"
+        if failure is not None:
+            raise AuthenticationFailure(
+                code=failure, recovery=recovery, required_scopes=scopes
+            )
         if credential is not None and not isinstance(credential, BearerCredential):
             raise AuthenticationFailure("Unsupported delivery credential")
         if challenge is None and context.binding is not None and credential is None:
-            raise AuthenticationFailure(
-                "Configured authentication returned no credential"
-            )
+            raise AuthenticationFailure(code="credential_unavailable")
         return credential
 
     async def _send(self, request, *, purpose, binding, retry_allowed=False):
@@ -199,7 +295,9 @@ class AuthenticatedHTTPTransport(HTTPTransport):
             or getattr(self.auth_provider, "resolve_credential", None),
             purpose=purpose,
         )
-        explicit_auth = "authorization" in resolved
+        explicit_auth = (
+            "authorization" in resolved or "authorization" in request.headers
+        )
         if not explicit_auth:
             _validate_binding(binding)
         with anyio.CancelScope() as cancellation:
@@ -211,7 +309,8 @@ class AuthenticatedHTTPTransport(HTTPTransport):
                 cancellation,
             )
             credential = None if explicit_auth else await self._credential(context)
-            request.headers.pop("Authorization", None)
+            if not explicit_auth:
+                request.headers.pop("Authorization", None)
             if credential is not None:
                 request.headers["Authorization"] = "Bearer " + credential.token
             request.headers.update(httpx.Headers(resolved, encoding="latin-1"))
@@ -231,9 +330,12 @@ class AuthenticatedHTTPTransport(HTTPTransport):
             if explicit_auth or response.status_code not in (401, 403):
                 return response
             challenges = response.headers.get("www-authenticate", "")
+            if response.status_code == 403 and not _scope_challenge(response.headers):
+                # Only a Bearer insufficient_scope 403 is an auth challenge;
+                # any other 403 is an operational failure for the caller.
+                return response
             safe = (
                 retry_allowed
-                and response.status_code == 401
                 and re.search(r"(?:^|,)\s*Bearer(?:\s|$)", challenges, re.I) is not None
             )
             challenge = AuthChallenge(
@@ -267,7 +369,12 @@ class AuthenticatedHTTPTransport(HTTPTransport):
                 raise
             except Exception:
                 raise TransportFailure("HTTP delivery failed") from None
-            if final.status_code in (401, 403):
+            if final.status_code == 401 or (
+                final.status_code == 403 and _scope_challenge(final.headers)
+            ):
+                # A second rejection is an operational failure; the provider
+                # still handles it (no replay). A plain 403 is classified by
+                # the caller like any other non-2xx response.
                 await self._credential(
                     context,
                     AuthChallenge(
@@ -326,8 +433,7 @@ class AuthenticatedHTTPTransport(HTTPTransport):
         correlation = deepcopy(message)
         response = await self._event(
             message,
-            retry_allowed=message.get("method")
-            in ("hooks/intercept", "hooks/configuration"),
+            retry_allowed=message.get("method") in _REPLAYABLE,
             intercept_response=message.get("method") == "hooks/intercept",
         )
         try:
@@ -336,10 +442,12 @@ class AuthenticatedHTTPTransport(HTTPTransport):
             raise ProtocolError("Malformed HTTP protocol response") from None
         if not isinstance(result, dict) or result.get("id") != ident:
             raise ProtocolError("HTTP response correlation mismatch")
-        if message.get("method") == "hooks/configuration":
+        if message.get("method") in ("hooks/configuration", "hooks/capabilities"):
             if response.status_code != 200:
-                raise ProtocolError("Unexpected configuration HTTP status")
-            self._validator.validate("configuration-response", result)
+                raise ProtocolError("Unexpected HTTP response status")
+            self._validator.validate(
+                message["method"].removeprefix("hooks/") + "-response", result
+            )
         else:
             _validate_intercept_response(self._validator, correlation, result)
         return result
@@ -391,3 +499,17 @@ class AuthenticatedHTTPTransport(HTTPTransport):
             raise
         except (ValueError, UnicodeError):
             raise ProtocolError("Malformed HTTP upload response") from None
+
+
+# Kept separate from the transport implementation; all public providers above
+# retain their existing entry points and lifecycle ownership.
+from ._auth_challenge import ChallengeError, parse_challenge  # noqa: E402
+from ._auth_routing import (  # noqa: E402
+    AuthTarget as AuthTarget,
+    BearerBinding as BearerBinding,
+    OAuthBinding as OAuthBinding,
+    NormalizedBinding as NormalizedBinding,
+    BearerAuthProvider as BearerAuthProvider,
+    RoutingAuthProvider as RoutingAuthProvider,
+    normalize_auth_target as normalize_auth_target,
+)

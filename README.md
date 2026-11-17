@@ -10,7 +10,10 @@ Install the published `agenthooksprotocol` package from [PyPI](https://pypi.org/
 python -m pip install 'agenthooksprotocol[http]'
 ```
 
-HTTPX is an opt-in dependency (`[http]`). Pydantic is an independent opt-in integration (`[pydantic]`); neither a web framework nor Pydantic is needed for the core SDK or stdio.
+HTTPX is an opt-in dependency (`[http]`). Managed OAuth needs only HTTPX
+through `[oauth]` (`python -m pip install 'agenthooksprotocol[oauth]'`).
+Pydantic is an independent opt-in integration (`[pydantic]`); neither a web
+framework nor Pydantic is needed for the core SDK or stdio.
 
 ## Shared subscription configuration
 
@@ -182,9 +185,22 @@ The same remaining budget covers queue/readiness waits, provider waits, selected
 
 ### Registration-aware credentials
 
-`Hooks(..., auth_provider=provider)` borrows one provider implementing asynchronous `credential(context)` and `challenge(context, challenge)`. It returns `auth.BearerCredential(token, identity=opaque_attempt_id)` or no credential for an anonymous binding. Context includes the complete selected backend and binding, destination, event/upload purpose, and native cancellation scope. Challenges contain actual status/headers and attempted credential identity, never secret tokens. The harness owns discovery/trust, consent, token exchange/refresh, rotation, caching, and provider lifetime; no SDK OAuth manager or browser worker is required.
+For opt-in bearer/OAuth composition, typed targets, safe error codes, and the
+optional host-controlled managed OAuth provider, see [Authentication routing](docs/authentication.md)
+and [the typed example](examples/auth_routing.py).
 
-The default `auth.EnvironmentAuthProvider` resolves bearer `tokenEnv` or optional `resolve_credential` tokenRef callbacks at delivery time. OAuth bindings require an explicit provider. Missing configured secrets and unsupported mechanisms fail closed. Anonymous success stays anonymous; an explicit provider can authorize challenge discovery under host trust policy. Interception may replay at most once after an eligible 401 Bearer challenge, retaining request identity and serialized body; observations/uploads are never automatically replayed. Upload bindings are independent: event credentials are never an upload fallback. Transport-owned TLS/workload integration is not replaced by this provider.
+`Hooks(..., auth_provider=provider)` borrows one provider implementing asynchronous `credential(context)` and `challenge(context, challenge)`. It returns `auth.BearerCredential(token, identity=opaque_attempt_id)` or no credential for an anonymous binding. Context includes the complete selected backend and binding, destination, event/upload purpose, and native cancellation scope. Challenges contain actual status/headers and attempted credential identity, never secret tokens. Custom providers can own all OAuth mechanics. Alternatively, `oauth.ManagedOAuthProvider` handles discovery, PKCE, exchange and refresh with host-supplied trust, network and coordinated storage capabilities. The host always owns consent, callback transport and provider lifetime; the SDK starts no browser, listener or background worker.
+
+Install `agenthooksprotocol[oauth]` (HTTPX) for the managed provider. It implements PKCE, token requests and client authentication with the standard library over the host-controlled network boundary; it does not introduce a second HTTP client stack.
+
+To authorize an interactive binding, call `managed.prepare(target, budget)` from host code. A ready result supplies a credential; a pending result supplies the authorization URL and callback handle. The host opens its consent UI and calls `managed.complete(target, pending, callback_url, budget)`. A pending login is a stored record with a fixed lifetime (`login_lifetime`, default and maximum 10 minutes), independent of the creating call's deadline or cancellation, and any process sharing the store can complete it. Delivery (`credential`/`challenge`) never creates a pending login: `interaction_required` (with any `required_scopes` to pass back to `prepare`) tells the host to prepare consent. Use `managed.cancel(target, pending, budget)` to abandon that login without deleting a valid grant; `managed.reset(target, budget, ...)` is a separate, explicit repair/logout action. Invalid callback state, redirect or issuer does not consume a valid pending login.
+
+Token expiry is optional: omitted `expires_in` means unknown expiry, usable until rejected or limited by explicit host policy. Requested, locally allowed and explicitly required scopes are distinct. An initial exchange records response scopes within the acquisition ceiling; a refresh records them within the previous grant, so it cannot broaden it. Extra scopes are ignored, not an error. At use the grant is filtered by the current ceiling, which governs what the SDK requests and records, not what the token can do. Only explicit or challenged requirements must be satisfied for delivery. Invalid token responses are never dispatched and leave no in-flight state. Transient refresh/network failures advise retry, not automatic login; ambiguous rotation may require host repair and cannot guarantee rollback at the authorization server.
+
+For a persistent host store, implement both binding metadata APIs (`load_binding(key, budget)` and `save_binding(key, metadata, budget)`) and per-grant `coordinate(key, budget)` with atomic guard `load`/`compare_and_swap`. Persist trusted, non-secret binding metadata as well as grant records so a recreated provider can use a valid cached token without rediscovery. Resolve current client secrets through host policy; do not persist them in binding metadata. First contact with an unknown unbound endpoint is anonymous under policy; a previously authorized binding sends cached credentials upfront, including observations/uploads that cannot be replayed. Event and upload bindings remain independently authorized; only an explicit shared `grant_partition` can share consent between independently approved matching principals.
+
+
+The default `auth.EnvironmentAuthProvider` resolves bearer `tokenEnv` or optional `resolve_credential` tokenRef callbacks at delivery time. OAuth bindings require an explicit provider. Missing configured secrets and unsupported mechanisms fail closed. Unknown first contact can stay anonymous; the managed provider uses persisted trusted bindings to send already-authorized credentials up front. An explicit provider can authorize challenge discovery under host trust policy. Interception, configuration and capabilities requests may replay at most once after an eligible Bearer 401 or 403 `insufficient_scope` challenge, retaining request identity and serialized body; observations/uploads are never replayed, but their challenge still prepares the next operation's credential. Upload bindings are independent: event credentials are never an upload fallback. Transport-owned TLS/workload integration is not replaced by this provider.
 
 HTTP registrations accept `transport.headers`, for example:
 
@@ -292,10 +308,10 @@ The `wire` namespace exposes canonical JSON-shaped request, notification, effect
 ## Development
 
 ```sh
-uv sync --group dev --extra http --extra pydantic
-uv run python -m unittest discover -s tests
-uv run mypy
-uv run python -m build
+uv sync --locked --all-extras
+uv run --locked --all-extras python -m unittest discover -s tests
+uv run --locked --all-extras mypy
+uv run --locked --all-extras python -m build
 ```
 
 Integration tests also use a matching sibling `../agent-hooks-protocol` checkout for shared fixtures and public synthetic certificates. The installed runtime uses its bundled schemas and does not need that checkout. No SDK API executes host tools on your behalf.

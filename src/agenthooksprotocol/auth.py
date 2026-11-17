@@ -28,6 +28,14 @@ from .headers import validate_headers, resolve_headers
 _REPLAYABLE = ("hooks/intercept", "hooks/configuration", "hooks/capabilities")
 
 
+def _scope_challenge(headers: Any) -> bool:
+    try:
+        parse_challenge(403, headers)
+    except ChallengeError:
+        return False
+    return True
+
+
 class TransportFailure(ProtocolError):
     """Sanitized delivery failure, distinct from invalid protocol data."""
 
@@ -322,13 +330,10 @@ class AuthenticatedHTTPTransport(HTTPTransport):
             if explicit_auth or response.status_code not in (401, 403):
                 return response
             challenges = response.headers.get("www-authenticate", "")
-            if response.status_code == 403:
+            if response.status_code == 403 and not _scope_challenge(response.headers):
                 # Only a Bearer insufficient_scope 403 is an auth challenge;
                 # any other 403 is an operational failure for the caller.
-                try:
-                    parse_challenge(403, response.headers)
-                except ChallengeError:
-                    return response
+                return response
             safe = (
                 retry_allowed
                 and re.search(r"(?:^|,)\s*Bearer(?:\s|$)", challenges, re.I) is not None
@@ -364,7 +369,12 @@ class AuthenticatedHTTPTransport(HTTPTransport):
                 raise
             except Exception:
                 raise TransportFailure("HTTP delivery failed") from None
-            if final.status_code in (401, 403):
+            if final.status_code == 401 or (
+                final.status_code == 403 and _scope_challenge(final.headers)
+            ):
+                # A second rejection is an operational failure; the provider
+                # still handles it (no replay). A plain 403 is classified by
+                # the caller like any other non-2xx response.
                 await self._credential(
                     context,
                     AuthChallenge(

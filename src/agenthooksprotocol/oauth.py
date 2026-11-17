@@ -11,6 +11,7 @@ import base64
 from collections.abc import Awaitable, Callable, Mapping
 from dataclasses import dataclass, field, replace
 import hashlib
+import json
 import math
 import re
 import secrets
@@ -62,6 +63,17 @@ _DEFINITIVE = (
     "invalid_scope",
 )
 _SCOPE = re.compile(r"[\x21\x23-\x5b\x5d-\x7e]+")
+
+
+_MAX_LIFETIME = 2**31  # About 68 years; longer lifetimes are clamped.
+
+
+def _clamped_int(digits: str) -> int:
+    """Parse an integer string, clamping magnitudes beyond the lifetime cap."""
+    magnitude = digits.lstrip("+-").lstrip("0")
+    if len(magnitude) > 12:
+        return -_MAX_LIFETIME if digits.startswith("-") else _MAX_LIFETIME
+    return int(digits)
 
 
 class _StaleMetadata(AuthenticationFailure):
@@ -139,7 +151,8 @@ async def _token_endpoint(
     )
     response = await safe_request(network, request, "token", budget)
     try:
-        data = response.json()
+        # Clamp long integers so a huge expires_in cannot hit the int limit.
+        data = json.loads(response.content, parse_int=_clamped_int)
     except ValueError:
         data = None
     if response.status_code >= 500:
@@ -190,6 +203,7 @@ class ManagedOAuthProvider:
         operation_timeout: float = 30,
         expiry_skew: float = 30,
         clock: Callable[[], float] = time.time,
+        commit_timeout: float = 30,
     ) -> None:
         if (
             not namespace
@@ -197,11 +211,15 @@ class ManagedOAuthProvider:
             or operation_timeout <= 0
             or not math.isfinite(expiry_skew)
             or expiry_skew < 0
+            or not math.isfinite(commit_timeout)
+            or commit_timeout <= 0
         ):
             raise AuthenticationFailure(code="invalid_configuration")
         self.network, self.policy, self.store = network, policy, store
         self.namespace, self.operation_timeout = namespace, operation_timeout
         self.expiry_skew, self.clock = expiry_skew, clock
+        # Bounds the post-exchange store commit, shielded from cancellation.
+        self.commit_timeout = commit_timeout
 
     async def _run(
         self, operation: Callable[[], Awaitable[T]], budget: OperationBudget
@@ -298,16 +316,16 @@ class ManagedOAuthProvider:
         lifetime, scope = response.get("expires_in"), response.get("scope")
         refresh = response.get("refresh_token")
         # A positive JSON integer or ASCII-digit string; never fractional.
-        # Huge values are clamped (about 68 years) rather than overflowing.
+        # Huge values are clamped rather than overflowing.
         seconds = (
             lifetime
             if isinstance(lifetime, int) and not isinstance(lifetime, bool)
-            else int(lifetime)
+            else _clamped_int(lifetime)
             if isinstance(lifetime, str) and lifetime.isascii() and lifetime.isdigit()
             else None
         )
         if seconds is not None:
-            seconds = min(seconds, 2**31) if seconds > 0 else None
+            seconds = min(seconds, _MAX_LIFETIME) if seconds > 0 else None
         valid_refresh = refresh if isinstance(refresh, str) and refresh else None
         valid = (
             isinstance(value, str)
@@ -389,7 +407,7 @@ class ManagedOAuthProvider:
         try:
             # Rotation may already have occurred externally: finish one bounded
             # commit before honoring cancellation.
-            with anyio.CancelScope(shield=True), anyio.fail_after(1):
+            with anyio.CancelScope(shield=True), anyio.fail_after(self.commit_timeout):
                 committed = await guard.compare_and_swap(reserved.generation, settled)
         except Exception:
             if outcome is None:
@@ -580,9 +598,14 @@ class ManagedOAuthProvider:
                 if metadata is not None and not metadata.token_endpoint:
                     # Missing persisted authorization-server metadata: fetch
                     # the stored issuer's only, never protected-resource data.
-                    metadata = await issuer_metadata(
-                        resource, config, self.network, budget
-                    )
+                    try:
+                        metadata = await issuer_metadata(
+                            resource, config, self.network, budget
+                        )
+                    except AuthenticationFailure:
+                        if lookup:
+                            raise
+                        metadata = None  # Issuer gone: full discovery repairs.
             discovered = metadata is None
             if metadata is None:
                 if lookup:

@@ -3494,26 +3494,97 @@ class ManagedOAuthRuntimeTests(unittest.TestCase):
         self.run_async(run)
 
     def test_huge_expires_in_is_clamped_and_keeps_rotated_refresh(self):
+        for lifetime in (b"1" + b"0" * 400, b"9" * 5000, b'"' + b"9" * 5000 + b'"'):
+            with self.subTest(digits=len(lifetime)):
+
+                async def run(p, n, s, policy, target, now, lifetime=lifetime):
+                    await self.pkce_grant(p, n, policy, target)
+                    now[0] += 61
+
+                    async def huge(request):
+                        body = (
+                            b'{"access_token":"new","token_type":"Bearer",'
+                            b'"refresh_token":"ROTATED","expires_in":' + lifetime + b"}"
+                        )
+                        return httpx.Response(
+                            200,
+                            content=body,
+                            headers={"content-type": "application/json"},
+                        )
+
+                    n.token_hook = huge
+                    ready = await p.prepare(target, OperationBudget.after(5))
+                    self.assertEqual(ready.credential.token, "new")
+                    token = next(iter(s.records.values())).token
+                    self.assertEqual(token.refresh_token, "ROTATED")
+                    self.assertEqual(token.expires_at, now[0] + 2**31)
+
+                self.run_async(run)
+
+    def test_slow_store_commit_after_refresh_keeps_new_refresh_token(self):
         async def run(p, n, s, policy, target, now):
             await self.pkce_grant(p, n, policy, target)
             now[0] += 61
 
-            async def huge(request):
-                body = (
-                    b'{"access_token":"new","token_type":"Bearer","refresh_token":"ROTATED","expires_in":1'
-                    + b"0" * 400
-                    + b"}"
-                )
-                return httpx.Response(
-                    200, content=body, headers={"content-type": "application/json"}
+            async def slow(key, record):
+                if record is not None and record.status == "active":
+                    await anyio.sleep(1.2)
+                return True
+
+            s.cas_hook = slow
+            self.assertIsNotNone(await p.credential(self.unbound()))
+            record = next(iter(s.records.values()))
+            self.assertEqual(
+                (record.status, record.token.refresh_token), ("active", "refresh-2")
+            )
+            with self.assertRaises(AuthenticationFailure):
+                ManagedOAuthProvider(
+                    network=n,
+                    policy=policy,
+                    store=s,
+                    namespace="tenant",
+                    commit_timeout=0,
                 )
 
-            n.token_hook = huge
-            ready = await p.prepare(target, OperationBudget.after(5))
-            self.assertEqual(ready.credential.token, "new")
-            token = next(iter(s.records.values())).token
-            self.assertEqual(token.refresh_token, "ROTATED")
-            self.assertEqual(token.expires_at, now[0] + 2**31)
+        self.run_async(run)
+
+    def test_endpointless_binding_with_gone_issuer_falls_back_to_discovery(self):
+        new_issuer = "https://new-issuer.test"
+
+        async def run(p, n, s, policy, target, now):
+            await p.prepare(target, OperationBudget.after(5))
+            for key, value in list(s.bindings.items()):
+                s.bindings[key] = replace(value, token_endpoint="")
+            await n.client.aclose()
+            n.client = self.issuer_move(n, policy, new_issuer)
+            original = policy.select
+
+            async def select(target, resource, issuers, required_scopes, budget):
+                # The host still selects the old issuer for the cached binding.
+                config = await original(
+                    target, resource, issuers, required_scopes, budget
+                )
+                return replace(config, issuer=issuers[0])
+
+            policy.select = select
+            gone = n.client
+
+            async def without_old_issuer(request):
+                if request.method == "GET" and request.url.host == "issuer.test":
+                    return httpx.Response(404)
+                return await gone._transport.handle_async_request(request)
+
+            n.client = httpx.AsyncClient(
+                transport=httpx.MockTransport(without_old_issuer), trust_env=False
+            )
+            now[0] += 61
+            self.assertIsInstance(
+                await p.prepare(target, OperationBudget.after(5)), Ready
+            )
+            self.assertEqual(
+                [m.configuration.issuer for m in s.bindings.values()], [new_issuer]
+            )
+            await gone.aclose()
 
         self.run_async(run)
 
@@ -3583,6 +3654,77 @@ class ManagedOAuthRuntimeTests(unittest.TestCase):
                         await p.credential(self.unbound())
 
                 self.run_async(run)
+
+        async def discovery_outage(p, n, s, policy, target, now):
+            # Discovery fails before any exchange: the mark must already hold.
+            first = await p.prepare(target, OperationBudget.after(5))
+
+            async def outage(request):
+                if request.method == "GET":
+                    return httpx.Response(503)
+                return httpx.Response(
+                    200, json={"access_token": "x", "token_type": "Bearer"}
+                )
+
+            await n.client.aclose()
+            n.client = httpx.AsyncClient(
+                transport=httpx.MockTransport(outage), trust_env=False
+            )
+            challenge = AuthChallenge(
+                401,
+                {"www-authenticate": "Bearer"},
+                RESOURCE,
+                first.credential.identity,
+                True,
+            )
+            with self.assertRaises(AuthenticationFailure) as failure:
+                await p.challenge(self.unbound(), challenge)
+            self.assertEqual(failure.exception.code, "discovery_failed")
+            self.assertEqual(n.tokens, [n.tokens[0]])
+            self.assertIsNone(next(iter(s.records.values())).token.access_token)
+
+        self.run_async(discovery_outage)
+
+    def test_plain_403_on_replay_is_operational_and_keeps_rpc_error(self):
+        from agenthooksprotocol.runtime import ProtocolError
+
+        async def run(p, n, s, policy, target, now):
+            await p.prepare(target, OperationBudget.after(5))
+            message = intercept_request()
+            sent = []
+
+            async def deliver(request):
+                sent.append(request)
+                if len(sent) == 1:
+                    return httpx.Response(401, headers={"www-authenticate": "Bearer"})
+                return httpx.Response(
+                    403,
+                    json={
+                        "jsonrpc": "2.0",
+                        "id": message["id"],
+                        "error": {"code": -32001, "message": "forbidden"},
+                    },
+                )
+
+            async with httpx.AsyncClient(
+                transport=httpx.MockTransport(deliver)
+            ) as client:
+                transport = AuthenticatedHTTPTransport(
+                    RESOURCE,
+                    backend={"id": "backend"},
+                    client=client,
+                    auth_provider=RoutingAuthProvider(discover=p, namespace="tenant"),
+                )
+                tokens = len(n.tokens)
+                with self.assertRaises(ProtocolError) as failure:
+                    await transport.request(message)
+            self.assertNotIsInstance(failure.exception, AuthenticationFailure)
+            self.assertEqual(getattr(failure.exception, "code", None), -32001)
+            self.assertEqual(len(sent), 2)
+            # Only the first 401 reached challenge handling.
+            self.assertEqual(len(n.tokens), tokens + 1)
+
+        self.run_async(run)
 
 
 LIFECYCLE_TESTS = {

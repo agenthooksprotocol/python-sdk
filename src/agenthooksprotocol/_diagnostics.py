@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
-from typing import Literal, TypedDict
+from typing import Literal, TypedDict, TYPE_CHECKING
 
 from .diagnostics import Code
 from .runtime import BackendRPCError, ProtocolError
+
+if TYPE_CHECKING:
+    from .auth import AuthErrorCode, AuthenticationFailure
 
 
 def _is_timeout(exc: Exception | None) -> bool:
@@ -27,6 +30,10 @@ class Diagnostic(TypedDict):
     error: str
     failure_policy: str | None
     synthetic_denial: bool
+    # Typed auth failure code and validated required scopes, so a host can
+    # tell `interaction_required` (run login for this backend) from transport.
+    auth_error: "AuthErrorCode | None"
+    required_scopes: list[str]
 
 
 class ContentPreparationError(ProtocolError):
@@ -35,6 +42,7 @@ class ContentPreparationError(ProtocolError):
     def __init__(self, message: str, *, cause: Exception | None = None):
         from .auth import AuthenticationFailure, TransportFailure
 
+        self.auth_failure = cause if isinstance(cause, AuthenticationFailure) else None
         self.code = (
             Code.DEADLINE_EXCEEDED
             if _is_timeout(cause)
@@ -45,6 +53,15 @@ class ContentPreparationError(ProtocolError):
             else Code.PREPARATION
         )
         super().__init__(message)
+
+
+def auth_failure(exc: BaseException) -> "AuthenticationFailure | None":
+    """The sanitized auth failure behind a delivery or preparation error."""
+    from .auth import AuthenticationFailure
+
+    if isinstance(exc, AuthenticationFailure):
+        return exc
+    return getattr(exc, "auth_failure", None)
 
 
 class ContentPreparationTimeout(TimeoutError):
@@ -81,6 +98,7 @@ def delivery_diagnostic(
         code = Code.PROTOCOL_REJECTION
     else:
         code = Code.TRANSPORT
+    auth = auth_failure(exc)
     return {
         "code": code,
         "stage": stage,
@@ -90,4 +108,6 @@ def delivery_diagnostic(
         "error": type(exc).__name__,
         "failure_policy": failure_policy,
         "synthetic_denial": synthetic_denial,
+        "auth_error": auth.code if auth is not None else None,
+        "required_scopes": list(auth.required_scopes) if auth is not None else [],
     }

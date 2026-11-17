@@ -306,6 +306,30 @@ class ConfigurationTests(unittest.TestCase):
 
         self.run_async(run)
 
+    def test_discovery_auth_failure_reports_typed_code_and_scopes(self):
+        async def run():
+            from agenthooksprotocol.auth import AuthenticationFailure
+
+            transport = Transport(
+                error=AuthenticationFailure(
+                    code="interaction_required", required_scopes=("read",)
+                )
+            )
+            async with client(transport=transport) as hooks:
+                self.assertEqual(
+                    hooks.configuration_diagnostics,
+                    [
+                        {
+                            "backend": "org.example.hook",
+                            "reason": "configuration_unavailable",
+                            "auth_error": "interaction_required",
+                            "required_scopes": ["read"],
+                        }
+                    ],
+                )
+
+        self.run_async(run)
+
     def test_no_applicable_subscriptions_skips(self):
         async def run():
             value = advertised()

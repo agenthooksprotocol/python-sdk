@@ -70,7 +70,8 @@ an explicit empty list is invalid. Discovered selectors are resolved against the
 host's supported events and delivery modes without changing their other settings.
 A failed discovery or a result with no applicable subscriptions skips only that
 backend. `hooks.configuration_diagnostics` returns detached, credential-free skip
-reasons. Cancellation propagates. Reinitialize to reload; no background refresh
+reasons; an authentication failure adds its `auth_error` code and validated
+`required_scopes`. Cancellation propagates. Reinitialize to reload; no background refresh
 occurs. Per-request capability grants remain authoritative.
 
 Discovered `upload` settings are admitted like any other discovered subscription
@@ -170,7 +171,7 @@ Generated backend helpers such as `effect.DenyEffect(reason="policy")`, `effect.
 
 ### Diagnostics and one call budget
 
-`result.diagnostics` contains generated `diagnostics.Code` values with backend, subscription index, delivery mode, stage, failure policy, and synthetic-denial evidence. Timeout (`deadline_exceeded`), transport failure, validated remote JSON-RPC error (`remote_rpc`), protocol rejection, and content preparation remain distinct. Diagnostics never include backend error messages/data or credentials. Observation failure cannot reopen settlement. Application decode errors and operation exceptions are not recoverable delivery diagnostics.
+`result.diagnostics` contains generated `diagnostics.Code` values with backend, subscription index, delivery mode, stage, failure policy, and synthetic-denial evidence. An authentication failure (stage `authentication`, or an upload during content preparation) also sets `auth_error` to its typed code, such as `interaction_required` (run host login for that backend), and `required_scopes` to its validated scopes; otherwise they are `None` and `[]`. Timeout (`deadline_exceeded`), transport failure, validated remote JSON-RPC error (`remote_rpc`), protocol rejection, and content preparation remain distinct. Diagnostics never include backend error messages/data or credentials. Observation failure cannot reopen settlement. Application decode errors and operation exceptions are not recoverable delivery diagnostics.
 
 Use one native deadline scope around the whole operation:
 

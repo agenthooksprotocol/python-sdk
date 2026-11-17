@@ -7,8 +7,6 @@ starts no browser, listener, worker or HTTP client, and prints no credentials.
 
 from collections.abc import Awaitable, Callable
 
-import anyio
-
 from agenthooksprotocol import auth, oauth
 
 
@@ -57,20 +55,19 @@ async def login(
     credentials can return Ready immediately without invoking interact.
     """
     target = auth.normalize_auth_target(context, namespace=NAMESPACE)
-    # Consent has its own host-owned budget, separate from short deliveries.
-    with anyio.fail_after(300) as owner:
-        budget = oauth.OperationBudget.after(300, cancel_scope=owner)
-        try:
-            result = await managed.prepare(target, budget, challenge=challenge)
-            if isinstance(result, oauth.Ready):
-                return result
-            # No SDK browser or listener is created. Polling and completion keep
-            # the original budget; neither can extend this consent operation.
-            callback_url = await interact(result)
-            return await managed.complete(target, result, callback_url, budget)
-        finally:
-            # Mark the host context ended even on a normal scope exit.
-            owner.cancel()
+    # The pending login is stored with its own fixed lifetime; each call has a
+    # short budget and the user interaction happens between them.
+    result = await managed.prepare(
+        target, oauth.OperationBudget.after(30), challenge=challenge
+    )
+    if isinstance(result, oauth.Ready):
+        return result
+    # No SDK browser or listener is created. Any process sharing the store can
+    # complete the stored pending login.
+    callback_url = await interact(result)
+    return await managed.complete(
+        target, result, callback_url, oauth.OperationBudget.after(30)
+    )
 
 
 # To abandon consent without deleting a valid grant:

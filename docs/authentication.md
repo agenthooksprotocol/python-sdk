@@ -35,18 +35,23 @@ access, storage/coordination, consent UI and callback transport host-controlled.
 - An unbound endpoint asks `discover.credential(context)` for an already
   authorized credential. The managed provider uses persisted binding metadata
   and grants, including for notifications and uploads that cannot be replayed.
-  An unknown first contact starts anonymously; its challenge can trigger trusted
-  discovery. Use host `prepare` before the first unsafe call if it needs auth.
+  That lookup never discovers or starts a login; it may refresh an expired token
+  with cached metadata, and a failed refresh fails the operation. Only a store
+  miss or a host policy refusal sends anonymously. An unknown first contact's
+  challenge can trigger trusted discovery. Use host `prepare` before the first
+  unsafe call if it needs auth.
 - Missing configured credentials raise `credential_unavailable` before HTTP
   delivery. Failure never falls through to another route or anonymous delivery.
 - Opaque attempt identities retain the issuing provider and original identity,
   even if the router's configured route changes while HTTP is in flight.
   Attempts cannot cross namespaces, destinations, backends, or event/upload
   purposes. The router itself owns no cache or coordinated registry.
-- The transport owns replay: eligible interception/configuration requests can
-  retry once after a Bearer 401 or a valid Bearer 403 `insufficient_scope`
-  challenge. Other 403 responses are denied. Notifications, observations and
-  uploads never replay; providers must not resend application requests.
+- The transport owns replay: `hooks/intercept`, `hooks/configuration` and
+  `hooks/capabilities` requests replay once, with the same id and body, after a
+  Bearer 401 or a valid Bearer 403 `insufficient_scope` challenge; a second
+  rejection fails. Other 403 responses are denied. Notifications and uploads
+  never replay, but their challenge still reaches the provider so the next
+  operation sends a credential. Providers must not resend application requests.
 
 `auth.normalize_auth_target(context, namespace=...)` returns a frozen
 `AuthTarget`, with a deeply read-only wire `binding` (including extensions) and
@@ -66,7 +71,9 @@ legacy positional messages and raw provider exceptions are not exposed.
 Defaults are `configure` for configuration, unsupported binding, unavailable
 credential and untrusted destination; `login` for required interaction and
 rejected refresh; `retry` for discovery/provider failure; and `none` for denied
-access. Hosts can use these values to choose configuration, consent or retry UI.
+access. `interaction_required` can carry validated `required_scopes`; pass them
+to `prepare(..., required_scopes=...)` to request step-up consent.
+`access_denied` may report them for diagnostics only. Hosts can use these values to choose configuration, consent or retry UI.
 Structured provider classifications survive the transport boundary, without
 retaining secret-bearing exception contexts. Cancellation remains native under
 asyncio and Trio, and provider calls stay inside the enclosing operation budget.
@@ -74,10 +81,10 @@ asyncio and Trio, and provider calls stay inside the enclosing operation budget.
 ## Optional managed OAuth
 
 Install `agenthooksprotocol[oauth]` to use `agenthooksprotocol.oauth`. The extra
-adds Authlib and HTTPX; core and stdio installs do not need them. Importing the
-module starts no network activity and does not require Authlib. Exchanges use
-Authlib's OAuth/PKCE and client-authentication primitives through the host's
-HTTPX network boundary, not a separate HTTP client stack.
+adds only HTTPX; core and stdio installs do not need it. Importing the module
+starts no network activity. PKCE (S256), token requests and client
+authentication use the standard library through the host's HTTPX network
+boundary, not a separate HTTP client stack.
 
 ```python
 from agenthooksprotocol import auth, oauth
@@ -117,46 +124,40 @@ the S256 authorization URL and receives the callback through its own UI and
 transport. HTTPS redirects are required except HTTP to literal loopback IPs for
 desktop/CLI clients. The SDK starts no browser or listener.
 
-Create one consent budget inside an active AnyIO task, including time for user
-interaction. Supply the host's native cancellation scope explicitly:
+Each call takes its own budget; waiting for the user happens between calls:
 
 ```python
-import anyio
 from agenthooksprotocol import oauth
 
 async def authorize(managed, target, receive_callback):
-    with anyio.fail_after(300) as owner:
-        budget = oauth.OperationBudget.after(300, cancel_scope=owner)
-        try:
-            result = await managed.prepare(target, budget)
-            if isinstance(result, oauth.Ready):
-                return result
-            # Host UI displays the URL; never log it or the callback.
-            callback_url = await receive_callback(result)
-            return await managed.complete(target, result, callback_url, budget)
-        finally:
-            owner.cancel()  # Mark the consent context ended, including normal exit.
-
+    result = await managed.prepare(target, oauth.OperationBudget.after(30))
+    if isinstance(result, oauth.Ready):
+        return result
+    # Host UI displays the URL; never log it or the callback.
+    callback_url = await receive_callback(result)
+    return await managed.complete(
+        target, result, callback_url, oauth.OperationBudget.after(30)
+    )
 ```
 
-The host must enforce its deadline and cancellation while waiting for user input.
-Reuse the **original budget** when polling `prepare`. A pending login is reused
-only while its original owner is eligible, its original deadline covers the
-requested budget, and requested/required scopes and redirect URI match. Giving
-completion a new budget cannot extend the original deadline or login lifetime
-(`login_lifetime` defaults to 300 seconds). Invalid state, redirect or issuer does
-not consume a valid pending login; valid completion can claim it only once.
+A pending login is a stored record. Its lifetime is fixed at creation by
+`login_lifetime` (default and maximum 600 seconds) and does not depend on the
+creating `prepare` call's deadline or cancellation. Any provider or process
+sharing the store can `complete` it with the `PendingLogin` handle. A later
+`prepare` reuses an unexpired pending login, whatever its deadline, when the
+redirect matches and its requested and required scopes are within the pending
+scopes. Otherwise it supersedes it with a login requesting the union of the old
+and new scopes within the caller's ceiling; the old callback then fails
+`interaction_required`. A pending login ends once: completion (including
+consent denial), supersede, `cancel` or expiry. Invalid state, redirect or
+issuer does not consume it.
 
-Keep the same provider instance for interactive preparation and completion.
-Consent ownership is process-local: native scopes are not persisted, and a
-recreated provider must prepare fresh consent. Persisted binding metadata and
-valid tokens remain usable by recreated providers without rediscovery. Retain
-the pending handle for its target/user; do not serialize it as an AHP message or
-log URLs, store keys, credential identities, client secrets or tokens.
+Persisted binding metadata and valid tokens remain usable by recreated
+providers without rediscovery. Do not serialize the pending handle as an AHP
+message or log URLs, store keys, credential identities, client secrets or tokens.
 
 Use `await managed.cancel(target, pending, budget)` to abandon that pending
-operation without deleting a valid stored grant. For cancellation cleanup, supply
-an active cleanup budget; do not reuse a canceled scope as its owner. `reset` is
+operation without deleting a valid stored grant. `reset` is
 a separate explicit logout/repair action described below.
 
 Delivery `credential`/`challenge` calls use a default 30-second `operation_timeout`,
@@ -197,7 +198,11 @@ authorized unbound target sends cached credentials up front.
   A per-provider lock or plain dictionary is not sufficient for shared storage.
 
 Explicit OAuth presets use issuer metadata without first requiring protected-
-resource metadata. Unbound discovery uses protected-resource metadata with
+resource metadata. Issuer and resource must be HTTPS. Authorization-server
+metadata uses RFC 8414 defaults: if `grant_types_supported` is missing,
+`client_credentials` is treated as unsupported, and if
+`token_endpoint_auth_methods_supported` is missing, only `client_secret_basic`
+is supported (so public clients need the server to advertise `none`). Unbound discovery uses protected-resource metadata with
 `resource_metadata` challenge support and validates its exact source identity.
 Local policy remains authoritative. Resource indicators are sent on token
 exchange and refresh; destination/resource/issuer identifiers are exact, including
@@ -208,28 +213,33 @@ trailing slashes and queries where permitted. Do not normalize mismatches away.
 `OAuthClientConfiguration.scopes` is the requested set. `allowed_scopes` is the
 local ceiling and defaults to requested scopes when omitted. `required_scopes`
 contains explicit operation requirements. All scopes use OAuth's ASCII grammar;
-requested and required scopes must be inside the ceiling. An initial response
-may narrow requested scopes or add only locally allowed scopes. A refresh response
-can only retain or narrow the **previously granted** scopes, even when the local
-ceiling allows more. Omitted response `scope` inherits requested scopes on
-acquisition and the previous granted scopes on refresh. Broader scopes require
-fresh PKCE consent or a new client-credentials grant. Requested scopes alone are
-not mandatory for delivery.
+requested and required scopes must be inside the ceiling. An initial exchange
+records the response scopes within the acquisition ceiling (the ceiling stored
+on the pending login, or the client-credentials caller's). A refresh records the
+response scopes within the **previously granted** scopes, so it never broadens a
+grant. Extra scopes, such as `openid` or every scope a client holds, are ignored,
+not an error. Omitted response `scope` means the requested scopes on acquisition
+and the previous grant on refresh. At use, effective scopes are the grant within
+the **current** ceiling: narrowing or widening a ceiling never loses a grant. The
+ceiling governs what the SDK requests and records; it does not limit what an
+issued token can do at the resource server. An operation fails `access_denied`
+only when an explicit or challenged required scope is missing.
 
-A Bearer 403 `insufficient_scope` records permitted step-up requirements for the
-binding. Forbidden scopes fail with `access_denied`. If the challenge omits
-`scope`, explicit host requirements must identify the needed scopes; otherwise
-access is denied. PKCE advises host-owned consent; client credentials can acquire
-approved scopes without human login. No effectful operation is replayed.
+A Bearer 403 `insufficient_scope` requirement applies only to the challenged
+operation and the acquisition it triggers; it is not stored on the binding.
+Forbidden scopes fail with `access_denied`. If the challenge omits `scope`,
+explicit host requirements must identify the needed scopes; otherwise access is
+denied. PKCE returns `interaction_required` with the required scopes for a host
+`prepare`; client credentials acquire approved scopes without human login.
 
 The binding key identifies namespace, backend ID, purpose and exact destination.
-The separate grant key identifies namespace, issuer, resource, client ID, flow,
-**allowed scope ceiling**, and partition. Requested/granted scopes, client
+The separate grant key identifies namespace, issuer, resource, client ID, flow
+and partition. The allowed ceiling, requested/granted scopes, client
 secrets/references, auth method and mutable metadata are not grant identity.
 Default partitions isolate bindings, including event and upload targets. Set the
 same nonempty `grant_partition` only when local policy independently authorizes
-both bindings to share the same OAuth principal and allowed ceiling. An upload
-never implicitly inherits event authorization.
+both bindings to share the same OAuth principal. An upload never implicitly
+inherits event authorization.
 
 Store keys are opaque strings using length-prefixed UTF-8 fields. If adapting a
 store with tuple keys, explicitly migrate both binding lookup metadata and grants
@@ -239,26 +249,21 @@ silently alias old tuple keys or unrelated destinations to a shared grant.
 ### Rotation, failure and repair
 
 Unknown expiry is usable: an omitted `expires_in` does not force refresh or
-invalidate a token. Explicit invalid expiry is rejected; known expiry uses an
-`expiry_skew` of 30 seconds by default. A successfully received rotated refresh
-credential is persisted before reporting operation-level scope insufficiency.
-Tokens outside local permission policy or the prior refresh grant are persisted
-with `StoredToken.quarantined=True` and a `quarantined` grant status, retaining
-rotated refresh material before `access_denied` is reported. Stores must preserve
-this marker when serializing records. The SDK does not dispatch or refresh a
-quarantined access token, including after provider recreation or pending-login
-cancellation. Explicit fresh consent or client-credentials acquisition can
-replace it with a valid grant; reset deliberately discards the retained grant.
-Adapters accepting experimental records from before this marker must invalidate
-any records whose refresh-scope history cannot be established.
+invalidate a token. `expires_in` must be a positive integer (or digit string);
+known expiry uses an `expiry_skew` of 30 seconds by default. A rotated refresh
+token is persisted before reporting operation-level scope insufficiency.
 
-A timeout, 5xx, non-OAuth response or transient OAuth error retains refresh
-material and advises retry, not automatic login. An ambiguous exchange may have
-rotated credentials externally; a retry can ultimately return `invalid_grant`.
-There is no promise of rollback at the authorization server. Definitive PKCE
-refresh rejection advises a new login. Client credentials remain noninteractive.
-Storage writes may commit before cancellation is observed: never restore old
-refresh tokens blindly.
+An invalid token response (non-Bearer type, malformed `expires_in`, scope or
+token) is never dispatched and fails `provider_failed`. An invalid initial
+exchange persists nothing; an invalid refresh response keeps only a valid
+rotated refresh token. No outcome leaves a record in the in-flight `refreshing`
+state. A timeout, 5xx, non-OAuth response or transient OAuth error retains
+refresh material and advises retry, not automatic login. An ambiguous exchange
+may have rotated credentials externally; a retry can ultimately return
+`invalid_grant`. A PKCE refresh `invalid_grant` drops both tokens (unless a
+newer record already replaced them) and fails `refresh_rejected`. Client
+credentials remain noninteractive. After a 401 the rejected access token is not
+sent again.
 
 `await managed.reset(target, budget, handle=pending_or_credential)` deliberately
 clears the **current** grant, not just the handle's generation. Without a handle,
@@ -275,7 +280,7 @@ Run the native asyncio/Trio HTTP, coordinated-store and TLS transport regression
 
 ```sh
 uv sync --locked --all-extras
-PYTHONPATH=src:tests uv run --locked --all-extras python -m unittest test_oauth_contracts test_auth_routing test_managed_oauth test_managed_oauth_runtime test_oauth_discovery
+PYTHONPATH=src:tests uv run --locked --all-extras python -m unittest test_oauth_contracts test_auth_routing test_managed_oauth_runtime test_oauth_discovery
 ```
 
 The vendored `tests/fixtures/sdk-auth-lifecycle.json` comes from

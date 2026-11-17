@@ -3,14 +3,15 @@
 Canonical vector source: agent-hooks-protocol/conformance/draft/sdk-auth-lifecycle.json.
 """
 
-import hashlib
 import json
 from pathlib import Path
+import subprocess
 import unittest
 
 import anyio
 
 from agenthooksprotocol.oauth import (
+    _ExchangeError,
     ManagedOAuthProvider,
     OAuthClientConfiguration,
     OperationBudget,
@@ -24,14 +25,14 @@ from agenthooksprotocol._oauth_types import (
     grant_key,
 )
 
-FIXTURES = json.loads(
-    (Path(__file__).parent / "fixtures/sdk-auth-lifecycle.json").read_text()
-)
+ROOT = Path(__file__).resolve().parents[1]
+FIXTURE = ROOT / "tests/fixtures/sdk-auth-lifecycle.json"
+FIXTURES = json.loads(FIXTURE.read_text())
 
 
 class OAuthContractTests(unittest.TestCase):
     def test_lifetimes_must_be_finite_and_positive(self):
-        for value in (float("nan"), float("inf"), float("-inf"), 0, -1):
+        for value in (float("nan"), float("inf"), float("-inf"), 0, -1, 601):
             with self.subTest(value=value):
                 with self.assertRaises(ValueError):
                     OAuthClientConfiguration(
@@ -40,8 +41,9 @@ class OAuthContractTests(unittest.TestCase):
                         "client_credentials",
                         login_lifetime=value,
                     )
-                with self.assertRaises(ValueError):
-                    OperationBudget.after(value)
+                if value != 601:
+                    with self.assertRaises(ValueError):
+                        OperationBudget.after(value)
 
     def test_absolute_deadline_must_be_finite(self):
         for value in (float("nan"), float("inf"), float("-inf")):
@@ -61,15 +63,17 @@ class OAuthContractTests(unittest.TestCase):
 
 
 class CanonicalVectorTests(unittest.TestCase):
-    def test_canonical_fixture_matches_pinned_bytes(self):
-        # agent-hooks-protocol commit 88055d2623a06dff8dede79f4cbee8ac5e73f0e9.
-        source = Path(__file__).parent / "fixtures/sdk-auth-lifecycle.json"
-        self.assertEqual(
-            hashlib.sha256(source.read_bytes()).hexdigest(),
-            "ef3d8f5ea5ef9c0036dfd23fcd65131f9c9a0a7e465c931d0265fc03f4938e2f",
-        )
-        self.assertEqual(len(FIXTURES["token_responses"]), 9)
-        self.assertEqual(len(FIXTURES["lifecycle"]), 17)
+    def test_vendored_fixture_is_byte_identical_at_pinned_protocol_ref(self):
+        lock = json.loads((ROOT / "ahp-codegen.lock.json").read_text())
+        protocol = ROOT.parent / "agent-hooks-protocol"
+        if not (protocol / ".git").exists():
+            self.skipTest("requires the sibling protocol checkout")
+        canonical = subprocess.run(
+            ["git", "-C", str(protocol), "show",
+             lock["sourceCommit"] + ":conformance/draft/sdk-auth-lifecycle.json"],
+            capture_output=True, check=True,
+        ).stdout
+        self.assertEqual(FIXTURE.read_bytes(), canonical)
 
     def test_recovery_vectors(self):
         for vector in FIXTURES["recovery"]:
@@ -101,9 +105,6 @@ class CanonicalVectorTests(unittest.TestCase):
                 )
                 self.assertEqual(binding_key(target), vector["binding_key"])
                 self.assertEqual(grant_key(target, metadata), vector["grant_key"])
-                self.assertEqual(
-                    ManagedOAuthProvider._key(target, metadata), vector["grant_key"]
-                )
 
     def test_token_response_vectors(self):
         provider = ManagedOAuthProvider(
@@ -115,17 +116,6 @@ class CanonicalVectorTests(unittest.TestCase):
         )
         for vector in FIXTURES["token_responses"]:
             with self.subTest(id=vector["id"]):
-                config = OAuthClientConfiguration(
-                    "https://issuer.example",
-                    "client",
-                    "client_credentials",
-                    scopes=tuple(vector["requested"]),
-                    allowed_scopes=tuple(vector["allowed"]),
-                    required_scopes=tuple(vector["required"]),
-                )
-                metadata = OAuthMetadata(
-                    "https://api.example", config, "https://issuer.example/token"
-                )
                 previous = (
                     StoredToken(
                         "previous-access",
@@ -135,18 +125,25 @@ class CanonicalVectorTests(unittest.TestCase):
                     if "previous_granted" in vector
                     else None
                 )
+                arguments = (
+                    vector["response"],
+                    tuple(vector["requested"]),
+                    tuple(vector["allowed"]),
+                    previous,
+                )
                 if not vector["accepted"]:
-                    with self.assertRaises(AuthenticationFailure):
-                        provider._token(vector["response"], metadata, previous)
+                    with self.assertRaises(_ExchangeError) as failure:
+                        provider._token(*arguments)
+                    self.assertEqual(failure.exception.code, "invalid")
                     continue
-                token = provider._token(vector["response"], metadata, previous)
+                token = provider._token(*arguments)
                 self.assertEqual(set(token.scopes), set(vector["granted"]))
+                effective = set(token.scopes) & set(vector["allowed"])
+                self.assertEqual(effective, set(vector.get("effective", vector["granted"])))
                 self.assertEqual(
                     token.expires_at is None, vector["expiry"] == "unknown"
                 )
-                self.assertEqual(
-                    set(config.required_scopes).issubset(token.scopes), vector["usable"]
-                )
+                self.assertEqual(set(vector["required"]) <= effective, vector["usable"])
                 if vector["refresh_preserved"]:
                     self.assertEqual(
                         token.refresh_token, vector["response"]["refresh_token"]

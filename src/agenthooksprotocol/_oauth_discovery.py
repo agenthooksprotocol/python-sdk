@@ -4,7 +4,6 @@ Metadata supplies candidates, never trust. DNS/TLS and egress enforcement remain
 at the host's OAuthNetwork boundary; no client or browser is owned here.
 """
 
-from dataclasses import replace
 import json
 import re
 from urllib.parse import parse_qsl, urlsplit
@@ -12,6 +11,7 @@ from urllib.parse import parse_qsl, urlsplit
 import anyio
 import httpx
 
+from ._auth_challenge import ChallengeError, parse_challenge
 from .auth import AuthChallenge, AuthenticationFailure, AuthTarget, OAuthBinding
 from ._oauth_types import (
     EndpointPurpose,
@@ -24,7 +24,6 @@ from ._oauth_types import (
 from .runtime import OperationCancelledError
 
 MAX_RESPONSE_BYTES = 1024 * 1024
-_TOKEN = r"[!#$%&'*+.^_`|~0-9A-Za-z-]+"
 
 
 def _fail() -> AuthenticationFailure:
@@ -157,75 +156,16 @@ async def safe_request(
     return result
 
 
-def _challenge(challenge: AuthChallenge | None) -> tuple[str | None, tuple[str, ...]]:
-    if challenge is None or challenge.status not in (401, 403):
+def challenge_requirements(
+    challenge: AuthChallenge | None,
+) -> tuple[str | None, tuple[str, ...]]:
+    if challenge is None:
         return None, ()
-    values = [
-        v for k, v in challenge.headers.items() if k.lower() == "www-authenticate"
-    ]
-    if len(values) > 1:
-        raise _fail()
-    if not values:
-        if challenge.status == 403:
-            raise AuthenticationFailure(code="access_denied")
-        return None, ()
-    # Split only unquoted commas. Quoted-pairs may contain commas and quotes.
-    pieces, start, quoted, escaped = [], 0, False, False
-    for index, char in enumerate(values[0]):
-        if escaped:
-            escaped = False
-        elif quoted and char == "\\":
-            escaped = True
-        elif char == '"':
-            quoted = not quoted
-        elif char == "," and not quoted:
-            pieces.append(values[0][start:index].strip())
-            start = index + 1
-    if quoted or escaped:
-        raise _fail()
-    pieces.append(values[0][start:].strip())
-    bearer, params, active = 0, {}, False
-    for piece in pieces:
-        scheme = re.match(rf"^({_TOKEN})\s+(?!\s*=)(.*)$", piece)
-        if scheme:
-            active = scheme[1].lower() == "bearer"
-            if active:
-                bearer += 1
-                if bearer > 1:
-                    raise _fail()
-            piece = scheme[2].strip()
-        elif re.fullmatch(_TOKEN, piece):
-            active = piece.lower() == "bearer"
-            if active:
-                bearer += 1
-                if bearer > 1:
-                    raise _fail()
-            continue
-        if not active:
-            continue
-        match = re.fullmatch(
-            rf'({_TOKEN})\s*=\s*({_TOKEN}|"(?:[^"\\\r\n]|\\[^\r\n])*")', piece
-        )
-        if match is None:
-            if re.fullmatch(r"[A-Za-z0-9._~+/-]+=*", piece):
-                continue
-            raise _fail()
-        key, value = match[1].lower(), match[2]
-        if key in params:
-            raise _fail()
-        if value.startswith('"'):
-            value = re.sub(r"\\(.)", r"\1", value[1:-1])
-        params[key] = value
-    if challenge.status == 403 and (
-        bearer != 1 or params.get("error") != "insufficient_scope"
-    ):
-        raise AuthenticationFailure(code="access_denied")
-    scope = params.get("scope", "")
-    if scope and not re.fullmatch(
-        r"[\x21\x23-\x5b\x5d-\x7e]+(?: [\x21\x23-\x5b\x5d-\x7e]+)*", scope
-    ):
-        raise _fail()
-    return params.get("resource_metadata"), tuple(scope.split())
+    try:
+        return parse_challenge(challenge.status, challenge.headers)
+    except ChallengeError as error:
+        code = error.code
+    raise AuthenticationFailure(code=code)
 
 
 def _well_known(identifier: str, name: str) -> list[tuple[str, str]]:
@@ -375,35 +315,11 @@ async def discover(
     policy: OAuthTrustPolicy,
     budget: OperationBudget,
 ) -> OAuthMetadata:
-    """Resolve locally bound resource and issuer without acquiring credentials."""
-    error: BaseException | None = None
-    result: OAuthMetadata | None = None
-    try:
-        await anyio.lowlevel.checkpoint_if_cancelled()
-        with anyio.fail_after(budget.remaining()):
-            result = await _discover(target, challenge, network, policy, budget)
-    except BaseException as caught:
-        error = caught
-    if error is not None:
-        error = _public_error(error)
-        if isinstance(error, Exception):
-            error.__context__ = None
-            error.__cause__ = None
-        raise error
-    assert result is not None
-    return result
-
-
-async def _discover(
-    target: AuthTarget,
-    challenge: AuthChallenge | None,
-    network: OAuthNetwork,
-    policy: OAuthTrustPolicy,
-    budget: OperationBudget,
-) -> OAuthMetadata:
+    """Resolve the locally selected binding. The result carries the current
+    client secret; callers strip it before persisting metadata."""
     resource = validate_url(await policy.resource(target, budget))
     binding = target.typed_binding
-    metadata_url, required = _challenge(challenge)
+    metadata_url, required = challenge_requirements(challenge)
     issuers: tuple[str, ...]
     if binding is not None:
         if not isinstance(binding, OAuthBinding):
@@ -479,12 +395,9 @@ async def _discover(
     )
     if not isinstance(response_issuer, bool):
         raise _fail()
-    # Metadata can outlive this request in host storage. Resolve secrets again
-    # through the current policy when a token exchange actually needs them.
-    public_configuration = replace(configuration, client_secret=None)
     return OAuthMetadata(
         resource,
-        public_configuration,
+        configuration,
         token_endpoint,
         authorization_endpoint,
         response_issuer,

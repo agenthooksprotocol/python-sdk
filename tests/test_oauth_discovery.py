@@ -7,6 +7,7 @@ import httpx
 from agenthooksprotocol.auth import AuthChallenge, AuthenticationFailure, AuthTarget, OAuthBinding
 from agenthooksprotocol._oauth_discovery import MAX_RESPONSE_BYTES, discover, safe_request
 from agenthooksprotocol._oauth_types import OAuthClientConfiguration, OperationBudget
+from agenthooksprotocol.oauth import ManagedOAuthProvider
 from agenthooksprotocol.runtime import OperationCancelledError
 
 RESOURCE = "https://resource.test/api/events"
@@ -552,8 +553,16 @@ class OAuthDiscoveryTests(unittest.TestCase):
                 async def resource(self, target, budget):
                     raise RuntimeError("secret-resource")
 
+            class EmptyStore:
+                async def load_binding(self, key, budget):
+                    return None
+
+            # The provider is the single sanitising boundary for discovery.
+            provider = ManagedOAuthProvider(
+                network=network, policy=FailingPolicy(), store=EmptyStore(), namespace="test"
+            )
             with self.assertRaises(AuthenticationFailure) as caught:
-                await discover(target(), None, network, FailingPolicy(), OperationBudget.after(1))
+                await provider.prepare(target(), OperationBudget.after(1))
             self.assertIsNone(caught.exception.__context__)
             self.assertIsNone(caught.exception.__cause__)
             self.assertNotIn("secret", str(caught.exception))

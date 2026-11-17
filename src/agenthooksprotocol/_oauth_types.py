@@ -91,14 +91,15 @@ class OAuthClientConfiguration:
     token_endpoint_auth_method: Literal[
         "none", "client_secret_basic", "client_secret_post"
     ] = "none"
-    login_lifetime: float = 300
+    # Stored pending-login lifetime in seconds (default and maximum 10 minutes).
+    login_lifetime: float = 600
     allowed_scopes: tuple[str, ...] | None = None
     required_scopes: tuple[str, ...] = ()
     grant_partition: str | None = None
 
     def __post_init__(self) -> None:
-        if not math.isfinite(self.login_lifetime) or self.login_lifetime <= 0:
-            raise ValueError("Login lifetime must be finite and positive")
+        if not 0 < self.login_lifetime <= 600:
+            raise ValueError("Login lifetime must be positive and at most 600")
         for scopes in (self.scopes, self.allowed_scopes, self.required_scopes):
             if scopes is not None and any(
                 not isinstance(scope, str)
@@ -110,9 +111,7 @@ class OAuthClientConfiguration:
                 for scope in scopes
             ):
                 raise ValueError("Invalid OAuth scope")
-        allowed = set(
-            self.scopes if self.allowed_scopes is None else self.allowed_scopes
-        )
+        allowed = set(self.ceiling)
         if not set(self.scopes).issubset(allowed) or not set(
             self.required_scopes
         ).issubset(allowed):
@@ -121,6 +120,12 @@ class OAuthClientConfiguration:
             not isinstance(self.grant_partition, str) or not self.grant_partition
         ):
             raise ValueError("Grant partition must be nonempty")
+
+
+    @property
+    def ceiling(self) -> tuple[str, ...]:
+        """Locally allowed scopes; defaults to the requested scopes."""
+        return self.scopes if self.allowed_scopes is None else self.allowed_scopes
 
 
 class OAuthTrustPolicy(Protocol):
@@ -148,12 +153,13 @@ class OAuthMetadata:
 
 @dataclass(frozen=True)
 class StoredToken:
-    access_token: str = field(repr=False)
+    """`access_token` is None when only refresh material is usable."""
+
+    access_token: str | None = field(repr=False)
     expires_at: float | None = None
     refresh_token: str | None = field(default=None, repr=False)
+    # Granted scopes: response scopes intersected with the allowed ceiling.
     scopes: tuple[str, ...] = ()
-    # Persist with the rotated credential; never dispatch this access token.
-    quarantined: bool = False
 
 
 @dataclass(frozen=True)
@@ -162,14 +168,14 @@ class PendingState:
     state: str = field(repr=False)
     verifier: str = field(repr=False)
     authorization_url: str = field(repr=False)
+    # Wall-clock expiry fixed at creation; not tied to any caller's deadline.
     expires_at: float
-    deadline: float = 0
 
 
 @dataclass(frozen=True)
 class OAuthRecord:
     generation: str
-    status: Literal["active", "refreshing", "pending", "rejected", "quarantined"]
+    status: Literal["active", "refreshing", "pending"]
     metadata: OAuthMetadata = field(repr=False)
     token: StoredToken | None = field(default=None, repr=False)
     pending: PendingState | None = field(default=None, repr=False)
@@ -198,9 +204,11 @@ def binding_key(target: AuthTarget) -> str:
 
 
 def grant_key(target: AuthTarget, metadata: OAuthMetadata) -> str:
-    """OAuth principal and allowed-policy identity; isolated by binding by default."""
+    """OAuth principal identity; isolated by binding by default.
+
+    The allowed ceiling is not identity: it is re-intersected at use.
+    """
     config = metadata.configuration
-    allowed = config.scopes if config.allowed_scopes is None else config.allowed_scopes
     partition = (
         "binding:" + binding_key(target)
         if config.grant_partition is None
@@ -214,7 +222,6 @@ def grant_key(target: AuthTarget, metadata: OAuthMetadata) -> str:
             metadata.resource,
             config.client_id,
             config.flow,
-            " ".join(sorted(set(allowed))),
             partition,
         ),
     )

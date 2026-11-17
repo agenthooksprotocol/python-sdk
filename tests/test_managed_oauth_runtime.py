@@ -237,10 +237,6 @@ class VectorNetwork(Network):
         return httpx.Response(200, json=self.responses.pop(0))
 
 
-@unittest.skipUnless(
-    importlib.util.find_spec("authlib"),
-    "requires optional oauth extra",
-)
 class ManagedOAuthRuntimeTests(unittest.TestCase):
     def run_async(self, test):
         for backend in ("asyncio", "trio"):
@@ -523,9 +519,11 @@ class ManagedOAuthRuntimeTests(unittest.TestCase):
                 await anyio.sleep_forever()
 
             n.token_hook = blocked
+            old = next(iter(s.records.values())).token
             with self.assertRaises(TimeoutError):
                 await p.prepare(target, OperationBudget.after(0.05))
-            self.assertEqual(next(iter(s.records.values())).status, "refreshing")
+            record = next(iter(s.records.values()))
+            self.assertEqual((record.status, record.token), ("active", old))
             self.assertFalse(n.client.is_closed)
 
         self.run_async(run)
@@ -536,7 +534,7 @@ class ManagedOAuthRuntimeTests(unittest.TestCase):
             login = await p.prepare(target, OperationBudget.after(5))
             state = parse_qs(urlsplit(login.authorization_url).query)["state"][0]
             now[0] = login.expires_at + 1
-            with self.assertRaises(TimeoutError):
+            with self.assertRaises(AuthenticationFailure) as failure:
                 await p.complete(
                     target,
                     login,
@@ -544,6 +542,7 @@ class ManagedOAuthRuntimeTests(unittest.TestCase):
                     + urlencode({"state": state, "code": "old"}),
                     OperationBudget.after(5),
                 )
+            self.assertEqual(failure.exception.code, "interaction_required")
             self.assertFalse(n.tokens)
             self.assertNotEqual(
                 (await p.prepare(target, OperationBudget.after(5))).generation,
@@ -607,8 +606,10 @@ class ManagedOAuthRuntimeTests(unittest.TestCase):
 
             async def commit_then_block(key, record):
                 s.records[key] = record
-                entered.set()
-                await anyio.sleep_forever()
+                if not entered.is_set():
+                    entered.set()
+                    await anyio.sleep_forever()
+                return False
 
             s.cas_hook = commit_then_block
 
@@ -819,13 +820,13 @@ class ManagedOAuthRuntimeTests(unittest.TestCase):
                 return policy.configuration
 
             policy.select = select
-            for change in ({"client_id": "revoked-client"}, {"scopes": ()}):
+            for change in ({"client_id": "revoked-client"},):
                 policy.configuration = replace(original, **change)
                 with self.assertRaises(AuthenticationFailure):
                     await p.complete(target, login, callback, OperationBudget.after(5))
                 self.assertFalse(n.tokens)
                 self.assertEqual(next(iter(s.records.values())).status, "pending")
-            self.assertEqual(len(calls), 2)
+            self.assertEqual(len(calls), 1)
             self.assertEqual(calls[-1], (RESOURCE, (ISSUER,), ()))
             policy.configuration = original
             original_resource = policy.resource
@@ -956,7 +957,8 @@ class ManagedOAuthRuntimeTests(unittest.TestCase):
             now[0] += 61
             with self.assertRaises(AuthenticationFailure) as failure:
                 await p.prepare(target, OperationBudget.after(5))
-            self.assertEqual(failure.exception.code, "interaction_required")
+            self.assertEqual(failure.exception.code, "access_denied")
+            self.assertEqual(failure.exception.required_scopes, ("write",))
             record = next(iter(s.records.values()))
             self.assertEqual(record.token.refresh_token, "r2")
             self.assertEqual(record.token.scopes, ("read",))
@@ -979,7 +981,7 @@ class ManagedOAuthRuntimeTests(unittest.TestCase):
             login = await p.prepare(target, OperationBudget.after(5))
             with self.assertRaises(AuthenticationFailure) as failure:
                 await self.complete_login(p, target, login)
-            self.assertEqual(failure.exception.code, "interaction_required")
+            self.assertEqual(failure.exception.code, "access_denied")
             token = next(iter(s.records.values())).token
             self.assertEqual(token.refresh_token, "retain-rotation")
             self.assertIsNone(token.expires_at)
@@ -1040,9 +1042,8 @@ class ManagedOAuthRuntimeTests(unittest.TestCase):
             login = await p.prepare(target, OperationBudget.after(5))
             self.assertIsInstance(login, PendingLogin)
             with anyio.CancelScope() as scope:
-                with self.assertRaises(AuthenticationFailure):
-                    await p.credential(AuthContext({"id": "backend"}, None, RESOURCE, "event", scope))
-            self.assertEqual(next(iter(s.records.values())).generation, login.generation)
+                self.assertIsNone(await p.credential(AuthContext({"id": "backend"}, None, RESOURCE, "event", scope)))
+            self.assertEqual(next(iter(s.records.values())).pending.state, login.generation)
             await p.cancel(target, login, OperationBudget.after(5))
             self.assertFalse(s.records)
             self.assertTrue(s.bindings)
@@ -1100,7 +1101,7 @@ class ManagedOAuthRuntimeTests(unittest.TestCase):
                 self.assertEqual(failure.exception.code, "access_denied")
         self.run_async(run)
 
-    def test_pkce_stepup_cancel_keeps_shared_narrow_grant_and_binding_requirements(self):
+    def test_pkce_stepup_round_trip_shared_grant_and_operation_scoped_requirement(self):
         async def run(p, n, s, policy, target, now):
             policy.configuration = replace(
                 Policy("authorization_code_pkce").configuration,
@@ -1130,17 +1131,22 @@ class ManagedOAuthRuntimeTests(unittest.TestCase):
                 with self.assertRaises(AuthenticationFailure) as failure:
                     await p.challenge(context, AuthChallenge(403, {"www-authenticate": 'Bearer error="insufficient_scope", scope="write"'}, RESOURCE, first.credential.identity, True))
                 self.assertEqual(failure.exception.code, "interaction_required")
-            login = await p.prepare(target, OperationBudget.after(5))
+                self.assertEqual(failure.exception.required_scopes, ("write",))
+            # Step-up round trip: the host passes the validated scopes back.
+            self.assertIsInstance(await p.prepare(target, OperationBudget.after(5)), Ready)
+            login = await p.prepare(target, OperationBudget.after(5), required_scopes=failure.exception.required_scopes)
             self.assertIsInstance(login, PendingLogin)
+            self.assertEqual(set(parse_qs(urlsplit(login.authorization_url).query)["scope"][0].split()), {"read", "write"})
             self.assertEqual(next(iter(s.records.values())).token.access_token, first.credential.token)
             self.assertEqual((await p.prepare(upload, OperationBudget.after(5))).credential.token, first.credential.token)
             await p.cancel(target, login, OperationBudget.after(5))
             self.assertEqual(next(iter(s.records.values())).status, "active")
             self.assertEqual((await p.prepare(upload, OperationBudget.after(5))).credential.token, first.credential.token)
+            # The step-up requirement was operation-scoped, never persisted.
+            self.assertTrue(all(m.configuration.required_scopes == () for m in s.bindings.values()))
             with anyio.CancelScope() as scope:
-                with self.assertRaises(AuthenticationFailure) as failure:
-                    await p.credential(AuthContext({"id": "backend"}, None, RESOURCE, "event", scope))
-                self.assertEqual(failure.exception.code, "interaction_required")
+                cached = await p.credential(AuthContext({"id": "backend"}, None, RESOURCE, "event", scope))
+            self.assertEqual(cached.token, first.credential.token)
             self.assertFalse(any(record.pending for record in s.records.values()))
             self.assertEqual(len(n.tokens), 1)
         self.run_async(run)
@@ -1167,8 +1173,9 @@ class ManagedOAuthRuntimeTests(unittest.TestCase):
             self.assertEqual(n.tokens[-1]["grant_type"], ["refresh_token"])
         self.run_async(run)
 
-    def test_refresh_forbids_grant_broadening_quarantines_across_recreation_and_cancel(self):
-        """Canonical lifecycle: refresh-forbids-grant-broadening."""
+
+    def test_refresh_broadening_scope_is_ignored_and_stays_usable(self):
+        """Canonical lifecycle: refresh-broadening-scope-ignored."""
         async def run(p, n, s, policy, target, now):
             policy.configuration = replace(
                 Policy("authorization_code_pkce").configuration,
@@ -1177,239 +1184,159 @@ class ManagedOAuthRuntimeTests(unittest.TestCase):
             async def token(request):
                 initial = len(n.tokens) == 1
                 return httpx.Response(200, json={
-                    "access_token": "initial-read" if initial else "unauthorized-broad",
+                    "access_token": "initial-read" if initial else "refreshed",
                     "token_type": "Bearer", "refresh_token": "r1" if initial else "r2",
-                    "scope": "read" if initial else "read write",
-                    "expires_in": 1 if initial else 60,
+                    "scope": "read" if initial else "read write", "expires_in": 1 if initial else 60,
                 })
             n.token_hook = token
-            login = await p.prepare(target, OperationBudget.after(5))
-            initial = await self.complete_login(p, target, login)
-            self.assertIsInstance(initial, Ready)
-            self.assertEqual(next(iter(s.records.values())).token.scopes, ("read",))
+            await self.complete_login(p, target, await p.prepare(target, OperationBudget.after(5)))
             now[0] += 2
-            with self.assertRaises(AuthenticationFailure) as failure:
-                await p.prepare(target, OperationBudget.after(5))
-            self.assertEqual(failure.exception.code, "access_denied")
-            self.assertEqual(n.tokens[-1]["grant_type"], ["refresh_token"])
-            self.assertEqual(n.tokens[-1]["refresh_token"], ["r1"])
+            ready = await p.prepare(target, OperationBudget.after(5))
+            self.assertEqual(ready.credential.token, "refreshed")
             self.assertNotIn("scope", n.tokens[-1])
-
-            def assert_quarantined(status):
-                record = next(iter(s.records.values()))
-                self.assertEqual(record.status, status)
-                self.assertEqual(record.token.refresh_token, "r2")
-                self.assertEqual(record.token.access_token, "unauthorized-broad")
-                self.assertTrue(record.token.quarantined)
-
-            assert_quarantined("quarantined")
-            def recreate():
-                return ManagedOAuthProvider(
-                    network=n, store=s, policy=policy, namespace="tenant",
-                    clock=lambda: now[0], expiry_skew=0,
-                )
-
-            async def assert_no_credential(provider):
-                with anyio.CancelScope() as scope:
-                    with self.assertRaises(AuthenticationFailure):
-                        await provider.credential(AuthContext(
-                            {"id": "backend"}, None, RESOURCE, "event", scope,
-                        ))
-
-            async def assert_no_dispatch(provider):
-                delivered = []
-                async def deliver(request):
-                    delivered.append(request.headers.get("authorization"))
-                    return httpx.Response(204)
-                async with httpx.AsyncClient(transport=httpx.MockTransport(deliver)) as client:
-                    transport = AuthenticatedHTTPTransport(
-                        RESOURCE, backend={"id": "backend"}, client=client,
-                        auth_provider=RoutingAuthProvider(
-                            discover=provider, oauth=provider, namespace="tenant",
-                        ),
-                    )
-                    with self.assertRaises(AuthenticationFailure):
-                        await transport.notify({"jsonrpc": "2.0", "method": "hooks/observe", "params": {}})
-                    await transport.aclose()
-                self.assertEqual(delivered, [])
-
-            fresh = recreate()
-            for provider in (p, fresh):
-                await assert_no_credential(provider)
-                await assert_no_dispatch(provider)
-            assert_quarantined("quarantined")
-            now[0] += 120
-            pending = await fresh.prepare(target, OperationBudget.after(5))
-            self.assertIsInstance(pending, PendingLogin)
-            assert_quarantined("pending")
-            await assert_no_credential(fresh)
-            await fresh.cancel(target, pending, OperationBudget.after(5))
-            assert_quarantined("quarantined")
-            fresh = recreate()
-            await assert_no_credential(fresh)
-            await assert_no_dispatch(fresh)
-            later = await fresh.prepare(target, OperationBudget.after(5))
-            self.assertIsInstance(later, PendingLogin)
-            assert_quarantined("pending")
-            await assert_no_dispatch(recreate())
+            record = next(iter(s.records.values()))
+            self.assertEqual((record.status, record.token.scopes, record.token.refresh_token), ("active", ("read",), "r2"))
+            policy.configuration = replace(policy.configuration, required_scopes=("write",))
+            with anyio.CancelScope() as scope:
+                self.assertIsNone(await p.credential(AuthContext({"id": "backend"}, None, RESOURCE, "event", scope)))
+            # A write-requiring operation cannot fabricate write from a refresh.
+            with self.assertRaises(AuthenticationFailure) as failure:
+                await p.challenge(AuthContext({"id": "backend"}, None, RESOURCE, "event", anyio.CancelScope()),
+                                  AuthChallenge(401, {}, RESOURCE, ready.credential.identity, True))
+            self.assertEqual(failure.exception.code, "interaction_required")
             self.assertEqual(len(n.tokens), 2)
         self.run_async(run)
 
-    async def seed_quarantined_refresh(self, p, n, s, policy, target, now, scope):
-        policy.configuration = replace(
-            Policy("authorization_code_pkce").configuration,
-            scopes=("read", "write"), allowed_scopes=("read", "write"),
-        )
-        async def token(request):
-            initial = len(n.tokens) == 1
-            return httpx.Response(200, json={
-                "access_token": "initial-read" if initial else "quarantined-access",
-                "token_type": "Bearer", "refresh_token": "r1" if initial else "r2",
-                "scope": "read" if initial else scope,
-                "expires_in": 1 if initial else 60,
-            })
-        n.token_hook = token
-        login = await p.prepare(target, OperationBudget.after(5))
-        self.assertIsInstance(await self.complete_login(p, target, login), Ready)
-        now[0] += 2
-        with self.assertRaises(AuthenticationFailure) as failure:
-            await p.prepare(target, OperationBudget.after(5))
-        self.assertEqual(failure.exception.code, "access_denied")
-        record = next(iter(s.records.values()))
-        self.assertEqual(record.status, "quarantined")
-        self.assertTrue(record.token.quarantined)
-        self.assertEqual(record.token.refresh_token, "r2")
-        self.assertEqual(len(n.tokens), 2)
-        return record
-
-    def test_malformed_refresh_scope_preserves_rotated_refresh_and_quarantine(self):
-        for scope in (None, 7, "read  write", "réad", ""):
-            with self.subTest(scope=scope):
+    def test_invalid_token_response_clears_in_flight_and_keeps_only_refresh_rotation(self):
+        """Canonical lifecycle: token-validation-failure-clears-in-flight."""
+        bad = ({"scope": "read  write"}, {"scope": 7}, {"token_type": "mac"},
+               {"expires_in": 0}, {"expires_in": 1.5}, {"access_token": "not valid"})
+        for change in bad:
+            with self.subTest(change=change):
                 async def run(p, n, s, policy, target, now):
-                    record = await self.seed_quarantined_refresh(p, n, s, policy, target, now, scope)
-                    self.assertEqual(record.token.scopes, ())
-                    fresh = ManagedOAuthProvider(
-                        network=n, store=s, policy=policy, namespace="tenant",
-                        clock=lambda: now[0], expiry_skew=0,
-                    )
-                    with anyio.CancelScope() as cancel_scope:
-                        with self.assertRaises(AuthenticationFailure):
-                            await fresh.credential(AuthContext(
-                                {"id": "backend"}, None, RESOURCE, "event", cancel_scope,
-                            ))
-                    self.assertEqual(next(iter(s.records.values())), record)
-                    self.assertEqual(len(n.tokens), 2)
+                    policy.configuration = Policy("authorization_code_pkce").configuration
+                    response = {"access_token": "a", "token_type": "Bearer", "refresh_token": "rotated", **change}
+                    async def invalid(request):
+                        return httpx.Response(200, json=response)
+                    n.token_hook = invalid
+                    login = await p.prepare(target, OperationBudget.after(5))
+                    with self.assertRaises(AuthenticationFailure) as failure:
+                        await self.complete_login(p, target, login)
+                    self.assertEqual((failure.exception.code, failure.exception.recovery), ("provider_failed", "retry"))
+                    # An invalid initial exchange persists nothing and consumes the login.
+                    self.assertFalse(s.records)
+                    n.token_hook = None
+                    await self.complete_login(p, target, await p.prepare(target, OperationBudget.after(5)))
+                    now[0] += 61
+                    n.token_hook = invalid
+                    with self.assertRaises(AuthenticationFailure) as failure:
+                        await p.prepare(target, OperationBudget.after(5))
+                    self.assertEqual(failure.exception.code, "provider_failed")
+                    record = next(iter(s.records.values()))
+                    self.assertEqual(record.status, "active")
+                    self.assertIsNone(record.token.access_token)
+                    self.assertEqual(record.token.refresh_token, "rotated")
+                    n.token_hook = None
+                    ready = await p.prepare(target, OperationBudget.after(5))
+                    self.assertEqual(n.tokens[-1]["refresh_token"], ["rotated"])
+                    self.assertIsInstance(ready, Ready)
                 self.run_async(run)
 
-    def test_cancelled_pending_publication_restores_quarantine_and_rejects_old_callback(self):
-        async def run(p, n, s, policy, target, now):
-            await self.seed_quarantined_refresh(p, n, s, policy, target, now, "read write")
-            entered = anyio.Event()
-            unpublished = []
-            async def commit_then_block(key, record):
-                if record is not None and record.status == "pending":
-                    s.records[key] = record
-                    unpublished.append(PendingLogin(
-                        key, record.generation, record.pending.authorization_url,
-                        record.pending.expires_at,
-                    ))
-                    entered.set()
-                    await anyio.sleep_forever()
-                return True
-            s.cas_hook = commit_then_block
-            async def prepare():
-                await p.prepare(target, OperationBudget.after(10))
-            async with anyio.create_task_group() as tasks:
-                tasks.start_soon(prepare)
-                await entered.wait()
-                tasks.cancel_scope.cancel()
-            s.cas_hook = None
-            record = next(iter(s.records.values()))
-            self.assertEqual(record.status, "quarantined")
-            self.assertTrue(record.token.quarantined)
-            self.assertEqual(record.token.refresh_token, "r2")
-            self.assertNotEqual(record.generation, unpublished[0].generation)
-            fresh = ManagedOAuthProvider(
-                network=n, store=s, policy=policy, namespace="tenant",
-                clock=lambda: now[0], expiry_skew=0,
-            )
-            with self.assertRaises(AuthenticationFailure):
-                await self.complete_login(fresh, target, unpublished[0])
-            with anyio.CancelScope() as cancel_scope:
-                with self.assertRaises(AuthenticationFailure):
-                    await fresh.credential(AuthContext(
-                        {"id": "backend"}, None, RESOURCE, "event", cancel_scope,
-                    ))
-            self.assertEqual(next(iter(s.records.values())), record)
-            self.assertEqual(len(n.tokens), 2)
-        self.run_async(run)
 
-    def test_pending_requested_and_required_scope_context_replaces_old_handle(self):
+    def test_pending_supersede_requests_scope_union_and_old_callback_fails(self):
+        """Canonical lifecycle: pending-login-supersede, pending-login-supersede-scope-union."""
         async def run(p, n, s, policy, target, now):
             policy.configuration = replace(
                 Policy("authorization_code_pkce").configuration,
-                allowed_scopes=("read", "write"),
+                allowed_scopes=("read", "write", "admin"),
             )
             budget = OperationBudget.after(5)
             first = await p.prepare(target, budget)
-            self.assertEqual(await p.prepare(target, budget), first)
+            # Requirements already covered by the pending scopes reuse it.
             policy.configuration = replace(policy.configuration, required_scopes=("read",))
+            self.assertEqual(await p.prepare(target, budget), first)
+            policy.configuration = replace(policy.configuration, scopes=("write",), required_scopes=())
             second = await p.prepare(target, budget)
             self.assertNotEqual(second.generation, first.generation)
-            with self.assertRaises(AuthenticationFailure):
-                await self.complete_login(p, target, first)
-            self.assertFalse(n.tokens)
-            policy.configuration = replace(policy.configuration, scopes=("read", "write"))
+            def scopes(login):
+                return set(parse_qs(urlsplit(login.authorization_url).query)["scope"][0].split())
+            self.assertEqual(scopes(second), {"read", "write"})
+            # The alternating caller is now covered: no supersede loop.
+            policy.configuration = replace(policy.configuration, scopes=("read",))
+            self.assertEqual(await p.prepare(target, budget), second)
+            # A narrower caller ceiling still reuses (filtered at use); a new
+            # scope supersedes with the union intersected with its ceiling.
+            policy.configuration = replace(policy.configuration, allowed_scopes=("read", "admin"), scopes=("read",))
+            self.assertEqual(await p.prepare(target, budget), second)
+            policy.configuration = replace(policy.configuration, scopes=("read", "admin"))
             third = await p.prepare(target, budget)
-            self.assertNotEqual(third.generation, second.generation)
-            self.assertEqual(set(parse_qs(urlsplit(third.authorization_url).query)["scope"][0].split()), {"read", "write"})
-            with self.assertRaises(AuthenticationFailure):
-                await self.complete_login(p, target, second)
+            self.assertEqual(scopes(third), {"read", "admin"})
+            for old in (first, second):
+                with self.assertRaises(AuthenticationFailure) as failure:
+                    await self.complete_login(p, target, old)
+                self.assertEqual(failure.exception.code, "interaction_required")
             self.assertFalse(n.tokens)
-            self.assertIsInstance(await self.complete_login(p, target, third), Ready)
+            policy.configuration = replace(policy.configuration, redirect_uri="https://host.test/other")
+            fourth = await p.prepare(target, budget)
+            self.assertNotEqual(fourth.generation, third.generation)
+            policy.configuration = replace(policy.configuration, redirect_uri="https://host.test/callback")
+            with self.assertRaises(AuthenticationFailure) as failure:
+                await self.complete_login(p, target, third)
+            self.assertEqual(failure.exception.code, "interaction_required")
         self.run_async(run)
 
-    def test_pending_longer_budget_replaces_and_old_callback_cannot_complete(self):
+
+    def test_pending_reuse_is_independent_of_caller_deadline(self):
+        """Canonical lifecycle: pending-login-reuse."""
         async def run(p, n, s, policy, target, now):
             policy.configuration = Policy("authorization_code_pkce").configuration
-            budget = OperationBudget.after(1)
-            first = await p.prepare(target, budget)
-            self.assertEqual(await p.prepare(target, budget), first)
-            longer = OperationBudget.after(5)
-            second = await p.prepare(target, longer)
-            self.assertNotEqual(second.generation, first.generation)
-            self.assertEqual(await p.prepare(target, longer), second)
-            with self.assertRaises(AuthenticationFailure):
-                await self.complete_login(p, target, first)
-            self.assertFalse(n.tokens)
-            self.assertIsInstance(await self.complete_login(p, target, second), Ready)
+            first = await p.prepare(target, OperationBudget.after(1))
+            self.assertEqual(await p.prepare(target, OperationBudget.after(5)), first)
+            self.assertEqual(await p.prepare(target, OperationBudget.after(0.5)), first)
+            now[0] += 100
+            # A wider caller ceiling reuses it; the creating ceiling bounds the grant.
+            policy.configuration = replace(policy.configuration, allowed_scopes=("read", "write"))
+            self.assertEqual(await p.prepare(target, OperationBudget.after(5)), first)
+            async def broad(request):
+                return httpx.Response(200, json={"access_token": "t", "token_type": "Bearer", "scope": "read write"})
+            n.token_hook = broad
+            self.assertIsInstance(await self.complete_login(p, target, first), Ready)
+            self.assertEqual(next(iter(s.records.values())).token.scopes, ("read",))
         self.run_async(run)
 
-    def test_cancelled_original_host_scope_cannot_transfer_pending_ownership(self):
+
+    def test_pending_lifetime_is_fixed_and_survives_creating_prepare(self):
+        """Canonical lifecycle: pending-login-fixed-lifetime."""
         async def run(p, n, s, policy, target, now):
             policy.configuration = Policy("authorization_code_pkce").configuration
             with anyio.CancelScope() as owner:
-                budget = OperationBudget.after(10, cancel_scope=owner)
-                first = await p.prepare(target, budget)
-                self.assertEqual(await p.prepare(target, budget), first)
+                login = await p.prepare(target, OperationBudget.after(10, cancel_scope=owner))
                 owner.cancel()
-            second = await p.prepare(target, OperationBudget.after(5))
-            self.assertNotEqual(second.generation, first.generation)
-            with self.assertRaises(AuthenticationFailure):
-                await self.complete_login(p, target, first)
-            self.assertFalse(n.tokens)
-            self.assertIsInstance(await self.complete_login(p, target, second), Ready)
+            self.assertEqual(login.expires_at, now[0] + 600)
+            with self.assertRaises(ValueError):
+                replace(policy.configuration, login_lifetime=601)
+            now[0] += 599
+            self.assertIsInstance(await self.complete_login(p, target, login), Ready)
+            await p.reset(target, OperationBudget.after(5))
+            policy.configuration = replace(policy.configuration, login_lifetime=60)
+            login = await p.prepare(target, OperationBudget.after(5))
+            now[0] += 61
+            with self.assertRaises(AuthenticationFailure) as failure:
+                await self.complete_login(p, target, login)
+            self.assertEqual(failure.exception.code, "interaction_required")
         self.run_async(run)
 
-    def test_cancelled_prepare_after_pending_store_commit_invalidates_handle(self):
+
+    def test_pending_login_completes_from_another_process_after_creator_cancelled(self):
+        """Canonical lifecycle: pending-login-cross-process-completion."""
         async def run(p, n, s, policy, target, now):
             policy.configuration = Policy("authorization_code_pkce").configuration
             entered = anyio.Event()
-            unpublished = []
+            published = []
             async def commit_then_block(key, record):
-                if record is not None and record.status == "pending":
+                if record is not None and record.pending is not None:
                     s.records[key] = record
-                    unpublished.append(record.generation)
+                    published.append(PendingLogin(key, record.pending.state, record.pending.authorization_url, record.pending.expires_at))
                     entered.set()
                     await anyio.sleep_forever()
                 return True
@@ -1420,11 +1347,16 @@ class ManagedOAuthRuntimeTests(unittest.TestCase):
                 tasks.start_soon(prepare)
                 await entered.wait()
                 tasks.cancel_scope.cancel()
-            self.assertFalse(any(record.generation in unpublished for record in s.records.values()))
             s.cas_hook = None
-            replacement = await p.prepare(target, OperationBudget.after(5))
-            self.assertNotIn(replacement.generation, unpublished)
-            self.assertIsInstance(await self.complete_login(p, target, replacement), Ready)
+            other = ManagedOAuthProvider(network=n, store=s, policy=policy, namespace="tenant", clock=lambda: now[0], expiry_skew=0)
+            # Another process only has the stored record and the (serializable) handle.
+            self.assertEqual(await other.prepare(target, OperationBudget.after(5)), published[0])
+            ready = await self.complete_login(other, target, published[0])
+            self.assertIsInstance(ready, Ready)
+            with self.assertRaises(AuthenticationFailure) as failure:
+                await self.complete_login(p, target, published[0])
+            self.assertEqual(failure.exception.code, "interaction_required")
+            self.assertEqual(len(n.tokens), 1)
         self.run_async(run)
 
     def test_403_without_scope_needs_explicit_host_requirement(self):
@@ -1575,9 +1507,11 @@ class ManagedOAuthRuntimeTests(unittest.TestCase):
         async def run():
             for vector in FIXTURES["token_responses"]:
                 with self.subTest(vector=vector["id"]):
+                    # Local policy keeps requested scopes inside the caller's ceiling.
+                    requested = sorted(set(vector["requested"]) & set(vector["allowed"]))
                     config = OAuthClientConfiguration(
                         issuer=ISSUER, client_id="host-client", flow="client_credentials",
-                        scopes=tuple(vector["requested"]), allowed_scopes=tuple(vector["allowed"]),
+                        scopes=tuple(requested), allowed_scopes=tuple(vector["allowed"]),
                         required_scopes=tuple(vector["required"]),
                     )
                     responses = []
@@ -1590,13 +1524,15 @@ class ManagedOAuthRuntimeTests(unittest.TestCase):
                         })
                     responses.append(vector["response"])
                     network = VectorNetwork(config, responses)
-                    store, policy, now = Store(), VectorPolicy(config, RESOURCE), [1000.0]
+                    # The seed grant was acquired under a ceiling covering it.
+                    seed = replace(config, allowed_scopes=tuple(sorted(set(vector["allowed"]) | set(vector.get("previous_granted", [])))))
+                    store, policy, now = Store(), VectorPolicy(seed, RESOURCE), [1000.0]
                     provider = ManagedOAuthProvider(network=network, policy=policy, store=store, namespace="vectors", clock=lambda: now[0], expiry_skew=0)
-                    typed = OAuthBinding(ISSUER, RESOURCE, "host-client", "client_credentials", tuple(vector["requested"]))
+                    typed = OAuthBinding(ISSUER, RESOURCE, "host-client", "client_credentials", tuple(requested))
                     target = AuthTarget("vectors", "backend", RESOURCE, "event", None, typed)
                     binding = {
                         "type": "oauth", "issuer": ISSUER, "resource": RESOURCE,
-                        "clientId": "host-client", "flow": "client_credentials", "scopes": vector["requested"],
+                        "clientId": "host-client", "flow": "client_credentials", "scopes": requested,
                     }
                     delivered = []
                     async def deliver(request):
@@ -1606,6 +1542,7 @@ class ManagedOAuthRuntimeTests(unittest.TestCase):
                         if refreshing:
                             await provider.prepare(target, OperationBudget.after(5))
                             now[0] += 2
+                        policy.configuration = config
                         async with httpx.AsyncClient(transport=httpx.MockTransport(deliver)) as client:
                             transport = AuthenticatedHTTPTransport(
                                 RESOURCE, backend={"id": "backend", "authentication": binding}, client=client,
@@ -1622,23 +1559,27 @@ class ManagedOAuthRuntimeTests(unittest.TestCase):
                                 self.assertEqual(delivered, [])
                             await transport.aclose()
                             self.assertFalse(client.is_closed)
-                        self.assertEqual(len(store.records), 1)
-                        record = next(iter(store.records.values()))
-                        self.assertEqual(record.status, "active" if vector["accepted"] else "quarantined")
-                        self.assertEqual(record.token.quarantined, not vector["accepted"])
-                        if not vector["accepted"]:
-                            self.assertEqual(delivered, [])
-                        self.assertEqual(record.token.access_token, vector["response"]["access_token"])
-                        if "granted" in vector:
-                            self.assertEqual(set(record.token.scopes), set(vector["granted"]))
+                        record = next(iter(store.records.values()), None)
+                        if not vector["accepted"] and not refreshing:
+                            # An invalid initial exchange persists nothing.
+                            self.assertIsNone(record)
                         else:
-                            self.assertEqual(set(record.token.scopes), set(vector["response"]["scope"].split()))
-                        if vector.get("expiry") == "unknown":
-                            self.assertIsNone(record.token.expires_at)
-                        elif vector.get("expiry") == "known":
-                            self.assertEqual(record.token.expires_at, now[0] + vector["response"]["expires_in"])
-                        if vector["refresh_preserved"]:
-                            self.assertEqual(record.token.refresh_token, vector["response"]["refresh_token"])
+                            self.assertEqual(record.status, "active")
+                            stored = record.token
+                            if vector["accepted"]:
+                                self.assertEqual(stored.access_token, vector["response"]["access_token"])
+                                self.assertEqual(set(stored.scopes), set(vector["granted"]))
+                                self.assertEqual(set(stored.scopes) & set(vector["allowed"]), set(vector.get("effective", vector["granted"])))
+                            else:
+                                self.assertIsNone(stored.access_token)
+                            if vector.get("expiry") == "unknown":
+                                self.assertIsNone(stored.expires_at)
+                            elif vector.get("expiry") == "known":
+                                self.assertEqual(stored.expires_at, now[0] + int(vector["response"]["expires_in"]))
+                            if vector["refresh_preserved"]:
+                                self.assertEqual(stored.refresh_token, vector["response"]["refresh_token"])
+                            elif "refresh_token" not in vector["response"] and not refreshing:
+                                self.assertIsNone(stored.refresh_token)
                         self.assertEqual(network.tokens[-1]["grant_type"], ["refresh_token" if refreshing else "client_credentials"])
                         if refreshing:
                             self.assertEqual(network.tokens[-1]["refresh_token"], ["r1"])
@@ -1823,3 +1764,325 @@ class ManagedOAuthRuntimeTests(unittest.TestCase):
             self.assertEqual(len(n.requests), count)
 
         self.run_async(run)
+
+    def unbound(self):
+        return AuthContext({"id": "backend"}, None, RESOURCE, "event", anyio.CancelScope())
+
+    def test_unbound_lookup_is_anonymous_only_on_store_miss_or_policy_refusal(self):
+        """Canonical lifecycle: unbound-lookup-anonymous-fallback."""
+        async def run(p, n, s, policy, target, now):
+            policy.configuration = Policy("authorization_code_pkce").configuration
+            self.assertIsNone(await p.credential(self.unbound()))
+            self.assertEqual((n.requests, n.authorized, s.records), ([], [], {}))
+            policy.configuration = Policy().configuration
+            ready = await p.prepare(target, OperationBudget.after(5))
+            count = len(n.requests)
+            original = policy.select
+            async def refuse(*args):
+                raise AuthenticationFailure(code="untrusted_destination")
+            policy.select = refuse
+            self.assertIsNone(await p.credential(self.unbound()))
+            policy.select = original
+            self.assertEqual((await p.credential(self.unbound())).token, ready.credential.token)
+            self.assertEqual(len(n.requests), count)
+            self.assertFalse(any(record.pending for record in s.records.values()))
+        self.run_async(run)
+
+    def test_unbound_lookup_refreshes_expired_token_with_cached_metadata(self):
+        """Canonical lifecycle: unbound-lookup-refreshes-expired-token."""
+        async def run(p, n, s, policy, target, now):
+            first = await p.prepare(target, OperationBudget.after(5))
+            now[0] += 61
+            fresh = ManagedOAuthProvider(network=n, store=s, policy=policy, namespace="tenant", clock=lambda: now[0], expiry_skew=0)
+            credential = await fresh.credential(self.unbound())
+            self.assertNotEqual(credential.token, first.credential.token)
+            self.assertEqual(n.tokens[-1]["grant_type"], ["refresh_token"])
+            self.assertEqual([r.method for r, purpose in n.requests if purpose == "metadata"], ["GET", "GET"])
+            self.assertEqual(next(iter(s.records.values())).status, "active")
+        self.run_async(run)
+
+    async def pkce_grant(self, p, n, policy, target):
+        policy.configuration = Policy("authorization_code_pkce").configuration
+        return await self.complete_login(p, target, await p.prepare(target, OperationBudget.after(5)))
+
+    def test_refresh_invalid_grant_drops_both_tokens(self):
+        """Canonical lifecycle: refresh-invalid-grant-drops-tokens."""
+        async def run_bound(p, n, s, policy, target, now):
+            await self.pkce_grant(p, n, policy, target)
+            now[0] += 61
+            async def rejected(request):
+                return httpx.Response(400, json={"error": "invalid_grant"})
+            n.token_hook = rejected
+            binding = {"type": "oauth", "flow": "authorization_code_pkce", "issuer": ISSUER,
+                       "resource": RESOURCE, "clientId": "host-client", "scopes": ["read"]}
+            with self.assertRaises(AuthenticationFailure) as failure:
+                await p.credential(AuthContext({"id": "backend"}, binding, RESOURCE, "event", anyio.CancelScope()))
+            self.assertEqual((failure.exception.code, failure.exception.recovery), ("refresh_rejected", "login"))
+            self.assertFalse(s.records)
+        self.run_async(run_bound)
+
+    def test_refresh_invalid_grant_for_replaced_record_keeps_newer_record(self):
+        """Canonical lifecycle: refresh-invalid-grant-stale-does-not-wipe."""
+        async def run(p, n, s, policy, target, now):
+            await self.pkce_grant(p, n, policy, target)
+            now[0] += 61
+            newer = []
+            async def rejected(request):
+                # Another writer (e.g. a misbehaving store lock) rotates first.
+                key = next(iter(s.records))
+                newer.append(replace(s.records[key], generation="newer", status="active",
+                                     token=replace(s.records[key].token, access_token="newer", refresh_token="newer-refresh", expires_at=None)))
+                s.records[key] = newer[0]
+                return httpx.Response(400, json={"error": "invalid_grant"})
+            n.token_hook = rejected
+            with self.assertRaises(AuthenticationFailure) as failure:
+                await p.prepare(target, OperationBudget.after(5))
+            self.assertEqual(failure.exception.code, "provider_failed")
+            self.assertEqual(next(iter(s.records.values())), newer[0])
+            n.token_hook = None
+            self.assertEqual((await p.prepare(target, OperationBudget.after(5))).credential.token, "newer")
+        self.run_async(run)
+
+    def test_pending_login_ends_once_by_completion_cancel_denial_or_expiry(self):
+        """Canonical lifecycle: pending-login-end-states."""
+        async def run(p, n, s, policy, target, now):
+            policy.configuration = Policy("authorization_code_pkce").configuration
+            async def ended(login):
+                with self.assertRaises(AuthenticationFailure) as failure:
+                    await self.complete_login(p, target, login)
+                self.assertEqual(failure.exception.code, "interaction_required")
+            login = await p.prepare(target, OperationBudget.after(5))
+            await p.cancel(target, login, OperationBudget.after(5))
+            await ended(login)
+            login = await p.prepare(target, OperationBudget.after(5))
+            now[0] = login.expires_at
+            await ended(login)
+            login = await p.prepare(target, OperationBudget.after(5))
+            state = parse_qs(urlsplit(login.authorization_url).query)["state"][0]
+            with self.assertRaises(AuthenticationFailure) as failure:
+                await p.complete(target, login, "https://host.test/callback?" + urlencode({"state": state, "error": "access_denied"}), OperationBudget.after(5))
+            self.assertEqual(failure.exception.code, "access_denied")
+            await ended(login)
+            login = await p.prepare(target, OperationBudget.after(5))
+            self.assertIsInstance(await self.complete_login(p, target, login), Ready)
+            await ended(login)
+            self.assertEqual(len(n.tokens), 1)
+        self.run_async(run)
+
+    def test_widening_allowed_ceiling_keeps_existing_grant(self):
+        """Canonical lifecycle: scope-ceiling-widening-keeps-grant."""
+        async def run(p, n, s, policy, target, now):
+            first = await self.pkce_grant(p, n, policy, target)
+            keys = set(s.records)
+            policy.configuration = replace(policy.configuration, allowed_scopes=("read", "write", "offline_access"))
+            again = await p.prepare(target, OperationBudget.after(5))
+            self.assertEqual(again.credential.token, first.credential.token)
+            self.assertEqual(set(s.records), keys)
+            # Narrowing re-intersects at use: the read grant is no longer effective.
+            policy.configuration = replace(policy.configuration, scopes=("write",), allowed_scopes=("write",), required_scopes=("write",))
+            self.assertIsInstance(await p.prepare(target, OperationBudget.after(5)), PendingLogin)
+            self.assertEqual(set(s.records), keys)
+        self.run_async(run)
+
+    def test_extra_granted_scopes_are_ignored_without_token_storm(self):
+        """Canonical lifecycle: extra-granted-scope-ignored."""
+        async def run(p, n, s, policy, target, now):
+            async def every_scope(request):
+                return httpx.Response(200, json={"access_token": "all", "token_type": "Bearer", "expires_in": 60, "scope": "read openid offline_access admin"})
+            n.token_hook = every_scope
+            for _ in range(3):
+                self.assertEqual((await p.prepare(target, OperationBudget.after(5))).credential.token, "all")
+            self.assertEqual(len(n.tokens), 1)
+            self.assertEqual(next(iter(s.records.values())).token.scopes, ("read",))
+            writes = len(s.transitions)
+            bindings = dict(s.bindings)
+            await p.credential(self.unbound())
+            self.assertEqual((len(s.transitions), s.bindings), (writes, bindings))
+        self.run_async(run)
+
+    def test_challenged_replay_once_for_request_methods_only(self):
+        """Canonical lifecycle: challenged-replay-once."""
+        from agenthooksprotocol.runtime import ProtocolError
+        async def run(p, n, s, policy, target, now):
+            await p.prepare(target, OperationBudget.after(5))
+            for method, message in (
+                ("hooks/intercept", intercept_request()),
+                ("hooks/configuration", {"jsonrpc": "2.0", "id": "cfg", "method": "hooks/configuration", "params": {}}),
+                ("hooks/capabilities", {"jsonrpc": "2.0", "id": "cap", "method": "hooks/capabilities", "params": {}}),
+            ):
+                for reject_twice in (False, True):
+                    with self.subTest(method=method, reject_twice=reject_twice):
+                        seen = []
+                        async def deliver(request):
+                            seen.append((request.headers.get("authorization"), request.content))
+                            if len(seen) == 1 or reject_twice:
+                                return httpx.Response(401, headers={"www-authenticate": "Bearer"})
+                            return httpx.Response(200, json={"jsonrpc": "2.0", "id": message["id"], "result": {"protocolVersion": "draft", "effects": []}})
+                        async with httpx.AsyncClient(transport=httpx.MockTransport(deliver)) as client:
+                            transport = AuthenticatedHTTPTransport(
+                                RESOURCE, backend={"id": "backend"}, client=client,
+                                auth_provider=RoutingAuthProvider(discover=p, namespace="tenant"),
+                            )
+                            transport._validator.validate = lambda kind, value: value
+                            if reject_twice:
+                                with self.assertRaises(ProtocolError):
+                                    await transport.request(message)
+                            else:
+                                await transport.request(message)
+                        self.assertEqual(len(seen), 2)
+                        self.assertEqual(seen[0][1], seen[1][1])
+                        self.assertNotEqual(seen[0][0], seen[1][0])
+            sent = []
+            async def reject(request):
+                sent.append(request)
+                return httpx.Response(401, headers={"www-authenticate": "Bearer"})
+            async with httpx.AsyncClient(transport=httpx.MockTransport(reject)) as client:
+                transport = AuthenticatedHTTPTransport(
+                    RESOURCE, backend={"id": "backend"}, client=client,
+                    auth_provider=RoutingAuthProvider(discover=p, namespace="tenant"),
+                )
+                with self.assertRaises(ProtocolError):
+                    await transport.notify({"jsonrpc": "2.0", "method": "hooks/observe", "params": {}})
+            self.assertEqual(len(sent), 1)
+            # Known binding: the stored token is sent up front, never replayed.
+            self.assertTrue(sent[0].headers["authorization"].startswith("Bearer "))
+        self.run_async(run)
+
+
+    def test_narrowing_ceiling_hides_scopes_only_at_use(self):
+        """Canonical lifecycle: scope-ceiling-narrowing-keeps-grant."""
+        async def run(p, n, s, policy, target, now):
+            policy.configuration = replace(Policy("authorization_code_pkce").configuration, scopes=("read", "write"))
+            async def token(request):
+                return httpx.Response(200, json={"access_token": f"t{len(n.tokens)}", "token_type": "Bearer",
+                                                 "refresh_token": f"r{len(n.tokens)}", "expires_in": 60})
+            n.token_hook = token
+            await self.complete_login(p, target, await p.prepare(target, OperationBudget.after(5)))
+            policy.configuration = replace(policy.configuration, scopes=("read",), allowed_scopes=("read",))
+            now[0] += 61
+            self.assertEqual((await p.prepare(target, OperationBudget.after(5))).credential.token, "t2")
+            self.assertEqual(next(iter(s.records.values())).token.scopes, ("read", "write"))
+            policy.configuration = replace(policy.configuration, allowed_scopes=("read", "write"), required_scopes=("write",))
+            self.assertEqual((await p.prepare(target, OperationBudget.after(5))).credential.token, "t2")
+            self.assertEqual(len(n.tokens), 2)
+        self.run_async(run)
+
+    def test_unreplayed_challenge_prepares_the_next_attempt(self):
+        """Canonical lifecycle: unreplayed-challenge-prepares-next-attempt."""
+        from agenthooksprotocol.runtime import ProtocolError
+        async def run(p, n, s, policy, target, now):
+            sent = []
+            async def deliver(request):
+                sent.append(request.headers.get("authorization"))
+                if len(sent) == 1:
+                    return httpx.Response(401, headers={"www-authenticate": "Bearer"})
+                return httpx.Response(204)
+            async with httpx.AsyncClient(transport=httpx.MockTransport(deliver)) as client:
+                transport = AuthenticatedHTTPTransport(
+                    RESOURCE, backend={"id": "backend"}, client=client,
+                    auth_provider=RoutingAuthProvider(discover=p, namespace="tenant"),
+                )
+                message = {"jsonrpc": "2.0", "method": "hooks/observe", "params": {}}
+                with self.assertRaises(ProtocolError):
+                    await transport.notify(message)
+                self.assertEqual(sent, [None])
+                self.assertEqual(n.tokens[-1]["grant_type"], ["client_credentials"])
+                await transport.notify(message)
+                self.assertEqual(sent[-1], "Bearer access-1")
+            policy.configuration = Policy("authorization_code_pkce").configuration
+            await p.reset(target, OperationBudget.after(5))
+            with self.assertRaises(AuthenticationFailure) as failure:
+                await p.challenge(self.unbound(), AuthChallenge(401, {"www-authenticate": "Bearer"}, RESOURCE, None, False))
+            self.assertEqual(failure.exception.code, "interaction_required")
+            self.assertFalse(s.records)
+        self.run_async(run)
+
+    def test_up_front_refresh_failure_has_no_anonymous_fallback(self):
+        """Canonical lifecycle: up-front-refresh-failure-no-anonymous-fallback."""
+        async def run(p, n, s, policy, target, now):
+            await self.pkce_grant(p, n, policy, target)
+            async def expiring(request):
+                return httpx.Response(200, json={"access_token": "short", "token_type": "Bearer", "refresh_token": "r", "expires_in": 60})
+            n.token_hook = expiring
+            await p.reset(target, OperationBudget.after(5))
+            await self.complete_login(p, target, await p.prepare(target, OperationBudget.after(5)))
+            now[0] += 61
+            for response, code in ((httpx.Response(503), "provider_failed"),
+                                   (httpx.Response(400, json={"error": "invalid_grant"}), "refresh_rejected")):
+                async def fail(request, response=response):
+                    return response
+                n.token_hook = fail
+                sent = []
+                async def deliver(request):
+                    sent.append(request)
+                    return httpx.Response(204)
+                async with httpx.AsyncClient(transport=httpx.MockTransport(deliver)) as client:
+                    transport = AuthenticatedHTTPTransport(
+                        RESOURCE, backend={"id": "backend"}, client=client,
+                        auth_provider=RoutingAuthProvider(discover=p, namespace="tenant"),
+                    )
+                    with self.assertRaises(AuthenticationFailure) as failure:
+                        await transport.notify({"jsonrpc": "2.0", "method": "hooks/observe", "params": {}})
+                self.assertEqual(failure.exception.code, code)
+                self.assertEqual(sent, [])
+        self.run_async(run)
+
+    def test_prepare_required_scopes_outside_ceiling_are_denied(self):
+        """Canonical lifecycle: prepare-required-outside-ceiling-denied."""
+        async def run(p, n, s, policy, target, now):
+            policy.configuration = Policy("authorization_code_pkce").configuration
+            await p.prepare(target, OperationBudget.after(5))
+            records = dict(s.records)
+            with self.assertRaises(AuthenticationFailure) as failure:
+                await p.prepare(target, OperationBudget.after(5), required_scopes=("admin",))
+            self.assertEqual(failure.exception.code, "access_denied")
+            self.assertEqual(s.records, records)
+            self.assertFalse(n.tokens)
+        self.run_async(run)
+
+
+LIFECYCLE_TESTS = {
+    "cached-token-metadata-outage": "test_endpoint_and_capability_rotation_renews_outside_grant_lock_with_current_secret",
+    "unbound-preemptive-unsafe-delivery": "test_fresh_provider_uses_persistent_binding_offline_and_sends_upfront",
+    "unbound-lookup-anonymous-fallback": "test_unbound_lookup_is_anonymous_only_on_store_miss_or_policy_refusal",
+    "unbound-lookup-refreshes-expired-token": "test_unbound_lookup_refreshes_expired_token_with_cached_metadata",
+    "refresh-unknown-expiry-rotation": "test_unknown_expiry_narrowed_scopes_initial_and_refresh",
+    "transient-refresh-failure": "test_uncertain_refresh_preserves_material_and_retry_can_recover",
+    "refresh-invalid-grant-drops-tokens": "test_refresh_invalid_grant_drops_both_tokens",
+    "refresh-invalid-grant-stale-does-not-wipe": "test_refresh_invalid_grant_for_replaced_record_keeps_newer_record",
+    "token-validation-failure-clears-in-flight": "test_invalid_token_response_clears_in_flight_and_keeps_only_refresh_rotation",
+    "client-credentials-transient-reissue": "test_cc_without_refresh_reissues_after_transient_using_current_secret",
+    "delivery-never-creates-pending-login": "test_dispatch_does_not_create_pending_and_host_prepare_cancel_is_separate",
+    "pending-login-fixed-lifetime": "test_pending_lifetime_is_fixed_and_survives_creating_prepare",
+    "pending-login-cross-process-completion": "test_pending_login_completes_from_another_process_after_creator_cancelled",
+    "pending-login-reuse": "test_pending_reuse_is_independent_of_caller_deadline",
+    "pending-login-supersede": "test_pending_supersede_requests_scope_union_and_old_callback_fails",
+    "pending-login-supersede-scope-union": "test_pending_supersede_requests_scope_union_and_old_callback_fails",
+    "pending-login-end-states": "test_pending_login_ends_once_by_completion_cancel_denial_or_expiry",
+    "metadata-and-secret-rotation": "test_secret_rotation_is_runtime_only_for_refresh_and_confidential_pkce_completion",
+    "scope-ceiling-widening-keeps-grant": "test_widening_allowed_ceiling_keeps_existing_grant",
+    "insufficient-scope-step-up": "test_cc_403_allowed_stepup_reissues_and_forbidden_scope_is_denied",
+    "step-up-requirement-operation-scoped": "test_pkce_stepup_round_trip_shared_grant_and_operation_scoped_requirement",
+    "step-up-required-scopes-round-trip": "test_pkce_stepup_round_trip_shared_grant_and_operation_scoped_requirement",
+    "challenged-replay-once": "test_challenged_replay_once_for_request_methods_only",
+    "configured-preset-no-protected-resource-metadata": "test_explicit_preset_skips_protected_resource_metadata",
+    "explicit-shared-grant": "test_pkce_stepup_round_trip_shared_grant_and_operation_scoped_requirement",
+    "invalid-callback-does-not-consume": "test_pkce_complete_wrong_state_verifier_and_replay",
+    "loopback-redirect": "test_literal_loopback_pkce_redirects_complete_but_remote_http_is_rejected",
+    "narrowed-refresh-scope-inheritance": "test_narrowed_refresh_omitted_scope_inherits_previous_grant",
+    "scope-challenge-without-required-scope": "test_403_without_scope_needs_explicit_host_requirement",
+    "refresh-broadening-scope-ignored": "test_refresh_broadening_scope_is_ignored_and_stays_usable",
+    "extra-granted-scope-ignored": "test_extra_granted_scopes_are_ignored_without_token_storm",
+    "scope-ceiling-narrowing-keeps-grant": "test_narrowing_ceiling_hides_scopes_only_at_use",
+    "unreplayed-challenge-prepares-next-attempt": "test_unreplayed_challenge_prepares_the_next_attempt",
+    "up-front-refresh-failure-no-anonymous-fallback": "test_up_front_refresh_failure_has_no_anonymous_fallback",
+    "prepare-required-outside-ceiling-denied": "test_prepare_required_scopes_outside_ceiling_are_denied",
+}
+
+
+class LifecycleCoverageTests(unittest.TestCase):
+    def test_every_lifecycle_id_maps_to_an_existing_native_test(self):
+        ids = [entry["id"] for entry in FIXTURES["lifecycle"]]
+        self.assertEqual(set(ids), set(LIFECYCLE_TESTS))
+        for name in LIFECYCLE_TESTS.values():
+            self.assertTrue(callable(getattr(ManagedOAuthRuntimeTests, name, None)), name)

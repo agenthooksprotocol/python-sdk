@@ -202,9 +202,11 @@ authorized unbound target sends cached credentials up front.
   must not close a borrowed host client. Merely validating a URL string is not
   a safe production implementation. The SDK rejects redirect responses and
   bounds response size, but cannot enforce the host's network boundary for it.
-- **`OAuthTokenStore`**: implement all three entry points:
+- **`OAuthTokenStore`**: implement all four entry points:
   `await load_binding(key, budget) -> OAuthMetadata | None`,
-  `await save_binding(key, metadata, budget) -> None`, and
+  `await save_binding(key, metadata, budget) -> None`,
+  `await load(key, budget)`, an uncoordinated (possibly stale) read of a key's
+  record that never waits on its lock, and
   `coordinate(key, budget)`, an async context manager yielding an exclusive guard
   with `await load()` and atomic
   `await compare_and_swap(expected_generation, record) -> bool`.
@@ -296,7 +298,11 @@ working. Client credentials re-register within `min(10% of the secret lifetime,
 renewal_margin_max)` (default 1 hour) of `client_secret_expires_at`. The
 operation is served with the current registration first; renewal then runs as
 detached best-effort work bounded by `commit_timeout`, and a failed renewal
-only updates the failed marker. `await managed.renewals_settled()` waits for it. `prepare(..., force_registration=True)`
+only updates the failed marker; other failures are logged at warning level by
+the `agenthooksprotocol.oauth` logger, without secrets. A usable registration is
+read without its lock, so no operation waits on a renewal. Await
+`managed.renewals_settled()` before shutting down the event loop: on asyncio,
+shutdown after a renewal request was written loses the issued client. `prepare(..., force_registration=True)`
 discards the current registration, its secret and marker, and registers anew,
 for example after the authorization server deleted the client.
 

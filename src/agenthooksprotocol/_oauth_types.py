@@ -348,6 +348,14 @@ class OAuthTokenStore(Protocol):
         self, key: StoreKey, budget: OperationBudget
     ) -> AbstractAsyncContextManager[OAuthStoreGuard]: ...
 
+    async def load(self, key: StoreKey, budget: OperationBudget) -> StoredRecord | None:
+        """Uncoordinated (possibly stale) read of the record a guard would load.
+
+        Never waits on `coordinate`; the SDK re-checks under the lock before
+        any write.
+        """
+        ...
+
 
 @dataclass(frozen=True)
 class Ready:

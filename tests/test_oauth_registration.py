@@ -1513,6 +1513,66 @@ class RegistrationLifecycleTests(unittest.TestCase):
 
         self.run_env(slow)
 
+    def test_concurrent_caller_never_waits_on_detached_renewal(self):
+        async def run(env):
+            async def long_lived(request):
+                return httpx.Response(
+                    200,
+                    json={
+                        "access_token": "cached",
+                        "token_type": "Bearer",
+                        "expires_in": 9500,
+                    },
+                )
+
+            env.n.token_hook = long_lived
+            env.n.register_hook = issuing(env, lifetime=10000)
+            await env.prepare()
+            posting, release = anyio.Event(), anyio.Event()
+
+            async def gate(request):
+                posting.set()
+                await anyio.sleep(0.4)
+                release.set()
+
+            env.n.register_gate = gate
+            env.now[0] = 10000
+            env.p = env.provider(operation_timeout=0.15)
+            with anyio.fail_after(0.15):
+                self.assertEqual((await env.lookup()).token, "cached")
+            await posting.wait()  # The renewal holds the registration lock.
+            other = env.provider(operation_timeout=0.15)
+            for provider in (env.p, other):
+                with anyio.fail_after(0.15):
+                    self.assertEqual((await env.lookup(provider)).token, "cached")
+            self.assertFalse(release.is_set())
+            await env.p.renewals_settled()
+            await other.renewals_settled()
+            self.assertEqual(len(env.n.registrations), 2)
+            self.assertEqual(len(env.n.tokens), 1)
+
+        self.run_env(run)
+
+    def test_detached_renewal_failure_is_logged_without_secrets(self):
+        async def run(env):
+            env.n.register_hook = issuing(env, lifetime=10000)
+            await env.prepare()
+
+            async def broken(value, budget):
+                raise RuntimeError(value)  # Would leak the secret if logged.
+
+            env.secrets.store = broken
+            env.now[0] = 10000
+            with self.assertLogs("agenthooksprotocol.oauth", "WARNING") as logs:
+                self.assertIsNotNone(await env.lookup())
+                await env.p.renewals_settled()
+            self.assertEqual(len(logs.records), 1)
+            self.assertIn("RuntimeError", logs.output[0])
+            self.assertNotIn("dcr-secret", logs.output[0])
+            self.assertEqual(env.registration().client_id, "dcr-1")
+
+        self.run_env(run)
+
     def test_metadata_change_keeps_recorded_selection(self):
         async def dcr(env):
             await env.login()

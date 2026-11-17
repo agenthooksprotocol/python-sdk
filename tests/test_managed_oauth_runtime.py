@@ -68,6 +68,11 @@ class Store:
         await anyio.lowlevel.checkpoint()
         self.bindings[key] = metadata
 
+    async def load(self, key, budget):
+        budget.remaining()
+        await anyio.lowlevel.checkpoint()
+        return self.records.get(key)
+
     @asynccontextmanager
     async def coordinate(self, key, budget):
         budget.remaining()

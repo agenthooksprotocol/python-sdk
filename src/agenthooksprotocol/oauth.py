@@ -13,6 +13,7 @@ from collections.abc import Awaitable, Callable, Mapping
 from dataclasses import dataclass, field, replace
 import hashlib
 import json
+import logging
 import math
 import re
 import secrets
@@ -72,6 +73,7 @@ from ._oauth_registration import (
 )
 
 T = TypeVar("T")
+_log = logging.getLogger(__name__)
 
 _DEFINITIVE = (
     "invalid_grant",
@@ -875,8 +877,13 @@ class ManagedOAuthProvider:
                     await work()
             except anyio.get_cancelled_exc_class():
                 raise
-            except Exception:
-                pass
+            except Exception as error:
+                # Failures that never reach the failed marker (store, lock or
+                # CAS errors, timeouts) stay observable; never secret-bearing.
+                _log.warning(
+                    "Detached client registration renewal failed: %s",
+                    type(error).__name__,
+                )
             finally:
                 self._detached.discard(done)
                 done.set()
@@ -895,7 +902,11 @@ class ManagedOAuthProvider:
             task.add_done_callback(self._tasks.discard)
 
     async def renewals_settled(self) -> None:
-        """Wait for detached proactive renewals started by this provider."""
+        """Wait for detached proactive renewals started by this provider.
+
+        Await this before shutting down the event loop: on asyncio, a loop
+        shut down after a renewal request was written loses the issued client.
+        """
         while self._detached:
             await next(iter(self._detached)).wait()
 
@@ -959,6 +970,17 @@ class ManagedOAuthProvider:
             next_attempt_at=now + delay,
         )
 
+    @staticmethod
+    def _usable(
+        record: OAuthRegistration, secret: str | None, pkce: bool, now: float
+    ) -> bool:
+        expires = record.client_secret_expires_at
+        return (
+            record.client_id is not None
+            and not (expires and expires <= now)
+            and (pkce or bool(secret))
+        )
+
     def _renewal_due(self, record: OAuthRegistration, now: float) -> bool:
         expires = record.client_secret_expires_at
         if not expires:
@@ -991,6 +1013,21 @@ class ManagedOAuthProvider:
         blocked: AuthErrorCode = (
             "interaction_required" if pkce else "credential_unavailable"
         )
+        if not force:
+            # Serve an existing usable record without the registration lock,
+            # so no caller ever waits on another's registration or renewal.
+            seen = _registration_record(await self.store.load(key, budget))
+            if (
+                seen is not None
+                and seen.request_digest == digest
+                and not (prepare and seen.next_attempt_at is not None)
+            ):
+                now = self.clock()
+                secret = await self._secret(seen, budget) if not pkce else None
+                if self._usable(seen, secret, pkce, now) and (
+                    pkce or not renew or not self._renewal_due(seen, now)
+                ):
+                    return seen, secret, blocked
         async with self.store.coordinate(key, budget) as guard:
             record = _registration_record(await guard.load())
             if record is not None and (record.request_digest != digest or force):
@@ -1000,15 +1037,7 @@ class ManagedOAuthProvider:
                 record = None
             now = self.clock()
             secret = await self._secret(record, budget) if not pkce else None
-            usable = (
-                record is not None
-                and record.client_id is not None
-                and not (
-                    record.client_secret_expires_at
-                    and record.client_secret_expires_at <= now
-                )
-                and (pkce or bool(secret))
-            )
+            usable = record is not None and self._usable(record, secret, pkce, now)
             current = record if usable else None
             if (
                 record is not None

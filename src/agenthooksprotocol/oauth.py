@@ -64,6 +64,13 @@ _DEFINITIVE = (
 _SCOPE = re.compile(r"[\x21\x23-\x5b\x5d-\x7e]+")
 
 
+class _StaleMetadata(AuthenticationFailure):
+    """A non-OAuth token endpoint failure; persisted metadata may be stale."""
+
+    def __init__(self) -> None:
+        super().__init__(code="discovery_failed")
+
+
 class _ExchangeError(Exception):
     """A definitive OAuth error code, "transient" or "invalid" (bad response).
 
@@ -134,8 +141,13 @@ async def _token_endpoint(
         data = response.json()
     except ValueError:
         data = None
-    if not isinstance(data, dict) or response.status_code >= 500:
+    if response.status_code >= 500:
         raise _ExchangeError("transient")
+    if not isinstance(data, dict) or (
+        "error" not in data and not 200 <= response.status_code < 300
+    ):
+        # Not an OAuth response (404/410, HTML): the endpoint may have moved.
+        raise _ExchangeError("stale")
     error = data.get("error")
     if error is not None or not 200 <= response.status_code < 300:
         raise _ExchangeError(error if error in _DEFINITIVE else "transient")
@@ -372,6 +384,12 @@ class ManagedOAuthProvider:
             if outcome is None:
                 raise
         await anyio.lowlevel.checkpoint()
+        if (
+            isinstance(outcome, AuthenticationFailure)
+            and outcome.code == "discovery_failed"
+        ) or (isinstance(outcome, _ExchangeError) and outcome.code == "stale"):
+            # Connection, redirect or non-OAuth response: never an OAuth error.
+            raise _StaleMetadata()
         if outcome is not None and not isinstance(outcome, _ExchangeError):
             raise outcome
         if isinstance(outcome, _ExchangeError):
@@ -501,7 +519,8 @@ class ManagedOAuthProvider:
         _, challenged = challenge_requirements(challenge)
         challenged = tuple(sorted(set(challenged) | set(explicit)))
         cached = await self.store.load_binding(binding, budget)
-        for renew in (False, True):
+        renew, refetched = False, False
+        while True:
             metadata = None if renew else cached
             if metadata is not None:
                 issuers = (
@@ -555,101 +574,112 @@ class ManagedOAuthProvider:
                     code="access_denied", required_scopes=required
                 )
             key = grant_key(target, stored)
-            async with self.store.coordinate(key, budget) as guard:
-                record = await guard.load()
-                token = record.token if record is not None else None
-                adequate = token is not None and set(required) <= (
-                    set(token.scopes) & set(config.ceiling)
-                )
-                stale = record is not None and record.generation == rejected
-                if (
-                    token is not None
-                    and adequate
-                    and not stale
-                    and token.access_token is not None
-                    and (
-                        token.expires_at is None
-                        or token.expires_at > self.clock() + self.expiry_skew
+            try:
+                async with self.store.coordinate(key, budget) as guard:
+                    record = await guard.load()
+                    token = record.token if record is not None else None
+                    adequate = token is not None and set(required) <= (
+                        set(token.scopes) & set(config.ceiling)
                     )
-                ):
-                    assert record is not None
-                    return self._ready(target, key, record)
-                refresh = (
-                    token.refresh_token if token is not None and adequate else None
-                )
-                if config.flow == "client_credentials" or refresh:
-                    if not discovered and (interactive or challenge is not None):
-                        # Renew endpoint metadata outside the lock, then reload.
-                        continue
-                    retained = token
+                    stale = record is not None and record.generation == rejected
                     if (
                         token is not None
-                        and stale
+                        and adequate
+                        and not stale
+                        and token.access_token is not None
+                        and (
+                            token.expires_at is None
+                            or token.expires_at > self.clock() + self.expiry_skew
+                        )
+                    ):
+                        assert record is not None
+                        return self._ready(target, key, record)
+                    refresh = (
+                        token.refresh_token if token is not None and adequate else None
+                    )
+                    if config.flow == "client_credentials" or refresh:
+                        if not discovered and (interactive or challenge is not None):
+                            # Renew endpoint metadata outside the lock, then reload.
+                            renew = True
+                            continue
+                        retained = token
+                        if (
+                            token is not None
+                            and stale
+                            and challenge is not None
+                            and challenge.status == 401
+                        ):
+                            retained = replace(token, access_token=None)
+                        # Re-acquisition keeps the previous grant (step-up).
+                        granted = set(token.scopes) if token is not None else set()
+                        requested = tuple(
+                            sorted(granted | set(config.scopes) | set(required))
+                        )
+                        form = (
+                            {"grant_type": "refresh_token", "refresh_token": refresh}
+                            if refresh
+                            else {
+                                "grant_type": "client_credentials",
+                                "scope": " ".join(requested),
+                            }
+                        )
+                        if not requested:
+                            form.pop("scope", None)
+                        active = await self._exchange(
+                            guard,
+                            record,
+                            stored,
+                            config,
+                            budget,
+                            form,
+                            requested,
+                            previous=token if refresh else None,
+                            retained=retained,
+                            ceiling=tuple(sorted(granted | set(config.ceiling))),
+                        )
+                        assert active.token is not None
+                        if not set(required) <= set(active.token.scopes) & set(
+                            config.ceiling
+                        ):
+                            raise AuthenticationFailure(
+                                code="access_denied", required_scopes=required
+                            )
+                        return self._ready(target, key, active)
+                    if (
+                        stale
+                        and record is not None
+                        and token is not None
+                        and token.access_token is not None
                         and challenge is not None
                         and challenge.status == 401
                     ):
-                        retained = replace(token, access_token=None)
-                    # Re-acquisition keeps the previous grant (step-up).
-                    granted = set(token.scopes) if token is not None else set()
-                    requested = tuple(
-                        sorted(granted | set(config.scopes) | set(required))
-                    )
-                    form = (
-                        {"grant_type": "refresh_token", "refresh_token": refresh}
-                        if refresh
-                        else {
-                            "grant_type": "client_credentials",
-                            "scope": " ".join(requested),
-                        }
-                    )
-                    if not requested:
-                        form.pop("scope", None)
-                    active = await self._exchange(
-                        guard,
-                        record,
-                        stored,
-                        config,
-                        budget,
-                        form,
-                        requested,
-                        previous=token if refresh else None,
-                        retained=retained,
-                        ceiling=tuple(sorted(granted | set(config.ceiling))),
-                    )
-                    assert active.token is not None
-                    if not set(required) <= set(active.token.scopes) & set(
-                        config.ceiling
-                    ):
-                        raise AuthenticationFailure(
-                            code="access_denied", required_scopes=required
-                        )
-                    return self._ready(target, key, active)
-                if (
-                    stale
-                    and record is not None
-                    and token is not None
-                    and token.access_token is not None
-                    and challenge is not None
-                    and challenge.status == 401
-                ):
-                    # Never resend a rejected token; keep refresh/pending state.
-                    await self._cas(
-                        guard,
-                        record,
-                        replace(
+                        # Never resend a rejected token; keep refresh/pending state.
+                        await self._cas(
+                            guard,
                             record,
-                            generation=uuid4().hex,
-                            token=replace(token, access_token=None),
-                        ),
+                            replace(
+                                record,
+                                generation=uuid4().hex,
+                                token=replace(token, access_token=None),
+                            ),
+                        )
+                    if not interactive:
+                        raise AuthenticationFailure(
+                            code="interaction_required", required_scopes=required
+                        )
+                    return await self._pending(
+                        guard, record, stored, config, required, key, budget
                     )
-                if not interactive:
-                    raise AuthenticationFailure(
-                        code="interaction_required", required_scopes=required
-                    )
-                return await self._pending(
-                    guard, record, stored, config, required, key, budget
-                )
-        raise AuthenticationFailure(code="provider_failed")
+            except _StaleMetadata:
+                if discovered or refetched:
+                    raise
+            # Persisted issuer metadata looks stale: refetch the stored
+            # issuer's metadata once (never protected-resource discovery),
+            # persist it when the issuer is unchanged, and retry once.
+            refetched = True
+            cached = await issuer_metadata(
+                stored.resource, config, self.network, budget
+            )
 
     async def prepare(
         self,

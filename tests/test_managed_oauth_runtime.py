@@ -2151,6 +2151,54 @@ class ManagedOAuthRuntimeTests(unittest.TestCase):
         self.run_async(run)
 
 
+    def test_stale_issuer_metadata_is_refetched_once(self):
+        """Canonical lifecycle: stale-metadata-refetch-once."""
+        async def run(p, n, s, policy, target, now):
+            state = {"endpoint": "/token", "issuer": ISSUER, "token": None}
+            gets = []
+            async def handle(request):
+                if request.method == "GET":
+                    gets.append(str(request.url))
+                    if request.url.host == "resource.test":
+                        return httpx.Response(200, json=metadata(request))
+                    return httpx.Response(200, json={**metadata(request), "issuer": state["issuer"], "token_endpoint": ISSUER + state["endpoint"]})
+                n.tokens.append(parse_qs(request.content.decode()))
+                if state["token"] is not None:
+                    return state["token"]
+                if request.url.path != state["endpoint"]:
+                    return httpx.Response(404, text="moved")
+                return httpx.Response(200, json={"access_token": f"t{len(n.tokens)}", "token_type": "Bearer", "refresh_token": f"r{len(n.tokens)}", "expires_in": 60})
+            await n.client.aclose()
+            n.client = httpx.AsyncClient(transport=httpx.MockTransport(handle), trust_env=False)
+            await p.prepare(target, OperationBudget.after(5))
+            gets.clear()
+            state["endpoint"] = "/moved-token"
+            now[0] += 61
+            credential = await p.credential(self.unbound())
+            self.assertEqual(credential.token, "t3")
+            self.assertEqual(gets, [ISSUER + "/.well-known/oauth-authorization-server"])
+            self.assertTrue(all(m.token_endpoint == ISSUER + "/moved-token" for m in s.bindings.values()))
+            # An OAuth error response never triggers a refetch.
+            gets.clear()
+            now[0] += 61
+            state["token"] = httpx.Response(400, json={"error": "invalid_client"})
+            with self.assertRaises(AuthenticationFailure) as failure:
+                await p.credential(self.unbound())
+            self.assertEqual(failure.exception.code, "credential_unavailable")
+            self.assertEqual(gets, [])
+            # A changed issuer (or failed refetch) reports discovery_failed once.
+            state.update(token=httpx.Response(404), issuer="https://other.test")
+            count = len(n.tokens)
+            with self.assertRaises(AuthenticationFailure) as failure:
+                await p.credential(self.unbound())
+            self.assertEqual((failure.exception.code, failure.exception.recovery), ("discovery_failed", "retry"))
+            self.assertEqual(len(gets), 1)
+            self.assertEqual(len(n.tokens), count + 1)
+            self.assertFalse(any("oauth-protected-resource" in url for url in gets))
+            self.assertEqual(next(iter(s.records.values())).status, "active")
+        self.run_async(run)
+
+
 LIFECYCLE_TESTS = {
     "cached-token-metadata-outage": "test_endpoint_and_capability_rotation_renews_outside_grant_lock_with_current_secret",
     "unbound-preemptive-unsafe-delivery": "test_fresh_provider_uses_persistent_binding_offline_and_sends_upfront",
@@ -2192,6 +2240,7 @@ LIFECYCLE_TESTS = {
     "known-binding-without-token-requires-login": "test_known_binding_without_token_requires_login_until_prepare",
     "challenge-renews-rejected-unexpired-token": "test_challenge_renews_rejected_unexpired_token",
     "step-up-keeps-previous-grant": "test_step_up_reacquisition_keeps_previous_grant",
+    "stale-metadata-refetch-once": "test_stale_issuer_metadata_is_refetched_once",
 }
 
 

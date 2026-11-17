@@ -122,8 +122,9 @@ def accept_registration(
     valid = (
         isinstance(client_id, str)
         and bool(client_id)
-        and body.get("redirect_uris", request.get("redirect_uris"))
-        == request.get("redirect_uris")
+        # Flows that sent no redirect_uris accept an absent or empty echo.
+        and body.get("redirect_uris", request.get("redirect_uris", []))
+        == request.get("redirect_uris", [])
         and (
             "grant_types" not in body
             or (

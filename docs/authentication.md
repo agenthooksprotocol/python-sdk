@@ -293,8 +293,10 @@ Every failed registration records a backoff marker: `registration_backoff`
 a later `Retry-After` up to `retry_after_max` (default 1 hour). Until it elapses,
 only `prepare` sends a registration request; a still-valid stored token keeps
 working. Client credentials re-register within `min(10% of the secret lifetime,
-renewal_margin_max)` (default 1 hour) of `client_secret_expires_at`; a failed
-renewal keeps the current registration. `prepare(..., force_registration=True)`
+renewal_margin_max)` (default 1 hour) of `client_secret_expires_at`. The
+operation is served with the current registration first; renewal then runs as
+detached best-effort work bounded by `commit_timeout`, and a failed renewal
+only updates the failed marker. `await managed.renewals_settled()` waits for it. `prepare(..., force_registration=True)`
 discards the current registration, its secret and marker, and registers anew,
 for example after the authorization server deleted the client.
 

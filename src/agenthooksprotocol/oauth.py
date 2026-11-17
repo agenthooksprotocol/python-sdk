@@ -2,7 +2,8 @@
 
 Install agenthooksprotocol[oauth] (HTTPX) to perform exchanges. No browsers,
 listeners, workers, HTTP clients, or token stores are created outside a bounded
-operation.
+operation; only a proactive client-credentials re-registration runs detached,
+bounded by `commit_timeout`.
 """
 
 from __future__ import annotations
@@ -118,6 +119,10 @@ class _Client:
 
     blocked: AuthErrorCode | None = None
     generation: str | None = None
+    # Proactive client-credentials renewal, run detached after the operation.
+    renewal: Callable[[], Awaitable[object]] | None = field(
+        default=None, compare=False, repr=False
+    )
 
 
 def _persisted(config: OAuthClientConfiguration) -> OAuthClientConfiguration:
@@ -331,6 +336,8 @@ class ManagedOAuthProvider:
         self.registration_backoff_max = registration_backoff_max
         self.retry_after_max = retry_after_max
         self.renewal_margin_max = renewal_margin_max
+        self._detached: set[anyio.Event] = set()
+        self._tasks: set[object] = set()
 
     async def _run(
         self, operation: Callable[[], Awaitable[T]], budget: OperationBudget
@@ -799,8 +806,33 @@ class ManagedOAuthProvider:
         )
         if record is not None and record.client_id is not None:
             client_id = record.client_id
+            renewal = None
+            now = self.clock()
+            if (
+                not pkce
+                and self._renewal_due(record, now)
+                and not (record.next_attempt_at and record.next_attempt_at > now)
+            ):
+
+                async def renewal() -> object:
+                    # Own budget, the registration lock (reload and re-check)
+                    # and the failed marker; the operation never waits on it.
+                    return await self._registration(
+                        key,
+                        chosen,
+                        policy,
+                        method,
+                        endpoint,
+                        redirect,
+                        OperationBudget.after(self.commit_timeout),
+                        register=True,
+                        prepare=False,
+                        force=False,
+                        renew=True,
+                    )
+
             method = record.token_endpoint_auth_method
-            client = _Client(generation=record.client_generation)
+            client = _Client(generation=record.client_generation, renewal=renewal)
         elif (
             kept == "dcr" and recorded is not None and recorded.registration_key == key
         ):
@@ -825,6 +857,47 @@ class ManagedOAuthProvider:
             ),
             client,
         )
+
+    def _detach(self, work: Callable[[], Awaitable[object]] | None) -> None:
+        """Run best-effort work outside the caller's operation and deadline.
+
+        Failures are recorded by the work itself (failed marker) and never
+        reach the caller. `renewals_settled` waits for outstanding work.
+        """
+        if work is None:
+            return
+        done = anyio.Event()
+        self._detached.add(done)
+
+        async def run() -> None:
+            try:
+                with anyio.fail_after(2 * self.commit_timeout):
+                    await work()
+            except anyio.get_cancelled_exc_class():
+                raise
+            except Exception:
+                pass
+            finally:
+                self._detached.discard(done)
+                done.set()
+
+        import sniffio
+
+        if sniffio.current_async_library() == "trio":
+            import trio
+
+            trio.lowlevel.spawn_system_task(run)
+        else:
+            import asyncio
+
+            task = asyncio.get_running_loop().create_task(run())
+            self._tasks.add(task)
+            task.add_done_callback(self._tasks.discard)
+
+    async def renewals_settled(self) -> None:
+        """Wait for detached proactive renewals started by this provider."""
+        while self._detached:
+            await next(iter(self._detached)).wait()
 
     async def _secret(
         self, record: OAuthRegistration | None, budget: OperationBudget
@@ -906,6 +979,7 @@ class ManagedOAuthProvider:
         register: bool,
         prepare: bool,
         force: bool,
+        renew: bool = False,
     ) -> tuple[OAuthRegistration | None, str | None, AuthErrorCode]:
         """Load, and when needed and permitted (re-)register, under the key lock.
 
@@ -939,7 +1013,7 @@ class ManagedOAuthProvider:
             if (
                 record is not None
                 and usable
-                and (pkce or not self._renewal_due(record, now))
+                and (pkce or not renew or not self._renewal_due(record, now))
             ):
                 if prepare and record.next_attempt_at is not None:
                     cleared = replace(
@@ -970,23 +1044,11 @@ class ManagedOAuthProvider:
             outcome, cancel = await self._register(
                 endpoint, chosen, policy, method, redirect, budget
             )
-            if cancel is None:
-                return await self._commit_registration(
-                    guard,
-                    record,
-                    current,
-                    secret,
-                    digest,
-                    method,
-                    outcome,
-                    blocked,
-                    prepare,
-                    budget,
-                )
-            # The request was written: commit its outcome before honouring
-            # the caller's cancellation, so an issued client is never lost.
+            # Once written, always commit the outcome shielded from the
+            # caller's cancellation or deadline, so an issued client (and its
+            # secret) is never lost; then honour any pending cancellation.
             with anyio.CancelScope(shield=True), anyio.fail_after(self.commit_timeout):
-                await self._commit_registration(
+                result = await self._commit_registration(
                     guard,
                     record,
                     current,
@@ -998,7 +1060,10 @@ class ManagedOAuthProvider:
                     prepare,
                     OperationBudget(anyio.current_time() + self.commit_timeout),
                 )
-            raise cancel
+            if cancel is not None:
+                raise cancel
+            await anyio.lowlevel.checkpoint_if_cancelled()
+            return result
 
     async def _commit_registration(
         self,
@@ -1364,6 +1429,7 @@ class ManagedOAuthProvider:
                         )
                     ):
                         assert record is not None
+                        self._detach(client.renewal)
                         return self._ready(target, key, record)
                     if client.blocked is not None:
                         # No usable registration: only a stored token works.
@@ -1412,6 +1478,7 @@ class ManagedOAuthProvider:
                             raise AuthenticationFailure(
                                 code="access_denied", required_scopes=required
                             )
+                        self._detach(client.renewal)
                         return self._ready(target, key, active)
                     if not interactive:
                         raise AuthenticationFailure(
@@ -1648,6 +1715,7 @@ class ManagedOAuthProvider:
             budget,
             mark=False,
         )
+        await self._drop_grant(target, stored, budget)  # Binding-scoped only.
         raise AuthenticationFailure(code="interaction_required")
 
     async def complete(

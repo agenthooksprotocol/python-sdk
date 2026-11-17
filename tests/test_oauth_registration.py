@@ -183,7 +183,7 @@ class Env:
             namespace="tenant",
             clock=lambda: self.now[0],
             expiry_skew=0,
-            commit_timeout=0.5,
+            commit_timeout=5,
             secret_store=self.secrets,
             **options,
         )
@@ -997,6 +997,121 @@ class RegistrationLifecycleTests(unittest.TestCase):
         self.run_env(written)
         self.run_env(unsent)
 
+    def test_registration_commit_survives_cancel_inside_secret_store(self):
+        async def run(env):
+            entered = anyio.Event()
+            store = env.secrets.store
+
+            async def slow_store(value, budget):
+                entered.set()
+                await anyio.sleep(0.05)
+                return await store(value, budget)
+
+            env.secrets.store = slow_store
+            cancelled = []
+
+            async def prepare():
+                try:
+                    await env.prepare()
+                except anyio.get_cancelled_exc_class():
+                    cancelled.append(True)
+                    raise
+
+            async with anyio.create_task_group() as tasks:
+                tasks.start_soon(prepare)
+                await entered.wait()
+                tasks.cancel_scope.cancel()
+            self.assertEqual(cancelled, [True])
+            record = env.registration()
+            self.assertEqual(record.client_id, "dcr-1")
+            self.assertEqual(env.secrets.values[record.secret_ref], "dcr-secret-1")
+            self.assertFalse(env.n.tokens)
+
+        self.run_env(run)
+
+    def test_pkce_completion_invalid_client_drops_binding_scoped_grant(self):
+        for partition in (None, "shared"):
+
+            async def run(env, partition=partition):
+                env.configure(grant_partition=partition)
+
+                async def no_refresh(request):
+                    return httpx.Response(
+                        200,
+                        json={
+                            "access_token": "a",
+                            "token_type": "Bearer",
+                            "expires_in": 60,
+                        },
+                    )
+
+                env.n.token_hook = no_refresh
+                await env.login()
+                env.now[0] += 61  # Expired, no refresh: a new login keeps the token.
+                login = await env.prepare()
+                self.assertIsNotNone(env.grants()[login.key].token)
+                env.n.token_hook = rejecting(401, error="invalid_client")
+                await self.fails("interaction_required", env.complete(login))
+                self.assertIsNone(env.registration())
+                self.assertEqual(login.key in env.grants(), partition is not None)
+
+            with self.subTest(partition=partition):
+                self.run_env(run, PKCE)
+
+    def test_shared_partition_stale_pending_login_with_reissued_client(self):
+        async def run(env):
+            async def hook(body):
+                return httpx.Response(201, json={"client_id": "dcr-same"})
+
+            env.n.register_hook = hook
+            env.configure(grant_partition="shared")
+            stale = await env.prepare()
+            other = replace(env.target, backend_id="backend-2")
+            fresh = await env.prepare(other, force_registration=True)
+            # Same grant key, newer generation: a new login, never the stale one.
+            self.assertEqual(fresh.key, stale.key)
+            self.assertNotEqual(fresh.generation, stale.generation)
+            newer = env.registration()
+            await self.fails("interaction_required", env.complete(stale))
+            self.assertEqual(env.registration(), newer)
+            self.assertIn(stale.key, env.grants())  # The shared grant is kept.
+            self.assertIsInstance(await env.complete(fresh, other), Ready)
+
+        self.run_env(run, PKCE)
+
+    def test_client_credentials_accepts_empty_redirect_uris_echo(self):
+        async def run(env):
+            async def hook(body):
+                return httpx.Response(
+                    201,
+                    json={
+                        "client_id": "dcr-cc",
+                        "client_secret": "dcr-secret",
+                        "redirect_uris": [],
+                    },
+                )
+
+            env.n.register_hook = hook
+            self.assertIsInstance(await env.prepare(), Ready)
+            self.assertEqual(env.n.token_clients, ["dcr-cc"])
+
+        async def non_empty(env):
+            async def hook(body):
+                return httpx.Response(
+                    201,
+                    json={
+                        "client_id": "dcr-cc",
+                        "client_secret": "dcr-secret",
+                        "redirect_uris": ["https://evil.example/cb"],
+                    },
+                )
+
+            env.n.register_hook = hook
+            await self.fails("invalid_configuration", env.prepare())
+
+        self.run_env(run)
+        self.run_env(non_empty)
+
     def test_recorded_dcr_rechecks_eligibility_at_register_time(self):
         async def no_hook(env):
             async def long_lived(request):
@@ -1307,10 +1422,16 @@ class RegistrationLifecycleTests(unittest.TestCase):
             await env.prepare()
             env.now[0] = 9999  # min(0.1 x 10000, 3600) = 1000 before expiry
             await env.lookup()
+            await env.p.renewals_settled()
             self.assertEqual(len(env.n.registrations), 1)
             env.now[0] = 10000
+            # The operation acquires with the current client; renewal follows.
             await env.lookup()
+            await env.p.renewals_settled()
             self.assertEqual(len(env.n.registrations), 2)
+            self.assertEqual(env.n.token_clients, ["dcr-1", "dcr-1"])
+            env.now[0] += 61
+            await env.lookup()
             self.assertEqual(env.n.token_clients, ["dcr-1", "dcr-1", "dcr-2"])
 
         self.run_env(run)
@@ -1329,9 +1450,11 @@ class RegistrationLifecycleTests(unittest.TestCase):
             async with anyio.create_task_group() as tasks:
                 for index in range(6):
                     tasks.start_soon(deliver, env.p if index % 2 else other)
+            await env.p.renewals_settled()
+            await other.renewals_settled()
             self.assertEqual(len(env.n.registrations), 2)
-            self.assertEqual(env.n.token_clients, ["dcr-1", "dcr-2"])
             self.assertEqual(len(set(tokens)), 1)
+            self.assertEqual(env.registration().client_id, "dcr-2")
 
         self.run_env(run)
 
@@ -1342,16 +1465,53 @@ class RegistrationLifecycleTests(unittest.TestCase):
             env.n.register_hook = rejecting(429)
             env.now[0] = 10000
             self.assertIsNotNone(await env.lookup())
+            await env.p.renewals_settled()
             record = env.registration()
             self.assertEqual((record.client_id, record.attempts), ("dcr-1", 1))
             env.now[0] = 10030
             self.assertIsNotNone(await env.lookup())
+            await env.p.renewals_settled()
             self.assertEqual(len(env.n.registrations), 2)
             self.assertEqual(env.n.token_clients, ["dcr-1", "dcr-1"])
 
         self.run_env(run)
 
-    # Recorded selection --------------------------------------------------
+    def test_proactive_renewal_never_delays_or_changes_the_operation(self):
+        async def slow(env):
+            async def long_lived(request):
+                return httpx.Response(
+                    200,
+                    json={
+                        "access_token": "cached",
+                        "token_type": "Bearer",
+                        "expires_in": 9500,
+                    },
+                )
+
+            env.n.token_hook = long_lived
+            env.n.register_hook = issuing(env, lifetime=10000)
+            await env.prepare()
+            release = anyio.Event()
+
+            async def gate(request):
+                await anyio.sleep(0.3)
+                release.set()
+
+            env.n.register_gate = gate
+            env.now[0] = 10000
+            # A 0.15 s deadline still serves the valid cached token at once;
+            # the 0.3 s renewal runs detached and sends no token request.
+            env.p = env.provider(operation_timeout=0.15)
+            with anyio.fail_after(0.15):
+                credential = await env.lookup()
+            self.assertEqual(credential.token, "cached")
+            self.assertEqual(len(env.n.tokens), 1)
+            await env.p.renewals_settled()
+            self.assertTrue(release.is_set())
+            self.assertEqual(env.registration().client_id, "dcr-2")
+            self.assertEqual(len(env.n.tokens), 1)
+
+        self.run_env(slow)
 
     def test_metadata_change_keeps_recorded_selection(self):
         async def dcr(env):

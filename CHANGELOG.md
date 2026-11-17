@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.12.0](https://github.com/agenthooksprotocol/python-sdk/compare/v0.11.0...v0.12.0) (2026-11-17)
+
+
+### ⚠ BREAKING CHANGES
+
+* **auth:** add composable providers and managed OAuth ([#51](https://github.com/agenthooksprotocol/python-sdk/issues/51))
+
+### Features
+
+* **auth:** add composable providers and managed OAuth ([#51](https://github.com/agenthooksprotocol/python-sdk/issues/51)) ([7665de1](https://github.com/agenthooksprotocol/python-sdk/commit/7665de1391d1965c02c1828d42cb229e813e5b78))
+
 ## [0.11.0](https://github.com/agenthooksprotocol/python-sdk/compare/v0.10.1...v0.11.0) (2026-11-04)
 
 

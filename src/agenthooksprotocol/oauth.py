@@ -500,7 +500,12 @@ class ManagedOAuthProvider:
         try:
             budget.remaining()
             await anyio.lowlevel.checkpoint_if_cancelled()
-            await self._send_token_request(box, metadata, config, form)
+            await self._send_detached(
+                box,
+                lambda budget, trace: _token_endpoint(
+                    self.network, metadata, config, form, budget, trace
+                ),
+            )
         except anyio.get_cancelled_exc_class() as error:
             cancel = error  # The response may still have arrived (shielded).
         except BaseException as error:
@@ -580,19 +585,21 @@ class ManagedOAuthProvider:
             raise AuthenticationFailure(code="provider_failed")
         return settled
 
-    async def _send_token_request(
+    async def _send_detached(
         self,
         box: dict[str, object],
-        metadata: OAuthMetadata,
-        config: OAuthClientConfiguration,
-        form: dict[str, str],
+        send: Callable[
+            [OperationBudget, Callable[[str, object], Awaitable[None]]],
+            Awaitable[object],
+        ],
     ) -> None:
-        """Send one token request; once its bytes are written, finish it.
+        """Send one token or registration request; once written, finish it.
 
         Before the request is written (policy check, DNS, connect, TLS) the
         caller's cancellation stops it promptly. After that the grant may be
-        spent, so receiving the response is shielded and bounded by
-        `commit_timeout`; the caller's cancellation is re-raised afterwards.
+        spent or the client issued, so receiving the response is shielded and
+        bounded by `commit_timeout`; the caller's cancellation is re-raised
+        afterwards, with the result in `box`.
         """
         written = False
         done = anyio.Event()
@@ -607,11 +614,7 @@ class ManagedOAuthProvider:
             with anyio.CancelScope(shield=True):
                 with send_scope:
                     try:
-                        box["response"] = await _token_endpoint(
-                            self.network,
-                            metadata,
-                            config,
-                            form,
+                        box["response"] = await send(
                             OperationBudget(anyio.current_time() + self.commit_timeout),
                             trace,
                         )
@@ -775,11 +778,11 @@ class ManagedOAuthProvider:
         if not pkce:
             supported = metadata.token_endpoint_auth_methods or ("client_secret_basic",)
             method = next((m for m in SECRET_METHODS if m in supported), None)
-            if method is None or self.secret_store is None:
+            # A recorded registration is re-checked when it must re-register.
+            if (method is None or self.secret_store is None) and kept != "dcr":
                 raise AuthenticationFailure(code="credential_unavailable")
         if endpoint is not None and urlsplit(endpoint).scheme != "https":
             raise AuthenticationFailure(code="untrusted_destination")
-        assert method is not None
         key = registration_key(self.namespace, chosen.issuer, chosen.flow, redirect)
         record, secret, blocked = await self._registration(
             key,
@@ -895,7 +898,7 @@ class ManagedOAuthProvider:
         key: str,
         chosen: OAuthClientConfiguration,
         policy: OAuthDynamicRegistration,
-        method: TokenEndpointAuthMethod,
+        method: TokenEndpointAuthMethod | None,
         endpoint: str | None,
         redirect: str,
         budget: OperationBudget,
@@ -956,49 +959,99 @@ class ManagedOAuthProvider:
                 and record.next_attempt_at is not None
                 and record.next_attempt_at > now
             )
-            if (backoff and not prepare) or endpoint is None:
+            if (
+                (backoff and not prepare)
+                or endpoint is None
+                or method is None
+                or (not pkce and self.secret_store is None)
+            ):
+                # Not eligible to register now (DCR checks re-run here).
                 return current, secret, "credential_unavailable"
-            try:
-                issued = await self._register(
-                    endpoint, chosen, policy, method, redirect, budget
-                )
-            except RegistrationFailed as failure:
-                await self._swap_registration(
+            outcome, cancel = await self._register(
+                endpoint, chosen, policy, method, redirect, budget
+            )
+            if cancel is None:
+                return await self._commit_registration(
                     guard,
                     record,
-                    self._marked(record, digest, failure.retry_after, reset=prepare),
+                    current,
+                    secret,
+                    digest,
+                    method,
+                    outcome,
+                    blocked,
+                    prepare,
+                    budget,
                 )
-                # A failed proactive renewal keeps the current registration;
-                # otherwise only a stored token for the recorded client works.
-                return current, secret, blocked if current else failure.code
-            reference = None
-            if issued.client_secret is not None:
-                assert self.secret_store is not None
-                reference = await self.secret_store.store(issued.client_secret, budget)
-            fresh = OAuthRegistration(
-                uuid4().hex,
-                digest,
-                issued.client_id,
-                uuid4().hex,
-                method,
-                self.clock(),
-                issued.client_secret_expires_at,
-                reference,
-                issued.metadata,
+            # The request was written: commit its outcome before honouring
+            # the caller's cancellation, so an issued client is never lost.
+            with anyio.CancelScope(shield=True), anyio.fail_after(self.commit_timeout):
+                await self._commit_registration(
+                    guard,
+                    record,
+                    current,
+                    secret,
+                    digest,
+                    method,
+                    outcome,
+                    blocked,
+                    prepare,
+                    OperationBudget(anyio.current_time() + self.commit_timeout),
+                )
+            raise cancel
+
+    async def _commit_registration(
+        self,
+        guard: OAuthStoreGuard,
+        record: OAuthRegistration | None,
+        current: OAuthRegistration | None,
+        secret: str | None,
+        digest: str,
+        method: TokenEndpointAuthMethod,
+        outcome: Issued | RegistrationFailed,
+        blocked: AuthErrorCode,
+        prepare: bool,
+        budget: OperationBudget,
+    ) -> tuple[OAuthRegistration | None, str | None, AuthErrorCode]:
+        """Persist a registration outcome under the registration-key lock."""
+        if isinstance(outcome, RegistrationFailed):
+            await self._swap_registration(
+                guard,
+                record,
+                self._marked(record, digest, outcome.retry_after, reset=prepare),
             )
-            try:
-                await self._swap_registration(guard, record, fresh)
-            except AuthenticationFailure:
-                # Lost to a writer outside this lock: use its record instead.
-                winner = _registration_record(await guard.load())
-                if (
-                    winner is None
-                    or winner.client_id is None
-                    or winner.request_digest != digest
-                ):
-                    raise
-                return winner, await self._secret(winner, budget), blocked
-            return fresh, issued.client_secret, blocked
+            # A failed proactive renewal keeps the current registration;
+            # otherwise only a stored token for the recorded client works.
+            return current, secret, blocked if current else outcome.code
+        issued = outcome
+        reference = None
+        if issued.client_secret is not None:
+            assert self.secret_store is not None
+            reference = await self.secret_store.store(issued.client_secret, budget)
+        fresh = OAuthRegistration(
+            uuid4().hex,
+            digest,
+            issued.client_id,
+            uuid4().hex,
+            method,
+            self.clock(),
+            issued.client_secret_expires_at,
+            reference,
+            issued.metadata,
+        )
+        try:
+            await self._swap_registration(guard, record, fresh)
+        except AuthenticationFailure:
+            # Lost to a writer outside this lock: use its record instead.
+            winner = _registration_record(await guard.load())
+            if (
+                winner is None
+                or winner.client_id is None
+                or winner.request_digest != digest
+            ):
+                raise
+            return winner, await self._secret(winner, budget), blocked
+        return fresh, issued.client_secret, blocked
 
     async def _register(
         self,
@@ -1008,8 +1061,12 @@ class ManagedOAuthProvider:
         method: TokenEndpointAuthMethod,
         redirect: str,
         budget: OperationBudget,
-    ) -> Issued:
-        """One RFC 7591 registration request; never retried here."""
+    ) -> tuple[Issued | RegistrationFailed, BaseException | None]:
+        """One RFC 7591 registration request; never retried here.
+
+        Returns the outcome and any caller cancellation that arrived after the
+        request was written (the caller must still commit the outcome).
+        """
         import httpx
         from ._oauth_discovery import safe_request
 
@@ -1022,36 +1079,78 @@ class ManagedOAuthProvider:
                 else None
             )
             if not token:
-                raise RegistrationFailed("credential_unavailable")
+                return RegistrationFailed("credential_unavailable"), None
             # Sent only to this issuer's registration endpoint; never stored.
             headers["Authorization"] = "Bearer " + token
-        request = httpx.Request(
-            "POST", endpoint, headers=headers, content=json.dumps(body).encode()
-        )
-        failed: AuthErrorCode | None = None
+        box: dict[str, object] = {}
+        cancel: BaseException | None = None
         try:
-            response = await safe_request(self.network, request, "registration", budget)
-        except AuthenticationFailure as error:
-            failed = (
+            await anyio.lowlevel.checkpoint_if_cancelled()
+            await self._send_detached(
+                box,
+                lambda commit, trace: safe_request(
+                    self.network,
+                    httpx.Request(
+                        "POST",
+                        endpoint,
+                        headers=headers,
+                        content=json.dumps(body).encode(),
+                        extensions={"trace": trace},
+                    ),
+                    "registration",
+                    commit,
+                ),
+            )
+        except anyio.get_cancelled_exc_class() as error:
+            if not box:
+                raise  # Cancelled before the request was written.
+            cancel = error
+        return self._registration_outcome(chosen.flow, body, box), cancel
+
+    def _registration_outcome(
+        self, flow: str, body: dict[str, object], box: dict[str, object]
+    ) -> Issued | RegistrationFailed:
+        import httpx
+
+        response = box.get("response")
+        if not isinstance(response, httpx.Response):
+            error = box.get("error")
+            return RegistrationFailed(
                 "untrusted_destination"
-                if error.code == "untrusted_destination"
+                if isinstance(error, AuthenticationFailure)
+                and error.code == "untrusted_destination"
                 else "provider_failed"
             )
-        if failed is not None:
-            raise RegistrationFailed(failed)
         try:
             data: object = json.loads(response.content)
         except ValueError:
             data = None
         now = self.clock()
-        return accept_registration(
-            chosen.flow,
-            body,
-            response.status_code,
-            data,
-            now,
-            parse_retry_after(response.headers.get("retry-after"), now),
-        )
+        try:
+            return accept_registration(
+                flow,
+                body,
+                response.status_code,
+                data,
+                now,
+                parse_retry_after(response.headers.get("retry-after"), now),
+            )
+        except RegistrationFailed as failure:
+            return failure
+
+    async def _drop_grant(
+        self, target: AuthTarget, metadata: OAuthMetadata, budget: OperationBudget
+    ) -> None:
+        """Compare-and-delete a replaced client's grant when binding-scoped.
+
+        A shared partition may still serve other bindings, so it is kept.
+        """
+        if metadata.configuration.grant_partition is not None:
+            return
+        async with self.store.coordinate(grant_key(target, metadata), budget) as guard:
+            record = _grant_record(await guard.load())
+            if record is not None:
+                await self._cas(guard, record, None)
 
     async def _drop_registration(
         self,
@@ -1208,6 +1307,14 @@ class ManagedOAuthProvider:
                 interactive=interactive,
                 force=force,
             )
+            if (
+                force
+                and cached is not None
+                and cached.client_source == "dcr"
+                and grant_key(target, cached) != grant_key(target, metadata)
+            ):
+                # A forced re-registration replaced the client.
+                await self._drop_grant(target, cached, budget)
             force = False  # A forced re-registration happens once per prepare.
             config = metadata.configuration
             # Secrets are operation-local and never enter persisted metadata.
@@ -1337,6 +1444,7 @@ class ManagedOAuthProvider:
                     budget,
                     mark=replaced,
                 )
+                await self._drop_grant(target, stored, budget)
                 if replaced or config.flow != "client_credentials":
                     # A PKCE code or refresh token bound to the old client is
                     # never reused; a repeated invalid_client stops here.

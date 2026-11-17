@@ -87,6 +87,7 @@ class RegNetwork(Network):
         self.overrides = overrides
         self.registrations = []
         self.register_hook = None
+        self.register_gate = None
         self.token_clients = []
         super().__init__()
 
@@ -114,6 +115,8 @@ class RegNetwork(Network):
                 200, json={k: v for k, v in body.items() if v is not None}
             )
         if request.method == "POST" and request.url.path == "/register":
+            if self.register_gate is not None:
+                await self.register_gate(request)
             body = json.loads(request.content)
             self.registrations.append((body, dict(request.headers), str(request.url)))
             if self.register_hook is not None:
@@ -905,10 +908,8 @@ class RegistrationLifecycleTests(unittest.TestCase):
             second = await env.lookup()
             self.assertNotEqual(second.identity.key, old_key)
             self.assertEqual(env.binding().configuration.client_id, "dcr-2")
-            # The old grant is not migrated; its token is never presented again.
-            self.assertEqual(
-                env.grants()[old_key].token.access_token, first.credential.token
-            )
+            # The old grant is never migrated: a binding-scoped one is deleted.
+            self.assertNotIn(old_key, env.grants())
             self.assertNotEqual(second.token, first.credential.token)
             self.assertEqual(
                 env.grants()[second.identity.key].metadata.configuration.client_id,
@@ -916,6 +917,163 @@ class RegistrationLifecycleTests(unittest.TestCase):
             )
 
         self.run_env(run)
+
+    def test_replaced_client_old_grant_deleted_only_when_binding_scoped(self):
+        for partition in (None, "shared"):
+
+            async def invalid_client(env, partition=partition):
+                env.configure(grant_partition=partition)
+                first = await env.prepare()
+                env.n.token_hook = reject_client(env, "dcr-1")
+                env.now[0] += 61
+                await env.lookup()
+                kept = first.credential.identity.key in env.grants()
+                self.assertEqual(kept, partition is not None)
+
+            async def forced(env, partition=partition):
+                env.configure(grant_partition=partition)
+                first = await env.prepare()
+                await env.prepare(force_registration=True)
+                kept = first.credential.identity.key in env.grants()
+                self.assertEqual(kept, partition is not None)
+                self.assertEqual(len(env.grants()), 1 + kept)
+
+            with self.subTest(partition=partition):
+                self.run_env(invalid_client)
+                self.run_env(forced)
+
+    def test_registration_written_completes_despite_caller_cancel(self):
+        async def written(env):
+            sent, release = anyio.Event(), anyio.Event()
+
+            async def gate(request):
+                await request.extensions["trace"](
+                    "http11.send_request_body.complete", {}
+                )
+                sent.set()
+                await release.wait()
+
+            env.n.register_gate = gate
+            cancelled = []
+
+            async def prepare():
+                try:
+                    await env.prepare()
+                except anyio.get_cancelled_exc_class():
+                    cancelled.append(True)
+                    raise
+
+            async with anyio.create_task_group() as tasks:
+                tasks.start_soon(prepare)
+                await sent.wait()
+                tasks.cancel_scope.cancel()
+                release.set()
+            self.assertEqual(cancelled, [True])
+            record = env.registration()
+            self.assertEqual(record.client_id, "dcr-1")
+            self.assertEqual(env.secrets.values[record.secret_ref], "dcr-secret-1")
+            self.assertFalse(env.n.tokens)  # Cancellation honoured after commit.
+            env.n.register_gate = None
+            await env.prepare()
+            self.assertEqual(len(env.n.registrations), 1)
+            self.assertEqual(env.n.token_clients, ["dcr-1"])
+
+        async def unsent(env):
+            reached = anyio.Event()
+
+            async def gate(request):
+                reached.set()
+                await anyio.sleep_forever()
+
+            env.n.register_gate = gate
+            async with anyio.create_task_group() as tasks:
+                tasks.start_soon(env.prepare)
+                await reached.wait()
+                tasks.cancel_scope.cancel()
+            self.assertIsNone(env.registration())
+            self.assertFalse(env.secrets.stored)
+            self.assertFalse(env.n.registrations)
+
+        self.run_env(written)
+        self.run_env(unsent)
+
+    def test_recorded_dcr_rechecks_eligibility_at_register_time(self):
+        async def no_hook(env):
+            async def long_lived(request):
+                return httpx.Response(
+                    200,
+                    json={
+                        "access_token": "long",
+                        "token_type": "Bearer",
+                        "expires_in": 1000,
+                    },
+                )
+
+            env.n.token_hook = long_lived
+            await env.prepare()
+            env.secrets = None
+            env.p = env.provider()
+            # The stored token still works; re-registration is not possible.
+            self.assertEqual((await env.lookup()).token, "long")
+            env.now[0] += 1001
+            await self.fails("credential_unavailable", env.lookup())
+            self.assertEqual(len(env.n.registrations), 1)
+
+        async def no_method(env):
+            env.n.register_hook = issuing(env, lifetime=100)
+            await env.prepare()
+            key = next(iter(env.s.bindings))
+            env.s.bindings[key] = replace(
+                env.s.bindings[key], token_endpoint_auth_methods=("private_key_jwt",)
+            )
+            env.now[0] += 100
+            await self.fails("credential_unavailable", env.lookup())
+            self.assertEqual(len(env.n.registrations), 1)
+
+        self.run_env(no_hook)
+        self.run_env(no_method)
+
+    def test_prepare_clears_failed_marker(self):
+        for flow in ("client_credentials", PKCE):
+
+            async def run(env):
+                await env.prepare()
+                key, record = next(
+                    (k, r)
+                    for k, r in env.s.records.items()
+                    if isinstance(r, OAuthRegistration)
+                )
+                env.s.records[key] = replace(
+                    record, generation="marked", attempts=4, next_attempt_at=99999
+                )
+                await env.prepare()
+                cleared = env.registration()
+                self.assertEqual((cleared.attempts, cleared.next_attempt_at), (0, None))
+                self.assertEqual(cleared.client_generation, record.client_generation)
+                self.assertEqual(len(env.n.registrations), 1)
+
+            with self.subTest(flow=flow):
+                self.run_env(run, flow)
+
+    def test_forced_reregistration_never_reuses_older_pending_login(self):
+        for same_client in (False, True):
+
+            async def run(env, same_client=same_client):
+                if same_client:
+
+                    async def hook(body):
+                        return httpx.Response(201, json={"client_id": "dcr-same"})
+
+                    env.n.register_hook = hook
+                old = await env.prepare()
+                new = await env.prepare(force_registration=True)
+                self.assertNotEqual(new.generation, old.generation)
+                self.assertEqual(len(env.n.registrations), 2)
+                await self.fails("interaction_required", env.complete(old))
+                self.assertIsInstance(await env.complete(new), Ready)
+
+            with self.subTest(same_client=same_client):
+                self.run_env(run, PKCE)
 
     def test_stale_callback_invalid_client_keeps_newer_registration(self):
         for same_client in (False, True):

@@ -254,7 +254,9 @@ The SDK selects the client per exact issuer and flow, in this order:
 Leave `client_id` empty to opt into 2 and 3. A recorded CIMD or DCR selection
 stays in use when only issuer metadata changes; a host policy change (a
 pre-registered client, a different CIMD URL, removed DCR permission) reselects.
-A new `client_id` is a new grant key, so PKCE needs new consent.
+A new `client_id` is a new grant key, so PKCE needs new consent. After an
+`invalid_client` replacement or a forced re-registration, the old grant is
+deleted unless it uses a shared `grant_partition`.
 
 ```python
 managed = oauth.ManagedOAuthProvider(
@@ -277,7 +279,8 @@ A PKCE client is registered only by host `prepare`; delivery paths return
 including the up-front lookup. Registrations are stored under their own
 registration key (namespace, issuer, flow, redirect) through `store.coordinate`
 and shared by every grant with that key; keep redirects stable. Concurrent
-processes register once. The client secret is written only to `secret_store`;
+processes register once. Like a token request, a registration request whose
+bytes were written is received and committed despite caller cancellation. The client secret is written only to `secret_store`;
 the record holds its reference, and replaced or deleted records delete their
 reference. `registration_access_token` and `registration_client_uri` are
 ignored. Changing `client_name`, software identifiers, `scopes` or the initial

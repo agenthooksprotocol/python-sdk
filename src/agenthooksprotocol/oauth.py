@@ -372,7 +372,10 @@ class ManagedOAuthProvider:
         """Count of successful host prepares for a backend's event endpoint.
 
         A `prepare` or `complete` returning `Ready` advances it. Hooks compares
-        it to re-attempt configuration discovery skipped as unavailable.
+        it to re-attempt configuration discovery skipped as unavailable. Only
+        calls on this provider in this process count: a login completed by
+        another process sharing the store needs a local `prepare` (which then
+        returns `Ready`) or a new `Hooks` to re-attempt discovery.
         """
         return self._prepared.get((backend_id, _endpoint(destination)), 0)
 

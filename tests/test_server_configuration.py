@@ -550,6 +550,34 @@ class ConfigurationTests(unittest.TestCase):
 
         self.run_async(run)
 
+    def test_stdio_uncorrelated_discovery_is_invalid_without_waiting(self):
+        async def run():
+            value = registration()
+            value["hooks"][0]["transport"].update(
+                {
+                    "command": sys.executable,
+                    "lifecycle": "persistent",
+                    "args": [
+                        "-u",
+                        "-c",
+                        "import sys,json,time; sys.stdin.readline(); print(json.dumps({'jsonrpc':'2.0','id':'other','result':{'protocolVersion':'draft','configuration':"
+                        + repr(advertised())
+                        + "}})); time.sleep(30)",
+                    ],
+                }
+            )
+            started = anyio.current_time()
+            async with client(value) as hooks:
+                self.assertEqual(hooks.config["hooks"], [])
+                self.assertEqual(
+                    hooks.configuration_diagnostics[0]["code"],
+                    "configuration_invalid",
+                )
+            # Classified at the uncorrelated frame, not at the deadline.
+            self.assertLess(anyio.current_time() - started, 4)
+
+        self.run_async(run)
+
     def test_authenticated_http_discovery_preserves_endpoint_headers(self):
         async def run():
             import httpx
@@ -1139,6 +1167,76 @@ class ConfigurationRetryTests(unittest.TestCase):
                     self.assertEqual(
                         sorted(calls["org.example.explicit"]),
                         ["concurrent", "retrying"],
+                    )
+
+        self.run_async(run)
+
+    def test_retry_swap_mid_emit_keeps_admitted_routes(self):
+        async def run():
+            from agenthooksprotocol._content import ContentSources
+            from agenthooksprotocol.auth import TransportFailure
+
+            clock = Clock()
+            value = registration()
+            explicit = config()["hooks"][0]
+            explicit["id"] = "org.example.explicit"
+            late = deepcopy(value["hooks"][0])
+            late["id"] = "org.example.late"
+            value["hooks"] = [explicit, late]
+            transports = {
+                "org.example.explicit": ScriptedTransport(),
+                "org.example.late": ScriptedTransport(TransportFailure("down")),
+            }
+            with patch("agenthooksprotocol._hooks._now", clock):
+                async with client(value, transport=transports) as hooks:
+                    original = hooks._project_delivery
+                    preuploading = anyio.Event()
+                    release = anyio.Event()
+
+                    async def project(*args, **kwargs):
+                        if not release.is_set():
+                            preuploading.set()
+                            await release.wait()
+                        return await original(*args, **kwargs)
+
+                    hooks._project_delivery = project
+                    payload = {
+                        "call": {"id": "early"},
+                        "path": "native",
+                        "tool": {
+                            "name": "read_file",
+                            "input": {"path": "file.txt"},
+                            "origin": "native",
+                        },
+                    }
+
+                    async def early():
+                        result = await hooks.dispatch(
+                            "tool.before", payload, sources=ContentSources({})
+                        )
+                        await result.aclose()
+
+                    async with anyio.create_task_group() as tasks:
+                        tasks.start_soon(early)
+                        # The early emit has admitted its routes and is awaiting
+                        # preupload when a retry installs the late backend.
+                        await preuploading.wait()
+                        clock.now += 30
+                        await hooks._ensure_ready()
+                        self.assertEqual(
+                            [b["id"] for b in hooks.config["hooks"]],
+                            ["org.example.explicit", "org.example.late"],
+                        )
+                        release.set()
+                        result = await hooks.tool_before(tool_input("retrying"))
+                        await result.aclose()
+                    calls = {
+                        name: [m["params"]["event"]["call"]["id"] for m in t.intercepts]
+                        for name, t in transports.items()
+                    }
+                    self.assertEqual(calls["org.example.late"], ["retrying"])
+                    self.assertEqual(
+                        sorted(calls["org.example.explicit"]), ["early", "retrying"]
                     )
 
         self.run_async(run)

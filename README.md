@@ -79,7 +79,9 @@ validated `required_scopes`. Cancellation propagates and records nothing.
 A `configuration_unavailable` backend is re-attempted at the next admission
 (event or initialization) after a successful host `prepare` or `complete` for its
 event endpoint (`ManagedOAuthProvider.prepared_generation`; a custom auth
-provider may implement the same method). Without an auth cause, or when its
+provider may implement the same method). Only prepares and completes on that
+provider in this process count: after a login completed by another process
+sharing the store, call `prepare` locally or reinitialize. Without an auth cause, or when its
 recovery is `retry`, it is also re-attempted after a backoff of
 `configuration_retry_backoff` seconds (default 30), doubling up to
 `configuration_retry_max_backoff` (default 3600); `login`, `configure` and `none`

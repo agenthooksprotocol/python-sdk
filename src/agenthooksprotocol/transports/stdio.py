@@ -54,16 +54,20 @@ class _Slot:
         return self.value
 
 
-def _spawn(function) -> Any:
-    """Start a detached task on the running AnyIO backend; return a handle."""
+def _spawn(function, context: Any = None) -> Any:
+    """Start a detached task on the running AnyIO backend; return a handle.
+
+    `context` is the contextvars.Context to run in; Trio system tasks
+    otherwise start from the system context, not the caller's.
+    """
     if sniffio.current_async_library() == "trio":
         import trio
 
-        trio.lowlevel.spawn_system_task(function)
+        trio.lowlevel.spawn_system_task(function, context=context)
         return None
     import asyncio
 
-    return asyncio.get_running_loop().create_task(function())
+    return asyncio.get_running_loop().create_task(function(), context=context)
 
 
 class _Child:
@@ -92,6 +96,9 @@ class _Child:
             slot.resolve(error=error)
 
     async def _read(self) -> None:
+        # A lost child is a transport failure, distinct from invalid protocol data.
+        from ..auth import TransportFailure
+
         try:
             with self.scope:
                 stream = BufferedByteReceiveStream(self.process.stdout)
@@ -99,7 +106,7 @@ class _Child:
                     try:
                         raw = await stream.receive_until(b"\n", self.max_bytes)
                     except (anyio.EndOfStream, anyio.IncompleteRead):
-                        self._fail(ProtocolError("Stdio backend closed stdout"))
+                        self._fail(TransportFailure("Stdio backend closed stdout"))
                         return
                     except anyio.DelimiterNotFound:
                         raw = None
@@ -109,11 +116,11 @@ class _Child:
                         return
                     self._route(raw)
         except Exception as exc:  # noqa: BLE001 - a detached reader must not crash the loop
-            self._fail(ProtocolError("Stdio reader failed"))
+            self._fail(TransportFailure("Stdio reader failed"))
             _log.warning("AHP stdio reader stopped: %s", type(exc).__name__)
         finally:
             if self.failure is None:
-                self._fail(ProtocolError("Stdio transport closed"))
+                self._fail(TransportFailure("Stdio transport closed"))
             self.done.set()
 
     def _route(self, raw: bytes) -> None:

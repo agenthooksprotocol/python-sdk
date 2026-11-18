@@ -24,6 +24,7 @@ from ._diagnostics import (
     Diagnostic,
     ContentPreparationError,
     ContentPreparationTimeout,
+    _is_timeout,
     auth_failure,
     delivery_diagnostic,
 )
@@ -36,11 +37,15 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from uuid import uuid4
 from weakref import WeakSet
+import contextvars
+import logging
+import time
 
 import anyio
 from jsonschema import FormatChecker
 
 from .runtime import (
+    BackendRPCError,
     OperationCancelledError,
     ProtocolError,
     Validator,
@@ -647,6 +652,65 @@ _project = project_content
 
 _CONFIGURATION_TIMEOUT_SECONDS = 5.0
 _LOCAL_SECRET_REFERENCES = ("tokenEnv", "tokenRef", "clientSecretRef")
+_METHOD_NOT_FOUND = -32601
+_log = logging.getLogger(__name__)
+# Monotonic seconds for configuration backoff; patched by tests.
+_now = time.monotonic
+
+
+@dataclass
+class _Skip:
+    """A backend skipped by discovery and the conditions to re-attempt it."""
+
+    diagnostic: dict[str, Any]
+    # Seconds of the current backoff, and when it ends; None never retries on
+    # backoff (non-retryable code, or an auth cause whose recovery is not retry).
+    delay: float
+    retry_at: float | None
+    # Host prepare generation observed when the attempt started; None when the
+    # backend's auth provider does not report prepares or the code is final.
+    prepared: object = None
+
+
+def _skip_diagnostic(backend_id: str, code: str, auth: Any) -> dict[str, Any]:
+    """A credential-free skip diagnostic; auth causes add code and recovery."""
+    diagnostic: dict[str, Any] = {"backend": backend_id, "code": code, "reason": code}
+    if auth is not None:
+        diagnostic["auth_error"] = auth.code
+        diagnostic["recovery"] = auth.recovery
+        diagnostic["required_scopes"] = list(auth.required_scopes)
+    return diagnostic
+
+
+class _Background:
+    """An SDK-owned discovery task: its cancel scope, completion and error."""
+
+    def __init__(self) -> None:
+        self.scope = anyio.CancelScope()
+        self.done = anyio.Event()
+        self.error: Exception | None = None
+        # The asyncio Task must stay referenced while it runs.
+        self.handle: Any = None
+
+
+def _configuration_failure(exc: Exception) -> str:
+    """Skip code for a failed discovery; auth causes are always unavailable."""
+    from .auth import TransportFailure
+
+    if auth_failure(exc) is not None:
+        return "configuration_unavailable"
+    if isinstance(exc, BackendRPCError):
+        return (
+            "configuration_invalid"
+            if exc.code == _METHOD_NOT_FOUND
+            else "configuration_unavailable"
+        )
+    if isinstance(exc, TransportFailure) or _is_timeout(exc):
+        return "configuration_unavailable"
+    if isinstance(exc, ProtocolError):
+        # Uncorrelated, malformed or version-incompatible configuration.
+        return "configuration_invalid"
+    return "configuration_unavailable"
 
 
 class Hooks(BoundaryMixin):
@@ -664,6 +728,8 @@ class Hooks(BoundaryMixin):
         header_resolver: Any = None,
         max_concurrent_uploads: int = 8,
         inherit_environment: bool = False,
+        configuration_retry_backoff: float = 30.0,
+        configuration_retry_max_backoff: float = 3600.0,
     ) -> None:
         if not isinstance(capabilities, HostCapabilities):
             raise TypeError("capabilities must be HostCapabilities")
@@ -683,6 +749,8 @@ class Hooks(BoundaryMixin):
             header_resolver=header_resolver,
             max_concurrent_uploads=max_concurrent_uploads,
             inherit_environment=inherit_environment,
+            configuration_retry_backoff=configuration_retry_backoff,
+            configuration_retry_max_backoff=configuration_retry_max_backoff,
         )
 
     def _configure(
@@ -699,9 +767,22 @@ class Hooks(BoundaryMixin):
         header_resolver: Any = None,
         max_concurrent_uploads: int = 8,
         inherit_environment: bool = False,
+        configuration_retry_backoff: float = 30.0,
+        configuration_retry_max_backoff: float = 3600.0,
     ) -> None:
         if not isinstance(inherit_environment, bool):
             raise TypeError("inherit_environment must be a bool")
+        for value in (configuration_retry_backoff, configuration_retry_max_backoff):
+            if (
+                isinstance(value, bool)
+                or not isinstance(value, (int, float))
+                or not 0 < value < float("inf")
+            ):
+                raise ValueError("configuration retry backoff must be positive")
+        if configuration_retry_max_backoff < configuration_retry_backoff:
+            raise ValueError("configuration retry max backoff is below the initial")
+        self._retry_backoff = float(configuration_retry_backoff)
+        self._retry_max_backoff = float(configuration_retry_max_backoff)
         self._inherit_environment = inherit_environment
         if (
             isinstance(max_concurrent_uploads, bool)
@@ -786,7 +867,13 @@ class Hooks(BoundaryMixin):
         self._injected = transport
         self._transports = {}
         self._ready = False
-        self._configuration_diagnostics: list[dict[str, Any]] = []
+        # Registration order, and the backends discovery skipped, by ID.
+        self._registered = deepcopy(self.config["hooks"])
+        self._skipped: dict[str, _Skip] = {}
+        self._retrying: set[str] = set()
+        self._tasks: set[_Background] = set()
+        self._initializing: _Background | None = None
+        self._retry_task: _Background | None = None
         self._owned = []
         self._ready_lock = anyio.Lock()
         self._closed = False
@@ -804,9 +891,7 @@ class Hooks(BoundaryMixin):
         declaration = self.capabilities.get(event)
         if declaration is None:
             return False
-        if not self._ready and any(
-            "subscriptions" not in b for b in self.config["hooks"]
-        ):
+        if self._pending_discovery():
             return True
         return any(
             subscription["mode"] in declaration["modes"]
@@ -823,9 +908,7 @@ class Hooks(BoundaryMixin):
         declaration = self.capabilities.get(event)
         if declaration is None or "intercept" not in declaration["modes"]:
             return False
-        if not self._ready and any(
-            "subscriptions" not in b for b in self.config["hooks"]
-        ):
+        if self._pending_discovery():
             return True
         return any(
             subscription["mode"] == "intercept"
@@ -904,103 +987,321 @@ class Hooks(BoundaryMixin):
     ) -> None:
         await self.aclose()
 
+    def _pending_discovery(self) -> bool:
+        """Discovery may still add routes: before initialization, or a retry is due."""
+        if not self._ready:
+            return any("subscriptions" not in b for b in self.config["hooks"])
+        return self._retry_due()
+
+    def _transport_for(self, backend: dict[str, Any]) -> Any:
+        """The event transport for a backend; a created one is owned."""
+        if self._injected is not None:
+            transport = (
+                self._injected[backend["id"]]
+                if isinstance(self._injected, dict)
+                else self._injected
+            )
+            from .transports.http import HTTPTransport
+
+            config = backend["transport"]
+            if (
+                config["type"] == "http"
+                and config.get("headers")
+                and isinstance(transport, HTTPTransport)
+            ):
+                from .auth import AuthenticatedHTTPTransport
+
+                # Keep borrowed client lifetime and programmatic metadata,
+                # but do not bypass the registration's endpoint scope.
+                if transport.url != config["url"]:
+                    raise ProtocolError("HTTP registration endpoint mismatch")
+                transport = AuthenticatedHTTPTransport(
+                    config["url"],
+                    backend=backend,
+                    resolve_credential=(
+                        self._resolve_credential
+                        if self._resolve_credential is not None
+                        else getattr(transport, "resolve_credential", None)
+                    ),
+                    client=transport._ready(),
+                    headers=transport.headers,
+                    auth_provider=getattr(
+                        transport, "auth_provider", self._auth_provider
+                    ),
+                    header_resolver=self._header_resolver
+                    or getattr(transport, "header_resolver", None),
+                    validator=self.validator,
+                )
+            return transport
+        config = backend["transport"]
+        if config["type"] == "stdio":
+            from .transports import StdioTransport
+
+            transport = StdioTransport(
+                config["command"],
+                config.get("args", []),
+                lifecycle=config["lifecycle"],
+                cwd=config.get("cwd"),
+                env=config.get("env"),
+                inherit_environment=self._inherit_environment,
+            )
+        else:
+            from .auth import AuthenticatedHTTPTransport
+
+            transport = AuthenticatedHTTPTransport(
+                config["url"],
+                backend=backend,
+                resolve_credential=self._resolve_credential,
+                auth_provider=self._auth_provider,
+                header_resolver=self._header_resolver,
+                validator=self.validator,
+            )
+        self._owned.append(transport)
+        return transport
+
+    async def _release(self, transport: Any) -> None:
+        if transport in self._owned:
+            with anyio.CancelScope(shield=True):
+                await transport.aclose()
+            self._owned.remove(transport)
+
+    def _prepared(self, backend: dict[str, Any], transport: Any) -> object:
+        """The host prepare generation for a backend's HTTP event endpoint.
+
+        None when the backend is not HTTP or its auth provider does not report
+        prepares (see `ManagedOAuthProvider.prepared_generation`).
+        """
+        config = backend["transport"]
+        if config["type"] != "http":
+            return None
+        provider = getattr(transport, "auth_provider", None) or self._auth_provider
+        generation = getattr(provider, "prepared_generation", None)
+        if not callable(generation):
+            return None
+        try:
+            return generation(backend["id"], config["url"])
+        except Exception:
+            # An unreportable prepare state only loses the early re-attempt.
+            return None
+
+    def _eligible(self, ident: str, skip: _Skip) -> tuple[bool, bool]:
+        """Whether a skipped backend may be re-attempted, and whether a host
+        prepare made it eligible (which resets its backoff)."""
+        if (
+            skip.diagnostic["code"] != "configuration_unavailable"
+            or ident in self._retrying
+        ):
+            return False, False
+        if skip.prepared is not None:
+            backend = next(b for b in self._registered if b["id"] == ident)
+            current = self._prepared(backend, self._transport_hint(backend))
+            if current is not None and current != skip.prepared:
+                return True, True
+        return skip.retry_at is not None and _now() >= skip.retry_at, False
+
+    def _transport_hint(self, backend: dict[str, Any]) -> Any:
+        """A borrowed transport that may carry its own auth provider, or None."""
+        if self._injected is None:
+            return None
+        if isinstance(self._injected, dict):
+            return self._injected.get(backend["id"])
+        return self._injected
+
+    def _retry_due(self) -> bool:
+        return any(
+            self._eligible(ident, skip)[0] for ident, skip in self._skipped.items()
+        )
+
+    def _background(
+        self, work: Callable[[], Any], *, report: bool = False
+    ) -> _Background:
+        """Run discovery as an SDK-owned task tied to this Hooks' lifetime.
+
+        Caller cancellation and event deadlines never reach it; `aclose`
+        cancels and joins it. Each discovery is bounded by its own deadline.
+        It runs in a copy of the caller's context. A `report` task has no
+        waiter, so its failure is logged by type name (never its message).
+        """
+        from .transports.stdio import _spawn
+
+        task = _Background()
+
+        async def run() -> None:
+            try:
+                with task.scope:
+                    async with self._ready_lock:
+                        if not self._closed:
+                            await work()
+            except Exception as exc:  # noqa: BLE001 - a detached task must not crash the loop
+                # Includes OperationCancelledError raised by a transport.
+                task.error = exc
+                if report:
+                    _log.warning(
+                        "AHP configuration re-attempt failed: %s", type(exc).__name__
+                    )
+            finally:
+                self._tasks.discard(task)
+                if self._retry_task is task:
+                    self._retry_task = None
+                task.done.set()
+
+        self._tasks.add(task)
+        task.handle = _spawn(run, contextvars.copy_context())
+        return task
+
     async def _ensure_ready(self):
-        async with self._ready_lock:
+        if self._closed:
+            raise RuntimeError("Hooks is closed")
+        if not self._ready:
+            # One shared initialization; a cancelled waiter leaves it running
+            # so the next admission resumes it rather than starting over.
+            task = self._initializing
+            if task is None:
+                task = self._initializing = self._background(self._initialize)
+            await task.done.wait()
             if self._closed:
                 raise RuntimeError("Hooks is closed")
-            if self._ready:
-                return
-            active = []
-            for backend in self.config["hooks"]:
-                if self._injected is not None:
-                    transport = (
-                        self._injected[backend["id"]]
-                        if isinstance(self._injected, dict)
-                        else self._injected
-                    )
-                    from .transports.http import HTTPTransport
+            if task.error is not None:
+                if self._initializing is task:
+                    self._initializing = None
+                raise task.error
+            return
+        if self._retry_task is None and self._retry_due():
+            # The triggering and concurrent events keep the current routes.
+            self._retry_task = self._background(self._retry_skipped, report=True)
 
-                    config = backend["transport"]
-                    if (
-                        config["type"] == "http"
-                        and config.get("headers")
-                        and isinstance(transport, HTTPTransport)
-                    ):
-                        from .auth import AuthenticatedHTTPTransport
+    async def _initialize(self) -> None:
+        active = []
+        for backend in self.config["hooks"]:
+            admitted = await self._admit(backend)
+            if admitted is not None:
+                active.append(admitted[0])
+                self._transports[backend["id"]] = admitted[1]
+        self.config["hooks"] = active
+        self._ready = True
 
-                        # Keep borrowed client lifetime and programmatic metadata,
-                        # but do not bypass the registration's endpoint scope.
-                        if transport.url != config["url"]:
-                            raise ProtocolError("HTTP registration endpoint mismatch")
-                        transport = AuthenticatedHTTPTransport(
-                            config["url"],
-                            backend=backend,
-                            resolve_credential=(
-                                self._resolve_credential
-                                if self._resolve_credential is not None
-                                else getattr(transport, "resolve_credential", None)
-                            ),
-                            client=transport._ready(),
-                            headers=transport.headers,
-                            auth_provider=getattr(
-                                transport, "auth_provider", self._auth_provider
-                            ),
-                            header_resolver=self._header_resolver
-                            or getattr(transport, "header_resolver", None),
-                            validator=self.validator,
-                        )
-                else:
-                    config = backend["transport"]
-                    if config["type"] == "stdio":
-                        from .transports import StdioTransport
+    async def _admit(
+        self, backend: dict[str, Any], *, reset: bool = False
+    ) -> tuple[dict[str, Any], Any] | None:
+        """Resolve one backend's routes, or record why discovery skipped it."""
+        if "subscriptions" in backend:
+            return backend, self._transport_for(backend)
+        try:
+            transport = self._transport_for(backend)
+        except Exception as exc:
+            # Local configuration cannot build the transport: final, not retried.
+            _log.warning(
+                "AHP configuration transport unavailable: %s", type(exc).__name__
+            )
+            self._record_skip(
+                _skip_diagnostic(backend["id"], "configuration_invalid", None),
+                None,
+                reset=reset,
+            )
+            return None
+        # Observe the prepare generation before contacting the backend, so a
+        # prepare completing during this attempt makes it eligible again.
+        prepared = self._prepared(backend, transport)
+        try:
+            subscriptions, diagnostic = await self._discover_configuration(
+                backend, transport
+            )
+        except BaseException:
+            await self._release(transport)
+            raise
+        if subscriptions:
+            resolved = deepcopy(backend)
+            resolved["subscriptions"] = subscriptions
+            return resolved, transport
+        await self._release(transport)
+        assert diagnostic is not None
+        self._record_skip(diagnostic, prepared, reset=reset)
+        return None
 
-                        transport = StdioTransport(
-                            config["command"],
-                            config.get("args", []),
-                            lifecycle=config["lifecycle"],
-                            cwd=config.get("cwd"),
-                            env=config.get("env"),
-                            inherit_environment=self._inherit_environment,
-                        )
-                    else:
-                        from .auth import AuthenticatedHTTPTransport
+    def _record_skip(
+        self, diagnostic: dict[str, Any], prepared: object, *, reset: bool
+    ) -> None:
+        previous = self._skipped.get(diagnostic["backend"])
+        delay = (
+            self._retry_backoff
+            if previous is None or reset
+            else min(previous.delay * 2, self._retry_max_backoff)
+        )
+        retryable = diagnostic["code"] == "configuration_unavailable"
+        backoff = retryable and diagnostic.get("recovery", "retry") == "retry"
+        self._skipped[diagnostic["backend"]] = _Skip(
+            diagnostic,
+            delay,
+            _now() + delay if backoff else None,
+            prepared if retryable else None,
+        )
 
-                        transport = AuthenticatedHTTPTransport(
-                            config["url"],
-                            backend=backend,
-                            resolve_credential=self._resolve_credential,
-                            auth_provider=self._auth_provider,
-                            header_resolver=self._header_resolver,
-                            validator=self.validator,
-                        )
-                    self._owned.append(transport)
-                if "subscriptions" not in backend:
-                    subscriptions = await self._discover_configuration(
-                        backend, transport
-                    )
-                    if not subscriptions:
-                        if transport in self._owned:
-                            with anyio.CancelScope(shield=True):
-                                await transport.aclose()
-                            self._owned.remove(transport)
-                        continue
-                    backend = deepcopy(backend)
-                    backend["subscriptions"] = subscriptions
-                self._transports[backend["id"]] = transport
-                active.append(backend)
-            self.config["hooks"] = active
-            self._ready = True
+    async def _retry_skipped(self) -> None:
+        """Re-attempt eligible skipped backends in the shared background task.
+
+        Admissions keep the previous routes until every re-attempt in this
+        pass settles; successful routes are installed in one step.
+        """
+        due = [
+            (ident, prepared)
+            for ident, skip in list(self._skipped.items())
+            for eligible, prepared in [self._eligible(ident, skip)]
+            if eligible
+        ]
+        if not due:
+            return
+        self._retrying.update(ident for ident, _ in due)
+        admitted: dict[str, tuple[dict[str, Any], Any]] = {}
+        try:
+            for ident, prepared in due:
+                backend = next(b for b in self._registered if b["id"] == ident)
+                result = await self._admit(deepcopy(backend), reset=prepared)
+                if result is not None:
+                    admitted[ident] = result
+        except BaseException:
+            # Nothing is installed; admitted backends keep their skip records.
+            for _, transport in admitted.values():
+                await self._release(transport)
+            raise
+        finally:
+            self._retrying.difference_update(ident for ident, _ in due)
+        if not admitted:
+            return
+        current = {backend["id"]: backend for backend in self.config["hooks"]}
+        routes, transports = [], {}
+        for backend in self._registered:
+            ident = backend["id"]
+            if ident in admitted:
+                routes.append(admitted[ident][0])
+                transports[ident] = admitted[ident][1]
+            elif ident in current:
+                routes.append(current[ident])
+                transports[ident] = self._transports[ident]
+        # One synchronous swap: an admission sees the old or the new routes.
+        self.config["hooks"], self._transports = routes, transports
+        for ident in admitted:
+            del self._skipped[ident]
 
     @property
     def configuration_diagnostics(self) -> list[dict[str, Any]]:
-        """Detached, credential-free reasons for skipped discovered backends.
+        """Detached, credential-free reasons for currently skipped backends.
 
-        An authentication failure adds its typed `auth_error` code and
-        validated `required_scopes`.
+        Each entry has `backend` and one `code` (`reason` repeats it):
+        `configuration_unavailable`, `configuration_invalid`,
+        `no_applicable_subscriptions` or `configuration_local_secret`. An
+        authentication cause adds its typed `auth_error` code, its `recovery`
+        and validated `required_scopes`. An entry is replaced by each
+        re-attempt and removed when the backend is admitted.
         """
-        return deepcopy(self._configuration_diagnostics)
+        return [
+            deepcopy(self._skipped[backend["id"]].diagnostic)
+            for backend in self._registered
+            if backend["id"] in self._skipped
+        ]
 
-    async def _discover_configuration(self, backend, transport):
+    async def _discover_configuration(
+        self, backend, transport
+    ) -> tuple[list[dict[str, Any]], dict[str, Any] | None]:
         ident = str(uuid4())
         request = {
             "jsonrpc": "2.0",
@@ -1013,6 +1314,16 @@ class Hooks(BoundaryMixin):
             # One bounded initialization exchange, including transport/auth work.
             with anyio.fail_after(_CONFIGURATION_TIMEOUT_SECONDS):
                 response = deepcopy(await transport.request(request))
+                if isinstance(response, dict) and "error" in response:
+                    # A correlated JSON-RPC error keeps its code; else malformed.
+                    self.validator.validate("json-rpc-message", response)
+                    if (
+                        response.get("id") != ident
+                        or "result" in response
+                        or "method" in response
+                    ):
+                        raise ProtocolError("Invalid JSON-RPC error envelope")
+                    raise BackendRPCError(response["error"]["code"])
                 self.validator.validate("configuration-response", response)
                 if response["id"] != ident:
                     raise ProtocolError("Configuration response correlation mismatch")
@@ -1024,43 +1335,34 @@ class Hooks(BoundaryMixin):
                     for sub in configuration["subscriptions"]
                     for key in _LOCAL_SECRET_REFERENCES
                 ):
-                    self._configuration_diagnostics.append(
-                        {
-                            "backend": backend["id"],
-                            "reason": "configuration_local_secret",
-                        }
-                    )
-                    return []
-                subscriptions = []
-                for subscription in configuration["subscriptions"]:
-                    events = [
-                        event
-                        for event, declaration in self.capabilities.items()
-                        if subscription["mode"] in declaration["modes"]
-                        and any(
-                            _matches(selector, event)
-                            for selector in subscription["events"]
-                        )
-                    ]
-                    if events:
-                        resolved = deepcopy(subscription)
-                        resolved["events"] = events
-                        subscriptions.append(resolved)
+                    code = "configuration_local_secret"
+                    subscriptions = []
+                else:
+                    subscriptions = []
+                    for subscription in configuration["subscriptions"]:
+                        events = [
+                            event
+                            for event, declaration in self.capabilities.items()
+                            if subscription["mode"] in declaration["modes"]
+                            and any(
+                                _matches(selector, event)
+                                for selector in subscription["events"]
+                            )
+                        ]
+                        if events:
+                            resolved = deepcopy(subscription)
+                            resolved["events"] = events
+                            subscriptions.append(resolved)
+                    code = "no_applicable_subscriptions"
             if subscriptions:
-                return subscriptions
-            reason = "no_applicable_subscriptions"
+                return subscriptions, None
         except OperationCancelledError:
             raise
         except Exception as exc:
             # Cancellation is a BaseException and must propagate, never turn into skip.
-            reason = "configuration_unavailable"
+            code = _configuration_failure(exc)
             auth = auth_failure(exc)
-        diagnostic: dict[str, Any] = {"backend": backend["id"], "reason": reason}
-        if auth is not None:
-            diagnostic["auth_error"] = auth.code
-            diagnostic["required_scopes"] = list(auth.required_scopes)
-        self._configuration_diagnostics.append(diagnostic)
-        return []
+        return [], _skip_diagnostic(backend["id"], code, auth)
 
     async def wait_observations(self) -> list[dict[str, Any]]:
         """Drain retained observation errors; calls already own their deliveries."""
@@ -1098,6 +1400,11 @@ class Hooks(BoundaryMixin):
                     await operation["done"].wait()
                 for pending in self._pending:
                     pending._retire_content()
+                tasks = list(self._tasks)
+                for task in tasks:
+                    task.scope.cancel()
+                for task in tasks:
+                    await task.done.wait()
                 async with self._ready_lock:
                     for transport in self._owned:
                         await transport.aclose()
@@ -1371,6 +1678,8 @@ class Hooks(BoundaryMixin):
         event_codecs: Mapping[tuple[str, ...], Codec[Any]] | None = None,
     ) -> HookResult[Any, Any, Any]:
         await self._ensure_ready()
+        # This admission's routes: a later retry swap never changes them.
+        routes, transports = self.config["hooks"], self._transports
         value_codecs = ValueCodecs(
             input_codec, result_codec, provenance_codec, event_codecs
         )
@@ -1498,15 +1807,15 @@ class Hooks(BoundaryMixin):
 
         if sources is not None:
             async with anyio.create_task_group() as group:
-                for backend in self.config["hooks"]:
+                for backend in routes:
                     for index, subscription in enumerate(backend["subscriptions"]):
                         if any(
                             _matches(pattern, event_name)
                             for pattern in subscription["events"]
                         ):
                             group.start_soon(preupload, backend, index, subscription)
-        for backend in self.config["hooks"]:
-            transport = self._transports[backend["id"]]
+        for backend in routes:
+            transport = transports[backend["id"]]
             for subscription_index, subscription in enumerate(backend["subscriptions"]):
                 if not any(_matches(s, event_name) for s in subscription["events"]):
                     continue

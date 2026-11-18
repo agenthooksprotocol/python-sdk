@@ -7,7 +7,23 @@ from typing import Any, AsyncIterable
 from .._models import ContentUploadReceipt as _ContentUploadReceipt
 
 __all__ = ["HTTPTransport"]
-from ..runtime import ProtocolError, Validator, _validate_intercept_response
+from ..runtime import (
+    BackendRPCError,
+    ProtocolError,
+    Validator,
+    _validate_intercept_response,
+)
+
+
+def _raise_rpc_error(validator: Any, message: dict[str, Any], result: Any) -> None:
+    """Raise a valid correlated JSON-RPC error; ignore anything else."""
+    if isinstance(result, dict) and "error" in result:
+        try:
+            _validate_intercept_response(validator, message, result)
+        except BackendRPCError:
+            raise
+        except ProtocolError:
+            pass
 
 
 class HTTPTransport:
@@ -40,6 +56,16 @@ class HTTPTransport:
         response = await self._ready().post(
             self.url, json=message, headers=self.headers, follow_redirects=False
         )
+        if (
+            message.get("method") == "hooks/configuration"
+            and response.status_code != 200
+        ):
+            from ..auth import TransportFailure
+
+            # Discovery succeeds only with 200; any other status is unavailable.
+            raise TransportFailure(
+                "HTTP delivery rejected: " + str(response.status_code)
+            )
         try:
             result = response.json()
         except (ValueError, UnicodeError):
@@ -51,6 +77,8 @@ class HTTPTransport:
             and "error" in result
         ):
             _validate_intercept_response(self._validator, message, result)
+        if message.get("method") == "hooks/configuration":
+            _raise_rpc_error(self._validator, message, result)
         response.raise_for_status()
         if not isinstance(result, dict) or result.get("id") != message["id"]:
             raise ProtocolError("HTTP response correlation mismatch")

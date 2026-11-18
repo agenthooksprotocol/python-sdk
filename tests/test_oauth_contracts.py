@@ -190,6 +190,36 @@ class CanonicalVectorTests(unittest.TestCase):
                         token.refresh_token, vector["response"]["refresh_token"]
                     )
 
+    def test_token_response_scope_grammar(self):
+        from agenthooksprotocol.oauth import _response_scopes
+
+        for omitted in (None, "", " ", "\t", "\r\n", " \t\r\n "):
+            with self.subTest(scope=omitted):
+                self.assertIsNone(_response_scopes(omitted))
+        for valid, tokens in (("read", ("read",)), ("read write", ("read", "write"))):
+            with self.subTest(scope=valid):
+                self.assertEqual(_response_scopes(valid), tokens)
+        for malformed in (
+            "read ",
+            " read",
+            "read  write",
+            "read\twrite",
+            "read\nwrite",
+            "read\r",
+            'read "quoted"',
+            "back\\slash",
+            "nonascii\u00e9",
+            0,
+            1.5,
+            True,
+            False,
+            [],
+            ["read"],
+            {"read": True},
+        ):
+            with self.subTest(scope=malformed):
+                self.assertIs(_response_scopes(malformed), False)
+
     def test_scope_policy_validation(self):
         for scope in ("bad scope", 'quote"', "back\\slash", "nonasciié", ""):
             with self.subTest(scope=scope), self.assertRaises(ValueError):

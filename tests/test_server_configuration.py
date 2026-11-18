@@ -1,6 +1,9 @@
 """Server configuration discovery is initialization, not an event or grant."""
 
+from contextlib import asynccontextmanager
 from copy import deepcopy
+import contextvars
+import faulthandler
 from dataclasses import dataclass
 import json
 import os
@@ -61,6 +64,16 @@ class Transport:
 
     async def aclose(self):
         self.closed = True
+
+
+def run_bounded(fn, limit=60):
+    """Run on both backends; a hang (e.g. aclose never joining) fails the run."""
+    for backend in ("asyncio", "trio"):
+        faulthandler.dump_traceback_later(limit, exit=True)
+        try:
+            anyio.run(fn, backend=backend)
+        finally:
+            faulthandler.cancel_dump_traceback_later()
 
 
 def client(reg=None, **options):
@@ -191,9 +204,7 @@ async def compact(
 
 class ConfigurationTests(unittest.TestCase):
     def run_async(self, fn):
-        for backend in ("asyncio", "trio"):
-            with self.subTest(backend=backend):
-                anyio.run(fn, backend=backend)
+        run_bounded(fn)
 
     def test_server_discovery_is_independent_and_snapshotted(self):
         async def run():
@@ -296,6 +307,7 @@ class ConfigurationTests(unittest.TestCase):
                     [
                         {
                             "backend": "org.example.hook",
+                            "code": "configuration_unavailable",
                             "reason": "configuration_unavailable",
                         }
                     ],
@@ -321,8 +333,10 @@ class ConfigurationTests(unittest.TestCase):
                     [
                         {
                             "backend": "org.example.hook",
+                            "code": "configuration_unavailable",
                             "reason": "configuration_unavailable",
                             "auth_error": "interaction_required",
+                            "recovery": "login",
                             "required_scopes": ["read"],
                         }
                     ],
@@ -350,8 +364,8 @@ class ConfigurationTests(unittest.TestCase):
             async with client(transport=Transport(value)) as hooks:
                 self.assertEqual(hooks.config["hooks"], [])
                 self.assertEqual(
-                    hooks.configuration_diagnostics[0]["reason"],
-                    "configuration_unavailable",
+                    hooks.configuration_diagnostics[0]["code"],
+                    "configuration_invalid",
                 )
 
         self.run_async(run)
@@ -388,6 +402,7 @@ class ConfigurationTests(unittest.TestCase):
                     [
                         {
                             "backend": "org.example.hook",
+                            "code": "configuration_local_secret",
                             "reason": "configuration_local_secret",
                         }
                     ],
@@ -542,6 +557,35 @@ class ConfigurationTests(unittest.TestCase):
             async with client(value) as hooks:
                 self.assertTrue(hooks.intercepts("tool.before"))
                 self.assertEqual(hooks.configuration_diagnostics, [])
+
+        self.run_async(run)
+
+    def test_stdio_uncorrelated_discovery_is_discarded_until_deadline(self):
+        async def run():
+            value = registration()
+            value["hooks"][0]["transport"].update(
+                {
+                    "command": sys.executable,
+                    "lifecycle": "persistent",
+                    "args": [
+                        "-u",
+                        "-c",
+                        "import sys,json,time; sys.stdin.readline(); print(json.dumps({'jsonrpc':'2.0','id':'other','result':{'protocolVersion':'draft','configuration':"
+                        + repr(advertised())
+                        + "}})); time.sleep(30)",
+                    ],
+                }
+            )
+            started = anyio.current_time()
+            with patch("agenthooksprotocol._hooks._CONFIGURATION_TIMEOUT_SECONDS", 0.5):
+                async with client(value) as hooks:
+                    self.assertEqual(hooks.config["hooks"], [])
+                    # The id-mismatched frame is discarded; discovery times out.
+                    self.assertEqual(
+                        hooks.configuration_diagnostics[0]["code"],
+                        "configuration_unavailable",
+                    )
+            self.assertGreaterEqual(anyio.current_time() - started, 0.5)
 
         self.run_async(run)
 
@@ -761,3 +805,920 @@ class ConfigurationTests(unittest.TestCase):
         self.assertEqual(dict(content.metadata()), {"default": "metadata"})
         self.assertEqual(dict(content.body()), {"default": "body"})
         self.assertEqual(dict(content.omit()), {"default": "omit"})
+
+
+def tool_input(call_id="call-1"):
+    return event.ToolBeforeInput(
+        call_id=call_id,
+        name="read_file",
+        input={"path": "file.txt"},
+        path="native",
+        origin="native",
+    )
+
+
+class Clock:
+    """Monotonic configuration-backoff time a test advances explicitly."""
+
+    def __init__(self):
+        self.now = 1000.0
+
+    def __call__(self):
+        return self.now
+
+
+class ScriptedTransport(Transport):
+    """Fails discovery with the next scripted error, then serves an engine."""
+
+    def __init__(self, *errors, engine=None):
+        super().__init__()
+        self.errors = list(errors)
+        self.engine = engine or Engine(Handlers(), configuration=advertised())
+
+    @property
+    def discoveries(self):
+        return [m for m in self.calls if m["method"] == "hooks/configuration"]
+
+    @property
+    def intercepts(self):
+        return [m for m in self.calls if m["method"] == "hooks/intercept"]
+
+    async def request(self, message):
+        self.calls.append(deepcopy(message))
+        if message["method"] == "hooks/configuration" and self.errors:
+            error = self.errors.pop(0)
+            if isinstance(error, dict):
+                return {"jsonrpc": "2.0", "id": message["id"], **error}
+            raise error
+        return await self.engine.process(message)
+
+
+class PreparingProvider:
+    """A host auth provider reporting successful prepares per event endpoint."""
+
+    def __init__(self):
+        self.generations = {}
+
+    def prepared(self, backend_id, url=POLICY_URL):
+        key = (backend_id, url)
+        self.generations[key] = self.generations.get(key, 0) + 1
+
+    def prepared_generation(self, backend_id, destination):
+        return self.generations.get((backend_id, destination), 0)
+
+    async def credential(self, context):
+        return None
+
+    async def challenge(self, context, challenge):
+        return None
+
+
+async def settle(hooks):
+    """Wait for an SDK-owned configuration re-attempt, if one is running."""
+    task = hooks._retry_task
+    if task is not None:
+        await task.done.wait()
+
+
+async def admit(hooks, value):
+    """One event admission, then let any re-attempt it started settle."""
+    result = await hooks.tool_before(value)
+    await settle(hooks)
+    return result
+
+
+class ConfigurationRetryTests(unittest.TestCase):
+    """Skipped-backend diagnostics and re-attempts (server-driven configuration)."""
+
+    def run_async(self, fn):
+        run_bounded(fn)
+
+    def test_401_diagnostic_carries_auth_code(self):
+        async def run():
+            from test_managed_oauth_runtime import RESOURCE
+
+            async with managed_backend() as (hooks, events, _, _):
+                [diagnostic] = hooks.configuration_diagnostics
+                self.assertEqual(
+                    diagnostic,
+                    {
+                        "backend": "org.example.backend",
+                        "code": "configuration_unavailable",
+                        "reason": "configuration_unavailable",
+                        "auth_error": "interaction_required",
+                        "recovery": "login",
+                        "required_scopes": [],
+                    },
+                )
+                self.assertEqual([r.status_code for r in events.responses], [401])
+                encoded = json.dumps(hooks.configuration_diagnostics)
+                for secret in ("Bearer", "access", "secret", RESOURCE, "WWW"):
+                    self.assertNotIn(secret, encoded)
+            # Cancellation propagates and emits no diagnostic.
+            hooks = client(
+                http_registration(),
+                transport=ScriptedTransport(OperationCancelledError("cancelled")),
+            )
+            try:
+                with self.assertRaises(OperationCancelledError):
+                    await hooks.__aenter__()
+                self.assertEqual(hooks.configuration_diagnostics, [])
+            finally:
+                await hooks.aclose()
+
+        self.run_async(run)
+
+    def test_unavailable_retried_after_prepare(self):
+        async def run():
+            from urllib.parse import parse_qs, urlencode, urlsplit
+            from agenthooksprotocol.oauth import OperationBudget
+
+            async with managed_backend() as (hooks, events, managed, target):
+                self.assertEqual(hooks.config["hooks"], [])
+                login = await managed.prepare(target, OperationBudget.after(5))
+                # A pending login is not a successful prepare.
+                await admit(hooks, tool_input("before-login"))
+                self.assertEqual(len(events.discoveries), 1)
+                state = parse_qs(urlsplit(login.authorization_url).query)["state"][0]
+                await managed.complete(
+                    target,
+                    login,
+                    "https://host.test/callback?"
+                    + urlencode({"state": state, "code": "valid"}),
+                    OperationBudget.after(5),
+                )
+                # No backoff elapsed: the prepare alone makes it eligible.
+                # The re-attempt runs in the background; this event keeps the
+                # current routes and is not replayed.
+                result = await admit(hooks, tool_input("trigger"))
+                await result.aclose()
+                self.assertEqual(len(events.discoveries), 2)
+                self.assertEqual(
+                    [b["id"] for b in hooks.config["hooks"]], ["org.example.backend"]
+                )
+                self.assertEqual(hooks.configuration_diagnostics, [])
+                result = await admit(hooks, tool_input())
+                await result.aclose()
+                self.assertEqual(
+                    [m["params"]["event"]["call"]["id"] for m in events.intercepts],
+                    ["call-1"],
+                )
+                self.assertTrue(
+                    events.responses[-1]
+                    .request.headers["authorization"]
+                    .startswith("Bearer ")
+                )
+
+        self.run_async(run)
+
+    def test_unavailable_backoff(self):
+        async def run():
+            from agenthooksprotocol.auth import AuthenticationFailure, TransportFailure
+
+            clock = Clock()
+            failures = [TransportFailure("down")] * 9 + [
+                AuthenticationFailure(code="provider_failed")
+            ]
+            transport = ScriptedTransport(*failures)
+            with patch("agenthooksprotocol._hooks._now", clock):
+                async with client(transport=transport) as hooks:
+                    expected = 1
+                    delay = 30.0
+                    for _ in range(len(failures) - 1):
+                        self.assertEqual(len(transport.discoveries), expected)
+                        clock.now += delay - 0.5
+                        await admit(hooks, tool_input())
+                        # Earlier admissions do not contact the backend.
+                        self.assertEqual(len(transport.discoveries), expected)
+                        clock.now += 0.5
+                        await admit(hooks, tool_input())
+                        expected += 1
+                        delay = min(delay * 2, 3600.0)
+                    self.assertEqual(len(transport.discoveries), expected)
+                    # The provider_failed cause (recovery retry) also backs off.
+                    self.assertEqual(hooks.config["hooks"], [])
+                    clock.now += 3600
+                    await admit(hooks, tool_input("trigger"))
+                    self.assertEqual(len(transport.intercepts), 0)
+                    result = await admit(hooks, tool_input())
+                    await result.aclose()
+                    self.assertEqual(len(transport.intercepts), 1)
+                    self.assertEqual(hooks.configuration_diagnostics, [])
+                # Hosts configure the initial and maximum backoff.
+                transport = ScriptedTransport(*[TransportFailure("down")] * 4)
+                hooks = client(
+                    transport=transport,
+                    configuration_retry_backoff=1,
+                    configuration_retry_max_backoff=3,
+                )
+                async with hooks:
+                    for delay in (1, 2, 3, 3):
+                        clock.now += delay - 0.1
+                        await hooks._ensure_ready()
+                        await settle(hooks)
+                        before = len(transport.discoveries)
+                        clock.now += 0.1
+                        # Initialization-path admission re-attempts as well.
+                        await hooks.__aenter__()
+                        await settle(hooks)
+                        self.assertEqual(len(transport.discoveries), before + 1)
+            for invalid in ((0, 1), (2, 1), (True, 2), (float("inf"), 1e9)):
+                with self.subTest(invalid=invalid), self.assertRaises(ValueError):
+                    client(
+                        transport=Transport(),
+                        configuration_retry_backoff=invalid[0],
+                        configuration_retry_max_backoff=invalid[1],
+                    )
+
+        self.run_async(run)
+
+    def test_auth_failure_not_retried_on_backoff(self):
+        async def run():
+            from agenthooksprotocol.auth import AuthenticationFailure
+
+            clock = Clock()
+            for code, recovery in (
+                ("interaction_required", "login"),
+                ("credential_unavailable", "configure"),
+                ("access_denied", "none"),
+            ):
+                provider = PreparingProvider()
+                transport = ScriptedTransport(AuthenticationFailure(code=code))
+                with patch("agenthooksprotocol._hooks._now", clock):
+                    async with client(
+                        http_registration(), transport=transport, auth_provider=provider
+                    ) as hooks:
+                        [diagnostic] = hooks.configuration_diagnostics
+                        self.assertEqual(diagnostic["recovery"], recovery)
+                        clock.now += 10 * 3600
+                        await admit(hooks, tool_input())
+                        self.assertEqual(len(transport.discoveries), 1)
+                        # A prepare for another endpoint or backend does not count.
+                        provider.prepared("backend.other")
+                        provider.prepared("org.example.hook", POLICY_URL + "/other")
+                        await admit(hooks, tool_input())
+                        self.assertEqual(len(transport.discoveries), 1)
+                        provider.prepared("org.example.hook")
+                        await admit(hooks, tool_input("trigger"))
+                        self.assertEqual(len(transport.discoveries), 2)
+                        result = await admit(hooks, tool_input())
+                        await result.aclose()
+                        self.assertEqual(len(transport.intercepts), 1)
+
+        self.run_async(run)
+
+    def test_invalid_not_retried(self):
+        async def run():
+            from agenthooksprotocol.auth import TransportFailure
+
+            unsupported = advertised()
+            unsupported["subscriptions"][0]["events"] = ["tool.after"]
+            secret = advertised()
+            secret["subscriptions"][0]["upload"] = upload_settings(
+                auth={"type": "bearer", "tokenEnv": "UPLOAD_TOKEN"}
+            )
+            malformed = advertised()
+            del malformed["subscriptions"][0]["failurePolicy"]
+            not_found = {"error": {"code": -32601, "message": "Method not found"}}
+            internal = {"error": {"code": -32603, "message": "Internal error"}}
+            cases = (
+                ("configuration_invalid", ScriptedTransport(not_found)),
+                ("configuration_invalid", Transport(malformed)),
+                ("configuration_invalid", ScriptedTransport({"result": {}})),
+                ("no_applicable_subscriptions", Transport(unsupported)),
+                ("configuration_local_secret", Transport(secret)),
+                ("configuration_unavailable", ScriptedTransport(internal)),
+                ("configuration_unavailable", ScriptedTransport(TimeoutError())),
+                ("configuration_unavailable", ScriptedTransport(TransportFailure("x"))),
+                ("configuration_invalid", ScriptedTransport(ProtocolError("x"))),
+            )
+            clock = Clock()
+            for code, transport in cases:
+                with self.subTest(code=code, transport=transport):
+                    provider = PreparingProvider()
+                    with patch("agenthooksprotocol._hooks._now", clock):
+                        async with client(
+                            http_registration(),
+                            transport=transport,
+                            auth_provider=provider,
+                        ) as hooks:
+                            [diagnostic] = hooks.configuration_diagnostics
+                            self.assertEqual(diagnostic["code"], code)
+                            self.assertEqual(diagnostic["reason"], code)
+                            self.assertNotIn("auth_error", diagnostic)
+                            self.assertEqual(len(transport.calls), 1)
+                            clock.now += 10 * 3600
+                            provider.prepared("org.example.hook")
+                            await admit(hooks, tool_input())
+                            retried = code == "configuration_unavailable"
+                            discoveries = [
+                                m
+                                for m in transport.calls
+                                if m["method"] == "hooks/configuration"
+                            ]
+                            self.assertEqual(len(discoveries), 1 + retried)
+
+        self.run_async(run)
+
+    def test_retry_atomic_routes(self):
+        async def run():
+            from agenthooksprotocol.auth import TransportFailure
+
+            clock = Clock()
+            release = anyio.Event()
+            blocked = anyio.Event()
+
+            class Blocking(ScriptedTransport):
+                async def request(self, message):
+                    if (
+                        message["method"] == "hooks/configuration"
+                        and not self.errors
+                        and not release.is_set()
+                    ):
+                        blocked.set()
+                        await release.wait()
+                    return await super().request(message)
+
+            value = registration()
+            explicit = config()["hooks"][0]
+            explicit["id"] = "org.example.explicit"
+            first = deepcopy(value["hooks"][0])
+            first["id"] = "org.example.first"
+            second = deepcopy(value["hooks"][0])
+            second["id"] = "org.example.second"
+            value["hooks"] = [first, explicit, second]
+            transports = {
+                "org.example.first": ScriptedTransport(TransportFailure("down")),
+                "org.example.explicit": ScriptedTransport(),
+                "org.example.second": Blocking(TransportFailure("down")),
+            }
+            with patch("agenthooksprotocol._hooks._now", clock):
+                async with client(value, transport=transports) as hooks:
+                    self.assertEqual(
+                        [b["id"] for b in hooks.config["hooks"]],
+                        ["org.example.explicit"],
+                    )
+                    clock.now += 30
+                    seen = {}
+
+                    async def admit(name):
+                        result = await hooks.tool_before(tool_input(name))
+                        seen[name] = [b["id"] for b in hooks.config["hooks"]]
+                        await result.aclose()
+
+                    # The triggering admission keeps the current routes.
+                    await admit("trigger")
+                    self.assertEqual(seen["trigger"], ["org.example.explicit"])
+                    await blocked.wait()
+                    # "first" was resolved, "second" is still in flight:
+                    # concurrent callers see the old routes, never partial.
+                    await admit("concurrent")
+                    self.assertEqual(seen["concurrent"], ["org.example.explicit"])
+                    self.assertEqual(
+                        hooks.configuration_diagnostics[0]["backend"],
+                        "org.example.first",
+                    )
+                    release.set()
+                    await settle(hooks)
+                    await admit("after")
+                    # Registration order is kept when the routes are swapped in.
+                    self.assertEqual(
+                        seen["after"],
+                        [
+                            "org.example.first",
+                            "org.example.explicit",
+                            "org.example.second",
+                        ],
+                    )
+                    self.assertEqual(hooks.configuration_diagnostics, [])
+                    calls = {
+                        name: [m["params"]["event"]["call"]["id"] for m in t.intercepts]
+                        for name, t in transports.items()
+                    }
+                    # Earlier admissions are never replayed to the new backends.
+                    self.assertEqual(calls["org.example.first"], ["after"])
+                    self.assertEqual(calls["org.example.second"], ["after"])
+                    self.assertEqual(
+                        sorted(calls["org.example.explicit"]),
+                        ["after", "concurrent", "trigger"],
+                    )
+
+        self.run_async(run)
+
+    def test_concurrent_admissions_share_one_reattempt_per_backend(self):
+        async def run():
+            from agenthooksprotocol.auth import TransportFailure
+
+            clock = Clock()
+            release = anyio.Event()
+
+            class Gated(ScriptedTransport):
+                async def request(self, message):
+                    if message["method"] == "hooks/configuration" and not self.errors:
+                        await release.wait()
+                    return await super().request(message)
+
+            value = registration()
+            names = ("org.example.first", "org.example.second")
+            value["hooks"] = [
+                dict(deepcopy(value["hooks"][0]), id=name) for name in names
+            ]
+            transports = {name: Gated(TransportFailure("down")) for name in names}
+            with patch("agenthooksprotocol._hooks._now", clock):
+                async with client(value, transport=transports) as hooks:
+                    clock.now += 30
+
+                    async def admit(index):
+                        result = await hooks.tool_before(tool_input(f"call-{index}"))
+                        await result.aclose()
+
+                    async with anyio.create_task_group() as tasks:
+                        for index in range(50):
+                            tasks.start_soon(admit, index)
+                        # Let every admission reach the shared re-attempt.
+                        for _ in range(100):
+                            await anyio.lowlevel.checkpoint()
+                    release.set()
+                    await settle(hooks)
+                    for transport in transports.values():
+                        self.assertEqual(len(transport.discoveries), 2)
+                    self.assertEqual(
+                        [b["id"] for b in hooks.config["hooks"]], list(names)
+                    )
+
+        self.run_async(run)
+
+    def test_retry_swap_mid_emit_keeps_admitted_routes(self):
+        async def run():
+            from agenthooksprotocol._content import ContentSources
+            from agenthooksprotocol.auth import TransportFailure
+
+            clock = Clock()
+            value = registration()
+            explicit = config()["hooks"][0]
+            explicit["id"] = "org.example.explicit"
+            late = deepcopy(value["hooks"][0])
+            late["id"] = "org.example.late"
+            value["hooks"] = [explicit, late]
+            transports = {
+                "org.example.explicit": ScriptedTransport(),
+                "org.example.late": ScriptedTransport(TransportFailure("down")),
+            }
+            with patch("agenthooksprotocol._hooks._now", clock):
+                async with client(value, transport=transports) as hooks:
+                    original = hooks._project_delivery
+                    preuploading = anyio.Event()
+                    release = anyio.Event()
+
+                    async def project(*args, **kwargs):
+                        if not release.is_set():
+                            preuploading.set()
+                            await release.wait()
+                        return await original(*args, **kwargs)
+
+                    hooks._project_delivery = project
+                    payload = {
+                        "call": {"id": "early"},
+                        "path": "native",
+                        "tool": {
+                            "name": "read_file",
+                            "input": {"path": "file.txt"},
+                            "origin": "native",
+                        },
+                    }
+
+                    async def early():
+                        result = await hooks.dispatch(
+                            "tool.before", payload, sources=ContentSources({})
+                        )
+                        await result.aclose()
+
+                    async with anyio.create_task_group() as tasks:
+                        tasks.start_soon(early)
+                        # The early emit has admitted its routes and is awaiting
+                        # preupload when a retry installs the late backend.
+                        await preuploading.wait()
+                        clock.now += 30
+                        await hooks._ensure_ready()
+                        await settle(hooks)
+                        self.assertEqual(
+                            [b["id"] for b in hooks.config["hooks"]],
+                            ["org.example.explicit", "org.example.late"],
+                        )
+                        release.set()
+                        result = await hooks.tool_before(tool_input("retrying"))
+                        await result.aclose()
+                    calls = {
+                        name: [m["params"]["event"]["call"]["id"] for m in t.intercepts]
+                        for name, t in transports.items()
+                    }
+                    self.assertEqual(calls["org.example.late"], ["retrying"])
+                    self.assertEqual(
+                        sorted(calls["org.example.explicit"]), ["early", "retrying"]
+                    )
+
+        self.run_async(run)
+
+    def test_hung_reattempt_does_not_delay_fail_closed_delivery(self):
+        async def run():
+            from agenthooksprotocol.auth import TransportFailure
+
+            clock = Clock()
+            hung = anyio.Event()
+            retired = anyio.Event()
+
+            class Hanging(ScriptedTransport):
+                async def request(self, message):
+                    if message["method"] == "hooks/configuration" and not self.errors:
+                        self.calls.append(deepcopy(message))
+                        hung.set()
+                        try:
+                            await anyio.sleep_forever()
+                        finally:
+                            retired.set()
+                    return await super().request(message)
+
+            value = registration()
+            explicit = config(policy="fail-closed")["hooks"][0]
+            explicit["id"] = "org.example.enforcer"
+            skipped = deepcopy(value["hooks"][0])
+            skipped["id"] = "org.example.hung"
+            value["hooks"] = [explicit, skipped]
+            transports = {
+                "org.example.enforcer": ScriptedTransport(),
+                "org.example.hung": Hanging(TransportFailure("down")),
+            }
+            with (
+                patch("agenthooksprotocol._hooks._now", clock),
+                patch("agenthooksprotocol._hooks._CONFIGURATION_TIMEOUT_SECONDS", 60),
+            ):
+                hooks = client(value, transport=transports)
+                await hooks.__aenter__()
+                clock.now += 30
+                for index in range(4):
+                    # The host's event deadline is far shorter than discovery's.
+                    with anyio.fail_after(1):
+                        result = await hooks.tool_before(tool_input(f"event-{index}"))
+                        await result.aclose()
+                    await hung.wait()
+                self.assertEqual(len(transports["org.example.enforcer"].intercepts), 4)
+                self.assertEqual(len(transports["org.example.hung"].discoveries), 2)
+                with anyio.fail_after(1):
+                    await hooks.aclose()
+                self.assertTrue(retired.is_set())
+                self.assertEqual(hooks._tasks, set())
+
+        self.run_async(run)
+
+    def test_short_event_deadlines_do_not_starve_slow_discovery(self):
+        async def run():
+            from agenthooksprotocol.auth import TransportFailure
+
+            class Slow(ScriptedTransport):
+                async def request(self, message):
+                    if message["method"] == "hooks/configuration" and not self.errors:
+                        await anyio.sleep(0.3)
+                    return await super().request(message)
+
+            for path in ("initial", "retry"):
+                with self.subTest(path=path):
+                    clock = Clock()
+                    errors = () if path == "initial" else (TransportFailure("down"),)
+                    transport = Slow(*errors)
+                    hooks = client(transport=transport)
+                    with patch("agenthooksprotocol._hooks._now", clock):
+                        if path == "retry":
+                            await hooks.__aenter__()
+                            # Warm the dispatch path outside the measured deadlines.
+                            await hooks.tool_before(tool_input("warm"))
+                            clock.now += 30
+                        timeouts = 0
+                        with anyio.fail_after(5):
+                            while not hooks.config["hooks"] or not hooks._ready:
+                                try:
+                                    with anyio.fail_after(0.05):
+                                        await hooks.tool_before(tool_input())
+                                except TimeoutError:
+                                    timeouts += 1
+                                await anyio.sleep(0.01)
+                    try:
+                        # Cancelled waiters never restart the slow discovery.
+                        expected = 1 if path == "initial" else 2
+                        self.assertEqual(len(transport.discoveries), expected)
+                        if path == "initial":
+                            self.assertGreater(timeouts, 0)
+                        else:
+                            # Events never wait for a re-attempt.
+                            self.assertEqual(timeouts, 0)
+                        result = await hooks.tool_before(tool_input("final"))
+                        await result.aclose()
+                        self.assertEqual(
+                            transport.intercepts[-1]["params"]["event"]["call"]["id"],
+                            "final",
+                        )
+                    finally:
+                        await hooks.aclose()
+
+        self.run_async(run)
+
+    def test_aclose_cancels_reattempt_and_reaps_stdio_child(self):
+        async def run():
+            import tempfile
+
+            with tempfile.TemporaryDirectory() as scratch:
+                marker = os.path.join(scratch, "started")
+                pid_file = os.path.join(scratch, "pid")
+                script = (
+                    "import os,sys,time\n"
+                    f"marker, pid_file = {marker!r}, {pid_file!r}\n"
+                    "if not os.path.exists(marker):\n"
+                    "    open(marker, 'w').close(); sys.exit(0)\n"
+                    "open(pid_file + '.tmp', 'w').write(str(os.getpid()))\n"
+                    "os.replace(pid_file + '.tmp', pid_file)\n"
+                    "sys.stdin.readline(); time.sleep(60)\n"
+                )
+                value = registration()
+                value["hooks"][0]["transport"].update(
+                    {"command": sys.executable, "args": ["-c", script]}
+                )
+                clock = Clock()
+                with (
+                    patch("agenthooksprotocol._hooks._now", clock),
+                    patch(
+                        "agenthooksprotocol._hooks._CONFIGURATION_TIMEOUT_SECONDS", 60
+                    ),
+                ):
+                    hooks = client(value)
+                    await hooks.__aenter__()
+                    self.assertEqual(
+                        hooks.configuration_diagnostics[0]["code"],
+                        "configuration_unavailable",
+                    )
+                    clock.now += 30
+                    await hooks.tool_before(tool_input())
+                    with anyio.fail_after(10):
+                        while not os.path.exists(pid_file):
+                            await anyio.sleep(0.02)
+                    pid = int(open(pid_file).read())
+                    with anyio.fail_after(5):
+                        await hooks.aclose()
+                self.assertEqual(hooks._tasks, set())
+                self.assertEqual(hooks._owned, [])
+                with self.assertRaises(ProcessLookupError):
+                    os.kill(pid, 0)
+
+        self.run_async(run)
+
+    def test_reattempt_runs_in_callers_context(self):
+        async def run():
+            from agenthooksprotocol.auth import TransportFailure
+
+            marker = contextvars.ContextVar("marker", default="system")
+            seen = []
+
+            class Recording(ScriptedTransport):
+                async def request(self, message):
+                    if message["method"] == "hooks/configuration":
+                        seen.append(marker.get())
+                    return await super().request(message)
+
+            clock = Clock()
+            marker.set("host")
+            with patch("agenthooksprotocol._hooks._now", clock):
+                hooks = client(transport=Recording(TransportFailure("down")))
+                async with hooks:
+                    clock.now += 30
+                    await admit(hooks, tool_input())
+            # Initial discovery and the background re-attempt both see it.
+            self.assertEqual(seen, ["host", "host"])
+
+        self.run_async(run)
+
+    def test_unbuildable_transport_is_invalid_and_never_retried(self):
+        async def run():
+            from agenthooksprotocol.auth import TransportFailure
+
+            clock = Clock()
+            provider = PreparingProvider()
+            transport = ScriptedTransport(TransportFailure("down"))
+            with patch("agenthooksprotocol._hooks._now", clock):
+                async with client(
+                    http_registration(), transport=transport, auth_provider=provider
+                ) as hooks:
+
+                    def broken(backend):
+                        raise RuntimeError("secret detail")
+
+                    hooks._transport_for = broken
+                    clock.now += 30
+                    with self.assertLogs(
+                        "agenthooksprotocol._hooks", "WARNING"
+                    ) as logs:
+                        await admit(hooks, tool_input())
+                    self.assertIn("RuntimeError", logs.output[0])
+                    self.assertNotIn("secret", "".join(logs.output))
+                    [diagnostic] = hooks.configuration_diagnostics
+                    self.assertEqual(diagnostic["code"], "configuration_invalid")
+                    # Final: neither backoff nor a prepare re-attempts it.
+                    del hooks._transport_for
+                    clock.now += 10 * 3600
+                    provider.prepared("org.example.hook")
+                    with self.assertNoLogs("agenthooksprotocol._hooks", "WARNING"):
+                        await admit(hooks, tool_input())
+                    self.assertIsNone(hooks._retry_task)
+                    self.assertEqual(len(transport.discoveries), 1)
+            # A registration endpoint the borrowed transport cannot serve.
+            from agenthooksprotocol.transports.http import HTTPTransport
+
+            value = http_registration({"X-Static": "v"})
+            async with client(
+                value, transport=HTTPTransport(POLICY_URL + "/other")
+            ) as hooks:
+                [diagnostic] = hooks.configuration_diagnostics
+                self.assertEqual(diagnostic["code"], "configuration_invalid")
+            # A failure escaping the task is logged by type name only.
+            transport = ScriptedTransport(
+                TransportFailure("down"), OperationCancelledError("secret")
+            )
+            with patch("agenthooksprotocol._hooks._now", clock):
+                async with client(transport=transport) as hooks:
+                    clock.now += 30
+                    with self.assertLogs(
+                        "agenthooksprotocol._hooks", "WARNING"
+                    ) as logs:
+                        await admit(hooks, tool_input())
+                    self.assertIn("OperationCancelledError", logs.output[0])
+                    self.assertNotIn("secret", "".join(logs.output))
+
+        self.run_async(run)
+
+    def test_http_status_classification(self):
+        async def run():
+            import httpx
+            from agenthooksprotocol.auth import AuthenticatedHTTPTransport
+            from agenthooksprotocol.transports.http import HTTPTransport
+
+            engine = Engine(Handlers(), configuration=advertised())
+            not_found = {"code": -32601, "message": "Method not found"}
+
+            def reply(status, body):
+                async def respond(request):
+                    message = json.loads(request.content)
+                    if body == "engine":
+                        payload = await engine.process(message)
+                    elif body == "not_found":
+                        payload = {
+                            "jsonrpc": "2.0",
+                            "id": message["id"],
+                            "error": not_found,
+                        }
+                    elif body == "uncorrelated":
+                        payload = await engine.process(message)
+                        payload["id"] = "other"
+                    elif body == "version":
+                        payload = await engine.process(message)
+                        payload["result"]["protocolVersion"] = "1999-01-01"
+                    else:
+                        return httpx.Response(status, content=body)
+                    return httpx.Response(status, json=payload)
+
+                return respond
+
+            cases = (
+                (404, "not_found", "configuration_unavailable"),
+                (500, "not_found", "configuration_unavailable"),
+                (204, b"", "configuration_unavailable"),
+                (201, "engine", "configuration_unavailable"),
+                (200, "not_found", "configuration_invalid"),
+                (200, "uncorrelated", "configuration_invalid"),
+                (200, "version", "configuration_invalid"),
+                (200, b"not json", "configuration_invalid"),
+            )
+            for kind in ("plain", "authenticated"):
+                for status, body, code in cases:
+                    with self.subTest(kind=kind, status=status, body=body):
+                        async with httpx.AsyncClient(
+                            transport=httpx.MockTransport(reply(status, body))
+                        ) as http:
+                            value = http_registration()
+                            transport = (
+                                HTTPTransport(POLICY_URL, client=http)
+                                if kind == "plain"
+                                else AuthenticatedHTTPTransport(
+                                    POLICY_URL,
+                                    backend=value["hooks"][0],
+                                    client=http,
+                                )
+                            )
+                            async with client(value, transport=transport) as hooks:
+                                [diagnostic] = hooks.configuration_diagnostics
+                                self.assertEqual(diagnostic["code"], code)
+
+        self.run_async(run)
+
+    def test_prepare_retriggers_after_failed_reattempt(self):
+        async def run():
+            from agenthooksprotocol.auth import AuthenticationFailure, TransportFailure
+
+            for failure in (
+                TransportFailure("down"),
+                AuthenticationFailure(code="interaction_required"),
+            ):
+                with self.subTest(failure=type(failure).__name__):
+                    clock = Clock()
+                    provider = PreparingProvider()
+                    transport = ScriptedTransport(TransportFailure("down"), failure)
+                    with patch("agenthooksprotocol._hooks._now", clock):
+                        async with client(
+                            http_registration(),
+                            transport=transport,
+                            auth_provider=provider,
+                        ) as hooks:
+                            clock.now += 30
+                            # The background re-attempt fails.
+                            await admit(hooks, tool_input())
+                            self.assertEqual(len(transport.discoveries), 2)
+                            self.assertEqual(hooks.config["hooks"], [])
+                            # No backoff elapsed: the prepare alone re-triggers it.
+                            provider.prepared("org.example.hook")
+                            await admit(hooks, tool_input())
+                            self.assertEqual(len(transport.discoveries), 3)
+                            self.assertEqual(
+                                [b["id"] for b in hooks.config["hooks"]],
+                                ["org.example.hook"],
+                            )
+
+        self.run_async(run)
+
+
+class _Events:
+    """HTTP event endpoint: 401 without a bearer token, else an AHP engine."""
+
+    def __init__(self):
+        self.engine = Engine(Handlers(), configuration=advertised())
+        self.responses = []
+        self.calls = []
+
+    @property
+    def discoveries(self):
+        return [m for m in self.calls if m["method"] == "hooks/configuration"]
+
+    @property
+    def intercepts(self):
+        return [m for m in self.calls if m["method"] == "hooks/intercept"]
+
+    async def handle(self, request):
+        import httpx
+
+        message = json.loads(request.content)
+        self.calls.append(message)
+        if "authorization" not in request.headers:
+            response = httpx.Response(
+                401,
+                headers={"WWW-Authenticate": "Bearer"},
+                json={"error": "secret body"},
+            )
+        else:
+            response = httpx.Response(200, json=await self.engine.process(message))
+        response.request = request
+        self.responses.append(response)
+        return response
+
+
+@asynccontextmanager
+async def managed_backend():
+    """Hooks over a managed-OAuth HTTP backend that has no usable grant."""
+    import httpx
+    from test_managed_oauth_runtime import Network, Policy, RESOURCE, Store
+    from agenthooksprotocol.auth import (
+        AuthenticatedHTTPTransport,
+        AuthTarget,
+        RoutingAuthProvider,
+    )
+    from agenthooksprotocol.oauth import ManagedOAuthProvider
+
+    network, store = Network(), Store()
+    managed = ManagedOAuthProvider(
+        network=network,
+        policy=Policy("authorization_code_pkce"),
+        store=store,
+        namespace="tenant",
+    )
+    router = RoutingAuthProvider(discover=managed, oauth=managed, namespace="tenant")
+    value = registration()
+    backend = value["hooks"][0]
+    backend["id"] = "org.example.backend"
+    backend["transport"] = {"type": "http", "url": RESOURCE}
+    events = _Events()
+    target = AuthTarget("tenant", "org.example.backend", RESOURCE, "event", None)
+    async with httpx.AsyncClient(transport=httpx.MockTransport(events.handle)) as http:
+        transport = AuthenticatedHTTPTransport(
+            RESOURCE, backend=backend, client=http, auth_provider=router
+        )
+        try:
+            async with client(
+                value, transport=transport, auth_provider=router
+            ) as hooks:
+                yield hooks, events, managed, target
+        finally:
+            await network.client.aclose()

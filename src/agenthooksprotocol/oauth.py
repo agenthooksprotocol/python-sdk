@@ -18,7 +18,7 @@ import math
 import re
 import secrets
 import time
-from typing import TypeVar
+from typing import Literal, TypeVar
 from urllib.parse import parse_qs, quote, urlencode, urlsplit, urlunsplit
 from uuid import uuid4
 
@@ -82,7 +82,32 @@ _DEFINITIVE = (
     "access_denied",
     "invalid_scope",
 )
-_SCOPE = re.compile(r"[\x21\x23-\x5b\x5d-\x7e]+")
+_SCOPE = r"[\x21\x23-\x5b\x5d-\x7e]+"
+_SCOPE_LIST = re.compile(rf"{_SCOPE}(?: {_SCOPE})*")
+
+
+def _endpoint(url: str) -> str:
+    """Compare event endpoints as HTTP requests address them."""
+    import httpx
+
+    try:
+        return str(httpx.URL(url))
+    except (httpx.InvalidURL, TypeError):
+        return url
+
+
+def _response_scopes(scope: object) -> tuple[str, ...] | None | Literal[False]:
+    """A token-response `scope`: its tokens, None when omitted, False if malformed.
+
+    Absent, JSON null and blank strings (only SP/HTAB/CR/LF) are treated as
+    omitted. Any other string must be an RFC 6749 scope list with single-SP
+    separators; any other JSON type is malformed.
+    """
+    if scope is None or (isinstance(scope, str) and not scope.strip(" \t\r\n")):
+        return None
+    if not isinstance(scope, str) or _SCOPE_LIST.fullmatch(scope) is None:
+        return False
+    return tuple(scope.split(" "))
 
 
 _MAX_LIFETIME = 2**31  # About 68 years; longer lifetimes are clamped.
@@ -340,6 +365,24 @@ class ManagedOAuthProvider:
         self.renewal_margin_max = renewal_margin_max
         self._detached: set[anyio.Event] = set()
         self._tasks: set[object] = set()
+        # Successful host prepares per (backend ID, event endpoint).
+        self._prepared: dict[tuple[str, str], int] = {}
+
+    def prepared_generation(self, backend_id: str, destination: str) -> int:
+        """Count of successful host prepares for a backend's event endpoint.
+
+        A `prepare` or `complete` returning `Ready` advances it. Hooks compares
+        it to re-attempt configuration discovery skipped as unavailable. Only
+        calls on this provider in this process count: a login completed by
+        another process sharing the store needs a local `prepare` (which then
+        returns `Ready`) or a new `Hooks` to re-attempt discovery.
+        """
+        return self._prepared.get((backend_id, _endpoint(destination)), 0)
+
+    def _record_prepared(self, target: AuthTarget, result: object) -> None:
+        if isinstance(result, Ready) and target.purpose == "event":
+            key = (target.backend_id, _endpoint(target.destination))
+            self._prepared[key] = self._prepared.get(key, 0) + 1
 
     async def _run(
         self, operation: Callable[[], Awaitable[T]], budget: OperationBudget
@@ -433,7 +476,8 @@ class ManagedOAuthProvider:
         Extra scopes are ignored. An invalid response is never dispatched.
         """
         value, kind = response.get("access_token"), response.get("token_type")
-        lifetime, scope = response.get("expires_in"), response.get("scope")
+        lifetime = response.get("expires_in")
+        scopes = _response_scopes(response.get("scope"))
         refresh = response.get("refresh_token")
         # A positive JSON integer or ASCII-digit string; never fractional.
         # Huge values are clamped rather than overflowing.
@@ -454,19 +498,13 @@ class ManagedOAuthProvider:
             and kind.lower() == "bearer"
             and (refresh is None or valid_refresh is not None)
             and ("expires_in" not in response or seconds is not None)
-            and (
-                "scope" not in response
-                or (
-                    isinstance(scope, str)
-                    and all(_SCOPE.fullmatch(item) for item in scope.split(" "))
-                )
-            )
+            and scopes is not False
         )
         if not valid:
             raise _ExchangeError("invalid", valid_refresh)
         assert isinstance(value, str)
-        if isinstance(scope, str):
-            granted = set(scope.split(" "))
+        if isinstance(scopes, tuple):
+            granted = set(scopes)
         else:
             granted = set(previous.scopes if previous is not None else requested)
         granted &= set(previous.scopes if previous is not None else ceiling)
@@ -1600,7 +1638,9 @@ class ManagedOAuthProvider:
             assert result is not None
             return result
 
-        return await self._run(run, budget)
+        prepared = await self._run(run, budget)
+        self._record_prepared(target, prepared)
+        return prepared
 
     async def _complete(
         self,
@@ -1761,9 +1801,11 @@ class ManagedOAuthProvider:
         budget: OperationBudget,
     ) -> Ready:
         """Complete a stored pending login from any process sharing the store."""
-        return await self._run(
+        ready = await self._run(
             lambda: self._complete(target, login, callback_url, budget), budget
         )
+        self._record_prepared(target, ready)
+        return ready
 
     async def reset(
         self,

@@ -86,6 +86,16 @@ _SCOPE = r"[\x21\x23-\x5b\x5d-\x7e]+"
 _SCOPE_LIST = re.compile(rf"{_SCOPE}(?: {_SCOPE})*")
 
 
+def _endpoint(url: str) -> str:
+    """Compare event endpoints as HTTP requests address them."""
+    import httpx
+
+    try:
+        return str(httpx.URL(url))
+    except (httpx.InvalidURL, TypeError):
+        return url
+
+
 def _response_scopes(scope: object) -> tuple[str, ...] | None | Literal[False]:
     """A token-response `scope`: its tokens, None when omitted, False if malformed.
 
@@ -355,6 +365,21 @@ class ManagedOAuthProvider:
         self.renewal_margin_max = renewal_margin_max
         self._detached: set[anyio.Event] = set()
         self._tasks: set[object] = set()
+        # Successful host prepares per (backend ID, event endpoint).
+        self._prepared: dict[tuple[str, str], int] = {}
+
+    def prepared_generation(self, backend_id: str, destination: str) -> int:
+        """Count of successful host prepares for a backend's event endpoint.
+
+        A `prepare` or `complete` returning `Ready` advances it. Hooks compares
+        it to re-attempt configuration discovery skipped as unavailable.
+        """
+        return self._prepared.get((backend_id, _endpoint(destination)), 0)
+
+    def _record_prepared(self, target: AuthTarget, result: object) -> None:
+        if isinstance(result, Ready) and target.purpose == "event":
+            key = (target.backend_id, _endpoint(target.destination))
+            self._prepared[key] = self._prepared.get(key, 0) + 1
 
     async def _run(
         self, operation: Callable[[], Awaitable[T]], budget: OperationBudget
@@ -1610,7 +1635,9 @@ class ManagedOAuthProvider:
             assert result is not None
             return result
 
-        return await self._run(run, budget)
+        prepared = await self._run(run, budget)
+        self._record_prepared(target, prepared)
+        return prepared
 
     async def _complete(
         self,
@@ -1771,9 +1798,11 @@ class ManagedOAuthProvider:
         budget: OperationBudget,
     ) -> Ready:
         """Complete a stored pending login from any process sharing the store."""
-        return await self._run(
+        ready = await self._run(
             lambda: self._complete(target, login, callback_url, budget), budget
         )
+        self._record_prepared(target, ready)
+        return ready
 
     async def reset(
         self,

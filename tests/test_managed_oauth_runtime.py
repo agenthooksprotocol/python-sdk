@@ -4041,16 +4041,30 @@ REGISTRATION_TESTS = {
 }
 
 
+# Skipped server-driven configuration backends (test_server_configuration).
+CONFIGURATION_TESTS = {
+    "configuration-401-diagnostic-carries-auth-code": "test_401_diagnostic_carries_auth_code",
+    "configuration-unavailable-retried-after-prepare": "test_unavailable_retried_after_prepare",
+    "configuration-unavailable-backoff": "test_unavailable_backoff",
+    "configuration-auth-failure-not-retried-on-backoff": "test_auth_failure_not_retried_on_backoff",
+    "configuration-invalid-not-retried": "test_invalid_not_retried",
+    "configuration-retry-atomic-routes": "test_retry_atomic_routes",
+}
+
+
 class LifecycleCoverageTests(unittest.TestCase):
     def test_every_lifecycle_id_maps_to_an_existing_native_test(self):
         from test_oauth_registration import RegistrationLifecycleTests
+        from test_server_configuration import ConfigurationRetryTests
 
         ids = [entry["id"] for entry in FIXTURES["lifecycle"]]
-        self.assertFalse(set(LIFECYCLE_TESTS) & set(REGISTRATION_TESTS))
-        self.assertEqual(set(ids), set(LIFECYCLE_TESTS) | set(REGISTRATION_TESTS))
+        groups = (LIFECYCLE_TESTS, REGISTRATION_TESTS, CONFIGURATION_TESTS)
+        self.assertEqual(sum(map(len, groups)), len(set().union(*groups)))
+        self.assertEqual(set(ids), set().union(*groups))
         for tests, names in (
             (ManagedOAuthRuntimeTests, LIFECYCLE_TESTS.values()),
             (RegistrationLifecycleTests, REGISTRATION_TESTS.values()),
+            (ConfigurationRetryTests, CONFIGURATION_TESTS.values()),
         ):
             for name in names:
                 self.assertTrue(callable(getattr(tests, name, None)), name)

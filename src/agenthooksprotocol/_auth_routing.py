@@ -268,5 +268,16 @@ class RoutingAuthProvider:
             return None
         return await self._invoke(provider, context, target, challenge)
 
+    def prepared_generation(self, backend_id: str, destination: str) -> int:
+        """Successful host prepares reported by the routed providers."""
+        total, seen = 0, set()
+        for provider in (self.bearer, self.oauth, self.discover):
+            report = getattr(provider, "prepared_generation", None)
+            if id(provider) in seen or not callable(report):
+                continue
+            seen.add(id(provider))
+            total += report(backend_id, destination)
+        return total
+
 
 BearerAuthProvider = EnvironmentAuthProvider

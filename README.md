@@ -69,10 +69,26 @@ Explicit subscriptions replace backend defaults completely and bypass discovery;
 an explicit empty list is invalid. Discovered selectors are resolved against the
 host's supported events and delivery modes without changing their other settings.
 A failed discovery or a result with no applicable subscriptions skips only that
-backend. `hooks.configuration_diagnostics` returns detached, credential-free skip
-reasons; an authentication failure adds its `auth_error` code and validated
-`required_scopes`. Cancellation propagates. Reinitialize to reload; no background refresh
-occurs. Per-request capability grants remain authoritative.
+backend. `hooks.configuration_diagnostics` returns detached, credential-free
+entries for currently skipped backends: `backend` and one `code`
+(`configuration_unavailable`, `configuration_invalid`,
+`no_applicable_subscriptions` or `configuration_local_secret`; `reason` repeats
+it). An authentication failure adds its `auth_error` code, `recovery` and
+validated `required_scopes`. Cancellation propagates and records nothing.
+
+A `configuration_unavailable` backend is re-attempted at the next admission
+(event or initialization) after a successful host `prepare` or `complete` for its
+event endpoint (`ManagedOAuthProvider.prepared_generation`; a custom auth
+provider may implement the same method). Without an auth cause, or when its
+recovery is `retry`, it is also re-attempted after a backoff of
+`configuration_retry_backoff` seconds (default 30), doubling up to
+`configuration_retry_max_backoff` (default 3600); `login`, `configure` and `none`
+causes wait for a prepare. Other codes are final until a new `Hooks`. A
+re-attempt runs in the shared admission: concurrent calls keep the previous
+routes, successful routes are installed in one step in registration order, and
+earlier events are not replayed. Until its configuration is valid such a backend
+is advisory; enforce with explicit `fail-closed` subscriptions. No other
+background refresh occurs. Per-request capability grants remain authoritative.
 
 Discovered `upload` settings are admitted like any other discovered subscription
 setting, with no separate approval. Configured backend headers apply to discovered
@@ -222,7 +238,7 @@ Registered stdio backends start with a minimal base environment rather than the 
 
 ## Static host manifest
 
-`hooks.subscribes("tool.before")` is a pure synchronous static-interest lookup. Use it before expensive input preparation: `False` means no eligible intercept or observe subscription selects the configured event. Exact selectors, `*`, and prefix selectors such as `tool.*` use the same matching as dispatch. Unknown or unconfigured events return `False`. Before discovery completes, omitted subscriptions conservatively report interest in host-supported events so interest checks cannot suppress initialization. Payload filters are conservatively ignored, so `True` means potential interest, not permission or guaranteed delivery. The lookup does not prepare input, authenticate, upload content, initialize transports, or contact backends.
+`hooks.subscribes("tool.before")` is a pure synchronous static-interest lookup. Use it before expensive input preparation: `False` means no eligible intercept or observe subscription selects the configured event. Exact selectors, `*`, and prefix selectors such as `tool.*` use the same matching as dispatch. Unknown or unconfigured events return `False`. Before discovery completes, or while a skipped backend is due for re-attempt, omitted subscriptions conservatively report interest in host-supported events so interest checks cannot suppress initialization or the re-attempt. Payload filters are conservatively ignored, so `True` means potential interest, not permission or guaranteed delivery. The lookup does not prepare input, authenticate, upload content, initialize transports, or contact backends.
 
 `hooks.intercepts("model.response.after")` is `subscribes` restricted to intercept subscriptions. Use it to decide whether to withhold streamed output until interceptors settle.
 

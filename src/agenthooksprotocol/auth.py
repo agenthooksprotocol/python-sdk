@@ -20,7 +20,7 @@ from .runtime import (
     ProtocolError,
     _validate_intercept_response,
 )
-from .transports.http import HTTPTransport
+from .transports.http import HTTPTransport, _raise_rpc_error
 from .headers import validate_headers, resolve_headers
 
 
@@ -423,6 +423,13 @@ class AuthenticatedHTTPTransport(HTTPTransport):
                     _validate_intercept_response(
                         self._validator, {"id": ident}, rejected
                     )
+            elif message.get("method") == "hooks/configuration":
+                # Keep a valid method-not-found distinct from a failed status.
+                try:
+                    rejected = response.json()
+                except (ValueError, UnicodeError):
+                    rejected = None
+                _raise_rpc_error(self._validator, {"id": ident}, rejected)
             raise TransportFailure(
                 "HTTP delivery rejected: " + str(response.status_code)
             )
@@ -442,6 +449,8 @@ class AuthenticatedHTTPTransport(HTTPTransport):
             raise ProtocolError("Malformed HTTP protocol response") from None
         if not isinstance(result, dict) or result.get("id") != ident:
             raise ProtocolError("HTTP response correlation mismatch")
+        if message.get("method") == "hooks/configuration":
+            _raise_rpc_error(self._validator, correlation, result)
         if message.get("method") in ("hooks/configuration", "hooks/capabilities"):
             if response.status_code != 200:
                 raise ProtocolError("Unexpected HTTP response status")

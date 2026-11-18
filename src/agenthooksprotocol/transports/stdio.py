@@ -55,16 +55,20 @@ class _Slot:
         return self.value
 
 
-def _spawn(function) -> Any:
-    """Start a detached task on the running AnyIO backend; return a handle."""
+def _spawn(function, context: Any = None) -> Any:
+    """Start a detached task on the running AnyIO backend; return a handle.
+
+    `context` is the contextvars.Context to run in; Trio system tasks
+    otherwise start from the system context, not the caller's.
+    """
     if sniffio.current_async_library() == "trio":
         import trio
 
-        trio.lowlevel.spawn_system_task(function)
+        trio.lowlevel.spawn_system_task(function, context=context)
         return None
     import asyncio
 
-    return asyncio.get_running_loop().create_task(function())
+    return asyncio.get_running_loop().create_task(function(), context=context)
 
 
 class _Child:

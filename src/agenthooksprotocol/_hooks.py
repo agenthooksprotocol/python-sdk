@@ -37,6 +37,8 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from uuid import uuid4
 from weakref import WeakSet
+import contextvars
+import logging
 import time
 
 import anyio
@@ -651,6 +653,7 @@ _project = project_content
 _CONFIGURATION_TIMEOUT_SECONDS = 5.0
 _LOCAL_SECRET_REFERENCES = ("tokenEnv", "tokenRef", "clientSecretRef")
 _METHOD_NOT_FOUND = -32601
+_log = logging.getLogger(__name__)
 # Monotonic seconds for configuration backoff; patched by tests.
 _now = time.monotonic
 
@@ -667,6 +670,16 @@ class _Skip:
     # Host prepare generation observed when the attempt started; None when the
     # backend's auth provider does not report prepares or the code is final.
     prepared: object = None
+
+
+def _skip_diagnostic(backend_id: str, code: str, auth: Any) -> dict[str, Any]:
+    """A credential-free skip diagnostic; auth causes add code and recovery."""
+    diagnostic: dict[str, Any] = {"backend": backend_id, "code": code, "reason": code}
+    if auth is not None:
+        diagnostic["auth_error"] = auth.code
+        diagnostic["recovery"] = auth.recovery
+        diagnostic["required_scopes"] = list(auth.required_scopes)
+    return diagnostic
 
 
 class _Background:
@@ -1099,11 +1112,15 @@ class Hooks(BoundaryMixin):
             self._eligible(ident, skip)[0] for ident, skip in self._skipped.items()
         )
 
-    def _background(self, work: Callable[[], Any]) -> _Background:
+    def _background(
+        self, work: Callable[[], Any], *, report: bool = False
+    ) -> _Background:
         """Run discovery as an SDK-owned task tied to this Hooks' lifetime.
 
         Caller cancellation and event deadlines never reach it; `aclose`
         cancels and joins it. Each discovery is bounded by its own deadline.
+        It runs in a copy of the caller's context. A `report` task has no
+        waiter, so its failure is logged by type name (never its message).
         """
         from .transports.stdio import _spawn
 
@@ -1115,9 +1132,13 @@ class Hooks(BoundaryMixin):
                     async with self._ready_lock:
                         if not self._closed:
                             await work()
-            except Exception as exc:
+            except Exception as exc:  # noqa: BLE001 - a detached task must not crash the loop
                 # Includes OperationCancelledError raised by a transport.
                 task.error = exc
+                if report:
+                    _log.warning(
+                        "AHP configuration re-attempt failed: %s", type(exc).__name__
+                    )
             finally:
                 self._tasks.discard(task)
                 if self._retry_task is task:
@@ -1125,7 +1146,7 @@ class Hooks(BoundaryMixin):
                 task.done.set()
 
         self._tasks.add(task)
-        task.handle = _spawn(run)
+        task.handle = _spawn(run, contextvars.copy_context())
         return task
 
     async def _ensure_ready(self):
@@ -1147,7 +1168,7 @@ class Hooks(BoundaryMixin):
             return
         if self._retry_task is None and self._retry_due():
             # The triggering and concurrent events keep the current routes.
-            self._retry_task = self._background(self._retry_skipped)
+            self._retry_task = self._background(self._retry_skipped, report=True)
 
     async def _initialize(self) -> None:
         active = []
@@ -1166,7 +1187,6 @@ class Hooks(BoundaryMixin):
         transport = self._transport_for(backend)
         if "subscriptions" in backend:
             return backend, transport
-        previous = self._skipped.get(backend["id"])
         # Observe the prepare generation before contacting the backend, so a
         # prepare completing during this attempt makes it eligible again.
         prepared = self._prepared(backend, transport)
@@ -1183,6 +1203,13 @@ class Hooks(BoundaryMixin):
             return resolved, transport
         await self._release(transport)
         assert diagnostic is not None
+        self._record_skip(diagnostic, prepared, reset=reset)
+        return None
+
+    def _record_skip(
+        self, diagnostic: dict[str, Any], prepared: object, *, reset: bool
+    ) -> None:
+        previous = self._skipped.get(diagnostic["backend"])
         delay = (
             self._retry_backoff
             if previous is None or reset
@@ -1190,13 +1217,12 @@ class Hooks(BoundaryMixin):
         )
         retryable = diagnostic["code"] == "configuration_unavailable"
         backoff = retryable and diagnostic.get("recovery", "retry") == "retry"
-        self._skipped[backend["id"]] = _Skip(
+        self._skipped[diagnostic["backend"]] = _Skip(
             diagnostic,
             delay,
             _now() + delay if backoff else None,
             prepared if retryable else None,
         )
-        return None
 
     async def _retry_skipped(self) -> None:
         """Re-attempt eligible skipped backends in the shared background task.
@@ -1217,7 +1243,24 @@ class Hooks(BoundaryMixin):
         try:
             for ident, prepared in due:
                 backend = next(b for b in self._registered if b["id"] == ident)
-                result = await self._admit(deepcopy(backend), reset=prepared)
+                try:
+                    result = await self._admit(deepcopy(backend), reset=prepared)
+                except OperationCancelledError:
+                    raise
+                except Exception as exc:
+                    # e.g. the transport could not be created: record a skip,
+                    # so the backend backs off instead of respawning at once.
+                    _log.warning(
+                        "AHP configuration re-attempt failed: %s", type(exc).__name__
+                    )
+                    self._record_skip(
+                        _skip_diagnostic(
+                            ident, _configuration_failure(exc), auth_failure(exc)
+                        ),
+                        None,
+                        reset=prepared,
+                    )
+                    continue
                 if result is not None:
                     admitted[ident] = result
         except BaseException:
@@ -1324,16 +1367,7 @@ class Hooks(BoundaryMixin):
             # Cancellation is a BaseException and must propagate, never turn into skip.
             code = _configuration_failure(exc)
             auth = auth_failure(exc)
-        diagnostic: dict[str, Any] = {
-            "backend": backend["id"],
-            "code": code,
-            "reason": code,
-        }
-        if auth is not None:
-            diagnostic["auth_error"] = auth.code
-            diagnostic["recovery"] = auth.recovery
-            diagnostic["required_scopes"] = list(auth.required_scopes)
-        return [], diagnostic
+        return [], _skip_diagnostic(backend["id"], code, auth)
 
     async def wait_observations(self) -> list[dict[str, Any]]:
         """Drain retained observation errors; calls already own their deliveries."""

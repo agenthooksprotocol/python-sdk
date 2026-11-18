@@ -2,6 +2,8 @@
 
 from contextlib import asynccontextmanager
 from copy import deepcopy
+import contextvars
+import faulthandler
 from dataclasses import dataclass
 import json
 import os
@@ -62,6 +64,16 @@ class Transport:
 
     async def aclose(self):
         self.closed = True
+
+
+def run_bounded(fn, limit=60):
+    """Run on both backends; a hang (e.g. aclose never joining) fails the run."""
+    for backend in ("asyncio", "trio"):
+        faulthandler.dump_traceback_later(limit, exit=True)
+        try:
+            anyio.run(fn, backend=backend)
+        finally:
+            faulthandler.cancel_dump_traceback_later()
 
 
 def client(reg=None, **options):
@@ -192,9 +204,7 @@ async def compact(
 
 class ConfigurationTests(unittest.TestCase):
     def run_async(self, fn):
-        for backend in ("asyncio", "trio"):
-            with self.subTest(backend=backend):
-                anyio.run(fn, backend=backend)
+        run_bounded(fn)
 
     def test_server_discovery_is_independent_and_snapshotted(self):
         async def run():
@@ -880,9 +890,7 @@ class ConfigurationRetryTests(unittest.TestCase):
     """Skipped-backend diagnostics and re-attempts (server-driven configuration)."""
 
     def run_async(self, fn):
-        for backend in ("asyncio", "trio"):
-            with self.subTest(backend=backend):
-                anyio.run(fn, backend=backend)
+        run_bounded(fn)
 
     def test_401_diagnostic_carries_auth_code(self):
         async def run():
@@ -1457,6 +1465,76 @@ class ConfigurationRetryTests(unittest.TestCase):
                 self.assertEqual(hooks._owned, [])
                 with self.assertRaises(ProcessLookupError):
                     os.kill(pid, 0)
+
+        self.run_async(run)
+
+    def test_reattempt_runs_in_callers_context(self):
+        async def run():
+            from agenthooksprotocol.auth import TransportFailure
+
+            marker = contextvars.ContextVar("marker", default="system")
+            seen = []
+
+            class Recording(ScriptedTransport):
+                async def request(self, message):
+                    if message["method"] == "hooks/configuration":
+                        seen.append(marker.get())
+                    return await super().request(message)
+
+            clock = Clock()
+            marker.set("host")
+            with patch("agenthooksprotocol._hooks._now", clock):
+                hooks = client(transport=Recording(TransportFailure("down")))
+                async with hooks:
+                    clock.now += 30
+                    await admit(hooks, tool_input())
+            # Initial discovery and the background re-attempt both see it.
+            self.assertEqual(seen, ["host", "host"])
+
+        self.run_async(run)
+
+    def test_failed_reattempt_is_logged_diagnosed_and_backs_off(self):
+        async def run():
+            from agenthooksprotocol.auth import TransportFailure
+
+            clock = Clock()
+            transport = ScriptedTransport(TransportFailure("down"))
+            with patch("agenthooksprotocol._hooks._now", clock):
+                async with client(transport=transport) as hooks:
+
+                    def broken(backend):
+                        raise RuntimeError("secret detail")
+
+                    hooks._transport_for = broken
+                    clock.now += 30
+                    with self.assertLogs(
+                        "agenthooksprotocol._hooks", "WARNING"
+                    ) as logs:
+                        await admit(hooks, tool_input())
+                    self.assertIn("RuntimeError", logs.output[0])
+                    self.assertNotIn("secret", "".join(logs.output))
+                    [diagnostic] = hooks.configuration_diagnostics
+                    self.assertEqual(diagnostic["code"], "configuration_unavailable")
+                    # Backed off: the next admission does not respawn at once.
+                    with self.assertNoLogs("agenthooksprotocol._hooks", "WARNING"):
+                        await admit(hooks, tool_input())
+                    del hooks._transport_for
+                    clock.now += 60
+                    await admit(hooks, tool_input())
+                    self.assertEqual(hooks.configuration_diagnostics, [])
+                    self.assertEqual(len(transport.discoveries), 2)
+                # A failure escaping the task is logged by type name only.
+                transport = ScriptedTransport(
+                    TransportFailure("down"), OperationCancelledError("secret")
+                )
+                async with client(transport=transport) as hooks:
+                    clock.now += 30
+                    with self.assertLogs(
+                        "agenthooksprotocol._hooks", "WARNING"
+                    ) as logs:
+                        await admit(hooks, tool_input())
+                    self.assertIn("OperationCancelledError", logs.output[0])
+                    self.assertNotIn("secret", "".join(logs.output))
 
         self.run_async(run)
 

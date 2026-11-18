@@ -1184,9 +1184,21 @@ class Hooks(BoundaryMixin):
         self, backend: dict[str, Any], *, reset: bool = False
     ) -> tuple[dict[str, Any], Any] | None:
         """Resolve one backend's routes, or record why discovery skipped it."""
-        transport = self._transport_for(backend)
         if "subscriptions" in backend:
-            return backend, transport
+            return backend, self._transport_for(backend)
+        try:
+            transport = self._transport_for(backend)
+        except Exception as exc:
+            # Local configuration cannot build the transport: final, not retried.
+            _log.warning(
+                "AHP configuration transport unavailable: %s", type(exc).__name__
+            )
+            self._record_skip(
+                _skip_diagnostic(backend["id"], "configuration_invalid", None),
+                None,
+                reset=reset,
+            )
+            return None
         # Observe the prepare generation before contacting the backend, so a
         # prepare completing during this attempt makes it eligible again.
         prepared = self._prepared(backend, transport)
@@ -1243,24 +1255,7 @@ class Hooks(BoundaryMixin):
         try:
             for ident, prepared in due:
                 backend = next(b for b in self._registered if b["id"] == ident)
-                try:
-                    result = await self._admit(deepcopy(backend), reset=prepared)
-                except OperationCancelledError:
-                    raise
-                except Exception as exc:
-                    # e.g. the transport could not be created: record a skip,
-                    # so the backend backs off instead of respawning at once.
-                    _log.warning(
-                        "AHP configuration re-attempt failed: %s", type(exc).__name__
-                    )
-                    self._record_skip(
-                        _skip_diagnostic(
-                            ident, _configuration_failure(exc), auth_failure(exc)
-                        ),
-                        None,
-                        reset=prepared,
-                    )
-                    continue
+                result = await self._admit(deepcopy(backend), reset=prepared)
                 if result is not None:
                     admitted[ident] = result
         except BaseException:

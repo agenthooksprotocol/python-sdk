@@ -56,6 +56,16 @@ class HTTPTransport:
         response = await self._ready().post(
             self.url, json=message, headers=self.headers, follow_redirects=False
         )
+        if (
+            message.get("method") == "hooks/configuration"
+            and response.status_code != 200
+        ):
+            from ..auth import TransportFailure
+
+            # Discovery succeeds only with 200; any other status is unavailable.
+            raise TransportFailure(
+                "HTTP delivery rejected: " + str(response.status_code)
+            )
         try:
             result = response.json()
         except (ValueError, UnicodeError):

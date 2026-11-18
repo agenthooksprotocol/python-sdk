@@ -560,7 +560,7 @@ class ConfigurationTests(unittest.TestCase):
 
         self.run_async(run)
 
-    def test_stdio_uncorrelated_discovery_is_invalid_without_waiting(self):
+    def test_stdio_uncorrelated_discovery_is_discarded_until_deadline(self):
         async def run():
             value = registration()
             value["hooks"][0]["transport"].update(
@@ -577,14 +577,15 @@ class ConfigurationTests(unittest.TestCase):
                 }
             )
             started = anyio.current_time()
-            async with client(value) as hooks:
-                self.assertEqual(hooks.config["hooks"], [])
-                self.assertEqual(
-                    hooks.configuration_diagnostics[0]["code"],
-                    "configuration_invalid",
-                )
-            # Classified at the uncorrelated frame, not at the deadline.
-            self.assertLess(anyio.current_time() - started, 4)
+            with patch("agenthooksprotocol._hooks._CONFIGURATION_TIMEOUT_SECONDS", 0.5):
+                async with client(value) as hooks:
+                    self.assertEqual(hooks.config["hooks"], [])
+                    # The id-mismatched frame is discarded; discovery times out.
+                    self.assertEqual(
+                        hooks.configuration_diagnostics[0]["code"],
+                        "configuration_unavailable",
+                    )
+            self.assertGreaterEqual(anyio.current_time() - started, 0.5)
 
         self.run_async(run)
 
@@ -1493,14 +1494,17 @@ class ConfigurationRetryTests(unittest.TestCase):
 
         self.run_async(run)
 
-    def test_failed_reattempt_is_logged_diagnosed_and_backs_off(self):
+    def test_unbuildable_transport_is_invalid_and_never_retried(self):
         async def run():
             from agenthooksprotocol.auth import TransportFailure
 
             clock = Clock()
+            provider = PreparingProvider()
             transport = ScriptedTransport(TransportFailure("down"))
             with patch("agenthooksprotocol._hooks._now", clock):
-                async with client(transport=transport) as hooks:
+                async with client(
+                    http_registration(), transport=transport, auth_provider=provider
+                ) as hooks:
 
                     def broken(backend):
                         raise RuntimeError("secret detail")
@@ -1514,19 +1518,29 @@ class ConfigurationRetryTests(unittest.TestCase):
                     self.assertIn("RuntimeError", logs.output[0])
                     self.assertNotIn("secret", "".join(logs.output))
                     [diagnostic] = hooks.configuration_diagnostics
-                    self.assertEqual(diagnostic["code"], "configuration_unavailable")
-                    # Backed off: the next admission does not respawn at once.
+                    self.assertEqual(diagnostic["code"], "configuration_invalid")
+                    # Final: neither backoff nor a prepare re-attempts it.
+                    del hooks._transport_for
+                    clock.now += 10 * 3600
+                    provider.prepared("org.example.hook")
                     with self.assertNoLogs("agenthooksprotocol._hooks", "WARNING"):
                         await admit(hooks, tool_input())
-                    del hooks._transport_for
-                    clock.now += 60
-                    await admit(hooks, tool_input())
-                    self.assertEqual(hooks.configuration_diagnostics, [])
-                    self.assertEqual(len(transport.discoveries), 2)
-                # A failure escaping the task is logged by type name only.
-                transport = ScriptedTransport(
-                    TransportFailure("down"), OperationCancelledError("secret")
-                )
+                    self.assertIsNone(hooks._retry_task)
+                    self.assertEqual(len(transport.discoveries), 1)
+            # A registration endpoint the borrowed transport cannot serve.
+            from agenthooksprotocol.transports.http import HTTPTransport
+
+            value = http_registration({"X-Static": "v"})
+            async with client(
+                value, transport=HTTPTransport(POLICY_URL + "/other")
+            ) as hooks:
+                [diagnostic] = hooks.configuration_diagnostics
+                self.assertEqual(diagnostic["code"], "configuration_invalid")
+            # A failure escaping the task is logged by type name only.
+            transport = ScriptedTransport(
+                TransportFailure("down"), OperationCancelledError("secret")
+            )
+            with patch("agenthooksprotocol._hooks._now", clock):
                 async with client(transport=transport) as hooks:
                     clock.now += 30
                     with self.assertLogs(
@@ -1535,6 +1549,104 @@ class ConfigurationRetryTests(unittest.TestCase):
                         await admit(hooks, tool_input())
                     self.assertIn("OperationCancelledError", logs.output[0])
                     self.assertNotIn("secret", "".join(logs.output))
+
+        self.run_async(run)
+
+    def test_http_status_classification(self):
+        async def run():
+            import httpx
+            from agenthooksprotocol.auth import AuthenticatedHTTPTransport
+            from agenthooksprotocol.transports.http import HTTPTransport
+
+            engine = Engine(Handlers(), configuration=advertised())
+            not_found = {"code": -32601, "message": "Method not found"}
+
+            def reply(status, body):
+                async def respond(request):
+                    message = json.loads(request.content)
+                    if body == "engine":
+                        payload = await engine.process(message)
+                    elif body == "not_found":
+                        payload = {
+                            "jsonrpc": "2.0",
+                            "id": message["id"],
+                            "error": not_found,
+                        }
+                    elif body == "uncorrelated":
+                        payload = await engine.process(message)
+                        payload["id"] = "other"
+                    elif body == "version":
+                        payload = await engine.process(message)
+                        payload["result"]["protocolVersion"] = "1999-01-01"
+                    else:
+                        return httpx.Response(status, content=body)
+                    return httpx.Response(status, json=payload)
+
+                return respond
+
+            cases = (
+                (404, "not_found", "configuration_unavailable"),
+                (500, "not_found", "configuration_unavailable"),
+                (204, b"", "configuration_unavailable"),
+                (201, "engine", "configuration_unavailable"),
+                (200, "not_found", "configuration_invalid"),
+                (200, "uncorrelated", "configuration_invalid"),
+                (200, "version", "configuration_invalid"),
+                (200, b"not json", "configuration_invalid"),
+            )
+            for kind in ("plain", "authenticated"):
+                for status, body, code in cases:
+                    with self.subTest(kind=kind, status=status, body=body):
+                        async with httpx.AsyncClient(
+                            transport=httpx.MockTransport(reply(status, body))
+                        ) as http:
+                            value = http_registration()
+                            transport = (
+                                HTTPTransport(POLICY_URL, client=http)
+                                if kind == "plain"
+                                else AuthenticatedHTTPTransport(
+                                    POLICY_URL,
+                                    backend=value["hooks"][0],
+                                    client=http,
+                                )
+                            )
+                            async with client(value, transport=transport) as hooks:
+                                [diagnostic] = hooks.configuration_diagnostics
+                                self.assertEqual(diagnostic["code"], code)
+
+        self.run_async(run)
+
+    def test_prepare_retriggers_after_failed_reattempt(self):
+        async def run():
+            from agenthooksprotocol.auth import AuthenticationFailure, TransportFailure
+
+            for failure in (
+                TransportFailure("down"),
+                AuthenticationFailure(code="interaction_required"),
+            ):
+                with self.subTest(failure=type(failure).__name__):
+                    clock = Clock()
+                    provider = PreparingProvider()
+                    transport = ScriptedTransport(TransportFailure("down"), failure)
+                    with patch("agenthooksprotocol._hooks._now", clock):
+                        async with client(
+                            http_registration(),
+                            transport=transport,
+                            auth_provider=provider,
+                        ) as hooks:
+                            clock.now += 30
+                            # The background re-attempt fails.
+                            await admit(hooks, tool_input())
+                            self.assertEqual(len(transport.discoveries), 2)
+                            self.assertEqual(hooks.config["hooks"], [])
+                            # No backoff elapsed: the prepare alone re-triggers it.
+                            provider.prepared("org.example.hook")
+                            await admit(hooks, tool_input())
+                            self.assertEqual(len(transport.discoveries), 3)
+                            self.assertEqual(
+                                [b["id"] for b in hooks.config["hooks"]],
+                                ["org.example.hook"],
+                            )
 
         self.run_async(run)
 

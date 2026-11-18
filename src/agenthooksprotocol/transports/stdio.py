@@ -36,8 +36,7 @@ def _key(id: Any) -> tuple[str, Any]:
 
 
 class _Slot:
-    def __init__(self, method: Any = None) -> None:
-        self.method = method
+    def __init__(self) -> None:
         self.event = anyio.Event()
         self.value: dict[str, Any] | None = None
         self.error: Exception | None = None
@@ -82,10 +81,10 @@ class _Child:
         # The asyncio Task must stay referenced while it runs.
         self.task = _spawn(self._read)
 
-    def register(self, id: Any, method: Any = None) -> _Slot:
+    def register(self, id: Any) -> _Slot:
         if self.failure is not None:
             raise self.failure
-        slot = self.pending[_key(id)] = _Slot(method)
+        slot = self.pending[_key(id)] = _Slot()
         return slot
 
     def unregister(self, id: Any) -> None:
@@ -132,19 +131,6 @@ class _Child:
         slot = None
         if isinstance(value, dict) and type(value.get("id")) in (str, int):
             slot = self.pending.pop(_key(value["id"]), None)
-        if slot is None and isinstance(value, dict) and "method" not in value:
-            # Exchanges are serialized and a failed one replaces the child, so
-            # a response while configuration is pending answers it, uncorrelated.
-            waiting = list(self.pending.values())
-            if (
-                len(waiting) == 1
-                and waiting[0].method == "hooks/configuration"
-                and ("result" in value or "error" in value)
-            ):
-                waiting[0].resolve(
-                    error=ProtocolError("Stdio configuration correlation mismatch")
-                )
-                return
         if slot is None:
             # Frame contents may carry secrets: report shape, never content.
             _log.warning(
@@ -287,11 +273,7 @@ class StdioTransport:
             child = None
             try:
                 child = await self._ready()
-                slot = (
-                    child.register(message["id"], message.get("method"))
-                    if response
-                    else None
-                )
+                slot = child.register(message["id"]) if response else None
                 await child.process.stdin.send(
                     json.dumps(message, allow_nan=False, separators=(",", ":")).encode()
                     + b"\n"

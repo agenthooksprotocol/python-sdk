@@ -423,13 +423,6 @@ class AuthenticatedHTTPTransport(HTTPTransport):
                     _validate_intercept_response(
                         self._validator, {"id": ident}, rejected
                     )
-            elif message.get("method") == "hooks/configuration":
-                # Keep a valid method-not-found distinct from a failed status.
-                try:
-                    rejected = response.json()
-                except (ValueError, UnicodeError):
-                    rejected = None
-                _raise_rpc_error(self._validator, {"id": ident}, rejected)
             raise TransportFailure(
                 "HTTP delivery rejected: " + str(response.status_code)
             )
@@ -443,6 +436,14 @@ class AuthenticatedHTTPTransport(HTTPTransport):
             retry_allowed=message.get("method") in _REPLAYABLE,
             intercept_response=message.get("method") == "hooks/intercept",
         )
+        if (
+            message.get("method") == "hooks/configuration"
+            and response.status_code != 200
+        ):
+            # Discovery succeeds only with 200; any other status is unavailable.
+            raise TransportFailure(
+                "HTTP delivery rejected: " + str(response.status_code)
+            )
         try:
             result = response.json()
         except (ValueError, UnicodeError):

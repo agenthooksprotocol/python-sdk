@@ -73,7 +73,11 @@ backend. `hooks.configuration_diagnostics` returns detached, credential-free
 entries for currently skipped backends: `backend` and one `code`
 (`configuration_unavailable`, `configuration_invalid`,
 `no_applicable_subscriptions` or `configuration_local_secret`; `reason` repeats
-it). An authentication failure adds its `auth_error` code, `recovery` and
+it). Over HTTP only status 200 is a response: any other status is
+`configuration_unavailable`, whatever its body; a 200 that is malformed,
+uncorrelated, version-incompatible or method-not-found is
+`configuration_invalid`, as is a transport that local configuration cannot
+build. On stdio an id-mismatched frame is discarded, so discovery times out. An authentication failure adds its `auth_error` code, `recovery` and
 validated `required_scopes`. Cancellation propagates and records nothing.
 
 A `configuration_unavailable` backend is re-attempted at the next admission

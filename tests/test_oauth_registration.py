@@ -917,8 +917,22 @@ class RegistrationLifecycleTests(unittest.TestCase):
             self.assertEqual(len(env.n.registrations), 2)
             self.assertEqual(env.registration().attempts, 1)
             self.assertIsNone(env.registration().client_id)
-            await self.fails("credential_unavailable", env.challenge())
+            # It counts as a failed registration: a server that accepts
+            # registrations but rejects their clients is not re-registered on
+            # every operation, by any process sharing the store.
+            marker = env.registration()
+            self.assertEqual(marker.failure, "credential_unavailable")
+            self.assertEqual(marker.next_attempt_at, 1060)
+            other = env.provider()
+            for provider in (env.p, other):
+                await self.fails("credential_unavailable", env.challenge(provider))
             self.assertEqual(len(env.n.registrations), 2)
+            env.now[0] = 1060
+            await self.fails("credential_unavailable", env.challenge(other))
+            self.assertEqual(len(env.n.registrations), 4)
+            # Doubling per failure, like any failed registration.
+            self.assertEqual(env.registration().attempts, 2)
+            self.assertEqual(env.registration().next_attempt_at, 1060 + 120)
 
         self.run_env(cc)
         self.run_env(repeated)

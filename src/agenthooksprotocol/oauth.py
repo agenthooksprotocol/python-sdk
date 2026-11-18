@@ -1128,6 +1128,11 @@ class ManagedOAuthProvider:
             method,
             outcome.client_secret_expires_at,
             reference,
+            # A client still rejected later (repeated invalid_client) keeps
+            # doubling the backoff it was registered after.
+            attempts=record.attempts
+            if record is not None and record.client_id is None
+            else 0,
         )
         try:
             await self._swap_registration(guard, record, fresh)
@@ -1262,7 +1267,15 @@ class ManagedOAuthProvider:
             await self._swap_registration(
                 guard,
                 record,
-                self._marked(None, "credential_unavailable", None) if mark else None,
+                # A repeated invalid_client counts as a failed registration.
+                self._marked(
+                    replace(record, client_id=None), "credential_unavailable", None
+                )
+                if mark
+                # The failure count survives the first rejection's re-register.
+                else OAuthRegistration(uuid4().hex, attempts=record.attempts)
+                if record.attempts
+                else None,
             )
 
     async def _acquire(

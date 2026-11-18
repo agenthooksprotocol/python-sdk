@@ -312,7 +312,9 @@ records delete their reference. `registration_access_token` and
 `registration_client_uri` are ignored. An expired or unresolvable secret
 re-registers. A token-endpoint `invalid_client` deletes that client,
 re-registers and retries once; a repeated `invalid_client` is
-`credential_unavailable`. After a failed registration no process sharing the
+`credential_unavailable` and counts as a failed registration for the backoff,
+so a server that accepts registrations but rejects their clients is not
+re-registered on every operation. After a failed registration no process sharing the
 store registers for that issuer until a backoff passes: `registration_backoff`
 (default 60 seconds) doubling to `registration_backoff_max` (default 1 hour), or
 a later `Retry-After` up to the same cap. Meanwhile the last failure's code is

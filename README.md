@@ -86,9 +86,13 @@ recovery is `retry`, it is also re-attempted after a backoff of
 `configuration_retry_backoff` seconds (default 30), doubling up to
 `configuration_retry_max_backoff` (default 3600); `login`, `configure` and `none`
 causes wait for a prepare. Other codes are final until a new `Hooks`. A
-re-attempt runs in the shared admission: concurrent calls keep the previous
-routes, successful routes are installed in one step in registration order, and
-earlier events are not replayed. Until its configuration is valid such a backend
+re-attempt runs as one SDK-owned background task bounded by the discovery
+deadline: the triggering and concurrent events use the current routes and never
+wait for it, event cancellation never cancels it, and `aclose` cancels it.
+Successful routes are installed in one step in registration order, and earlier
+events are not replayed. Initial discovery also runs in an SDK-owned task;
+admissions wait for it, as delivery requires resolved routes, but a cancelled
+waiter leaves it running for the next admission. Until its configuration is valid such a backend
 is advisory; enforce with explicit `fail-closed` subscriptions. No other
 background refresh occurs. Per-request capability grants remain authoritative.
 

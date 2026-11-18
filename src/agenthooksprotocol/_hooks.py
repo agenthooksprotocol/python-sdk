@@ -669,6 +669,17 @@ class _Skip:
     prepared: object = None
 
 
+class _Background:
+    """An SDK-owned discovery task: its cancel scope, completion and error."""
+
+    def __init__(self) -> None:
+        self.scope = anyio.CancelScope()
+        self.done = anyio.Event()
+        self.error: Exception | None = None
+        # The asyncio Task must stay referenced while it runs.
+        self.handle: Any = None
+
+
 def _configuration_failure(exc: Exception) -> str:
     """Skip code for a failed discovery; auth causes are always unavailable."""
     from .auth import TransportFailure
@@ -847,6 +858,9 @@ class Hooks(BoundaryMixin):
         self._registered = deepcopy(self.config["hooks"])
         self._skipped: dict[str, _Skip] = {}
         self._retrying: set[str] = set()
+        self._tasks: set[_Background] = set()
+        self._initializing: _Background | None = None
+        self._retry_task: _Background | None = None
         self._owned = []
         self._ready_lock = anyio.Lock()
         self._closed = False
@@ -1085,23 +1099,65 @@ class Hooks(BoundaryMixin):
             self._eligible(ident, skip)[0] for ident, skip in self._skipped.items()
         )
 
+    def _background(self, work: Callable[[], Any]) -> _Background:
+        """Run discovery as an SDK-owned task tied to this Hooks' lifetime.
+
+        Caller cancellation and event deadlines never reach it; `aclose`
+        cancels and joins it. Each discovery is bounded by its own deadline.
+        """
+        from .transports.stdio import _spawn
+
+        task = _Background()
+
+        async def run() -> None:
+            try:
+                with task.scope:
+                    async with self._ready_lock:
+                        if not self._closed:
+                            await work()
+            except Exception as exc:
+                # Includes OperationCancelledError raised by a transport.
+                task.error = exc
+            finally:
+                self._tasks.discard(task)
+                if self._retry_task is task:
+                    self._retry_task = None
+                task.done.set()
+
+        self._tasks.add(task)
+        task.handle = _spawn(run)
+        return task
+
     async def _ensure_ready(self):
-        if self._ready and not self._closed and not self._retry_due():
-            return
-        async with self._ready_lock:
+        if self._closed:
+            raise RuntimeError("Hooks is closed")
+        if not self._ready:
+            # One shared initialization; a cancelled waiter leaves it running
+            # so the next admission resumes it rather than starting over.
+            task = self._initializing
+            if task is None:
+                task = self._initializing = self._background(self._initialize)
+            await task.done.wait()
             if self._closed:
                 raise RuntimeError("Hooks is closed")
-            if not self._ready:
-                active = []
-                for backend in self.config["hooks"]:
-                    admitted = await self._admit(backend)
-                    if admitted is not None:
-                        active.append(admitted[0])
-                        self._transports[backend["id"]] = admitted[1]
-                self.config["hooks"] = active
-                self._ready = True
-                return
-            await self._retry_skipped()
+            if task.error is not None:
+                if self._initializing is task:
+                    self._initializing = None
+                raise task.error
+            return
+        if self._retry_task is None and self._retry_due():
+            # The triggering and concurrent events keep the current routes.
+            self._retry_task = self._background(self._retry_skipped)
+
+    async def _initialize(self) -> None:
+        active = []
+        for backend in self.config["hooks"]:
+            admitted = await self._admit(backend)
+            if admitted is not None:
+                active.append(admitted[0])
+                self._transports[backend["id"]] = admitted[1]
+        self.config["hooks"] = active
+        self._ready = True
 
     async def _admit(
         self, backend: dict[str, Any], *, reset: bool = False
@@ -1143,10 +1199,10 @@ class Hooks(BoundaryMixin):
         return None
 
     async def _retry_skipped(self) -> None:
-        """Re-attempt eligible skipped backends inside the shared admission.
+        """Re-attempt eligible skipped backends in the shared background task.
 
-        Concurrent callers see the previous routes until every re-attempt in
-        this admission settles; successful routes are installed in one step.
+        Admissions keep the previous routes until every re-attempt in this
+        pass settles; successful routes are installed in one step.
         """
         due = [
             (ident, prepared)
@@ -1315,6 +1371,11 @@ class Hooks(BoundaryMixin):
                     await operation["done"].wait()
                 for pending in self._pending:
                     pending._retire_content()
+                tasks = list(self._tasks)
+                for task in tasks:
+                    task.scope.cancel()
+                for task in tasks:
+                    await task.done.wait()
                 async with self._ready_lock:
                     for transport in self._owned:
                         await transport.aclose()

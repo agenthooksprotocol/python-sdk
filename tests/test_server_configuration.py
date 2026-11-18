@@ -862,6 +862,20 @@ class PreparingProvider:
         return None
 
 
+async def settle(hooks):
+    """Wait for an SDK-owned configuration re-attempt, if one is running."""
+    task = hooks._retry_task
+    if task is not None:
+        await task.done.wait()
+
+
+async def admit(hooks, value):
+    """One event admission, then let any re-attempt it started settle."""
+    result = await hooks.tool_before(value)
+    await settle(hooks)
+    return result
+
+
 class ConfigurationRetryTests(unittest.TestCase):
     """Skipped-backend diagnostics and re-attempts (server-driven configuration)."""
 
@@ -914,7 +928,7 @@ class ConfigurationRetryTests(unittest.TestCase):
                 self.assertEqual(hooks.config["hooks"], [])
                 login = await managed.prepare(target, OperationBudget.after(5))
                 # A pending login is not a successful prepare.
-                await hooks.tool_before(tool_input("before-login"))
+                await admit(hooks, tool_input("before-login"))
                 self.assertEqual(len(events.discoveries), 1)
                 state = parse_qs(urlsplit(login.authorization_url).query)["state"][0]
                 await managed.complete(
@@ -925,14 +939,17 @@ class ConfigurationRetryTests(unittest.TestCase):
                     OperationBudget.after(5),
                 )
                 # No backoff elapsed: the prepare alone makes it eligible.
-                result = await hooks.tool_before(tool_input())
+                # The re-attempt runs in the background; this event keeps the
+                # current routes and is not replayed.
+                result = await admit(hooks, tool_input("trigger"))
                 await result.aclose()
                 self.assertEqual(len(events.discoveries), 2)
                 self.assertEqual(
                     [b["id"] for b in hooks.config["hooks"]], ["org.example.backend"]
                 )
                 self.assertEqual(hooks.configuration_diagnostics, [])
-                # The re-attempting admission delivers with the new routes.
+                result = await admit(hooks, tool_input())
+                await result.aclose()
                 self.assertEqual(
                     [m["params"]["event"]["call"]["id"] for m in events.intercepts],
                     ["call-1"],
@@ -961,18 +978,20 @@ class ConfigurationRetryTests(unittest.TestCase):
                     for _ in range(len(failures) - 1):
                         self.assertEqual(len(transport.discoveries), expected)
                         clock.now += delay - 0.5
-                        await hooks.tool_before(tool_input())
+                        await admit(hooks, tool_input())
                         # Earlier admissions do not contact the backend.
                         self.assertEqual(len(transport.discoveries), expected)
                         clock.now += 0.5
-                        await hooks.tool_before(tool_input())
+                        await admit(hooks, tool_input())
                         expected += 1
                         delay = min(delay * 2, 3600.0)
                     self.assertEqual(len(transport.discoveries), expected)
                     # The provider_failed cause (recovery retry) also backs off.
                     self.assertEqual(hooks.config["hooks"], [])
                     clock.now += 3600
-                    result = await hooks.tool_before(tool_input())
+                    await admit(hooks, tool_input("trigger"))
+                    self.assertEqual(len(transport.intercepts), 0)
+                    result = await admit(hooks, tool_input())
                     await result.aclose()
                     self.assertEqual(len(transport.intercepts), 1)
                     self.assertEqual(hooks.configuration_diagnostics, [])
@@ -987,10 +1006,12 @@ class ConfigurationRetryTests(unittest.TestCase):
                     for delay in (1, 2, 3, 3):
                         clock.now += delay - 0.1
                         await hooks._ensure_ready()
+                        await settle(hooks)
                         before = len(transport.discoveries)
                         clock.now += 0.1
                         # Initialization-path admission re-attempts as well.
                         await hooks.__aenter__()
+                        await settle(hooks)
                         self.assertEqual(len(transport.discoveries), before + 1)
             for invalid in ((0, 1), (2, 1), (True, 2), (float("inf"), 1e9)):
                 with self.subTest(invalid=invalid), self.assertRaises(ValueError):
@@ -1021,17 +1042,18 @@ class ConfigurationRetryTests(unittest.TestCase):
                         [diagnostic] = hooks.configuration_diagnostics
                         self.assertEqual(diagnostic["recovery"], recovery)
                         clock.now += 10 * 3600
-                        await hooks.tool_before(tool_input())
+                        await admit(hooks, tool_input())
                         self.assertEqual(len(transport.discoveries), 1)
                         # A prepare for another endpoint or backend does not count.
                         provider.prepared("backend.other")
                         provider.prepared("org.example.hook", POLICY_URL + "/other")
-                        await hooks.tool_before(tool_input())
+                        await admit(hooks, tool_input())
                         self.assertEqual(len(transport.discoveries), 1)
                         provider.prepared("org.example.hook")
-                        result = await hooks.tool_before(tool_input())
-                        await result.aclose()
+                        await admit(hooks, tool_input("trigger"))
                         self.assertEqual(len(transport.discoveries), 2)
+                        result = await admit(hooks, tool_input())
+                        await result.aclose()
                         self.assertEqual(len(transport.intercepts), 1)
 
         self.run_async(run)
@@ -1078,7 +1100,7 @@ class ConfigurationRetryTests(unittest.TestCase):
                             self.assertEqual(len(transport.calls), 1)
                             clock.now += 10 * 3600
                             provider.prepared("org.example.hook")
-                            await hooks.tool_before(tool_input())
+                            await admit(hooks, tool_input())
                             retried = code == "configuration_unavailable"
                             discoveries = [
                                 m
@@ -1135,21 +1157,24 @@ class ConfigurationRetryTests(unittest.TestCase):
                         seen[name] = [b["id"] for b in hooks.config["hooks"]]
                         await result.aclose()
 
-                    async with anyio.create_task_group() as tasks:
-                        tasks.start_soon(admit, "retrying")
-                        await blocked.wait()
-                        # "first" was admitted, "second" is still in flight:
-                        # concurrent callers see the old routes, never partial.
-                        await admit("concurrent")
-                        self.assertEqual(seen["concurrent"], ["org.example.explicit"])
-                        self.assertEqual(
-                            hooks.configuration_diagnostics[0]["backend"],
-                            "org.example.first",
-                        )
-                        release.set()
+                    # The triggering admission keeps the current routes.
+                    await admit("trigger")
+                    self.assertEqual(seen["trigger"], ["org.example.explicit"])
+                    await blocked.wait()
+                    # "first" was resolved, "second" is still in flight:
+                    # concurrent callers see the old routes, never partial.
+                    await admit("concurrent")
+                    self.assertEqual(seen["concurrent"], ["org.example.explicit"])
+                    self.assertEqual(
+                        hooks.configuration_diagnostics[0]["backend"],
+                        "org.example.first",
+                    )
+                    release.set()
+                    await settle(hooks)
+                    await admit("after")
                     # Registration order is kept when the routes are swapped in.
                     self.assertEqual(
-                        seen["retrying"],
+                        seen["after"],
                         [
                             "org.example.first",
                             "org.example.explicit",
@@ -1162,11 +1187,11 @@ class ConfigurationRetryTests(unittest.TestCase):
                         for name, t in transports.items()
                     }
                     # Earlier admissions are never replayed to the new backends.
-                    self.assertEqual(calls["org.example.first"], ["retrying"])
-                    self.assertEqual(calls["org.example.second"], ["retrying"])
+                    self.assertEqual(calls["org.example.first"], ["after"])
+                    self.assertEqual(calls["org.example.second"], ["after"])
                     self.assertEqual(
                         sorted(calls["org.example.explicit"]),
-                        ["concurrent", "retrying"],
+                        ["after", "concurrent", "trigger"],
                     )
 
         self.run_async(run)
@@ -1204,7 +1229,8 @@ class ConfigurationRetryTests(unittest.TestCase):
                         # Let every admission reach the shared re-attempt.
                         for _ in range(100):
                             await anyio.lowlevel.checkpoint()
-                        release.set()
+                    release.set()
+                    await settle(hooks)
                     for transport in transports.values():
                         self.assertEqual(len(transport.discoveries), 2)
                     self.assertEqual(
@@ -1265,6 +1291,7 @@ class ConfigurationRetryTests(unittest.TestCase):
                         await preuploading.wait()
                         clock.now += 30
                         await hooks._ensure_ready()
+                        await settle(hooks)
                         self.assertEqual(
                             [b["id"] for b in hooks.config["hooks"]],
                             ["org.example.explicit", "org.example.late"],
@@ -1280,6 +1307,156 @@ class ConfigurationRetryTests(unittest.TestCase):
                     self.assertEqual(
                         sorted(calls["org.example.explicit"]), ["early", "retrying"]
                     )
+
+        self.run_async(run)
+
+    def test_hung_reattempt_does_not_delay_fail_closed_delivery(self):
+        async def run():
+            from agenthooksprotocol.auth import TransportFailure
+
+            clock = Clock()
+            hung = anyio.Event()
+            retired = anyio.Event()
+
+            class Hanging(ScriptedTransport):
+                async def request(self, message):
+                    if message["method"] == "hooks/configuration" and not self.errors:
+                        self.calls.append(deepcopy(message))
+                        hung.set()
+                        try:
+                            await anyio.sleep_forever()
+                        finally:
+                            retired.set()
+                    return await super().request(message)
+
+            value = registration()
+            explicit = config(policy="fail-closed")["hooks"][0]
+            explicit["id"] = "org.example.enforcer"
+            skipped = deepcopy(value["hooks"][0])
+            skipped["id"] = "org.example.hung"
+            value["hooks"] = [explicit, skipped]
+            transports = {
+                "org.example.enforcer": ScriptedTransport(),
+                "org.example.hung": Hanging(TransportFailure("down")),
+            }
+            with (
+                patch("agenthooksprotocol._hooks._now", clock),
+                patch("agenthooksprotocol._hooks._CONFIGURATION_TIMEOUT_SECONDS", 60),
+            ):
+                hooks = client(value, transport=transports)
+                await hooks.__aenter__()
+                clock.now += 30
+                for index in range(4):
+                    # The host's event deadline is far shorter than discovery's.
+                    with anyio.fail_after(1):
+                        result = await hooks.tool_before(tool_input(f"event-{index}"))
+                        await result.aclose()
+                    await hung.wait()
+                self.assertEqual(len(transports["org.example.enforcer"].intercepts), 4)
+                self.assertEqual(len(transports["org.example.hung"].discoveries), 2)
+                with anyio.fail_after(1):
+                    await hooks.aclose()
+                self.assertTrue(retired.is_set())
+                self.assertEqual(hooks._tasks, set())
+
+        self.run_async(run)
+
+    def test_short_event_deadlines_do_not_starve_slow_discovery(self):
+        async def run():
+            from agenthooksprotocol.auth import TransportFailure
+
+            class Slow(ScriptedTransport):
+                async def request(self, message):
+                    if message["method"] == "hooks/configuration" and not self.errors:
+                        await anyio.sleep(0.3)
+                    return await super().request(message)
+
+            for path in ("initial", "retry"):
+                with self.subTest(path=path):
+                    clock = Clock()
+                    errors = () if path == "initial" else (TransportFailure("down"),)
+                    transport = Slow(*errors)
+                    hooks = client(transport=transport)
+                    with patch("agenthooksprotocol._hooks._now", clock):
+                        if path == "retry":
+                            await hooks.__aenter__()
+                            # Warm the dispatch path outside the measured deadlines.
+                            await hooks.tool_before(tool_input("warm"))
+                            clock.now += 30
+                        timeouts = 0
+                        with anyio.fail_after(5):
+                            while not hooks.config["hooks"] or not hooks._ready:
+                                try:
+                                    with anyio.fail_after(0.05):
+                                        await hooks.tool_before(tool_input())
+                                except TimeoutError:
+                                    timeouts += 1
+                                await anyio.sleep(0.01)
+                    try:
+                        # Cancelled waiters never restart the slow discovery.
+                        expected = 1 if path == "initial" else 2
+                        self.assertEqual(len(transport.discoveries), expected)
+                        if path == "initial":
+                            self.assertGreater(timeouts, 0)
+                        else:
+                            # Events never wait for a re-attempt.
+                            self.assertEqual(timeouts, 0)
+                        result = await hooks.tool_before(tool_input("final"))
+                        await result.aclose()
+                        self.assertEqual(
+                            transport.intercepts[-1]["params"]["event"]["call"]["id"],
+                            "final",
+                        )
+                    finally:
+                        await hooks.aclose()
+
+        self.run_async(run)
+
+    def test_aclose_cancels_reattempt_and_reaps_stdio_child(self):
+        async def run():
+            import tempfile
+
+            with tempfile.TemporaryDirectory() as scratch:
+                marker = os.path.join(scratch, "started")
+                pid_file = os.path.join(scratch, "pid")
+                script = (
+                    "import os,sys,time\n"
+                    f"marker, pid_file = {marker!r}, {pid_file!r}\n"
+                    "if not os.path.exists(marker):\n"
+                    "    open(marker, 'w').close(); sys.exit(0)\n"
+                    "open(pid_file + '.tmp', 'w').write(str(os.getpid()))\n"
+                    "os.replace(pid_file + '.tmp', pid_file)\n"
+                    "sys.stdin.readline(); time.sleep(60)\n"
+                )
+                value = registration()
+                value["hooks"][0]["transport"].update(
+                    {"command": sys.executable, "args": ["-c", script]}
+                )
+                clock = Clock()
+                with (
+                    patch("agenthooksprotocol._hooks._now", clock),
+                    patch(
+                        "agenthooksprotocol._hooks._CONFIGURATION_TIMEOUT_SECONDS", 60
+                    ),
+                ):
+                    hooks = client(value)
+                    await hooks.__aenter__()
+                    self.assertEqual(
+                        hooks.configuration_diagnostics[0]["code"],
+                        "configuration_unavailable",
+                    )
+                    clock.now += 30
+                    await hooks.tool_before(tool_input())
+                    with anyio.fail_after(10):
+                        while not os.path.exists(pid_file):
+                            await anyio.sleep(0.02)
+                    pid = int(open(pid_file).read())
+                    with anyio.fail_after(5):
+                        await hooks.aclose()
+                self.assertEqual(hooks._tasks, set())
+                self.assertEqual(hooks._owned, [])
+                with self.assertRaises(ProcessLookupError):
+                    os.kill(pid, 0)
 
         self.run_async(run)
 

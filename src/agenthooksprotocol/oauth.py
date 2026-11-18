@@ -18,7 +18,7 @@ import math
 import re
 import secrets
 import time
-from typing import TypeVar
+from typing import Literal, TypeVar
 from urllib.parse import parse_qs, quote, urlencode, urlsplit, urlunsplit
 from uuid import uuid4
 
@@ -82,7 +82,22 @@ _DEFINITIVE = (
     "access_denied",
     "invalid_scope",
 )
-_SCOPE = re.compile(r"[\x21\x23-\x5b\x5d-\x7e]+")
+_SCOPE = r"[\x21\x23-\x5b\x5d-\x7e]+"
+_SCOPE_LIST = re.compile(rf"{_SCOPE}(?: {_SCOPE})*")
+
+
+def _response_scopes(scope: object) -> tuple[str, ...] | None | Literal[False]:
+    """A token-response `scope`: its tokens, None when omitted, False if malformed.
+
+    Absent, JSON null and blank strings (only SP/HTAB/CR/LF) are treated as
+    omitted. Any other string must be an RFC 6749 scope list with single-SP
+    separators; any other JSON type is malformed.
+    """
+    if scope is None or (isinstance(scope, str) and not scope.strip(" \t\r\n")):
+        return None
+    if not isinstance(scope, str) or _SCOPE_LIST.fullmatch(scope) is None:
+        return False
+    return tuple(scope.split(" "))
 
 
 _MAX_LIFETIME = 2**31  # About 68 years; longer lifetimes are clamped.
@@ -433,7 +448,8 @@ class ManagedOAuthProvider:
         Extra scopes are ignored. An invalid response is never dispatched.
         """
         value, kind = response.get("access_token"), response.get("token_type")
-        lifetime, scope = response.get("expires_in"), response.get("scope")
+        lifetime = response.get("expires_in")
+        scopes = _response_scopes(response.get("scope"))
         refresh = response.get("refresh_token")
         # A positive JSON integer or ASCII-digit string; never fractional.
         # Huge values are clamped rather than overflowing.
@@ -454,19 +470,13 @@ class ManagedOAuthProvider:
             and kind.lower() == "bearer"
             and (refresh is None or valid_refresh is not None)
             and ("expires_in" not in response or seconds is not None)
-            and (
-                "scope" not in response
-                or (
-                    isinstance(scope, str)
-                    and all(_SCOPE.fullmatch(item) for item in scope.split(" "))
-                )
-            )
+            and scopes is not False
         )
         if not valid:
             raise _ExchangeError("invalid", valid_refresh)
         assert isinstance(value, str)
-        if isinstance(scope, str):
-            granted = set(scope.split(" "))
+        if isinstance(scopes, tuple):
+            granted = set(scopes)
         else:
             granted = set(previous.scopes if previous is not None else requested)
         granted &= set(previous.scopes if previous is not None else ceiling)

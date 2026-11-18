@@ -321,7 +321,10 @@ never loses earlier scopes. A refresh records the
 response scopes within the **previously granted** scopes, so it never broadens a
 grant. Extra scopes, such as `openid` or every scope a client holds, are ignored,
 not an error. Omitted response `scope` means the requested scopes on acquisition
-and the previous grant on refresh. At use, effective scopes are the grant within
+and the previous grant on refresh; a JSON `null` or blank `scope` (only spaces,
+tabs, CR or LF) is treated as omitted. Any other `scope` must be scope tokens
+separated by single spaces, and any other JSON type is malformed: the response
+fails `provider_failed`. At use, effective scopes are the grant within
 the **current** ceiling: narrowing or widening a ceiling never loses a grant. The
 ceiling governs what the SDK requests and records; it does not limit what an
 issued token can do at the resource server. An operation fails `access_denied`

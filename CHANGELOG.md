@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.13.1](https://github.com/agenthooksprotocol/python-sdk/compare/v0.13.0...v0.13.1) (2026-11-18)
+
+
+### Bug Fixes
+
+* **oauth:** treat blank token scopes as omitted and retry skipped configuration backends ([#56](https://github.com/agenthooksprotocol/python-sdk/issues/56)) ([5151d4a](https://github.com/agenthooksprotocol/python-sdk/commit/5151d4ada221b8ece4cc2bcc1b04717fca5eaa9b))
+
 ## [0.13.0](https://github.com/agenthooksprotocol/python-sdk/compare/v0.12.0...v0.13.0) (2026-11-17)
 
 

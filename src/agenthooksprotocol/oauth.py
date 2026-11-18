@@ -2,18 +2,17 @@
 
 Install agenthooksprotocol[oauth] (HTTPX) to perform exchanges. No browsers,
 listeners, workers, HTTP clients, or token stores are created outside a bounded
-operation; only a proactive client-credentials re-registration runs detached,
-bounded by `commit_timeout`.
+operation.
 """
 
 from __future__ import annotations
 
 import base64
-from collections.abc import Awaitable, Callable, Mapping
+from collections.abc import AsyncIterator, Awaitable, Callable, Mapping
+from contextlib import asynccontextmanager
 from dataclasses import dataclass, field, replace
 import hashlib
 import json
-import logging
 import math
 import re
 import secrets
@@ -40,6 +39,7 @@ from ._oauth_types import (
     OAuthClientConfiguration as OAuthClientConfiguration,
     OAuthClientMetadataDocument as OAuthClientMetadataDocument,
     OAuthDynamicRegistration as OAuthDynamicRegistration,
+    OAuthPendingLogins as OAuthPendingLogins,
     OAuthRegistration as OAuthRegistration,
     OAuthSecretStore as OAuthSecretStore,
     StoredRecord as StoredRecord,
@@ -59,6 +59,7 @@ from ._oauth_types import (
     Ready as Ready,
     binding_key,
     grant_key,
+    pending_key,
     registration_key,
 )
 from ._oauth_registration import (
@@ -66,14 +67,13 @@ from ._oauth_registration import (
     Issued,
     RegistrationFailed,
     accept_registration,
+    declared_redirect,
     parse_retry_after,
     registration_request,
-    request_digest,
     valid_document_url,
 )
 
 T = TypeVar("T")
-_log = logging.getLogger(__name__)
 
 _DEFINITIVE = (
     "invalid_grant",
@@ -136,39 +136,57 @@ class _InvalidClient(AuthenticationFailure):
         super().__init__(code="credential_unavailable")
 
 
-@dataclass(frozen=True)
-class _Client:
-    """The selected client for one operation.
-
-    `blocked` is set when no usable registration exists and none may be made
-    now: a stored token still works, but no token request is sent.
-    """
-
-    blocked: AuthErrorCode | None = None
-    generation: str | None = None
-    # Proactive client-credentials renewal, run detached after the operation.
-    renewal: Callable[[], Awaitable[object]] | None = field(
-        default=None, compare=False, repr=False
-    )
-
-
-def _persisted(config: OAuthClientConfiguration) -> OAuthClientConfiguration:
-    """Binding metadata never holds secrets or host registration policy."""
+def _persisted(metadata: OAuthMetadata) -> OAuthMetadata:
+    """Binding metadata never holds secrets, host registration policy or an
+    issued DCR client."""
+    config = metadata.configuration
     return replace(
-        config,
-        client_secret=None,
-        client_metadata_document=None,
-        dynamic_registration=None,
+        metadata,
+        configuration=replace(
+            config,
+            client_id="" if metadata.client_source == "dcr" else config.client_id,
+            client_secret=None,
+            client_metadata_document=None,
+            dynamic_registration=None,
+        ),
     )
+
+
+def _with_client(metadata: OAuthMetadata, client_id: str) -> OAuthMetadata:
+    """Grant-record metadata: the client its tokens were issued to."""
+    return replace(
+        metadata, configuration=replace(metadata.configuration, client_id=client_id)
+    )
+
+
+def _candidate(
+    metadata: OAuthMetadata, resource: str, config: OAuthClientConfiguration
+) -> OAuthMetadata:
+    """Current host policy over a recorded selection, for grant-key comparison.
+
+    A host client_id is a pre-registered client; otherwise the recorded CIMD or
+    DCR selection stands until client selection moves it.
+    """
+    if config.client_id:
+        return replace(
+            metadata,
+            resource=resource,
+            configuration=config,
+            client_source="preregistered",
+        )
+    if metadata.client_source == "cimd":
+        config = replace(
+            config,
+            client_id=metadata.configuration.client_id,
+            token_endpoint_auth_method="none",
+            client_secret=None,
+        )
+    return replace(metadata, resource=resource, configuration=config)
 
 
 def _keep_selection(fresh: OAuthMetadata, recorded: OAuthMetadata) -> OAuthMetadata:
     """Refetched issuer metadata keeps the recorded client selection."""
-    return replace(
-        fresh,
-        client_source=recorded.client_source,
-        registration_key=recorded.registration_key,
-    )
+    return replace(fresh, client_source=recorded.client_source)
 
 
 def _grant_record(record: StoredRecord | None) -> OAuthRecord | None:
@@ -181,6 +199,65 @@ def _registration_record(record: StoredRecord | None) -> OAuthRegistration | Non
     if record is not None and not isinstance(record, OAuthRegistration):
         raise AuthenticationFailure(code="provider_failed")
     return record
+
+
+def _pending_record(record: StoredRecord | None) -> OAuthPendingLogins | None:
+    if record is not None and not isinstance(record, OAuthPendingLogins):
+        raise AuthenticationFailure(code="provider_failed")
+    return record
+
+
+class _ProcessGuard:
+    def __init__(self, records: dict[StoreKey, StoredRecord], key: StoreKey) -> None:
+        self.records, self.key = records, key
+
+    async def load(self) -> StoredRecord | None:
+        return self.records.get(self.key)
+
+    async def compare_and_swap(
+        self, expected_generation: str | None, record: StoredRecord | None
+    ) -> bool:
+        old = self.records.get(self.key)
+        if (old.generation if old is not None else None) != expected_generation:
+            return False
+        if record is None:
+            self.records.pop(self.key, None)
+        else:
+            self.records[self.key] = record
+        return True
+
+
+class _ProcessLogins:
+    """Process-owned pending logins (the default), with per-key locks."""
+
+    def __init__(self) -> None:
+        self.records: dict[StoreKey, StoredRecord] = {}
+        self.locks: dict[StoreKey, anyio.Lock] = {}
+
+    @asynccontextmanager
+    async def coordinate(
+        self, key: StoreKey, budget: OperationBudget
+    ) -> AsyncIterator[OAuthStoreGuard]:
+        lock = self.locks.setdefault(key, anyio.Lock())
+        async with lock:
+            try:
+                yield _ProcessGuard(self.records, key)
+            finally:
+                if key not in self.records and not lock.statistics().tasks_waiting:
+                    self.locks.pop(key, None)
+
+    def sweep(self, now: float) -> None:
+        """Delete expired logins of every grant key not being written now."""
+        for key, record in list(self.records.items()):
+            lock = self.locks.get(key)
+            if not isinstance(record, OAuthPendingLogins) or (lock and lock.locked()):
+                continue
+            logins = tuple(item for item in record.logins if item.expires_at > now)
+            if not logins:
+                self.records.pop(key)
+                self.locks.pop(key, None)
+            elif logins != record.logins:
+                self.records[key] = OAuthPendingLogins(uuid4().hex, logins)
 
 
 class _ExchangeError(Exception):
@@ -306,8 +383,10 @@ class _Attempt:
 class ManagedOAuthProvider:
     """OAuth with mandatory host trust/network/store boundaries.
 
-    The store owns coordination across all providers/processes sharing a key,
-    including pending logins: any process sharing the store can complete one.
+    The store owns grant and registration coordination across all providers
+    and processes sharing a key. As in MCP clients, a pending login belongs to
+    the provider that created it unless `persist_pending_logins` stores it so
+    that any process sharing the store can complete it by `state`.
     Binding metadata and local policy are resolved outside the grant lock.
     Host store/network callbacks must not reenter the same grant lock.
     """
@@ -326,8 +405,8 @@ class ManagedOAuthProvider:
         secret_store: OAuthSecretStore | None = None,
         registration_backoff: float = 60,
         registration_backoff_max: float = 3600,
-        retry_after_max: float = 3600,
-        renewal_margin_max: float = 3600,
+        max_pending_logins: int = 5,
+        persist_pending_logins: bool = False,
     ) -> None:
         if (
             not namespace
@@ -339,13 +418,11 @@ class ManagedOAuthProvider:
             or commit_timeout <= 0
             or not all(
                 math.isfinite(value) and value >= 0
-                for value in (
-                    registration_backoff,
-                    registration_backoff_max,
-                    retry_after_max,
-                    renewal_margin_max,
-                )
+                for value in (registration_backoff, registration_backoff_max)
             )
+            or isinstance(max_pending_logins, bool)
+            or not isinstance(max_pending_logins, int)
+            or max_pending_logins < 1
         ):
             raise AuthenticationFailure(code="invalid_configuration")
         self.network, self.policy, self.store = network, policy, store
@@ -353,18 +430,20 @@ class ManagedOAuthProvider:
         self.expiry_skew, self.clock = expiry_skew, clock
         # Bounds the post-exchange store commit, shielded from cancellation.
         self.commit_timeout = commit_timeout
-        # Host hook for DCR client secrets; there is no implicit secret store.
+        # Host hook for client-credentials DCR secrets; there is no implicit
+        # secret store.
         self.secret_store = secret_store
-        # Failed-registration backoff: `registration_backoff` doubling per
-        # attempt up to `registration_backoff_max`; Retry-After is honoured up
-        # to `retry_after_max`. Proactive client-credentials re-registration
-        # starts min(10% of the secret lifetime, `renewal_margin_max`) early.
+        # Client-credentials registration backoff: `registration_backoff`
+        # doubling per failure up to `registration_backoff_max`, or a later
+        # Retry-After up to the same cap.
         self.registration_backoff = registration_backoff
         self.registration_backoff_max = registration_backoff_max
-        self.retry_after_max = retry_after_max
-        self.renewal_margin_max = renewal_margin_max
-        self._detached: set[anyio.Event] = set()
-        self._tasks: set[object] = set()
+        # Pending logins per grant key; a new one beyond the cap cancels the
+        # oldest. Process-owned unless persisted through `store`.
+        self.max_pending_logins = max_pending_logins
+        self._logins: OAuthTokenStore | _ProcessLogins = (
+            store if persist_pending_logins else _ProcessLogins()
+        )
         # Successful host prepares per (backend ID, event endpoint).
         self._prepared: dict[tuple[str, str], int] = {}
 
@@ -448,18 +527,161 @@ class ManagedOAuthProvider:
         ):
             raise AuthenticationFailure(code="provider_failed", recovery="retry")
 
-    @staticmethod
-    def _settled(
+    async def _exchange(
+        self,
+        guard: OAuthStoreGuard,
+        record: OAuthRecord | None,
         metadata: OAuthMetadata,
-        token: StoredToken | None,
-        pending: PendingState | None,
-    ) -> OAuthRecord | None:
-        """A settled (never in-flight) record, or None when nothing remains."""
-        if token is None and pending is None:
-            return None
-        if pending is not None:
-            return OAuthRecord(uuid4().hex, "pending", metadata, token, pending)
-        return OAuthRecord(uuid4().hex, "active", metadata, token)
+        config: OAuthClientConfiguration,
+        budget: OperationBudget,
+        form: dict[str, str],
+        requested: tuple[str, ...],
+        *,
+        previous: StoredToken | None = None,
+        retained: StoredToken | None = None,
+        code: bool = False,
+        ceiling: tuple[str, ...] | None = None,
+        forget_client: bool = False,
+    ) -> OAuthRecord:
+        """Spend one code, refresh token or client credential under the guard.
+
+        Success commits the new token with `metadata` (its client) together.
+        Otherwise the in-flight reservation is replaced by the previous record
+        with `retained` plus any valid rotated refresh token, or dropped: by a
+        refresh `invalid_grant`, or (`forget_client`) by a refresh
+        `invalid_client` while the record still holds the presented client and
+        refresh token.
+        """
+        kept = record.metadata if record is not None else metadata
+        reserved = OAuthRecord(uuid4().hex, "refreshing", kept, retained)
+        await self._cas(guard, record, reserved)
+        token: StoredToken | None = None
+        outcome: BaseException | None = None
+        cancel: BaseException | None = None
+        box: dict[str, object] = {}
+        try:
+            budget.remaining()
+            await anyio.lowlevel.checkpoint_if_cancelled()
+            await self._send_detached(
+                box,
+                lambda budget, trace: _token_endpoint(
+                    self.network, metadata, config, form, budget, trace
+                ),
+            )
+        except anyio.get_cancelled_exc_class() as error:
+            cancel = error  # The response may still have arrived (shielded).
+        except BaseException as error:
+            outcome = error
+        if outcome is None:
+            try:
+                failure, response = box.get("error"), box.get("response")
+                if isinstance(failure, BaseException):
+                    raise failure
+                if isinstance(response, Mapping):
+                    token = self._token(
+                        response,
+                        requested,
+                        config.ceiling if ceiling is None else ceiling,
+                        previous,
+                    )
+                else:
+                    outcome = cancel
+            except BaseException as error:
+                outcome = error
+        final = retained
+        forget = False
+        if isinstance(outcome, _ExchangeError) and previous is not None:
+            if outcome.code == "invalid_grant":
+                final = None
+            elif outcome.code == "invalid_client" and forget_client:
+                forget = True
+            elif outcome.refresh_token is not None:
+                final = StoredToken(None, None, outcome.refresh_token, previous.scopes)
+        settled = (
+            OAuthRecord(uuid4().hex, "active", metadata, token)
+            if token is not None
+            else OAuthRecord(uuid4().hex, "active", kept, final)
+            if final is not None
+            else None
+        )
+        committed = False
+        try:
+            # Rotation may already have occurred externally: finish one bounded
+            # commit before honoring cancellation.
+            with anyio.CancelScope(shield=True), anyio.fail_after(self.commit_timeout):
+                if forget:
+                    committed = await self._forget_client(
+                        guard, config.client_id, previous
+                    )
+                else:
+                    committed = await guard.compare_and_swap(
+                        reserved.generation, settled
+                    )
+        except Exception:
+            if outcome is None:
+                raise
+        await anyio.lowlevel.checkpoint()
+        if cancel is not None:
+            raise cancel  # The caller sees its cancellation after the commit.
+        from ._oauth_discovery import NotSent
+
+        if isinstance(outcome, NotSent) or (
+            isinstance(outcome, _ExchangeError) and outcome.code == "stale"
+        ):
+            raise _StaleMetadata()
+        if (
+            isinstance(outcome, AuthenticationFailure)
+            and outcome.code == "discovery_failed"
+        ):
+            # Ambiguous post-send failure (read timeout/reset, redirect): the
+            # refresh token may be spent, so never retry or refetch here.
+            raise AuthenticationFailure(code="provider_failed")
+        if outcome is not None and not isinstance(outcome, _ExchangeError):
+            raise outcome
+        if isinstance(outcome, _ExchangeError):
+            if not committed and not forget:
+                # A newer record replaced ours: it is kept, never wiped.
+                raise AuthenticationFailure(code="provider_failed")
+            if outcome.code == "invalid_grant":
+                raise AuthenticationFailure(
+                    code="interaction_required"
+                    if code
+                    else "credential_unavailable"
+                    if previous is None
+                    else "refresh_rejected"
+                    if config.flow == "authorization_code_pkce"
+                    else "provider_failed"
+                )
+            if outcome.code in ("access_denied", "invalid_scope"):
+                raise AuthenticationFailure(code="access_denied")
+            if outcome.code == "invalid_client":
+                raise _InvalidClient()
+            if outcome.code == "unauthorized_client":
+                raise AuthenticationFailure(code="credential_unavailable")
+            raise AuthenticationFailure(code="provider_failed")
+        if not committed or settled is None:
+            raise AuthenticationFailure(code="provider_failed")
+        return settled
+
+    @staticmethod
+    async def _forget_client(
+        guard: OAuthStoreGuard, client_id: str, presented: StoredToken | None
+    ) -> bool:
+        """Compare-and-delete a grant whose client was rejected at refresh.
+
+        Only while it still holds the presented client and refresh token: a
+        newer login's client and tokens are never deleted.
+        """
+        current = _grant_record(await guard.load())
+        if (
+            current is None
+            or presented is None
+            or current.token is None
+            or current.metadata.configuration.client_id != client_id
+            or current.token.refresh_token != presented.refresh_token
+        ):
+            return False
+        return await guard.compare_and_swap(current.generation, None)
 
     def _token(
         self,
@@ -515,123 +737,6 @@ class ManagedOAuthProvider:
             tuple(sorted(granted)),
         )
 
-    async def _exchange(
-        self,
-        guard: OAuthStoreGuard,
-        record: OAuthRecord | None,
-        metadata: OAuthMetadata,
-        config: OAuthClientConfiguration,
-        budget: OperationBudget,
-        form: dict[str, str],
-        requested: tuple[str, ...],
-        *,
-        previous: StoredToken | None = None,
-        retained: StoredToken | None = None,
-        code: bool = False,
-        ceiling: tuple[str, ...] | None = None,
-    ) -> OAuthRecord:
-        """Spend one code, refresh token or client credential under the guard.
-
-        The in-flight reservation is always replaced: by the new token, by
-        `retained` plus any valid rotated refresh token, or (refresh
-        `invalid_grant`) by dropping both tokens. A pending login survives
-        unless this exchange consumes it.
-        """
-        pending = None if code or record is None else record.pending
-        reserved = OAuthRecord(uuid4().hex, "refreshing", metadata, retained, pending)
-        await self._cas(guard, record, reserved)
-        token: StoredToken | None = None
-        outcome: BaseException | None = None
-        cancel: BaseException | None = None
-        box: dict[str, object] = {}
-        try:
-            budget.remaining()
-            await anyio.lowlevel.checkpoint_if_cancelled()
-            await self._send_detached(
-                box,
-                lambda budget, trace: _token_endpoint(
-                    self.network, metadata, config, form, budget, trace
-                ),
-            )
-        except anyio.get_cancelled_exc_class() as error:
-            cancel = error  # The response may still have arrived (shielded).
-        except BaseException as error:
-            outcome = error
-        if outcome is None:
-            try:
-                failure, response = box.get("error"), box.get("response")
-                if isinstance(failure, BaseException):
-                    raise failure
-                if isinstance(response, Mapping):
-                    token = self._token(
-                        response,
-                        requested,
-                        config.ceiling if ceiling is None else ceiling,
-                        previous,
-                    )
-                else:
-                    outcome = cancel
-            except BaseException as error:
-                outcome = error
-        final = token if token is not None else retained
-        if isinstance(outcome, _ExchangeError):
-            if outcome.code == "invalid_grant" and previous is not None:
-                final = None
-            elif outcome.refresh_token is not None and previous is not None:
-                final = StoredToken(None, None, outcome.refresh_token, previous.scopes)
-        settled = self._settled(metadata, final, pending)
-        committed = False
-        try:
-            # Rotation may already have occurred externally: finish one bounded
-            # commit before honoring cancellation.
-            with anyio.CancelScope(shield=True), anyio.fail_after(self.commit_timeout):
-                committed = await guard.compare_and_swap(reserved.generation, settled)
-        except Exception:
-            if outcome is None:
-                raise
-        await anyio.lowlevel.checkpoint()
-        if cancel is not None:
-            raise cancel  # The caller sees its cancellation after the commit.
-        from ._oauth_discovery import NotSent
-
-        if isinstance(outcome, NotSent) or (
-            isinstance(outcome, _ExchangeError) and outcome.code == "stale"
-        ):
-            raise _StaleMetadata()
-        if (
-            isinstance(outcome, AuthenticationFailure)
-            and outcome.code == "discovery_failed"
-        ):
-            # Ambiguous post-send failure (read timeout/reset, redirect): the
-            # refresh token may be spent, so never retry or refetch here.
-            raise AuthenticationFailure(code="provider_failed")
-        if outcome is not None and not isinstance(outcome, _ExchangeError):
-            raise outcome
-        if isinstance(outcome, _ExchangeError):
-            if not committed:
-                # A newer record replaced ours: it is kept, never wiped.
-                raise AuthenticationFailure(code="provider_failed")
-            if outcome.code == "invalid_grant":
-                raise AuthenticationFailure(
-                    code="interaction_required"
-                    if code
-                    else "credential_unavailable"
-                    if previous is None
-                    else "refresh_rejected"
-                    if config.flow == "authorization_code_pkce"
-                    else "provider_failed"
-                )
-            if outcome.code in ("access_denied", "invalid_scope"):
-                raise AuthenticationFailure(code="access_denied")
-            if outcome.code == "invalid_client":
-                raise _InvalidClient()
-            if outcome.code == "unauthorized_client":
-                raise AuthenticationFailure(code="credential_unavailable")
-            raise AuthenticationFailure(code="provider_failed")
-        if not committed or settled is None:
-            raise AuthenticationFailure(code="provider_failed")
-        return settled
-
     async def _send_detached(
         self,
         box: dict[str, object],
@@ -678,79 +783,97 @@ class ManagedOAuthProvider:
                     send_scope.cancel()
                 raise
 
-    async def _pending(
+    async def _login(
         self,
-        guard: OAuthStoreGuard,
-        record: OAuthRecord | None,
+        key: StoreKey,
         metadata: OAuthMetadata,
         config: OAuthClientConfiguration,
         required: tuple[str, ...],
-        key: StoreKey,
+        granted: tuple[str, ...],
         budget: OperationBudget,
-        registration_generation: str | None = None,
     ) -> PendingLogin:
-        """Reuse a covering unexpired pending login, or atomically supersede it.
+        """Create one process-owned (or persisted) pending login.
 
-        Reuse needs only requested ∪ required ⊆ pending scopes (effective
-        scopes are filtered by each caller's ceiling at use). A superseding
-        login requests old pending ∪ previous grant ∪ ((requested ∪ required)
-        ∩ ceiling) and stores the union of the old and new ceilings; with a
-        different redirect it uses only the new caller's scopes and ceiling.
+        It requests previous grant ∪ ((requested ∪ required) ∩ ceiling) and
+        records that ceiling. A DCR client is registered for this login, with
+        its exact redirect.
         """
-        wanted = set(config.scopes) | set(required)
-        pending = record.pending if record is not None else None
-        if (
-            pending is not None
-            and pending.metadata.configuration.redirect_uri != config.redirect_uri
-        ):
-            pending = None  # Merge only for the same grant key and redirect.
-        previous = set(pending.metadata.configuration.scopes) if pending else set()
-        granted = set(record.token.scopes) if record and record.token else set()
-        if (
-            pending is not None
-            and pending.expires_at > self.clock()
-            and pending.metadata.configuration.redirect_uri == config.redirect_uri
-            and pending.registration_generation == registration_generation
-            and wanted <= previous
-        ):
-            return PendingLogin(
-                key, pending.state, pending.authorization_url, pending.expires_at
-            )
-        # Step-up keeps the previous grant; old pending scopes and ceilings
-        # only grow, so alternating callers converge.
-        scopes = tuple(sorted(previous | granted | (wanted & set(config.ceiling))))
-        ceiling = set(config.ceiling) | set(scopes)
-        if pending is not None:
-            ceiling |= set(pending.metadata.configuration.ceiling)
         if (
             config.flow != "authorization_code_pkce"
             or not metadata.authorization_endpoint
             or not config.redirect_uri
         ):
             raise AuthenticationFailure(code="unsupported_binding")
+        wanted = set(config.scopes) | set(required)
+        scopes = tuple(sorted(set(granted) | (wanted & set(config.ceiling))))
+        ceiling = tuple(sorted(set(config.ceiling) | set(scopes)))
+        if metadata.client_source == "dcr":
+            config = replace(
+                config,
+                client_id=await self._register_login(metadata, config, budget),
+                token_endpoint_auth_method="none",
+                client_secret=None,
+            )
+        if isinstance(self._logins, _ProcessLogins):
+            self._logins.sweep(self.clock())
         state, verifier = secrets.token_urlsafe(32), secrets.token_urlsafe(64)
         url = _authorization_url(metadata, config, scopes, state, verifier)
         # Validate fallible host/browser policy before publishing the handle.
         await self.network.authorize(url, "authorization", budget)
+        login = replace(
+            config,
+            scopes=scopes,
+            # The acquisition ceiling bounds the completed grant.
+            allowed_scopes=ceiling,
+            client_secret=None,
+            client_metadata_document=None,
+            dynamic_registration=None,
+        )
         pending = PendingState(
-            replace(
-                metadata,
-                configuration=replace(
-                    metadata.configuration,
-                    scopes=scopes,
-                    # The acquisition ceiling bounds the completed grant.
-                    allowed_scopes=tuple(sorted(ceiling)),
-                ),
-            ),
+            replace(metadata, configuration=login),
             state,
             verifier,
             url,
             self.clock() + config.login_lifetime,
-            registration_generation,
         )
-        token = record.token if record is not None else None
-        await self._cas(guard, record, self._settled(metadata, token, pending))
+        async with self._logins.coordinate(pending_key(key), budget) as guard:
+            record = _pending_record(await guard.load())
+            now = self.clock()
+            logins = [
+                item
+                for item in (record.logins if record is not None else ())
+                if item.expires_at > now
+            ]
+            # Beyond the cap the oldest logins are cancelled, in the same write.
+            logins = [*logins, pending][-self.max_pending_logins :]
+            if not await guard.compare_and_swap(
+                record.generation if record is not None else None,
+                OAuthPendingLogins(uuid4().hex, tuple(logins)),
+            ):
+                raise AuthenticationFailure(code="provider_failed", recovery="retry")
         return PendingLogin(key, state, url, pending.expires_at)
+
+    async def _end_logins(
+        self,
+        key: StoreKey,
+        budget: OperationBudget,
+        keep: Callable[[PendingState], bool],
+    ) -> None:
+        """Delete pending logins of one grant key that `keep` rejects, and any
+        expired ones."""
+        async with self._logins.coordinate(pending_key(key), budget) as guard:
+            record = _pending_record(await guard.load())
+            if record is None:
+                return
+            now = self.clock()
+            logins = tuple(
+                item for item in record.logins if item.expires_at > now and keep(item)
+            )
+            if logins != record.logins and not await guard.compare_and_swap(
+                record.generation,
+                OAuthPendingLogins(uuid4().hex, logins) if logins else None,
+            ):
+                raise AuthenticationFailure(code="provider_failed", recovery="retry")
 
     async def _select(
         self,
@@ -759,27 +882,24 @@ class ManagedOAuthProvider:
         recorded: OAuthMetadata | None,
         budget: OperationBudget,
         *,
-        interactive: bool,
+        prepare: bool,
         force: bool = False,
         coordinated: bool = False,
-    ) -> tuple[OAuthMetadata, _Client]:
+    ) -> tuple[OAuthMetadata, AuthErrorCode | None]:
         """Select a pre-registered client, else CIMD (PKCE), else permitted DCR.
 
         A recorded CIMD/DCR selection survives authorization-server metadata
-        changes while current host policy still permits it.
+        changes while current host policy still permits it. A PKCE DCR client
+        comes from the grant record or the login; a client-credentials one from
+        its registration record. The returned code is set when no
+        client-credentials registration is usable and none may be made now:
+        only a still-valid stored token works.
         """
         if chosen.client_id:
-            return (
-                replace(
-                    metadata,
-                    configuration=chosen,
-                    client_source="preregistered",
-                    registration_key=None,
-                ),
-                _Client(),
-            )
+            return replace(
+                metadata, configuration=chosen, client_source="preregistered"
+            ), None
         pkce = chosen.flow == "authorization_code_pkce"
-        redirect = (chosen.redirect_uri or "") if pkce else ""
         kept = (
             recorded.client_source
             if recorded is not None
@@ -799,9 +919,8 @@ class ManagedOAuthProvider:
                 and not (kept == "dcr" and chosen.dynamic_registration is not None)
             )
         ):
-            if (
-                not valid_document_url(document.url)
-                or redirect not in document.redirect_uris
+            if not valid_document_url(document.url) or not declared_redirect(
+                chosen.redirect_uri or "", document.redirect_uris
             ):
                 raise AuthenticationFailure(code="invalid_configuration")
             config = replace(
@@ -810,15 +929,7 @@ class ManagedOAuthProvider:
                 token_endpoint_auth_method="none",
                 client_secret=None,
             )
-            return (
-                replace(
-                    metadata,
-                    configuration=config,
-                    client_source="cimd",
-                    registration_key=None,
-                ),
-                _Client(),
-            )
+            return replace(metadata, configuration=config, client_source="cimd"), None
         policy, endpoint = chosen.dynamic_registration, metadata.registration_endpoint
         if policy is None or not (endpoint or kept == "dcr"):
             raise AuthenticationFailure(code="credential_unavailable")
@@ -831,124 +942,33 @@ class ManagedOAuthProvider:
                 raise AuthenticationFailure(code="credential_unavailable")
         if endpoint is not None and urlsplit(endpoint).scheme != "https":
             raise AuthenticationFailure(code="untrusted_destination")
-        key = registration_key(self.namespace, chosen.issuer, chosen.flow, redirect)
+        if pkce:
+            config = replace(
+                chosen, token_endpoint_auth_method="none", client_secret=None
+            )
+            return replace(metadata, configuration=config, client_source="dcr"), None
         record, secret, blocked = await self._registration(
-            key,
-            chosen,
+            registration_key(self.namespace, chosen.issuer),
             policy,
             method,
             endpoint,
-            redirect,
             budget,
-            # PKCE registers only in host prepare; client credentials anywhere.
-            register=interactive or not pkce,
-            prepare=interactive,
+            prepare=prepare,
             force=force,
             coordinated=coordinated,
         )
         if record is not None and record.client_id is not None:
-            client_id = record.client_id
-            renewal = None
-            now = self.clock()
-            if (
-                not pkce
-                and self._renewal_due(record, now)
-                and not (record.next_attempt_at and record.next_attempt_at > now)
-            ):
-
-                async def renewal() -> object:
-                    # Own budget, the registration lock (reload and re-check)
-                    # and the failed marker; the operation never waits on it.
-                    return await self._registration(
-                        key,
-                        chosen,
-                        policy,
-                        method,
-                        endpoint,
-                        redirect,
-                        OperationBudget.after(self.commit_timeout),
-                        register=True,
-                        prepare=False,
-                        force=False,
-                        renew=True,
-                    )
-
-            method = record.token_endpoint_auth_method
-            client = _Client(generation=record.client_generation, renewal=renewal)
-        elif (
-            kept == "dcr" and recorded is not None and recorded.registration_key == key
-        ):
-            # Keep presenting a still-valid stored token for the recorded client.
-            client_id = recorded.configuration.client_id
-            method = recorded.configuration.token_endpoint_auth_method
-            client = _Client(blocked=blocked)
-        else:
+            config = replace(
+                chosen,
+                client_id=record.client_id,
+                token_endpoint_auth_method=record.token_endpoint_auth_method,
+                client_secret=secret,
+            )
+            return replace(metadata, configuration=config, client_source="dcr"), None
+        if kept != "dcr":
             raise AuthenticationFailure(code=blocked)
-        config = replace(
-            chosen,
-            client_id=client_id,
-            token_endpoint_auth_method=method,
-            client_secret=secret,
-        )
-        return (
-            replace(
-                metadata,
-                configuration=config,
-                client_source="dcr",
-                registration_key=key,
-            ),
-            client,
-        )
-
-    def _detach(self, work: Callable[[], Awaitable[object]] | None) -> None:
-        """Run best-effort work outside the caller's operation and deadline.
-
-        Failures are recorded by the work itself (failed marker) and never
-        reach the caller. `renewals_settled` waits for outstanding work.
-        """
-        if work is None:
-            return
-        done = anyio.Event()
-        self._detached.add(done)
-
-        async def run() -> None:
-            try:
-                with anyio.fail_after(2 * self.commit_timeout):
-                    await work()
-            except anyio.get_cancelled_exc_class():
-                raise
-            except Exception as error:
-                # Failures that never reach the failed marker (store, lock or
-                # CAS errors, timeouts) stay observable; never secret-bearing.
-                _log.warning(
-                    "Detached client registration renewal failed: %s",
-                    type(error).__name__,
-                )
-            finally:
-                self._detached.discard(done)
-                done.set()
-
-        import sniffio
-
-        if sniffio.current_async_library() == "trio":
-            import trio
-
-            trio.lowlevel.spawn_system_task(run)
-        else:
-            import asyncio
-
-            task = asyncio.get_running_loop().create_task(run())
-            self._tasks.add(task)
-            task.add_done_callback(self._tasks.discard)
-
-    async def renewals_settled(self) -> None:
-        """Wait for detached proactive renewals started by this provider.
-
-        Await this before shutting down the event loop: on asyncio, a loop
-        shut down after a renewal request was written loses the issued client.
-        """
-        while self._detached:
-            await next(iter(self._detached)).wait()
+        # Keep presenting a still-valid stored token; no token request is sent.
+        return replace(metadata, configuration=chosen, client_source="dcr"), blocked
 
     async def _secret(
         self, record: OAuthRegistration | None, budget: OperationBudget
@@ -987,132 +1007,79 @@ class ManagedOAuthProvider:
     def _marked(
         self,
         record: OAuthRegistration | None,
-        digest: str,
+        code: AuthErrorCode,
         retry_after: float | None,
-        *,
-        reset: bool = False,
     ) -> OAuthRegistration:
-        """The failed marker after one more failed attempt."""
+        """The backoff record after one more failed registration."""
         now = self.clock()
-        attempts = (0 if record is None or reset else record.attempts) + 1
+        attempts = (
+            record.attempts if record is not None and record.client_id is None else 0
+        ) + 1
         delay = min(
             self.registration_backoff * 2 ** min(attempts - 1, 32),
             self.registration_backoff_max,
         )
         if retry_after is not None:
-            delay = max(delay, min(retry_after, self.retry_after_max))
-        base = record if record is not None else OAuthRegistration("", digest)
-        return replace(
-            base,
-            generation=uuid4().hex,
-            failed_at=now,
-            attempts=attempts,
-            next_attempt_at=now + delay,
+            delay = max(delay, min(retry_after, self.registration_backoff_max))
+        return OAuthRegistration(
+            uuid4().hex, failure=code, attempts=attempts, next_attempt_at=now + delay
         )
 
     @staticmethod
-    def _usable(
-        record: OAuthRegistration, secret: str | None, pkce: bool, now: float
-    ) -> bool:
+    def _usable(record: OAuthRegistration, secret: str | None, now: float) -> bool:
         expires = record.client_secret_expires_at
         return (
             record.client_id is not None
             and not (expires and expires <= now)
-            and (pkce or bool(secret))
+            and bool(secret)
         )
-
-    def _renewal_due(self, record: OAuthRegistration, now: float) -> bool:
-        expires = record.client_secret_expires_at
-        if not expires:
-            return False
-        margin = min(0.1 * (expires - record.registered_at), self.renewal_margin_max)
-        return now >= expires - margin
 
     async def _registration(
         self,
         key: str,
-        chosen: OAuthClientConfiguration,
         policy: OAuthDynamicRegistration,
         method: TokenEndpointAuthMethod | None,
         endpoint: str | None,
-        redirect: str,
         budget: OperationBudget,
         *,
-        register: bool,
         prepare: bool,
         force: bool,
-        renew: bool = False,
-        coordinated: bool = False,
+        coordinated: bool,
     ) -> tuple[OAuthRegistration | None, str | None, AuthErrorCode]:
-        """Load, and when needed and permitted (re-)register, under the key lock.
+        """Load, and when needed and permitted register, a client-credentials
+        client under the registration-key lock.
 
         Returns the usable record (or None), its secret, and the error to
-        report where a missing registration blocks a token request.
+        report where a missing registration blocks a token request: the last
+        failure's code during the backoff. Host `prepare` bypasses the backoff;
+        `force` replaces a usable record.
         """
-        pkce = chosen.flow == "authorization_code_pkce"
-        digest = request_digest(policy)
-        blocked: AuthErrorCode = (
-            "interaction_required" if pkce else "credential_unavailable"
-        )
         if not force and not coordinated:
-            # Serve an existing usable record without the registration lock,
-            # so no caller ever waits on another's registration or renewal.
+            # Serve an existing usable record without the registration lock.
             seen = _registration_record(await self.store.load(key, budget))
-            if (
-                seen is not None
-                and seen.request_digest == digest
-                and not (prepare and seen.next_attempt_at is not None)
-            ):
-                now = self.clock()
-                secret = await self._secret(seen, budget) if not pkce else None
-                if self._usable(seen, secret, pkce, now) and (
-                    pkce or not renew or not self._renewal_due(seen, now)
-                ):
-                    return seen, secret, blocked
+            if seen is not None:
+                secret = await self._secret(seen, budget)
+                if self._usable(seen, secret, self.clock()):
+                    return seen, secret, "credential_unavailable"
         async with self.store.coordinate(key, budget) as guard:
             record = _registration_record(await guard.load())
-            if record is not None and (record.request_digest != digest or force):
-                # Host policy changed (or a forced repair): drop the record,
-                # its secret and any failed marker.
-                await self._swap_registration(guard, record, None)
-                record = None
+            secret = await self._secret(record, budget)
             now = self.clock()
-            secret = await self._secret(record, budget) if not pkce else None
-            usable = record is not None and self._usable(record, secret, pkce, now)
-            current = record if usable else None
+            usable = record is not None and self._usable(record, secret, now)
+            if usable and not force:
+                return record, secret, "credential_unavailable"
             if (
-                record is not None
-                and usable
-                and (pkce or not renew or not self._renewal_due(record, now))
-            ):
-                if prepare and record.next_attempt_at is not None:
-                    cleared = replace(
-                        record,
-                        generation=uuid4().hex,
-                        failed_at=None,
-                        attempts=0,
-                        next_attempt_at=None,
-                    )
-                    await self._swap_registration(guard, record, cleared)
-                    record = cleared
-                return record, secret, blocked
-            if not register:
-                return current, secret, blocked
-            backoff = (
-                record is not None
+                not prepare
+                and record is not None
                 and record.next_attempt_at is not None
                 and record.next_attempt_at > now
-            )
-            if (
-                (backoff and not prepare)
-                or endpoint is None
-                or method is None
-                or (not pkce and self.secret_store is None)
             ):
+                return None, None, record.failure or "credential_unavailable"
+            if endpoint is None or method is None or self.secret_store is None:
                 # Not eligible to register now (DCR checks re-run here).
-                return current, secret, "credential_unavailable"
+                return None, None, "credential_unavailable"
             outcome, cancel = await self._register(
-                endpoint, chosen, policy, method, redirect, budget
+                endpoint, "client_credentials", policy, method, "", budget
             )
             # Once written, always commit the outcome shielded from the
             # caller's cancellation or deadline, so an issued client (and its
@@ -1121,13 +1088,10 @@ class ManagedOAuthProvider:
                 result = await self._commit_registration(
                     guard,
                     record,
-                    current,
+                    record if usable else None,
                     secret,
-                    digest,
                     method,
                     outcome,
-                    blocked,
-                    prepare,
                     OperationBudget(anyio.current_time() + self.commit_timeout),
                 )
             if cancel is not None:
@@ -1141,57 +1105,44 @@ class ManagedOAuthProvider:
         record: OAuthRegistration | None,
         current: OAuthRegistration | None,
         secret: str | None,
-        digest: str,
         method: TokenEndpointAuthMethod,
         outcome: Issued | RegistrationFailed,
-        blocked: AuthErrorCode,
-        prepare: bool,
         budget: OperationBudget,
     ) -> tuple[OAuthRegistration | None, str | None, AuthErrorCode]:
-        """Persist a registration outcome under the registration-key lock."""
+        """Persist a registration outcome under the registration-key lock.
+
+        A failed forced replacement keeps the current usable record.
+        """
         if isinstance(outcome, RegistrationFailed):
+            if current is not None:
+                return current, secret, "credential_unavailable"
             await self._swap_registration(
-                guard,
-                record,
-                self._marked(record, digest, outcome.retry_after, reset=prepare),
+                guard, record, self._marked(record, outcome.code, outcome.retry_after)
             )
-            # A failed proactive renewal keeps the current registration;
-            # otherwise only a stored token for the recorded client works.
-            return current, secret, blocked if current else outcome.code
-        issued = outcome
-        reference = None
-        if issued.client_secret is not None:
-            assert self.secret_store is not None
-            reference = await self.secret_store.store(issued.client_secret, budget)
+            return None, None, outcome.code
+        assert self.secret_store is not None and outcome.client_secret is not None
+        reference = await self.secret_store.store(outcome.client_secret, budget)
         fresh = OAuthRegistration(
             uuid4().hex,
-            digest,
-            issued.client_id,
-            uuid4().hex,
+            outcome.client_id,
             method,
-            self.clock(),
-            issued.client_secret_expires_at,
+            outcome.client_secret_expires_at,
             reference,
-            issued.metadata,
         )
         try:
             await self._swap_registration(guard, record, fresh)
         except AuthenticationFailure:
             # Lost to a writer outside this lock: use its record instead.
             winner = _registration_record(await guard.load())
-            if (
-                winner is None
-                or winner.client_id is None
-                or winner.request_digest != digest
-            ):
+            if winner is None or winner.client_id is None:
                 raise
-            return winner, await self._secret(winner, budget), blocked
-        return fresh, issued.client_secret, blocked
+            return winner, await self._secret(winner, budget), "credential_unavailable"
+        return fresh, outcome.client_secret, "credential_unavailable"
 
     async def _register(
         self,
         endpoint: str,
-        chosen: OAuthClientConfiguration,
+        flow: str,
         policy: OAuthDynamicRegistration,
         method: TokenEndpointAuthMethod,
         redirect: str,
@@ -1205,7 +1156,7 @@ class ManagedOAuthProvider:
         import httpx
         from ._oauth_discovery import safe_request
 
-        body = registration_request(chosen.flow, redirect, method, policy)
+        body = registration_request(flow, redirect, method, policy)
         headers = {"Content-Type": "application/json", "Accept": "application/json"}
         if policy.initial_access_token_ref is not None:
             token = (
@@ -1240,7 +1191,7 @@ class ManagedOAuthProvider:
             if not box:
                 raise  # Cancelled before the request was written.
             cancel = error
-        return self._registration_outcome(chosen.flow, body, box), cancel
+        return self._registration_outcome(flow, body, box), cancel
 
     def _registration_outcome(
         self, flow: str, body: dict[str, object], box: dict[str, object]
@@ -1273,52 +1224,45 @@ class ManagedOAuthProvider:
         except RegistrationFailed as failure:
             return failure
 
-    async def _drop_grant(
-        self, target: AuthTarget, metadata: OAuthMetadata, budget: OperationBudget
-    ) -> None:
-        """Compare-and-delete a replaced client's grant when binding-scoped.
+    async def _register_login(
+        self,
+        metadata: OAuthMetadata,
+        config: OAuthClientConfiguration,
+        budget: OperationBudget,
+    ) -> str:
+        """Register a public client for one login, with its exact redirect.
 
-        A shared partition may still serve other bindings, so it is kept.
+        There is no registration record: the login holds the issued client and
+        completion commits it with the tokens. Any issued secret is ignored.
         """
-        if metadata.configuration.grant_partition is not None:
-            return
-        async with self.store.coordinate(grant_key(target, metadata), budget) as guard:
-            record = _grant_record(await guard.load())
-            if record is not None:
-                await self._cas(guard, record, None)
+        policy, endpoint = config.dynamic_registration, metadata.registration_endpoint
+        if policy is None or endpoint is None:
+            raise AuthenticationFailure(code="credential_unavailable")
+        assert config.redirect_uri is not None
+        outcome, cancel = await self._register(
+            endpoint, config.flow, policy, "none", config.redirect_uri, budget
+        )
+        if cancel is not None:
+            raise cancel  # The issued client is abandoned with this login.
+        if isinstance(outcome, RegistrationFailed):
+            raise AuthenticationFailure(code=outcome.code)
+        return outcome.client_id
 
     async def _drop_registration(
-        self,
-        key: str,
-        generation: str | None,
-        policy: OAuthDynamicRegistration | None,
-        budget: OperationBudget,
-        *,
-        mark: bool,
+        self, key: str, client_id: str, budget: OperationBudget, *, mark: bool
     ) -> None:
-        """Compare-and-delete one client generation (after invalid_client).
+        """Compare-and-delete a client-credentials client after invalid_client.
 
-        `mark` records a failed marker (a repeated invalid_client).
+        `mark` (a repeated invalid_client) leaves a backoff record instead.
         """
         async with self.store.coordinate(key, budget) as guard:
             record = _registration_record(await guard.load())
-            if record is None or record.client_generation != generation:
+            if record is None or record.client_id != client_id:
                 return  # A newer registration is never deleted.
-            cleared = replace(
-                record,
-                generation=uuid4().hex,
-                client_id=None,
-                client_generation=None,
-                secret_ref=None,
-                client_secret_expires_at=None,
-                issued={},
-            )
-            if mark and policy is not None:
-                cleared = self._marked(cleared, request_digest(policy), None)
             await self._swap_registration(
                 guard,
                 record,
-                cleared if cleared.next_attempt_at is not None else None,
+                self._marked(None, "credential_unavailable", None) if mark else None,
             )
 
     async def _acquire(
@@ -1332,6 +1276,7 @@ class ManagedOAuthProvider:
         lookup: bool = False,
         explicit: tuple[str, ...] = (),
         force_registration: bool = False,
+        redirect_uri: str | None = None,
     ) -> Ready | PendingLogin | None:
         """Serve, refresh, reissue or (interactive only) start a login.
 
@@ -1377,32 +1322,20 @@ class ManagedOAuthProvider:
                         return None  # Host policy refusal: anonymous attempt.
                 else:
                     try:
+                        if redirect_uri is not None:
+                            config = replace(config, redirect_uri=redirect_uri)
                         validate_configuration(
                             target, resource, issuers, challenged, config
                         )
                         chosen = config
-                        if not config.client_id and metadata.client_source != (
-                            "preregistered"
-                        ):
-                            # Compare principals by the recorded client; the
-                            # selection below may still move it.
-                            config = replace(
-                                config,
-                                client_id=metadata.configuration.client_id,
-                                token_endpoint_auth_method=(
-                                    metadata.configuration.token_endpoint_auth_method
-                                ),
-                            )
-                        candidate = replace(
-                            metadata, resource=resource, configuration=config
-                        )
+                        candidate = _candidate(metadata, resource, config)
                     except AuthenticationFailure:
                         if lookup:
                             raise
-                # A failed cached check or a changed principal (issuer, client,
-                # flow or partition) rediscovers and repairs the binding; the
-                # lookup cannot discover, so it fails instead of going
-                # anonymous. Never reuse the old principal.
+                # A failed cached check or a changed principal (issuer, client
+                # identity, flow or partition) rediscovers and repairs the
+                # binding; the lookup cannot discover, so it fails instead of
+                # going anonymous. Never reuse the old principal.
                 if candidate is not None and grant_key(target, candidate) != grant_key(
                     target, metadata
                 ):
@@ -1430,33 +1363,30 @@ class ManagedOAuthProvider:
                 if lookup:
                     return None
                 metadata = await discover(
-                    target, challenge, self.network, self.policy, budget
+                    target,
+                    challenge,
+                    self.network,
+                    self.policy,
+                    budget,
+                    redirect_uri=redirect_uri,
                 )
                 chosen = metadata.configuration
             assert chosen is not None
-            metadata, client = await self._select(
+            metadata, blocked = await self._select(
                 metadata,
                 chosen,
                 cached,
                 budget,
-                interactive=interactive,
+                prepare=interactive,
                 force=force,
                 # After invalid_client, read under the lock: an eventually
                 # consistent store must not serve the rejected record again.
                 coordinated=replaced,
             )
-            if (
-                force
-                and cached is not None
-                and cached.client_source == "dcr"
-                and grant_key(target, cached) != grant_key(target, metadata)
-            ):
-                # A forced re-registration replaced the client.
-                await self._drop_grant(target, cached, budget)
             force = False  # A forced re-registration happens once per prepare.
             config = metadata.configuration
             # Secrets are operation-local and never enter persisted metadata.
-            stored = replace(metadata, configuration=_persisted(config))
+            stored = _persisted(metadata)
             if stored != cached:
                 await self.store.save_binding(binding, stored, budget)
                 cached = stored
@@ -1469,6 +1399,10 @@ class ManagedOAuthProvider:
                     code="access_denied", required_scopes=required
                 )
             key = grant_key(target, stored)
+            # A PKCE DCR grant is refreshed with the client it was issued to.
+            issued = stored.client_source == "dcr" and (
+                config.flow == "authorization_code_pkce"
+            )
             try:
                 async with self.store.coordinate(key, budget) as guard:
                     record = _grant_record(await guard.load())
@@ -1502,21 +1436,32 @@ class ManagedOAuthProvider:
                         )
                     ):
                         assert record is not None
-                        self._detach(client.renewal)
                         return self._ready(target, key, record)
-                    if client.blocked is not None:
+                    if blocked is not None:
                         # No usable registration: only a stored token works.
                         raise AuthenticationFailure(
-                            code=client.blocked, required_scopes=required
+                            code=blocked, required_scopes=required
                         )
                     refresh = (
                         token.refresh_token if token is not None and adequate else None
                     )
+                    if issued and (
+                        record is None or not record.metadata.configuration.client_id
+                    ):
+                        refresh = None  # No client to present the token with.
                     if config.flow == "client_credentials" or refresh:
                         if not discovered and (interactive or challenge is not None):
                             # Renew endpoint metadata outside the lock, then reload.
                             renew = True
                             continue
+                        exchanged, committed = config, stored
+                        if issued:
+                            assert record is not None
+                            exchanged = replace(
+                                config,
+                                client_id=record.metadata.configuration.client_id,
+                            )
+                            committed = _with_client(stored, exchanged.client_id)
                         # Re-acquisition keeps the previous grant (step-up).
                         granted = set(token.scopes) if token is not None else set()
                         requested = tuple(
@@ -1535,14 +1480,15 @@ class ManagedOAuthProvider:
                         active = await self._exchange(
                             guard,
                             record,
-                            stored,
-                            config,
+                            committed,
+                            exchanged,
                             budget,
                             form,
                             requested,
                             previous=token if refresh else None,
                             retained=token,
                             ceiling=tuple(sorted(granted | set(config.ceiling))),
+                            forget_client=issued,
                         )
                         assert active.token is not None
                         if not set(required) <= set(active.token.scopes) & set(
@@ -1551,7 +1497,6 @@ class ManagedOAuthProvider:
                             raise AuthenticationFailure(
                                 code="access_denied", required_scopes=required
                             )
-                        self._detach(client.renewal)
                         return self._ready(target, key, active)
                     if not interactive:
                         raise AuthenticationFailure(
@@ -1561,38 +1506,25 @@ class ManagedOAuthProvider:
                         # A login rebuilds binding metadata first.
                         renew = True
                         continue
-                    return await self._pending(
-                        guard,
-                        record,
-                        stored,
-                        config,
-                        required,
-                        key,
-                        budget,
-                        client.generation,
-                    )
+                    granted_scopes = token.scopes if token is not None else ()
             except _InvalidClient:
                 if stored.client_source == "cimd":
                     raise AuthenticationFailure(code="invalid_configuration") from None
                 if stored.client_source != "dcr":
                     raise
-                assert stored.registration_key is not None
+                if issued:
+                    # The grant was compare-and-deleted; the next prepare
+                    # registers a new client for a new login.
+                    raise AuthenticationFailure(code="interaction_required") from None
                 await self._drop_registration(
-                    stored.registration_key,
-                    client.generation,
-                    chosen.dynamic_registration,
+                    registration_key(self.namespace, config.issuer),
+                    config.client_id,
                     budget,
                     mark=replaced,
                 )
-                await self._drop_grant(target, stored, budget)
-                if replaced or config.flow != "client_credentials":
-                    # A PKCE code or refresh token bound to the old client is
-                    # never reused; a repeated invalid_client stops here.
-                    raise AuthenticationFailure(
-                        code="interaction_required"
-                        if config.flow == "authorization_code_pkce"
-                        else "credential_unavailable"
-                    ) from None
+                if replaced:
+                    # A repeated invalid_client stops here.
+                    raise AuthenticationFailure(code="credential_unavailable") from None
                 # Re-register at most once per operation, without refetching
                 # metadata.
                 replaced, renew, fresh = True, False, discovered
@@ -1600,6 +1532,11 @@ class ManagedOAuthProvider:
             except _StaleMetadata:
                 if discovered or refetched:
                     raise
+            else:
+                # Registration and the login itself run outside the grant lock.
+                return await self._login(
+                    key, metadata, config, required, granted_scopes, budget
+                )
             # Persisted issuer metadata looks stale: refetch the stored
             # issuer's metadata once (never protected-resource discovery),
             # persist it when the issuer is unchanged, and retry once.
@@ -1616,14 +1553,17 @@ class ManagedOAuthProvider:
         *,
         challenge: AuthChallenge | None = None,
         required_scopes: tuple[str, ...] = (),
+        redirect_uri: str | None = None,
         force_registration: bool = False,
     ) -> Ready | PendingLogin:
         """Host-driven acquisition; the only path that creates pending logins.
 
         Pass a failure's `required_scopes` back here to request step-up consent.
-        `force_registration` discards the current DCR registration (and its
-        secret and failed marker) and registers anew, e.g. after the
-        authorization server deleted the client.
+        `redirect_uri` overrides the configured redirect for this login, e.g. a
+        loopback listener on a fresh ephemeral port; a DCR client is registered
+        for each login with its exact redirect. `force_registration` replaces a
+        usable client-credentials registration so changed registration
+        settings take effect.
         """
 
         async def run() -> Ready | PendingLogin:
@@ -1634,6 +1574,7 @@ class ManagedOAuthProvider:
                 interactive=True,
                 explicit=tuple(required_scopes),
                 force_registration=force_registration,
+                redirect_uri=redirect_uri,
             )
             assert result is not None
             return result
@@ -1645,7 +1586,7 @@ class ManagedOAuthProvider:
     async def _complete(
         self,
         target: AuthTarget,
-        login: PendingLogin,
+        login: PendingLogin | None,
         callback_url: str,
         budget: OperationBudget,
     ) -> Ready:
@@ -1658,58 +1599,46 @@ class ManagedOAuthProvider:
         resource = await self.policy.resource(target, budget)
         issuers = (metadata.configuration.issuer,)
         config = await self.policy.select(target, resource, issuers, (), budget)
-        validate_configuration(target, resource, issuers, (), config)
-        registered = not config.client_id
-        stored = replace(metadata, resource=resource, configuration=_persisted(config))
-        if not registered and grant_key(target, stored) != login.key:
+        current = _candidate(metadata, resource, config)
+        key = grant_key(target, current)
+        if login is not None and login.key != key:
             raise AuthenticationFailure(code="access_denied")
-        async with self.store.coordinate(login.key, budget) as guard:
-            record = _grant_record(await guard.load())
-            pending = record.pending if record is not None else None
-            if (
-                record is None
-                or pending is None
-                or pending.state != login.generation
-                or pending.expires_at <= self.clock()
-            ):
+        callback = urlsplit(callback_url)
+        values = parse_qs(callback.query, keep_blank_values=True)
+        state = login.generation if login is not None else values.get("state", [""])[0]
+        async with self._logins.coordinate(pending_key(key), budget) as guard:
+            found = _pending_record(await guard.load())
+            pending = next(
+                (
+                    item
+                    for item in (found.logins if found is not None else ())
+                    if item.state == state and item.expires_at > self.clock()
+                ),
+                None,
+            )
+            if found is None or pending is None:
                 raise AuthenticationFailure(code="interaction_required")
-            source = pending.metadata.client_source
-            if registered:
-                # Complete with the client the login was created under, while
-                # current host policy still permits its source.
-                client_id = pending.metadata.configuration.client_id
-                document = config.client_metadata_document
-                if not (
-                    (source == "cimd" and document and document.url == client_id)
-                    or (source == "dcr" and config.dynamic_registration is not None)
-                ):
-                    raise AuthenticationFailure(code="interaction_required")
-                config = replace(
-                    config,
-                    client_id=client_id,
-                    token_endpoint_auth_method="none",
-                    client_secret=None,
-                )
-                stored = replace(
-                    stored,
-                    configuration=_persisted(config),
-                    client_source=source,
-                    registration_key=pending.metadata.registration_key,
-                )
-                if grant_key(target, stored) != login.key:
-                    raise AuthenticationFailure(code="access_denied")
             requested = pending.metadata.configuration
-            if (
-                config.redirect_uri != requested.redirect_uri
-                or not requested.redirect_uri
+            source = pending.metadata.client_source
+            assert requested.redirect_uri is not None
+            # The login's exact redirect, whatever the host configures now.
+            config = replace(config, redirect_uri=requested.redirect_uri)
+            validate_configuration(target, resource, issuers, (), config)
+            # Complete with the client the login was created under, while
+            # current host policy still permits its source.
+            document = config.client_metadata_document
+            if source != current.client_source or not (
+                source == "preregistered"
+                or (
+                    source == "cimd"
+                    and document
+                    and document.url == requested.client_id
+                )
+                or (source == "dcr" and config.dynamic_registration is not None)
             ):
                 raise AuthenticationFailure(code="interaction_required")
             # Validate redirect, state and issuer before consuming the login.
-            callback, redirect = (
-                urlsplit(callback_url),
-                urlsplit(requested.redirect_uri),
-            )
-            values = parse_qs(callback.query, keep_blank_values=True)
+            redirect = urlsplit(requested.redirect_uri)
             fixed = parse_qs(redirect.query, keep_blank_values=True)
             issuer = values.get("iss")
             if (
@@ -1724,27 +1653,50 @@ class ManagedOAuthProvider:
                 or (pending.metadata.require_response_issuer and issuer is None)
             ):
                 raise AuthenticationFailure(code="access_denied")
-            if "error" in values:
-                # Valid consent denial consumes the login, never the stored grant.
-                await self._cas(
-                    guard,
-                    record,
-                    self._settled(record.metadata, record.token, None),
-                )
-                if source == "cimd" and values["error"] == ["invalid_client"]:
-                    raise AuthenticationFailure(code="invalid_configuration")
-                raise AuthenticationFailure(code="access_denied")
             codes = values.get("code", [])
-            if len(codes) != 1 or not codes[0]:
-                raise AuthenticationFailure(code="access_denied")
-            await self.network.authorize(callback_url, "authorization", budget)
-            form = {
-                "grant_type": "authorization_code",
-                "code": codes[0],
-                "redirect_uri": requested.redirect_uri,
-                "code_verifier": pending.verifier,
-            }
+            if "error" not in values:
+                if len(codes) != 1 or not codes[0]:
+                    raise AuthenticationFailure(code="access_denied")
+                await self.network.authorize(callback_url, "authorization", budget)
+            # Claim the login once; expired logins go with it.
+            now = self.clock()
+            rest = tuple(
+                item
+                for item in found.logins
+                if item is not pending and item.expires_at > now
+            )
+            if not await guard.compare_and_swap(
+                found.generation,
+                OAuthPendingLogins(uuid4().hex, rest) if rest else None,
+            ):
+                raise AuthenticationFailure(code="provider_failed", recovery="retry")
+        if "error" in values:
+            # Valid consent denial consumes the login, never the stored grant.
+            if source == "cimd" and values["error"] == ["invalid_client"]:
+                raise AuthenticationFailure(code="invalid_configuration")
+            raise AuthenticationFailure(code="access_denied")
+        if source != "preregistered":
+            config = replace(
+                config,
+                client_id=requested.client_id,
+                token_endpoint_auth_method="none",
+                client_secret=None,
+            )
+        stored = _with_client(
+            _persisted(replace(current, configuration=config)), config.client_id
+        )
+        form = {
+            "grant_type": "authorization_code",
+            "code": codes[0],
+            "redirect_uri": requested.redirect_uri,
+            "code_verifier": pending.verifier,
+        }
+        async with self.store.coordinate(key, budget) as guard:
+            record = _grant_record(await guard.load())
+            previous = record.token if record is not None else None
             try:
+                # The newest completed login wins: its client and tokens
+                # replace the grant together.
                 active = await self._exchange(
                     guard,
                     record,
@@ -1757,50 +1709,43 @@ class ManagedOAuthProvider:
                     ceiling=tuple(
                         sorted(
                             set(requested.ceiling)
-                            | set(record.token.scopes if record.token else ())
+                            | set(previous.scopes if previous else ())
                         )
                     ),
-                    retained=record.token,
+                    retained=previous,
                     code=True,
                 )
             except _InvalidClient:
                 if source == "preregistered":
                     raise
-                rejected = True
-            else:
-                rejected = False
-            if not rejected:
-                assert active.token is not None
-                effective = set(active.token.scopes) & set(config.ceiling)
-                if not set(config.required_scopes) <= effective:
-                    raise AuthenticationFailure(
-                        code="access_denied", required_scopes=config.required_scopes
-                    )
-                return self._ready(target, login.key, active)
-        # invalid_client for a registered client, handled outside the grant lock.
-        if source == "cimd":
-            raise AuthenticationFailure(code="invalid_configuration")
-        assert pending.metadata.registration_key is not None
-        # Only the generation this login was created under: a stale callback
-        # never deletes a newer registration.
-        await self._drop_registration(
-            pending.metadata.registration_key,
-            pending.registration_generation,
-            None,
-            budget,
-            mark=False,
-        )
-        await self._drop_grant(target, stored, budget)  # Binding-scoped only.
-        raise AuthenticationFailure(code="interaction_required")
+                # Only this login ends; the stored grant, which may hold an
+                # older valid client, is kept.
+                raise AuthenticationFailure(
+                    code="invalid_configuration"
+                    if source == "cimd"
+                    else "interaction_required"
+                ) from None
+            assert active.token is not None
+            effective = set(active.token.scopes) & set(config.ceiling)
+            if not set(config.required_scopes) <= effective:
+                raise AuthenticationFailure(
+                    code="access_denied", required_scopes=config.required_scopes
+                )
+            return self._ready(target, key, active)
 
     async def complete(
         self,
         target: AuthTarget,
-        login: PendingLogin,
+        login: PendingLogin | None,
         callback_url: str,
         budget: OperationBudget,
     ) -> Ready:
-        """Complete a stored pending login from any process sharing the store."""
+        """Complete a pending login by its `state`.
+
+        Pass the `PendingLogin` from `prepare`, or None to find the login by the
+        callback's `state` (for example a pasted callback URL in another
+        process, when pending logins are persisted).
+        """
         ready = await self._run(
             lambda: self._complete(target, login, callback_url, budget), budget
         )
@@ -1815,10 +1760,11 @@ class ManagedOAuthProvider:
         handle: PendingLogin | BearerCredential | None = None,
         challenge: AuthChallenge | None = None,
     ) -> None:
-        """Explicitly invalidate the current grant. A retained handle avoids I/O.
+        """Explicitly invalidate the current grant and its pending logins.
 
-        This deliberate host action clears the current generation, not merely
-        the handle's old generation. Do not call reset automatically on stale 401.
+        A retained handle avoids I/O. This deliberate host action clears the
+        current generation, not merely the handle's old generation. Do not call
+        reset automatically on stale 401.
         """
 
         async def reset_record() -> None:
@@ -1843,6 +1789,7 @@ class ManagedOAuthProvider:
                 if record is not None and grant_key(target, record.metadata) != key:
                     raise AuthenticationFailure(code="invalid_configuration")
                 await self._cas(guard, record, None)
+            await self._end_logins(key, budget, lambda item: False)
 
         await self._run(reset_record, budget)
 
@@ -1856,21 +1803,15 @@ class ManagedOAuthProvider:
 
         async def cancel_pending() -> None:
             self._check_target(target)
-            async with self.store.coordinate(login.key, budget) as guard:
-                record = _grant_record(await guard.load())
-                if (
-                    record is None
-                    or record.pending is None
-                    or record.pending.state != login.generation
-                ):
-                    return
-                if grant_key(target, record.metadata) != login.key:
+
+            def keep(item: PendingState) -> bool:
+                if item.state != login.generation:
+                    return True
+                if grant_key(target, item.metadata) != login.key:
                     raise AuthenticationFailure(code="invalid_configuration")
-                await self._cas(
-                    guard,
-                    record,
-                    self._settled(record.metadata, record.token, None),
-                )
+                return False
+
+            await self._end_logins(login.key, budget, keep)
 
         await self._run(cancel_pending, budget)
 

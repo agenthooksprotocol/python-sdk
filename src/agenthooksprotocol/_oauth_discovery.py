@@ -4,6 +4,7 @@ Metadata supplies candidates, never trust. DNS/TLS and egress enforcement remain
 at the host's OAuthNetwork boundary; no client or browser is owned here.
 """
 
+from dataclasses import replace
 import json
 import re
 from urllib.parse import parse_qsl, urlsplit
@@ -333,9 +334,12 @@ async def discover(
     network: OAuthNetwork,
     policy: OAuthTrustPolicy,
     budget: OperationBudget,
+    *,
+    redirect_uri: str | None = None,
 ) -> OAuthMetadata:
     """Resolve the locally selected binding. The result carries the current
-    client secret; callers strip it before persisting metadata."""
+    client secret; callers strip it before persisting metadata.
+    `redirect_uri` overrides the configured redirect for one login."""
     resource = validate_url(await policy.resource(target, budget))
     binding = target.typed_binding
     metadata_url, required = challenge_requirements(challenge)
@@ -370,6 +374,8 @@ async def discover(
         for issuer in issuers:
             validate_url(issuer, issuer=True)
     configuration = await policy.select(target, resource, issuers, required, budget)
+    if redirect_uri is not None:
+        configuration = replace(configuration, redirect_uri=redirect_uri)
     validate_configuration(target, resource, issuers, required, configuration)
     return await issuer_metadata(resource, configuration, network, budget)
 

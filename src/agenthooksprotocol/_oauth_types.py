@@ -7,7 +7,7 @@ from typing import Literal, Protocol, TYPE_CHECKING
 
 import anyio
 
-from .auth import AuthTarget, BearerCredential
+from .auth import AuthErrorCode, AuthTarget, BearerCredential
 
 if TYPE_CHECKING:
     import httpx
@@ -130,7 +130,11 @@ class OAuthDynamicRegistration:
 @dataclass(frozen=True)
 class OAuthClientConfiguration:
     """`client_id` is a pre-registered client; leave it empty to let the SDK
-    use `client_metadata_document` (PKCE) or `dynamic_registration`."""
+    use `client_metadata_document` (PKCE) or `dynamic_registration`.
+
+    `redirect_uri` is the PKCE redirect; `prepare(..., redirect_uri=...)` may
+    override it per login (for example a fresh ephemeral loopback port).
+    """
 
     issuer: str
     client_id: str
@@ -185,8 +189,13 @@ class OAuthTrustPolicy(Protocol):
 
 @dataclass(frozen=True)
 class OAuthMetadata:
-    """Binding metadata: the selected client, its source and, for DCR, the
-    registration key, plus authorization-server capabilities."""
+    """Binding metadata: the selected client and its source, plus
+    authorization-server capabilities.
+
+    For a DCR source the binding holds no issued client: a PKCE grant record
+    carries the client it was issued to, and a client-credentials client lives
+    in its registration record.
+    """
 
     resource: str
     configuration: OAuthClientConfiguration = field(repr=False)
@@ -197,7 +206,6 @@ class OAuthMetadata:
     client_id_metadata_document_supported: bool = False
     token_endpoint_auth_methods: tuple[str, ...] = ()
     client_source: ClientSource = "preregistered"
-    registration_key: str | None = field(default=None, repr=False)
 
 
 @dataclass(frozen=True)
@@ -213,49 +221,60 @@ class StoredToken:
 
 @dataclass(frozen=True)
 class PendingState:
+    """One pending login, completed by `state`.
+
+    `metadata.configuration` holds the login's exact redirect, its client
+    (for DCR, the client registered for this login) and its acquisition
+    ceiling. The PKCE verifier lives only here.
+    """
+
     metadata: OAuthMetadata = field(repr=False)
     state: str = field(repr=False)
     verifier: str = field(repr=False)
     authorization_url: str = field(repr=False)
     # Wall-clock expiry fixed at creation; not tied to any caller's deadline.
     expires_at: float
-    # The DCR client generation this login was created under.
-    registration_generation: str | None = field(default=None, repr=False)
 
 
 @dataclass(frozen=True)
 class OAuthRecord:
+    """A grant: its tokens and the client they were issued to
+    (`metadata.configuration.client_id`), committed together."""
+
     generation: str
-    status: Literal["active", "refreshing", "pending"]
+    status: Literal["active", "refreshing"]
     metadata: OAuthMetadata = field(repr=False)
     token: StoredToken | None = field(default=None, repr=False)
-    pending: PendingState | None = field(default=None, repr=False)
+
+
+@dataclass(frozen=True)
+class OAuthPendingLogins:
+    """Persisted pending logins for one grant key, oldest first."""
+
+    generation: str
+    logins: tuple[PendingState, ...] = field(default=(), repr=False)
 
 
 @dataclass(frozen=True)
 class OAuthRegistration:
-    """A DCR registration and/or failed-registration marker for one key.
+    """A client-credentials DCR registration and/or its failure backoff.
 
-    `generation` changes on every write (compare-and-set); `client_generation`
-    identifies the issued client. The client secret lives only in the host
-    secret store under `secret_ref`.
+    The client secret lives only in the host secret store under `secret_ref`.
+    `failure` is the code of the last failed registration, returned while
+    `next_attempt_at` has not passed.
     """
 
     generation: str
-    request_digest: str
     client_id: str | None = field(default=None, repr=False)
-    client_generation: str | None = field(default=None, repr=False)
-    token_endpoint_auth_method: TokenEndpointAuthMethod = "none"
-    registered_at: float = 0
+    token_endpoint_auth_method: TokenEndpointAuthMethod = "client_secret_basic"
     client_secret_expires_at: int | None = None
     secret_ref: str | None = field(default=None, repr=False)
-    issued: dict[str, object] = field(default_factory=dict, repr=False)
-    failed_at: float | None = None
+    failure: AuthErrorCode | None = None
     attempts: int = 0
     next_attempt_at: float | None = None
 
 
-StoredRecord = OAuthRecord | OAuthRegistration
+StoredRecord = OAuthRecord | OAuthRegistration | OAuthPendingLogins
 StoreKey = str
 
 
@@ -263,9 +282,21 @@ def _frame(prefix: str, fields: tuple[str, ...]) -> str:
     return prefix + "".join(f"{len(value.encode('utf-8'))}:{value}" for value in fields)
 
 
-def registration_key(namespace: str, issuer: str, flow: str, redirect: str) -> str:
-    """DCR registration identity; redirect is "" for client credentials."""
-    return _frame("ahp.oauth.registration:", (namespace, issuer, flow, redirect))
+def registration_key(namespace: str, issuer: str) -> str:
+    """Client-credentials DCR registration identity."""
+    return _frame("ahp.oauth.registration:", (namespace, issuer))
+
+
+def pending_key(grant: str) -> str:
+    """Persisted pending logins of one grant key."""
+    return _frame("ahp.oauth.pending:", (grant,))
+
+
+def client_identity(metadata: OAuthMetadata) -> str:
+    """The host's configured client source; never an issued DCR client_id."""
+    if metadata.client_source == "dcr":
+        return "dcr"
+    return metadata.client_source + ":" + metadata.configuration.client_id
 
 
 def binding_key(target: AuthTarget) -> str:
@@ -300,7 +331,7 @@ def grant_key(target: AuthTarget, metadata: OAuthMetadata) -> str:
             target.namespace,
             config.issuer,
             metadata.resource,
-            config.client_id,
+            client_identity(metadata),
             config.flow,
             partition,
         ),
@@ -310,7 +341,8 @@ def grant_key(target: AuthTarget, metadata: OAuthMetadata) -> str:
 class OAuthStoreGuard(Protocol):
     """Exclusion spans load/reserve/network/CAS. No callback may reenter this key.
 
-    Grant keys hold `OAuthRecord`s; registration keys hold `OAuthRegistration`s.
+    Grant keys hold `OAuthRecord`s, registration keys `OAuthRegistration`s and
+    pending keys (only when pending logins are persisted) `OAuthPendingLogins`.
 
     CAS must commit atomically or reject. Failed/cancelled writes may have
     committed: callers reload rather than blindly restoring previous tokens.
@@ -324,7 +356,8 @@ class OAuthStoreGuard(Protocol):
 
 
 class OAuthSecretStore(Protocol):
-    """Host secret storage for DCR client secrets (and initial access tokens).
+    """Host secret storage for client-credentials DCR secrets (and initial
+    access tokens).
 
     `store` returns a fresh opaque reference; `resolve` returns None when the
     reference no longer resolves.

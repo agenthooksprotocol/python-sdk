@@ -1171,6 +1171,48 @@ class ConfigurationRetryTests(unittest.TestCase):
 
         self.run_async(run)
 
+    def test_concurrent_admissions_share_one_reattempt_per_backend(self):
+        async def run():
+            from agenthooksprotocol.auth import TransportFailure
+
+            clock = Clock()
+            release = anyio.Event()
+
+            class Gated(ScriptedTransport):
+                async def request(self, message):
+                    if message["method"] == "hooks/configuration" and not self.errors:
+                        await release.wait()
+                    return await super().request(message)
+
+            value = registration()
+            names = ("org.example.first", "org.example.second")
+            value["hooks"] = [
+                dict(deepcopy(value["hooks"][0]), id=name) for name in names
+            ]
+            transports = {name: Gated(TransportFailure("down")) for name in names}
+            with patch("agenthooksprotocol._hooks._now", clock):
+                async with client(value, transport=transports) as hooks:
+                    clock.now += 30
+
+                    async def admit(index):
+                        result = await hooks.tool_before(tool_input(f"call-{index}"))
+                        await result.aclose()
+
+                    async with anyio.create_task_group() as tasks:
+                        for index in range(50):
+                            tasks.start_soon(admit, index)
+                        # Let every admission reach the shared re-attempt.
+                        for _ in range(100):
+                            await anyio.lowlevel.checkpoint()
+                        release.set()
+                    for transport in transports.values():
+                        self.assertEqual(len(transport.discoveries), 2)
+                    self.assertEqual(
+                        [b["id"] for b in hooks.config["hooks"]], list(names)
+                    )
+
+        self.run_async(run)
+
     def test_retry_swap_mid_emit_keeps_admitted_routes(self):
         async def run():
             from agenthooksprotocol._content import ContentSources

@@ -144,7 +144,8 @@ def accept_registration(
     valid = (
         isinstance(client_id, str)
         and bool(client_id)
-        # When present, redirect_uris must be a list (null included is not);
+        # A JSON null is never an absent echo: each echoed field is checked
+        # when present. redirect_uris must be a list (null is not);
         # a PKCE echo must contain the requested redirect. Client credentials
         # sent none, so any echoed list is harmless.
         and (
@@ -172,8 +173,9 @@ def accept_registration(
             or (
                 isinstance(secret, str)
                 and bool(secret)
+                # A JSON null is never an absent expiry.
                 and (
-                    expires_at is None
+                    "client_secret_expires_at" not in body
                     or (
                         type(expires_at) is int
                         and expires_at >= 0

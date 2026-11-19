@@ -1139,6 +1139,34 @@ class RegistrationLifecycleTests(unittest.TestCase):
             with self.subTest(test.__name__):
                 self.run_env(test, PKCE)
 
+    def test_null_echoed_fields_and_expiry_are_never_absent(self):
+        cases = [
+            ("client_credentials", "client_secret_expires_at"),
+            ("client_credentials", "redirect_uris"),
+            ("client_credentials", "grant_types"),
+            ("client_credentials", "token_endpoint_auth_method"),
+            (PKCE, "redirect_uris"),
+            (PKCE, "grant_types"),
+            (PKCE, "token_endpoint_auth_method"),
+        ]
+        for flow, member in cases:
+
+            async def run(env, member=member):
+                async def hook(body):
+                    issued = {"client_id": "dcr-null", member: None}
+                    if body["token_endpoint_auth_method"] != "none":
+                        issued["client_secret"] = "dcr-secret"
+                    return httpx.Response(201, json=issued)
+
+                env.n.register_hook = hook
+                await self.fails("invalid_configuration", env.prepare())
+                self.assertFalse(env.secrets.stored)
+                self.assertFalse(env.grants())
+                self.assertFalse(pending_logins(env.p))
+
+            with self.subTest(flow=flow, member=member):
+                self.run_env(run, flow)
+
     def test_client_credentials_redirect_uris_echo_must_be_a_list(self):
         for echo, accepted in (
             ([], True),

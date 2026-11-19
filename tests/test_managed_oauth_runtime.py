@@ -1641,6 +1641,26 @@ class ManagedOAuthRuntimeTests(unittest.TestCase):
             **options,
         )
 
+    def test_callback_without_state_is_interaction_required(self):
+        async def run(p, n, s, policy, target, now):
+            policy.configuration = Policy("authorization_code_pkce").configuration
+            login = await p.prepare(target, OperationBudget.after(5))
+            for handle in (login, None):
+                for query in ({"code": "c"}, {"code": "c", "state": ""}):
+                    with self.assertRaises(AuthenticationFailure) as failure:
+                        await p.complete(
+                            target,
+                            handle,
+                            "https://host.test/callback?" + urlencode(query),
+                            OperationBudget.after(5),
+                        )
+                    self.assertEqual(failure.exception.code, "interaction_required")
+            # Nothing was consumed or sent.
+            self.assertFalse(n.tokens)
+            self.assertIsInstance(await self.complete_login(p, target, login), Ready)
+
+        self.run_async(run)
+
     def test_pending_login_is_owned_by_the_creating_process(self):
         """Canonical lifecycle: pending-login-owned-by-creating-process."""
 

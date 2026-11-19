@@ -1693,7 +1693,10 @@ class ManagedOAuthProvider:
             raise AuthenticationFailure(code="access_denied")
         callback = urlsplit(callback_url)
         values = parse_qs(callback.query, keep_blank_values=True)
-        state = login.generation if login is not None else values.get("state", [""])[0]
+        if not any(values.get("state", ())):
+            # No state names no login, as for an unknown state.
+            raise AuthenticationFailure(code="interaction_required")
+        state = login.generation if login is not None else values["state"][0]
         async with self._logins.coordinate(pending_key(key), budget) as guard:
             found = _pending_record(await guard.load())
             pending = next(

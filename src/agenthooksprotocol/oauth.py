@@ -1317,6 +1317,43 @@ class ManagedOAuthProvider:
         force_registration: bool = False,
         redirect_uri: str | None = None,
     ) -> Ready | PendingLogin | None:
+        """Acquire, then reset a client-credentials failure count after the
+        grant lock is released, best effort: the token is already committed,
+        so a store error there never fails the acquisition."""
+        worked: list[tuple[str, str]] = []
+        result = await self._acquire_locked(
+            target,
+            budget,
+            challenge,
+            rejected,
+            interactive=interactive,
+            lookup=lookup,
+            explicit=explicit,
+            force_registration=force_registration,
+            redirect_uri=redirect_uri,
+            worked=worked,
+        )
+        for key, client_id in worked:
+            try:
+                await self._registration_worked(key, client_id, budget)
+            except Exception:
+                pass  # Only a later backoff is longer than it needs to be.
+        return result
+
+    async def _acquire_locked(
+        self,
+        target: AuthTarget,
+        budget: OperationBudget,
+        challenge: AuthChallenge | None,
+        rejected: str | None,
+        *,
+        interactive: bool,
+        lookup: bool,
+        explicit: tuple[str, ...],
+        force_registration: bool,
+        redirect_uri: str | None,
+        worked: list[tuple[str, str]],
+    ) -> Ready | PendingLogin | None:
         """Serve, refresh, reissue or (interactive only) start a login.
 
         Full discovery runs only on a cache miss, a rebind, a host `prepare`
@@ -1534,10 +1571,12 @@ class ManagedOAuthProvider:
                             forget_client=issued,
                         )
                         if stored.client_source == "dcr" and not issued:
-                            await self._registration_worked(
-                                registration_key(self.namespace, config.issuer),
-                                config.client_id,
-                                budget,
+                            # Recorded now, run after the grant lock.
+                            worked.append(
+                                (
+                                    registration_key(self.namespace, config.issuer),
+                                    config.client_id,
+                                )
                             )
                         assert active.token is not None
                         if not set(required) <= set(active.token.scopes) & set(

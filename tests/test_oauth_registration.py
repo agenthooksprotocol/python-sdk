@@ -1576,6 +1576,42 @@ class RegistrationLifecycleTests(unittest.TestCase):
         self.run_env(run)
         self.run_env(rejected_until_success)
 
+    def test_failure_count_reset_is_best_effort_after_the_grant_lock(self):
+        async def run(env):
+            env.n.register_hook = rejecting(503)
+            await self.fails("provider_failed", env.prepare())
+            env.n.register_hook = None
+            coordinate = env.s.coordinate
+            held = []
+
+            def failing(key, budget):
+                if key.startswith("ahp.oauth.registration:") and env.n.tokens:
+                    # The reset runs after the grant lock is released.
+                    held.extend(
+                        lock.locked()
+                        for name, lock in env.s.locks.items()
+                        if name.startswith("ahp.oauth.grant:")
+                    )
+                    raise RuntimeError("store unavailable")
+                return coordinate(key, budget)
+
+            env.s.coordinate = failing
+            # The token is committed: the failed reset never fails prepare.
+            ready = await env.prepare()
+            self.assertIsInstance(ready, Ready)
+            self.assertEqual(held, [False])
+            self.assertEqual(env.registration().attempts, 1)
+            self.assertEqual(
+                env.grants()[ready.credential.identity.key].token.access_token,
+                ready.credential.token,
+            )
+            env.s.coordinate = coordinate
+            env.now[0] += 61
+            await env.lookup()
+            self.assertEqual(env.registration().attempts, 0)
+
+        self.run_env(run)
+
 
 if __name__ == "__main__":
     unittest.main()

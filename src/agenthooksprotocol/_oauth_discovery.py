@@ -254,6 +254,38 @@ def _scope_set(scopes: tuple[str, ...]) -> set[str]:
     return set(scopes)
 
 
+def check_redirect(redirect: object) -> None:
+    """HTTPS, or HTTP to a literal loopback IP (RFC 8252); never localhost."""
+    if not isinstance(redirect, str):
+        raise AuthenticationFailure(code="invalid_configuration")
+    try:
+        parts = urlsplit(redirect)
+        valid = (
+            bool(parts.hostname)
+            and parts.username is None
+            and parts.password is None
+            and "#" not in redirect
+            and "\\" not in redirect
+            and not any(ord(c) <= 32 or ord(c) == 127 for c in redirect)
+        )
+        _ = parts.port
+        if parts.scheme == "http":
+            import ipaddress
+
+            valid = valid and ipaddress.ip_address(parts.hostname or "").is_loopback
+        elif parts.scheme != "https":
+            valid = False
+        if any(
+            key in ("code", "state", "iss", "error", "error_description")
+            for key, _ in parse_qsl(parts.query, keep_blank_values=True)
+        ):
+            valid = False
+    except ValueError:
+        valid = False
+    if not valid:
+        raise AuthenticationFailure(code="invalid_configuration")
+
+
 def validate_configuration(
     target: AuthTarget,
     resource: str,
@@ -288,35 +320,12 @@ def validate_configuration(
     ):
         raise AuthenticationFailure(code="invalid_configuration")
     if configuration.flow == "authorization_code_pkce":
+        # A redirect is required only to create a login; a host may supply it
+        # per login through prepare(redirect_uri=...). A configured one is
+        # always checked, so localhost fails before client selection.
         redirect = configuration.redirect_uri
-        if not isinstance(redirect, str):
-            raise AuthenticationFailure(code="invalid_configuration")
-        try:
-            parts = urlsplit(redirect)
-            valid = (
-                bool(parts.hostname)
-                and parts.username is None
-                and parts.password is None
-                and "#" not in redirect
-                and "\\" not in redirect
-                and not any(ord(c) <= 32 or ord(c) == 127 for c in redirect)
-            )
-            _ = parts.port
-            if parts.scheme == "http":
-                import ipaddress
-
-                valid = valid and ipaddress.ip_address(parts.hostname or "").is_loopback
-            elif parts.scheme != "https":
-                valid = False
-            if any(
-                key in ("code", "state", "iss", "error", "error_description")
-                for key, _ in parse_qsl(parts.query, keep_blank_values=True)
-            ):
-                valid = False
-        except ValueError:
-            valid = False
-        if not valid:
-            raise AuthenticationFailure(code="invalid_configuration")
+        if redirect is not None:
+            check_redirect(redirect)
     elif configuration.flow != "client_credentials":
         raise AuthenticationFailure(code="unsupported_binding")
     if (

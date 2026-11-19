@@ -140,20 +140,18 @@ def accept_registration(
     expires_at = body.get("client_secret_expires_at")
     echoed = body.get("redirect_uris")
     sent = request.get("redirect_uris")
+    requested = sent if isinstance(sent, list) else []
     valid = (
         isinstance(client_id, str)
         and bool(client_id)
+        # When present, redirect_uris must be a list (null included is not);
+        # a PKCE echo must contain the requested redirect. Client credentials
+        # sent none, so any echoed list is harmless.
         and (
-            echoed is None
-            # When present, the echo contains the requested redirect (a flow
-            # that sent none accepts only an empty echo).
+            "redirect_uris" not in body
             or (
                 isinstance(echoed, list)
-                and (
-                    all(uri in echoed for uri in sent)
-                    if isinstance(sent, list)
-                    else not echoed
-                )
+                and (not pkce or all(uri in echoed for uri in requested))
             )
         )
         and (

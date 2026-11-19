@@ -33,6 +33,7 @@ from agenthooksprotocol.oauth import (
     OAuthClientConfiguration,
     OAuthClientMetadataDocument,
     OAuthDynamicRegistration,
+    OAuthPendingLogins,
     OperationBudget,
     PendingLogin,
     Ready,
@@ -1762,6 +1763,52 @@ class ManagedOAuthRuntimeTests(unittest.TestCase):
             )
             self.assertEqual(n.tokens[-1]["redirect_uri"], ["http://127.0.0.1:4001/cb"])
             self.assertFalse(pending_logins(p))
+
+        self.run_async(run)
+
+    def test_persisted_expired_pending_logins_are_swept_on_prepare(self):
+        """Expired persisted logins and verifiers are deleted on host prepare."""
+
+        async def run(p, n, s, policy, target, now):
+            policy.configuration = replace(
+                Policy("authorization_code_pkce").configuration, login_lifetime=60
+            )
+            budget = OperationBudget.after(5)
+            host = self.other_process(p, n, s, policy, now, persist_pending_logins=True)
+            old = await host.prepare(target, budget)
+            (stale,) = pending_logins(None, s)
+            authorize = n.authorize
+
+            async def expire_while_creating(url, purpose, budget):
+                # The old login expires after prepare starts, while the new
+                # one is being created: the write itself drops it.
+                if purpose == "authorization" and "state=" in url:
+                    now[0] += 61
+                await authorize(url, purpose, budget)
+
+            n.authorize = expire_while_creating
+            fresh = await host.prepare(target, budget)
+            n.authorize = authorize
+            stored = pending_logins(None, s)
+            self.assertEqual([item.state for item in stored], [fresh.generation])
+            self.assertNotIn(stale.verifier, [item.verifier for item in stored])
+            with self.assertRaises(AuthenticationFailure) as failure:
+                await self.complete_login(host, target, old)
+            self.assertEqual(failure.exception.code, "interaction_required")
+            # A prepare that returns Ready still deletes expired logins.
+            await self.complete_login(host, target, fresh)
+            policy.configuration = replace(
+                policy.configuration, allowed_scopes=("read", "write")
+            )
+            step_up = await host.prepare(target, budget, required_scopes=("write",))
+            self.assertIsInstance(step_up, PendingLogin)
+            now[0] += 61
+            self.assertTrue(pending_logins(None, s))
+            self.assertIsInstance(await host.prepare(target, budget), Ready)
+            self.assertFalse(pending_logins(None, s))
+            self.assertFalse(
+                [r for r in s.records.values() if isinstance(r, OAuthPendingLogins)]
+            )
 
         self.run_async(run)
 

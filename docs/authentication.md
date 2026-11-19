@@ -140,7 +140,8 @@ the S256 authorization URL and receives the callback through its own UI and
 transport. HTTPS redirects are required except HTTP to literal loopback IPs
 (`127.0.0.1`, `[::1]`) for desktop/CLI clients; `localhost` is
 `invalid_configuration`. As in MCP clients, a host may bind a fresh ephemeral
-loopback port per login and pass it as `prepare(..., redirect_uri=...)`; that
+loopback port per login and pass it as `prepare(..., redirect_uri=...)`, with
+no redirect configured at all (only creating a login needs one); that
 exact redirect, with its port, is used for registration, authorization, the
 callback check and the token request. The SDK starts no browser or listener.
 
@@ -315,7 +316,8 @@ re-registers and retries once; a repeated `invalid_client` is
 `credential_unavailable` and counts as a failed registration for the backoff,
 so a server that accepts registrations but rejects their clients is not
 re-registered on every operation. After a failed registration no process sharing the
-store registers for that issuer until a backoff passes: `registration_backoff`
+store registers for that issuer until a backoff passes (failures count until a
+token request with a registered client succeeds): `registration_backoff`
 (default 60 seconds) doubling to `registration_backoff_max` (default 1 hour), or
 a later `Retry-After` up to the same cap. Meanwhile the last failure's code is
 returned, so a retryable failure stays `provider_failed` (`retry`), and a

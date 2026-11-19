@@ -137,14 +137,15 @@ class _InvalidClient(AuthenticationFailure):
 
 
 def _persisted(metadata: OAuthMetadata) -> OAuthMetadata:
-    """Binding metadata never holds secrets, host registration policy or an
-    issued DCR client."""
+    """Binding metadata never holds secrets, host registration policy, an
+    issued DCR client or a redirect (a per-login property, kept by the login)."""
     config = metadata.configuration
     return replace(
         metadata,
         configuration=replace(
             config,
             client_id="" if metadata.client_source == "dcr" else config.client_id,
+            redirect_uri=None,
             client_secret=None,
             client_metadata_document=None,
             dynamic_registration=None,
@@ -798,12 +799,23 @@ class ManagedOAuthProvider:
         records that ceiling. A DCR client is registered for this login, with
         its exact redirect.
         """
+        from ._oauth_discovery import check_redirect
+
         if (
             config.flow != "authorization_code_pkce"
             or not metadata.authorization_endpoint
-            or not config.redirect_uri
         ):
             raise AuthenticationFailure(code="unsupported_binding")
+        # Only a login needs a redirect: configured, or this prepare's own.
+        if not config.redirect_uri:
+            raise AuthenticationFailure(code="invalid_configuration")
+        check_redirect(config.redirect_uri)
+        document = config.client_metadata_document
+        if metadata.client_source == "cimd" and (
+            document is None
+            or not declared_redirect(config.redirect_uri, document.redirect_uris)
+        ):
+            raise AuthenticationFailure(code="invalid_configuration")
         wanted = set(config.scopes) | set(required)
         scopes = tuple(sorted(set(granted) | (wanted & set(config.ceiling))))
         ceiling = tuple(sorted(set(config.ceiling) | set(scopes)))
@@ -919,8 +931,12 @@ class ManagedOAuthProvider:
                 and not (kept == "dcr" and chosen.dynamic_registration is not None)
             )
         ):
-            if not valid_document_url(document.url) or not declared_redirect(
-                chosen.redirect_uri or "", document.redirect_uris
+            # A configured redirect is checked here, before any login; one
+            # supplied only to a later prepare is checked when that login is
+            # created.
+            if not valid_document_url(document.url) or (
+                chosen.redirect_uri is not None
+                and not declared_redirect(chosen.redirect_uri, document.redirect_uris)
             ):
                 raise AuthenticationFailure(code="invalid_configuration")
             config = replace(
@@ -1012,9 +1028,9 @@ class ManagedOAuthProvider:
     ) -> OAuthRegistration:
         """The backoff record after one more failed registration."""
         now = self.clock()
-        attempts = (
-            record.attempts if record is not None and record.client_id is None else 0
-        ) + 1
+        # Failures count until a token request with a registered client
+        # succeeds, whether the client expired or was rejected.
+        attempts = (record.attempts if record is not None else 0) + 1
         delay = min(
             self.registration_backoff * 2 ** min(attempts - 1, 32),
             self.registration_backoff_max,
@@ -1128,11 +1144,9 @@ class ManagedOAuthProvider:
             method,
             outcome.client_secret_expires_at,
             reference,
-            # A client still rejected later (repeated invalid_client) keeps
-            # doubling the backoff it was registered after.
-            attempts=record.attempts
-            if record is not None and record.client_id is None
-            else 0,
+            # The failure count carries over until a token request with this
+            # client succeeds, so a client rejected again keeps doubling.
+            attempts=record.attempts if record is not None else 0,
         )
         try:
             await self._swap_registration(guard, record, fresh)
@@ -1253,6 +1267,20 @@ class ManagedOAuthProvider:
             raise AuthenticationFailure(code=outcome.code)
         return outcome.client_id
 
+    async def _registration_worked(
+        self, key: str, client_id: str, budget: OperationBudget
+    ) -> None:
+        """Reset the failure count once a token request with the client succeeds."""
+        seen = _registration_record(await self.store.load(key, budget))
+        if seen is None or not seen.attempts or seen.client_id != client_id:
+            return
+        async with self.store.coordinate(key, budget) as guard:
+            record = _registration_record(await guard.load())
+            if record is not None and record.attempts and record.client_id == client_id:
+                await self._swap_registration(
+                    guard, record, replace(record, generation=uuid4().hex, attempts=0)
+                )
+
     async def _drop_registration(
         self, key: str, client_id: str, budget: OperationBudget, *, mark: bool
     ) -> None:
@@ -1268,9 +1296,7 @@ class ManagedOAuthProvider:
                 guard,
                 record,
                 # A repeated invalid_client counts as a failed registration.
-                self._marked(
-                    replace(record, client_id=None), "credential_unavailable", None
-                )
+                self._marked(record, "credential_unavailable", None)
                 if mark
                 # The failure count survives the first rejection's re-register.
                 else OAuthRegistration(uuid4().hex, attempts=record.attempts)
@@ -1412,6 +1438,10 @@ class ManagedOAuthProvider:
                     code="access_denied", required_scopes=required
                 )
             key = grant_key(target, stored)
+            if interactive:
+                # Host prepare deletes this grant key's expired pending logins
+                # (and their verifiers), persisted or not, whatever it returns.
+                await self._end_logins(key, budget, lambda item: True)
             # A PKCE DCR grant is refreshed with the client it was issued to.
             issued = stored.client_source == "dcr" and (
                 config.flow == "authorization_code_pkce"
@@ -1503,6 +1533,12 @@ class ManagedOAuthProvider:
                             ceiling=tuple(sorted(granted | set(config.ceiling))),
                             forget_client=issued,
                         )
+                        if stored.client_source == "dcr" and not issued:
+                            await self._registration_worked(
+                                registration_key(self.namespace, config.issuer),
+                                config.client_id,
+                                budget,
+                            )
                         assert active.token is not None
                         if not set(required) <= set(active.token.scopes) & set(
                             config.ceiling

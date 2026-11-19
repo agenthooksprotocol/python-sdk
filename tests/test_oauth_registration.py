@@ -681,6 +681,7 @@ class RegistrationLifecycleTests(unittest.TestCase):
     def test_registration_response_validation_persists_nothing(self):
         for response in (
             {"client_id": "dcr", "redirect_uris": LOOPBACK},
+            {"client_id": "dcr", "redirect_uris": None},
             {"client_id": "dcr", "redirect_uris": ["https://evil.example/cb"]},
             {"client_id": "dcr", "token_endpoint_auth_method": "client_secret_basic"},
         ):
@@ -1138,38 +1139,36 @@ class RegistrationLifecycleTests(unittest.TestCase):
             with self.subTest(test.__name__):
                 self.run_env(test, PKCE)
 
-    def test_client_credentials_accepts_empty_redirect_uris_echo(self):
-        async def run(env):
-            async def hook(body):
-                return httpx.Response(
-                    201,
-                    json={
-                        "client_id": "dcr-cc",
-                        "client_secret": "dcr-secret",
-                        "redirect_uris": [],
-                    },
-                )
+    def test_client_credentials_redirect_uris_echo_must_be_a_list(self):
+        for echo, accepted in (
+            ([], True),
+            (["https://evil.example/cb"], True),
+            (None, False),
+            ("https://host.test/cb", False),
+            ({"uri": "https://host.test/cb"}, False),
+        ):
 
-            env.n.register_hook = hook
-            self.assertIsInstance(await env.prepare(), Ready)
-            self.assertEqual(env.n.token_clients, ["dcr-cc"])
+            async def run(env, echo=echo, accepted=accepted):
+                async def hook(body):
+                    return httpx.Response(
+                        201,
+                        json={
+                            "client_id": "dcr-cc",
+                            "client_secret": "dcr-secret",
+                            "redirect_uris": echo,
+                        },
+                    )
 
-        async def non_empty(env):
-            async def hook(body):
-                return httpx.Response(
-                    201,
-                    json={
-                        "client_id": "dcr-cc",
-                        "client_secret": "dcr-secret",
-                        "redirect_uris": ["https://evil.example/cb"],
-                    },
-                )
+                env.n.register_hook = hook
+                if accepted:
+                    self.assertIsInstance(await env.prepare(), Ready)
+                    self.assertEqual(env.n.token_clients, ["dcr-cc"])
+                else:
+                    await self.fails("invalid_configuration", env.prepare())
+                    self.assertIsNone(env.registration().client_id)
 
-            env.n.register_hook = hook
-            await self.fails("invalid_configuration", env.prepare())
-
-        self.run_env(run)
-        self.run_env(non_empty)
+            with self.subTest(echo=echo):
+                self.run_env(run)
 
     def test_recorded_dcr_rechecks_eligibility_at_register_time(self):
         async def no_hook(env):
@@ -1492,6 +1491,90 @@ class RegistrationLifecycleTests(unittest.TestCase):
             )
 
         self.run_env(run, PKCE)
+
+    def test_redirect_supplied_only_to_prepare_works_for_every_client_source(self):
+        redirect = "http://127.0.0.1:50555/callback"
+        sources = {
+            "preregistered": dict(client_id="host-client", dynamic_registration=None),
+            "cimd": dict(
+                client_metadata_document=replace(
+                    DOCUMENT, redirect_uris=("http://127.0.0.1/callback",)
+                ),
+                dynamic_registration=None,
+            ),
+            "dcr": {},
+        }
+        for source, changes in sources.items():
+
+            async def run(env, source=source, changes=changes):
+                # The host configures no redirect; each login brings its own.
+                env.configure(redirect_uri=None, **changes)
+                await self.fails("invalid_configuration", env.prepare())
+                self.assertFalse(pending_logins(env.p))
+                self.assertFalse(env.n.registrations)
+                login = await env.prepare(redirect_uri=redirect)
+                state = parse_qs(urlsplit(login.authorization_url).query)["state"][0]
+                ready = await env.p.complete(
+                    env.target,
+                    login,
+                    redirect + "?" + urlencode({"state": state, "code": "c"}),
+                    OperationBudget.after(5),
+                )
+                self.assertEqual(env.binding().client_source, source)
+                self.assertIsNone(env.binding().configuration.redirect_uri)
+                # Lookup, challenge and prepare work without any redirect.
+                self.assertEqual((await env.lookup()).token, ready.credential.token)
+                self.assertIsNotNone(await env.challenge())
+                env.now[0] += 61
+                self.assertIsNotNone(await env.lookup())
+                self.assertIsInstance(await env.prepare(), Ready)
+                self.assertEqual(
+                    [form["grant_type"][0] for form in env.n.tokens],
+                    ["authorization_code", "refresh_token"],
+                )
+                # A localhost redirect for a login is still rejected first.
+                await env.p.reset(env.target, OperationBudget.after(5))
+                await self.fails(
+                    "invalid_configuration",
+                    env.prepare(redirect_uri="http://localhost:50555/callback"),
+                )
+                self.assertEqual(len(env.n.registrations), source == "dcr")
+
+            with self.subTest(source=source):
+                self.run_env(run, PKCE, {"client_id_metadata_document_supported": True})
+
+    def test_failure_count_resets_after_a_successful_token_request(self):
+        async def run(env):
+            env.n.register_hook = rejecting(503)
+            await self.fails("provider_failed", env.prepare())
+            await self.fails("provider_failed", env.prepare())  # bypasses backoff
+            self.assertEqual(env.registration().attempts, 2)
+            env.n.register_hook = issuing(env, lifetime=100)
+            await env.prepare()
+            # The count reached the new client, then its token succeeded.
+            self.assertEqual(env.registration().attempts, 0)
+            self.assertEqual(env.registration().client_id, "dcr-1")
+            # A later failure (here at secret expiry) starts the backoff anew,
+            # as an invalid_client would.
+            env.n.register_hook = rejecting(503)
+            env.now[0] = 1100
+            await self.fails("provider_failed", env.lookup())
+            marker = env.registration()
+            self.assertEqual((marker.attempts, marker.next_attempt_at), (1, 1160))
+
+        async def rejected_until_success(env):
+            # Repeated invalid_client keeps counting across re-registrations
+            # until a token request succeeds.
+            env.n.token_hook = rejecting(401, error="invalid_client")
+            await self.fails("credential_unavailable", env.prepare())
+            await self.fails("credential_unavailable", env.prepare())
+            self.assertEqual(env.registration().attempts, 2)
+            env.n.token_hook = None
+            await env.prepare()
+            self.assertEqual(env.registration().attempts, 0)
+
+        self.run_env(run)
+        self.run_env(rejected_until_success)
 
 
 if __name__ == "__main__":

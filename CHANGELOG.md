@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.14.0](https://github.com/agenthooksprotocol/python-sdk/compare/v0.13.1...v0.14.0) (2026-11-19)
+
+
+### ⚠ BREAKING CHANGES
+
+* **oauth:** grants are keyed by the configured client identity, so stored grants from earlier versions are not found and users sign in again. PKCE logins register per login with their own redirect; pending logins are process-owned unless persisted, capped, and completed by state; loopback CIMD redirects match without the port and localhost is rejected. Client-credentials registration re-registers on invalid_client with a growing backoff and is replaced on host prepare only when forced. Options for removed mechanisms (PKCE registration records, proactive renewal, stable redirects, supersede) are gone.
+
+### Features
+
+* **oauth:** align client registration and pending logins with MCP clients ([#58](https://github.com/agenthooksprotocol/python-sdk/issues/58)) ([f22d539](https://github.com/agenthooksprotocol/python-sdk/commit/f22d5395c0683abe54e870467db6eba3ef4fa568))
+
 ## [0.13.1](https://github.com/agenthooksprotocol/python-sdk/compare/v0.13.0...v0.13.1) (2026-11-18)
 
 

@@ -325,7 +325,7 @@ still-valid stored token keeps working. Host `prepare` bypasses the backoff;
 `prepare(..., force_registration=True)` replaces a usable registration so
 changed registration settings take effect, and acquires a token with the new
 client even when a valid one is stored; a failed replacement keeps the current
-registration and returns the failure.
+registration, records the failure in the backoff and returns it.
 
 ### Configure scopes and storage isolation
 

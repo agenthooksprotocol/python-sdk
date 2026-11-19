@@ -1127,11 +1127,23 @@ class ManagedOAuthProvider:
     ) -> tuple[OAuthRegistration | None, str | None, AuthErrorCode]:
         """Persist a registration outcome under the registration-key lock.
 
-        A failed forced replacement keeps the current usable record and
-        returns the failure.
+        A failed forced replacement keeps the current usable record, records
+        the failure in its backoff and returns the failure.
         """
         if isinstance(outcome, RegistrationFailed):
             if current is not None:
+                marker = self._marked(current, outcome.code, outcome.retry_after)
+                await self._swap_registration(
+                    guard,
+                    current,
+                    replace(
+                        current,
+                        generation=marker.generation,
+                        failure=marker.failure,
+                        attempts=marker.attempts,
+                        next_attempt_at=marker.next_attempt_at,
+                    ),
+                )
                 raise AuthenticationFailure(code=outcome.code)
             await self._swap_registration(
                 guard, record, self._marked(record, outcome.code, outcome.retry_after)
@@ -1279,7 +1291,15 @@ class ManagedOAuthProvider:
             record = _registration_record(await guard.load())
             if record is not None and record.attempts and record.client_id == client_id:
                 await self._swap_registration(
-                    guard, record, replace(record, generation=uuid4().hex, attempts=0)
+                    guard,
+                    record,
+                    replace(
+                        record,
+                        generation=uuid4().hex,
+                        failure=None,
+                        attempts=0,
+                        next_attempt_at=None,
+                    ),
                 )
 
     async def _drop_registration(

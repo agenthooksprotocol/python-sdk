@@ -1257,10 +1257,30 @@ class RegistrationLifecycleTests(unittest.TestCase):
                 "provider_failed", env.prepare(force_registration=True)
             )
             self.assertEqual(failure.recovery, "retry")
-            self.assertEqual(env.registration(), fresh)
-            self.assertEqual(len(env.n.registrations), 3)
+            kept = env.registration()
+            self.assertEqual(
+                (kept.client_id, kept.secret_ref), (fresh.client_id, fresh.secret_ref)
+            )
+            # The failure is recorded in the backoff (host prepare bypasses it).
+            self.assertEqual(
+                (kept.failure, kept.attempts, kept.next_attempt_at),
+                ("provider_failed", 1, env.now[0] + 60),
+            )
+            await self.fails("provider_failed", env.prepare(force_registration=True))
+            self.assertEqual(env.registration().attempts, 2)
+            self.assertEqual(env.registration().next_attempt_at, env.now[0] + 120)
+            self.assertEqual(len(env.n.registrations), 4)
             self.assertEqual(env.n.token_clients, ["dcr-1", "dcr-2"])
             self.assertEqual((await env.lookup()).token, forced.credential.token)
+            # The kept client still works; its next successful token request
+            # clears the backoff.
+            env.now[0] += 61
+            self.assertIsNotNone(await env.lookup())
+            cleared = env.registration()
+            self.assertEqual(
+                (cleared.failure, cleared.attempts, cleared.next_attempt_at),
+                (None, 0, None),
+            )
 
         self.run_env(cc)
 

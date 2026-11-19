@@ -1236,22 +1236,31 @@ class RegistrationLifecycleTests(unittest.TestCase):
 
     def test_prepare_force_registration_replaces_cc_registration(self):
         async def cc(env):
-            await env.prepare()
+            first = await env.prepare()
             record = env.registration()
-            await env.prepare(force_registration=True)
+            # The stored token is still valid, but a forced replacement
+            # acquires a new one with the new client.
+            forced = await env.prepare(force_registration=True)
+            self.assertIsInstance(forced, Ready)
+            self.assertNotEqual(forced.credential.token, first.credential.token)
             fresh = env.registration()
             self.assertEqual(fresh.client_id, "dcr-2")
             self.assertNotEqual(fresh.generation, record.generation)
             self.assertEqual(env.secrets.deleted, ["ref-1"])
-            # A valid token is served; the new client is used once needed.
-            env.now[0] += 61
-            await env.lookup()
             self.assertEqual(env.n.token_clients, ["dcr-1", "dcr-2"])
-            # A failed replacement keeps the current registration, unmarked.
+            # Later operations serve the new client's token.
+            self.assertEqual((await env.lookup()).token, forced.credential.token)
+            # A failed replacement keeps the current registration, unmarked,
+            # and returns the failure.
             env.n.register_hook = rejecting(503)
-            self.assertIsInstance(await env.prepare(force_registration=True), Ready)
+            failure = await self.fails(
+                "provider_failed", env.prepare(force_registration=True)
+            )
+            self.assertEqual(failure.recovery, "retry")
             self.assertEqual(env.registration(), fresh)
             self.assertEqual(len(env.n.registrations), 3)
+            self.assertEqual(env.n.token_clients, ["dcr-1", "dcr-2"])
+            self.assertEqual((await env.lookup()).token, forced.credential.token)
 
         self.run_env(cc)
 

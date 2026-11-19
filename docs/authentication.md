@@ -323,7 +323,9 @@ a later `Retry-After` up to the same cap. Meanwhile the last failure's code is
 returned, so a retryable failure stays `provider_failed` (`retry`), and a
 still-valid stored token keeps working. Host `prepare` bypasses the backoff;
 `prepare(..., force_registration=True)` replaces a usable registration so
-changed registration settings take effect (a failed replacement keeps it).
+changed registration settings take effect, and acquires a token with the new
+client even when a valid one is stored; a failed replacement keeps the current
+registration and returns the failure.
 
 ### Configure scopes and storage isolation
 

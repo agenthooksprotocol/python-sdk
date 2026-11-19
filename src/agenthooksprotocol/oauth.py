@@ -1127,11 +1127,12 @@ class ManagedOAuthProvider:
     ) -> tuple[OAuthRegistration | None, str | None, AuthErrorCode]:
         """Persist a registration outcome under the registration-key lock.
 
-        A failed forced replacement keeps the current usable record.
+        A failed forced replacement keeps the current usable record and
+        returns the failure.
         """
         if isinstance(outcome, RegistrationFailed):
             if current is not None:
-                return current, secret, "credential_unavailable"
+                raise AuthenticationFailure(code=outcome.code)
             await self._swap_registration(
                 guard, record, self._marked(record, outcome.code, outcome.retry_after)
             )
@@ -1377,6 +1378,9 @@ class ManagedOAuthProvider:
         challenged = tuple(sorted(set(challenged) | set(explicit)))
         cached = await self.store.load_binding(binding, budget)
         renew, refetched, replaced, fresh = False, False, False, False
+        # A forced client-credentials re-registration acquires a token with
+        # the new client instead of serving the replaced client's.
+        forced = False
         force = force_registration
         while True:
             metadata = None if renew else cached
@@ -1459,6 +1463,11 @@ class ManagedOAuthProvider:
                 # consistent store must not serve the rejected record again.
                 coordinated=replaced,
             )
+            forced = forced or (
+                force
+                and metadata.client_source == "dcr"
+                and metadata.configuration.flow == "client_credentials"
+            )
             force = False  # A forced re-registration happens once per prepare.
             config = metadata.configuration
             # Secrets are operation-local and never enter persisted metadata.
@@ -1509,6 +1518,7 @@ class ManagedOAuthProvider:
                         token is not None
                         and adequate
                         and not stale
+                        and not forced
                         and token.access_token is not None
                         and (
                             token.expires_at is None

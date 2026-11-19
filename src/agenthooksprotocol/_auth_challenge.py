@@ -23,6 +23,9 @@ def parse_challenge(
 
     A 403 is only accepted as Bearer `insufficient_scope`. Unknown schemes and
     padded token68 values are ignored; malformed Bearer auth-params fail closed.
+    A present `scope` must be RFC 6749 scope tokens separated by single spaces;
+    an empty, padded, invalid or repeated `scope` fails closed as
+    `access_denied` (no scopes are trusted from it).
     """
     if status not in (401, 403):
         return None, ()
@@ -71,13 +74,17 @@ def parse_challenge(
             raise ChallengeError("discovery_failed")
         key, value = match[1].lower(), match[2]
         if key in params:
-            raise ChallengeError("discovery_failed")
+            raise ChallengeError(
+                "access_denied" if key == "scope" else "discovery_failed"
+            )
         if value.startswith('"'):
             value = re.sub(r"\\(.)", r"\1", value[1:-1])
         params[key] = value
     if status == 403 and (bearer != 1 or params.get("error") != "insufficient_scope"):
         raise ChallengeError("access_denied")
-    scope = params.get("scope", "")
-    if scope and not re.fullmatch(rf"{_SCOPE}(?: {_SCOPE})*", scope):
-        raise ChallengeError("discovery_failed")
-    return params.get("resource_metadata"), tuple(scope.split())
+    scope = params.get("scope")
+    if scope is None:
+        return params.get("resource_metadata"), ()
+    if not re.fullmatch(rf"{_SCOPE}(?: {_SCOPE})*", scope):
+        raise ChallengeError("access_denied")
+    return params.get("resource_metadata"), tuple(scope.split(" "))

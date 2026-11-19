@@ -115,6 +115,9 @@ class AuthenticationFailure(ProtocolError):
             )
             else ()
         )
+        # Set by ManagedOAuthProvider.complete on every error it raises: True
+        # when the login named by the callback's state no longer exists.
+        self.login_ended: bool | None = None
 
 
 SecretResolver: TypeAlias = Callable[[str], str | None | Awaitable[str | None]]

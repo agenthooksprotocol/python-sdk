@@ -86,14 +86,20 @@ legacy positional messages and raw provider exceptions are not exposed.
 Defaults are `configure` for configuration, unsupported binding, unavailable
 credential and untrusted destination; `login` for required interaction and
 rejected refresh; `retry` for discovery/provider failure; and `none` for denied
-access. `interaction_required` can carry validated `required_scopes`; pass them
-to `prepare(..., required_scopes=...)` to request step-up consent.
-`access_denied` reports them, for diagnostics only, when the refusal is a
-missing scope: a challenged or host-required scope outside the allowed ceiling
-(the full required set is named), or a grant that lacks a required scope. Other
-refusals (host trust policy, such as an untrusted issuer or resource, or a
-denied consent) carry no scopes. Hosts can use these values to choose
-configuration, consent or retry UI.
+access. Only `interaction_required` and `access_denied` carry
+`required_scopes`, deduplicated and sorted, and always the operation's full
+required set R: host-required (`OAuthClientConfiguration.required_scopes`),
+explicit (`prepare(..., required_scopes=...)`) and a Bearer 403
+`insufficient_scope` challenge's scopes. Requested scopes (configured `scopes`
+and an OAuth binding preset's `scopes`) are never part of R. Pass the scopes of
+`interaction_required` to `prepare(..., required_scopes=...)` to request step-up
+consent. `access_denied` reports them, for diagnostics only, when the SDK's own
+scope check refuses: R outside the allowed ceiling, a grant narrower than R, or
+a 403 for scopes the stored grant already records. Errors raised by host
+callbacks (trust policy, client selection, destination checks or stores) never
+carry scopes: any they set are stripped. Other refusals, such as an untrusted
+issuer or resource or a denied consent, carry none. Hosts can use these values
+to choose configuration, consent or retry UI.
 Structured provider classifications survive the transport boundary, without
 retaining secret-bearing exception contexts. Cancellation remains native under
 asyncio and Trio, and provider calls stay inside the enclosing operation budget.
@@ -184,6 +190,17 @@ write. Completing one never invalidates another: each completion replaces the
 grant's client and tokens, so the newest completed login wins. A pending login
 ends once: completion (including consent denial), `cancel` (including by the
 cap) or expiry. Invalid state, redirect or issuer does not consume it.
+
+A pending login records the required set R it was prepared with (host-required
+at that time, explicit and any challenged scopes). `complete` succeeds only if
+the granted scopes within the current ceiling cover that R; otherwise it fails
+`access_denied` with that R, still persisting the grant (and any rotated refresh
+token) and consuming the login. Every `AuthenticationFailure`, `TimeoutError`
+or `OperationCancelledError` raised by `complete` has a boolean `login_ended`:
+`True` when the login named by the callback's `state` no longer exists after
+the call (consumed, expired or unknown), `False` while it is still pending (for
+example a stray or invalid callback rejected before the claim). It does not
+change the code or recovery.
 
 Persisted binding metadata and valid tokens remain usable by recreated
 providers without rediscovery. Do not serialize the pending handle as an AHP
@@ -336,8 +353,16 @@ registration, records the failure in the backoff and returns it.
 
 `OAuthClientConfiguration.scopes` is the requested set. `allowed_scopes` is the
 local ceiling and defaults to requested scopes when omitted. `required_scopes`
-contains explicit operation requirements. All scopes use OAuth's ASCII grammar;
-requested and required scopes must be inside the ceiling. An acquisition
+contains host-required scopes. All scopes use OAuth's ASCII grammar (malformed
+tokens raise `ValueError` at construction). Scopes outside the ceiling are
+refused when the configuration is used, locally and before any network request
+on every path (fresh, cached binding, `prepare`, delivery and challenges):
+requested scopes outside it fail `invalid_configuration`, and a required scope
+outside it fails `access_denied` with R. A cached binding is not rediscovered
+because of that refusal. (For an unbound target without cached metadata, the
+ceiling comes from `select`, so the decision follows protected-resource
+discovery and precedes any authorization-server request.) A malformed
+`prepare(..., required_scopes=...)` fails `invalid_configuration`. An acquisition
 (including step-up or re-acquisition) requests the previous grant plus the
 requested and required scopes within the caller's ceiling, and records the
 response scopes within the previous grant plus the acquisition ceiling (the one
@@ -353,17 +378,29 @@ fails `provider_failed`. At use, effective scopes are the grant within
 the **current** ceiling: narrowing or widening a ceiling never loses a grant. The
 ceiling governs what the SDK requests and records; it does not limit what an
 issued token can do at the resource server. An operation fails `access_denied`
-only when an explicit or challenged required scope is missing.
+only when a scope of R is missing; a grant without a requested or preset scope
+still satisfies an operation whose R it covers.
 
-A Bearer 403 `insufficient_scope` requirement applies only to the challenged
-operation and the acquisition it triggers; it is not stored on the binding.
-A challenged scope outside the allowed ceiling fails with `access_denied`
-carrying the full required set (challenged, explicit and configured), as does
-an explicit `prepare(..., required_scopes=...)` outside it, so hosts can name
-the refused scopes. If the challenge omits `scope`,
-explicit host requirements must identify the needed scopes; otherwise access is
-denied. PKCE returns `interaction_required` with the required scopes for a host
-`prepare`; client credentials acquire approved scopes without human login.
+As in MCP clients, a 401 means the token was rejected: the SDK retires it
+before any other decision, then renews. Scopes in a 401 Bearer challenge's
+`scope` that are inside the ceiling are added to the scopes requested by the
+next acquisition or sign-in (pass the challenge to `prepare(..., challenge=...)`
+for a login); others are not requested. They are never required and never make
+a 401 fail `access_denied`.
+
+Only a Bearer 403 `insufficient_scope` creates a step-up requirement. It
+applies only to the challenged operation and the acquisition it triggers; it is
+not stored on the binding. A challenged scope outside the allowed ceiling fails
+`access_denied` with R. If the challenge omits `scope`, host-required or
+explicit scopes must identify the needed scopes; otherwise access is denied
+with no scopes. If the stored grant already records R (within the current
+ceiling) for the rejected token, the 403 fails `access_denied` with R: the
+token is not replayed, no consent loop starts and no login is created. A
+challenge `scope` must be scope tokens separated by single spaces; an empty,
+padded, invalid or repeated `scope` fails `access_denied` with no scopes, and
+the transport does not treat such a 403 as an auth retry. PKCE returns
+`interaction_required` with R for a host `prepare`; client credentials acquire
+approved scopes without human login.
 
 The binding key identifies namespace, backend ID, purpose and exact destination.
 The separate grant key identifies namespace, issuer, resource, client identity,

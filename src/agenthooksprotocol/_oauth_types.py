@@ -7,7 +7,7 @@ from typing import Literal, Protocol, TYPE_CHECKING
 
 import anyio
 
-from .auth import AuthErrorCode, AuthTarget, BearerCredential
+from .auth import AuthenticationFailure, AuthErrorCode, AuthTarget, BearerCredential
 
 if TYPE_CHECKING:
     import httpx
@@ -93,6 +93,12 @@ def _valid_scopes(scopes: tuple[str, ...] | None) -> bool:
     )
 
 
+class ScopeFailure(AuthenticationFailure):
+    """A refusal by the SDK's own scope checks, carrying the operation's full
+    required set. Only these keep their scopes at the managed-OAuth boundary;
+    scopes on host-raised failures are stripped."""
+
+
 @dataclass(frozen=True)
 class OAuthClientMetadataDocument:
     """A host-published Client ID Metadata Document; the URL is the client_id.
@@ -157,11 +163,9 @@ class OAuthClientConfiguration:
         for scopes in (self.scopes, self.allowed_scopes, self.required_scopes):
             if not _valid_scopes(scopes):
                 raise ValueError("Invalid OAuth scope")
-        allowed = set(self.ceiling)
-        if not set(self.scopes).issubset(allowed) or not set(
-            self.required_scopes
-        ).issubset(allowed):
-            raise ValueError("Requested and required scopes must be locally allowed")
+        # Scopes outside the ceiling are refused by the SDK as auth errors when
+        # the configuration is used: requested ones as invalid_configuration,
+        # required ones as access_denied naming the required set.
         if self.grant_partition is not None and (
             not isinstance(self.grant_partition, str) or not self.grant_partition
         ):
@@ -225,7 +229,9 @@ class PendingState:
 
     `metadata.configuration` holds the login's exact redirect, its client
     (for DCR, the client registered for this login) and its acquisition
-    ceiling. The PKCE verifier lives only here.
+    ceiling. The PKCE verifier lives only here. `required_scopes` is the
+    required set the login was prepared with (host-required, explicit and
+    challenged); completion succeeds only if the grant covers it.
     """
 
     metadata: OAuthMetadata = field(repr=False)
@@ -234,6 +240,7 @@ class PendingState:
     authorization_url: str = field(repr=False)
     # Wall-clock expiry fixed at creation; not tied to any caller's deadline.
     expires_at: float
+    required_scopes: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)

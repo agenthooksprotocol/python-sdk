@@ -57,6 +57,7 @@ from ._oauth_types import (
     OperationBudget as OperationBudget,
     PendingLogin as PendingLogin,
     Ready as Ready,
+    ScopeFailure,
     binding_key,
     grant_key,
     pending_key,
@@ -84,6 +85,7 @@ _DEFINITIVE = (
 )
 _SCOPE = r"[\x21\x23-\x5b\x5d-\x7e]+"
 _SCOPE_LIST = re.compile(rf"{_SCOPE}(?: {_SCOPE})*")
+_SCOPE_TOKEN = re.compile(_SCOPE)
 
 
 def _endpoint(url: str) -> str:
@@ -374,6 +376,17 @@ async def _token_endpoint(
     return data
 
 
+@dataclass
+class _Completion:
+    """What one `complete` call knows about the login named by its `state`.
+
+    `ended` is None until known."""
+
+    key: StoreKey | None = None
+    state: str | None = None
+    ended: bool | None = None
+
+
 @dataclass(frozen=True)
 class _Attempt:
     key: StoreKey = field(repr=False)
@@ -485,7 +498,11 @@ class ManagedOAuthProvider:
             cancelled = True
         except AuthenticationFailure as error:
             failure, recovery = error.code, error.recovery
-            scopes = error.required_scopes
+            # Only the SDK's own scope checks name scopes; any scopes on a
+            # host-raised failure (selection, destination or store callbacks)
+            # are stripped.
+            if isinstance(error, ScopeFailure):
+                scopes = error.required_scopes
         except ImportError:
             failure = "unsupported_binding"
         except Exception:
@@ -792,12 +809,13 @@ class ManagedOAuthProvider:
         required: tuple[str, ...],
         granted: tuple[str, ...],
         budget: OperationBudget,
+        hinted: tuple[str, ...] = (),
     ) -> PendingLogin:
         """Create one process-owned (or persisted) pending login.
 
-        It requests previous grant ∪ ((requested ∪ required) ∩ ceiling) and
-        records that ceiling. A DCR client is registered for this login, with
-        its exact redirect.
+        It requests previous grant ∪ ((requested ∪ required ∪ 401 hints) ∩
+        ceiling) and records that ceiling and the required set. A DCR client
+        is registered for this login, with its exact redirect.
         """
         from ._oauth_discovery import check_redirect
 
@@ -816,7 +834,7 @@ class ManagedOAuthProvider:
             or not declared_redirect(config.redirect_uri, document.redirect_uris)
         ):
             raise AuthenticationFailure(code="invalid_configuration")
-        wanted = set(config.scopes) | set(required)
+        wanted = set(config.scopes) | set(required) | set(hinted)
         scopes = tuple(sorted(set(granted) | (wanted & set(config.ceiling))))
         ceiling = tuple(sorted(set(config.ceiling) | set(scopes)))
         if metadata.client_source == "dcr":
@@ -847,6 +865,7 @@ class ManagedOAuthProvider:
             verifier,
             url,
             self.clock() + config.login_lifetime,
+            tuple(sorted(set(required))),
         )
         async with self._logins.coordinate(pending_key(key), budget) as guard:
             record = _pending_record(await guard.load())
@@ -1325,12 +1344,36 @@ class ManagedOAuthProvider:
                 else None,
             )
 
+    async def _retire(self, rejected: _Attempt, budget: OperationBudget) -> None:
+        """Drop a 401-rejected access token, keeping any refresh token.
+
+        Only while the grant still holds the rejected generation; a newer
+        token is never touched.
+        """
+        async with self.store.coordinate(rejected.key, budget) as guard:
+            record = _grant_record(await guard.load())
+            if (
+                record is not None
+                and record.generation == rejected.generation
+                and record.token is not None
+                and record.token.access_token is not None
+            ):
+                await self._cas(
+                    guard,
+                    record,
+                    replace(
+                        record,
+                        generation=uuid4().hex,
+                        token=replace(record.token, access_token=None),
+                    ),
+                )
+
     async def _acquire(
         self,
         target: AuthTarget,
         budget: OperationBudget,
         challenge: AuthChallenge | None = None,
-        rejected: str | None = None,
+        rejected: _Attempt | None = None,
         *,
         interactive: bool,
         lookup: bool = False,
@@ -1366,7 +1409,7 @@ class ManagedOAuthProvider:
         target: AuthTarget,
         budget: OperationBudget,
         challenge: AuthChallenge | None,
-        rejected: str | None,
+        rejected: _Attempt | None,
         *,
         interactive: bool,
         lookup: bool,
@@ -1384,9 +1427,12 @@ class ManagedOAuthProvider:
         the binding is known, and returns None (anonymous) only on a store
         miss or host policy refusal.
         `explicit` holds host-supplied required scopes (step-up round trip).
+        The required set R is host-required ∪ explicit ∪ a 403's challenged
+        scopes; a 401's `scope` only adds requested scopes.
         """
         from ._oauth_discovery import (
             challenge_requirements,
+            check_scopes,
             discover,
             issuer_metadata,
             validate_configuration,
@@ -1394,7 +1440,11 @@ class ManagedOAuthProvider:
 
         self._check_target(target)
         binding = binding_key(target)
-        _, challenged = challenge_requirements(challenge)
+        if challenge is not None and challenge.status == 401 and rejected is not None:
+            # Retire the rejected token before any other decision, so it is
+            # never resent whatever the renewal does.
+            await self._retire(rejected, budget)
+        _, challenged, hints = challenge_requirements(challenge)
         challenged = tuple(sorted(set(challenged) | set(explicit)))
         cached = await self.store.load_binding(binding, budget)
         renew, refetched, replaced, fresh = False, False, False, False
@@ -1421,6 +1471,9 @@ class ManagedOAuthProvider:
                     if lookup:
                         return None  # Host policy refusal: anonymous attempt.
                 else:
+                    # The ceiling decision is local and final: never
+                    # rediscover because of it.
+                    check_scopes(config, challenged)
                     try:
                         if redirect_uri is not None:
                             config = replace(config, redirect_uri=redirect_uri)
@@ -1469,6 +1522,7 @@ class ManagedOAuthProvider:
                     self.policy,
                     budget,
                     redirect_uri=redirect_uri,
+                    explicit=explicit,
                 )
                 chosen = metadata.configuration
             assert chosen is not None
@@ -1497,12 +1551,13 @@ class ManagedOAuthProvider:
                 cached = stored
             # A challenge requirement applies to this operation only.
             required = tuple(sorted(set(challenged) | set(config.required_scopes)))
-            if not set(required) <= set(config.ceiling) or (
-                challenge is not None and challenge.status == 403 and not required
-            ):
-                raise AuthenticationFailure(
-                    code="access_denied", required_scopes=required
-                )
+            if not set(required) <= set(config.ceiling):
+                raise ScopeFailure(code="access_denied", required_scopes=required)
+            if challenge is not None and challenge.status == 403 and not required:
+                # insufficient_scope naming nothing, and no host requirement.
+                raise AuthenticationFailure(code="access_denied")
+            # 401 scope hints within the ceiling are requested, never required.
+            hinted = tuple(sorted(set(hints) & set(config.ceiling)))
             key = grant_key(target, stored)
             if interactive:
                 # Host prepare deletes this grant key's expired pending logins
@@ -1519,21 +1574,24 @@ class ManagedOAuthProvider:
                     adequate = token is not None and set(required) <= (
                         set(token.scopes) & set(config.ceiling)
                     )
-                    stale = record is not None and record.generation == rejected
+                    stale = (
+                        record is not None
+                        and rejected is not None
+                        and record.generation == rejected.generation
+                    )
                     if (
-                        stale
-                        and record is not None
-                        and token is not None
-                        and token.access_token is not None
+                        adequate
                         and challenge is not None
-                        and challenge.status == 401
+                        and challenge.status == 403
+                        and (stale or rejected is None)
                     ):
-                        # Persist the rejection before any renewal that can
-                        # fail, so a revoked token is never resent.
-                        token = replace(token, access_token=None)
-                        marked = replace(record, generation=uuid4().hex, token=token)
-                        await self._cas(guard, record, marked)
-                        record = marked
+                        # The server calls the token insufficient, yet its
+                        # grant records R: never replay it, loop on consent
+                        # or start a login. (A newer token than the one
+                        # rejected is served as usual.)
+                        raise ScopeFailure(
+                            code="access_denied", required_scopes=required
+                        )
                     if (
                         token is not None
                         and adequate
@@ -1575,7 +1633,12 @@ class ManagedOAuthProvider:
                         # Re-acquisition keeps the previous grant (step-up).
                         granted = set(token.scopes) if token is not None else set()
                         requested = tuple(
-                            sorted(granted | set(config.scopes) | set(required))
+                            sorted(
+                                granted
+                                | set(config.scopes)
+                                | set(required)
+                                | set(hinted)
+                            )
                         )
                         form = (
                             {"grant_type": "refresh_token", "refresh_token": refresh}
@@ -1612,12 +1675,12 @@ class ManagedOAuthProvider:
                         if not set(required) <= set(active.token.scopes) & set(
                             config.ceiling
                         ):
-                            raise AuthenticationFailure(
+                            raise ScopeFailure(
                                 code="access_denied", required_scopes=required
                             )
                         return self._ready(target, key, active)
                     if not interactive:
-                        raise AuthenticationFailure(
+                        raise ScopeFailure(
                             code="interaction_required", required_scopes=required
                         )
                     if not discovered:
@@ -1653,7 +1716,7 @@ class ManagedOAuthProvider:
             else:
                 # Registration and the login itself run outside the grant lock.
                 return await self._login(
-                    key, metadata, config, required, granted_scopes, budget
+                    key, metadata, config, required, granted_scopes, budget, hinted
                 )
             # Persisted issuer metadata looks stale: refetch the stored
             # issuer's metadata once (never protected-resource discovery),
@@ -1685,12 +1748,18 @@ class ManagedOAuthProvider:
         """
 
         async def run() -> Ready | PendingLogin:
+            if not isinstance(required_scopes, (tuple, list)) or any(
+                not isinstance(scope, str) or _SCOPE_TOKEN.fullmatch(scope) is None
+                for scope in required_scopes
+            ):
+                # A malformed explicit requirement never silently shrinks R.
+                raise AuthenticationFailure(code="invalid_configuration")
             result = await self._acquire(
                 target,
                 budget,
                 challenge,
                 interactive=True,
-                explicit=tuple(required_scopes),
+                explicit=tuple(sorted(set(required_scopes))),
                 force_registration=force_registration,
                 redirect_uri=redirect_uri,
             )
@@ -1707,12 +1776,23 @@ class ManagedOAuthProvider:
         login: PendingLogin | None,
         callback_url: str,
         budget: OperationBudget,
+        progress: _Completion,
     ) -> Ready:
         from ._oauth_discovery import validate_configuration
 
         self._check_target(target)
+        callback = urlsplit(callback_url)
+        values = parse_qs(callback.query, keep_blank_values=True)
+        if login is not None:
+            progress.key, progress.state = login.key, login.generation
+        elif not any(values.get("state", ())):
+            # No state names no login, as for an unknown state.
+            progress.ended = True
+            raise AuthenticationFailure(code="interaction_required")
         metadata = await self.store.load_binding(binding_key(target), budget)
         if metadata is None:
+            if login is None:
+                progress.ended = True  # No binding: no login is reachable.
             raise AuthenticationFailure(code="interaction_required")
         resource = await self.policy.resource(target, budget)
         issuers = (metadata.configuration.issuer,)
@@ -1721,12 +1801,10 @@ class ManagedOAuthProvider:
         key = grant_key(target, current)
         if login is not None and login.key != key:
             raise AuthenticationFailure(code="access_denied")
-        callback = urlsplit(callback_url)
-        values = parse_qs(callback.query, keep_blank_values=True)
         if not any(values.get("state", ())):
-            # No state names no login, as for an unknown state.
             raise AuthenticationFailure(code="interaction_required")
         state = login.generation if login is not None else values["state"][0]
+        progress.key, progress.state = key, state
         async with self._logins.coordinate(pending_key(key), budget) as guard:
             found = _pending_record(await guard.load())
             pending = next(
@@ -1738,12 +1816,19 @@ class ManagedOAuthProvider:
                 None,
             )
             if found is None or pending is None:
+                progress.ended = True  # Unknown, expired or already consumed.
                 raise AuthenticationFailure(code="interaction_required")
+            # Every rejection until the claim leaves this login pending.
+            progress.ended = False
             requested = pending.metadata.configuration
             source = pending.metadata.client_source
+            # The required set this login was prepared with.
+            required = pending.required_scopes
             assert requested.redirect_uri is not None
             # The login's exact redirect, whatever the host configures now.
             config = replace(config, redirect_uri=requested.redirect_uri)
+            # The stored required set is enforced after the exchange, so a
+            # narrower grant or ceiling still persists the grant.
             validate_configuration(target, resource, issuers, (), config)
             # Complete with the client the login was created under, while
             # current host policy still permits its source.
@@ -1790,7 +1875,9 @@ class ManagedOAuthProvider:
                 found.generation,
                 OAuthPendingLogins(uuid4().hex, rest) if rest else None,
             ):
+                progress.ended = None  # A concurrent writer: look again.
                 raise AuthenticationFailure(code="provider_failed", recovery="retry")
+            progress.ended = True
         if "error" in values:
             # Valid consent denial consumes the login, never the stored grant.
             if source == "cimd" and values["error"] == ["invalid_client"]:
@@ -1847,11 +1934,11 @@ class ManagedOAuthProvider:
                     else "interaction_required"
                 ) from None
             assert active.token is not None
+            # The grant is committed; it must cover the login's required set
+            # within the current ceiling.
             effective = set(active.token.scopes) & set(config.ceiling)
-            if not set(config.required_scopes) <= effective:
-                raise AuthenticationFailure(
-                    code="access_denied", required_scopes=config.required_scopes
-                )
+            if not set(required) <= effective:
+                raise ScopeFailure(code="access_denied", required_scopes=required)
             return self._ready(target, key, active)
 
     async def complete(
@@ -1866,12 +1953,49 @@ class ManagedOAuthProvider:
         Pass the `PendingLogin` from `prepare`, or None to find the login by the
         callback's `state` (for example a pasted callback URL in another
         process, when pending logins are persisted).
+
+        Every `AuthenticationFailure`, `TimeoutError` or
+        `OperationCancelledError` it raises has `login_ended`: True when the
+        named login no longer exists after the call (consumed, expired or
+        unknown), False while it is still pending (for example a stray or
+        invalid callback rejected before the claim).
         """
-        ready = await self._run(
-            lambda: self._complete(target, login, callback_url, budget), budget
-        )
+        progress = _Completion()
+        try:
+            ready = await self._run(
+                lambda: self._complete(target, login, callback_url, budget, progress),
+                budget,
+            )
+        except (AuthenticationFailure, TimeoutError, OperationCancelledError) as error:
+            ended = progress.ended
+            if ended is None:
+                ended = await self._login_ended(progress)
+            # Additive: the code and recovery are unchanged.
+            setattr(error, "login_ended", ended)
+            raise
         self._record_prepared(target, ready)
         return ready
+
+    async def _login_ended(self, progress: _Completion) -> bool:
+        """Best effort, after a failure that left it unknown: whether the
+        named login is gone. A login that cannot be checked counts as
+        pending, so the host may retry it."""
+        if progress.key is None or progress.state is None:
+            return False
+        try:
+            with anyio.CancelScope(shield=True), anyio.fail_after(self.commit_timeout):
+                budget = OperationBudget.after(self.commit_timeout)
+                async with self._logins.coordinate(
+                    pending_key(progress.key), budget
+                ) as guard:
+                    found = _pending_record(await guard.load())
+        except Exception:
+            return False
+        now = self.clock()
+        return not any(
+            item.state == progress.state and item.expires_at > now
+            for item in (found.logins if found is not None else ())
+        )
 
     async def reset(
         self,
@@ -1975,7 +2099,7 @@ class ManagedOAuthProvider:
                 target,
                 budget,
                 challenge,
-                attempt.generation if isinstance(attempt, _Attempt) else None,
+                attempt if isinstance(attempt, _Attempt) else None,
                 interactive=False,
             ),
             budget,

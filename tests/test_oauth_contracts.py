@@ -217,11 +217,19 @@ class CanonicalVectorTests(unittest.TestCase):
                     "client_credentials",
                     scopes=(scope,),
                 )
-        with self.assertRaises(ValueError):
-            OAuthClientConfiguration(
-                "https://issuer.test",
-                "client",
-                "client_credentials",
-                scopes=("read",),
-                required_scopes=("admin",),
-            )
+        # Scopes outside the ceiling are refused at use as auth errors
+        # (access_denied / invalid_configuration), never at construction.
+        OAuthClientConfiguration(
+            "https://issuer.test",
+            "client",
+            "client_credentials",
+            scopes=("read",),
+            required_scopes=("admin",),
+        )
+        OAuthClientConfiguration(
+            "https://issuer.test",
+            "client",
+            "client_credentials",
+            scopes=("read", "admin"),
+            allowed_scopes=("read",),
+        )

@@ -21,6 +21,7 @@ from ._oauth_types import (
     OAuthNetwork,
     OAuthTrustPolicy,
     OperationBudget,
+    ScopeFailure,
 )
 from .runtime import OperationCancelledError
 
@@ -175,13 +176,23 @@ async def safe_request(
 
 def challenge_requirements(
     challenge: AuthChallenge | None,
-) -> tuple[str | None, tuple[str, ...]]:
+) -> tuple[str | None, tuple[str, ...], tuple[str, ...]]:
+    """(resource_metadata, step-up scopes, requested-scope hints).
+
+    Only a Bearer 403 `insufficient_scope` creates a step-up requirement. A
+    401's `scope` (as in MCP clients) only adds requested scopes to the next
+    acquisition or sign-in; it is never required.
+    """
     if challenge is None:
-        return None, ()
+        return None, (), ()
     try:
-        return parse_challenge(challenge.status, challenge.headers)
+        metadata, scopes = parse_challenge(challenge.status, challenge.headers)
     except ChallengeError as error:
         code = error.code
+    else:
+        if challenge.status == 403:
+            return metadata, scopes, ()
+        return metadata, (), scopes
     raise AuthenticationFailure(code=code)
 
 
@@ -286,16 +297,15 @@ def check_redirect(redirect: object) -> None:
         raise AuthenticationFailure(code="invalid_configuration")
 
 
-def validate_configuration(
-    target: AuthTarget,
-    resource: str,
-    issuers: tuple[str, ...],
-    required: tuple[str, ...],
-    configuration: OAuthClientConfiguration,
+def check_scopes(
+    configuration: OAuthClientConfiguration, required: tuple[str, ...]
 ) -> None:
-    """Revalidate host policy without fetching metadata or holding a grant lock."""
-    validate_url(resource)
-    validate_url(configuration.issuer, issuer=True)
+    """The local ceiling decision, made before any network I/O.
+
+    Requested scopes outside the ceiling are a configuration error. A required
+    scope (host-required, explicit or challenged) outside it is refused with
+    the operation's full required set.
+    """
     requested = _scope_set(configuration.scopes)
     allowed = (
         requested
@@ -304,13 +314,28 @@ def validate_configuration(
     )
     mandatory = _scope_set(configuration.required_scopes) | _scope_set(required)
     if not requested.issubset(allowed):
-        raise AuthenticationFailure(code="access_denied")
+        raise AuthenticationFailure(code="invalid_configuration")
     if not mandatory.issubset(allowed):
-        # A challenged or host-required scope outside the ceiling: name the
-        # full requirement so hosts can tell this refusal from the others.
-        raise AuthenticationFailure(
+        raise ScopeFailure(
             code="access_denied", required_scopes=tuple(sorted(mandatory))
         )
+
+
+def validate_configuration(
+    target: AuthTarget,
+    resource: str,
+    issuers: tuple[str, ...],
+    required: tuple[str, ...],
+    configuration: OAuthClientConfiguration,
+) -> None:
+    """Revalidate host policy without fetching metadata or holding a grant lock.
+
+    `required` holds this operation's explicit and challenged scopes.
+    """
+    check_scopes(configuration, required)
+    validate_url(resource)
+    validate_url(configuration.issuer, issuer=True)
+    requested = _scope_set(configuration.scopes)
     # An empty client_id asks client selection for CIMD or DCR.
     registered = not configuration.client_id
     if configuration.issuer not in issuers:
@@ -351,13 +376,16 @@ async def discover(
     budget: OperationBudget,
     *,
     redirect_uri: str | None = None,
+    explicit: tuple[str, ...] = (),
 ) -> OAuthMetadata:
     """Resolve the locally selected binding. The result carries the current
     client secret; callers strip it before persisting metadata.
-    `redirect_uri` overrides the configured redirect for one login."""
+    `redirect_uri` overrides the configured redirect for one login; `explicit`
+    holds the host's `prepare` required scopes."""
     resource = validate_url(await policy.resource(target, budget))
     binding = target.typed_binding
-    metadata_url, required = challenge_requirements(challenge)
+    metadata_url, challenged, _ = challenge_requirements(challenge)
+    required = tuple(sorted(set(challenged) | set(explicit)))
     issuers: tuple[str, ...]
     if binding is not None:
         if not isinstance(binding, OAuthBinding):

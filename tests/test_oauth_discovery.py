@@ -286,9 +286,9 @@ class OAuthDiscoveryTests(unittest.TestCase):
             )
             self.assertEqual(network.sent[0], url)
             self.assertEqual(result.configuration.scopes, ("read",))
-            self.assertEqual(policy.requirements, ("read",))
-            with self.assertRaises(AuthenticationFailure):
-                await self.run_discovery(auth=challenge('Bearer scope="admin"'))
+            # A 401's scope only adds requested scopes; it is never required.
+            self.assertEqual(policy.requirements, ())
+            await self.run_discovery(auth=challenge('Bearer scope="admin"'))
             for header in (
                 'Bearer scope="read", scope="read"',
                 'Bearer resource_metadata="https://a.test", RESOURCE_METADATA="https://b.test"',
@@ -314,10 +314,8 @@ class OAuthDiscoveryTests(unittest.TestCase):
                         auth=challenge(header), policy=policy
                     )
                     self.assertEqual(result.resource, RESOURCE)
-                    self.assertEqual(
-                        policy.requirements,
-                        ("read",) if 'scope="read"' in header else (),
-                    )
+                    # A 401's scope is a requested-scope hint, not required.
+                    self.assertEqual(policy.requirements, ())
                     self.assertTrue(network.sent)
 
         self.both(run)
@@ -386,9 +384,22 @@ class OAuthDiscoveryTests(unittest.TestCase):
                 ),
             )
             self.assertEqual(metadata.configuration.scopes, ("read",))
+            # A 401 scope outside the ceiling is simply not requested.
+            await self.run_discovery(auth=challenge('Bearer scope="write"'))
             with self.assertRaises(AuthenticationFailure) as failure:
-                await self.run_discovery(auth=challenge('Bearer scope="write"'))
+                await self.run_discovery(
+                    auth=AuthChallenge(
+                        403,
+                        {
+                            "WWW-Authenticate": 'Bearer error="insufficient_scope", scope="write"'
+                        },
+                        RESOURCE,
+                        None,
+                        True,
+                    )
+                )
             self.assertEqual(failure.exception.code, "access_denied")
+            self.assertEqual(failure.exception.required_scopes, ("write",))
 
         self.both(run)
 

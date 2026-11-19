@@ -19,14 +19,13 @@ from agenthooksprotocol.oauth import (
 from agenthooksprotocol.auth import AuthenticationFailure
 from agenthooksprotocol._auth_routing import AuthTarget
 from agenthooksprotocol._oauth_types import (
-    OAuthDynamicRegistration,
     OAuthMetadata,
     StoredToken,
     binding_key,
+    client_identity,
     grant_key,
     registration_key,
 )
-from agenthooksprotocol._oauth_registration import request_digest
 
 ROOT = Path(__file__).resolve().parents[1]
 FIXTURE = ROOT / "tests/fixtures/sdk-auth-lifecycle.json"
@@ -101,17 +100,24 @@ class CanonicalVectorTests(unittest.TestCase):
                     value["purpose"],
                     None,
                 )
+                source, _, identity = value["client_identity"].partition(":")
+                # An issued DCR client_id, wherever it is held, never moves a key.
+                client_id = value.get("issued_client_id", identity)
                 config = OAuthClientConfiguration(
                     value["issuer"],
-                    value["client_id"],
+                    client_id,
                     value["flow"],
                     allowed_scopes=tuple(value["allowed_scopes"]),
                     grant_partition=value.get("grant_partition"),
                     client_secret=value.get("client_secret"),
                 )
                 metadata = OAuthMetadata(
-                    value["resource"], config, "https://issuer.example/token"
+                    value["resource"],
+                    config,
+                    "https://issuer.example/token",
+                    client_source=source,
                 )
+                self.assertEqual(client_identity(metadata), value["client_identity"])
                 self.assertEqual(binding_key(target), vector["binding_key"])
                 self.assertEqual(grant_key(target, metadata), vector["grant_key"])
 
@@ -119,29 +125,11 @@ class CanonicalVectorTests(unittest.TestCase):
         for vector in FIXTURES["registration_keys"]:
             with self.subTest(id=vector["id"]):
                 value = vector["input"]
+                # Registration settings, endpoint and secrets are not key material.
                 self.assertEqual(
-                    registration_key(
-                        value["namespace"],
-                        value["issuer"],
-                        value["flow"],
-                        value["redirect"],
-                    ),
+                    registration_key(value["namespace"], value["issuer"]),
                     vector["registration_key"],
                 )
-
-    def test_registration_request_digest_vectors(self):
-        for vector in FIXTURES["registration_request_digests"]:
-            with self.subTest(id=vector["id"]):
-                value = vector["input"]
-                scopes = value.get("registration_scope")
-                policy = OAuthDynamicRegistration(
-                    value["client_name"],
-                    software_id=value.get("software_id"),
-                    software_version=value.get("software_version"),
-                    scopes=tuple(scopes) if scopes is not None else None,
-                    initial_access_token_ref=value.get("initial_access_token_ref"),
-                )
-                self.assertEqual(request_digest(policy), vector["request_digest"])
 
     def test_token_response_vectors(self):
         provider = ManagedOAuthProvider(

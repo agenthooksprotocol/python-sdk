@@ -137,8 +137,13 @@ Host-store key and record compatibility is described below.
 `oauth.PendingLogin`. Client credentials exchange without interaction. For
 `authorization_code_pkce`, configure a client and redirect URI; the host displays
 the S256 authorization URL and receives the callback through its own UI and
-transport. HTTPS redirects are required except HTTP to literal loopback IPs for
-desktop/CLI clients. The SDK starts no browser or listener.
+transport. HTTPS redirects are required except HTTP to literal loopback IPs
+(`127.0.0.1`, `[::1]`) for desktop/CLI clients; `localhost` is
+`invalid_configuration`. As in MCP clients, a host may bind a fresh ephemeral
+loopback port per login and pass it as `prepare(..., redirect_uri=...)`, with
+no redirect configured at all (only creating a login needs one); that
+exact redirect, with its port, is used for registration, authorization, the
+callback check and the token request. The SDK starts no browser or listener.
 
 Each call takes its own budget; waiting for the user happens between calls:
 
@@ -156,19 +161,24 @@ async def authorize(managed, target, receive_callback):
     )
 ```
 
-A pending login is a stored record. Its lifetime is fixed at creation by
-`login_lifetime` (default and maximum 600 seconds) and does not depend on the
-creating `prepare` call's deadline or cancellation. Any provider or process
-sharing the store can `complete` it with the `PendingLogin` handle. A later
-`prepare` reuses an unexpired pending login, whatever its deadline, when the
-redirect matches and its requested and required scopes are within the pending
-scopes. Otherwise it supersedes it with a login requesting the old pending
-scopes plus the new scopes within the caller's ceiling, storing the union of
-both ceilings; the old callback then fails
-`interaction_required`. A pending login ends once: completion (including
-consent denial), supersede, `cancel` or expiry. Invalid state, redirect or
-issuer does not consume it. Reuse requires the exact redirect, so hosts sharing a store
-must keep the redirect URI stable per grant.
+As in MCP clients, a pending login belongs to the provider that created it,
+which receives its callback and completes it by `state`; pass the
+`PendingLogin` handle, or `None` to find it by the callback's `state`. With
+`ManagedOAuthProvider(..., persist_pending_logins=True)` pending logins are
+stored through `store.coordinate` instead, so another process sharing the store
+can complete one from a pasted callback URL. The PKCE verifier is only ever in
+the pending login, never in binding metadata or logs. A pending login's lifetime
+is fixed at creation by `login_lifetime` (default and maximum 600 seconds) and
+does not depend on the creating `prepare` call's deadline or cancellation;
+expired logins are deleted.
+
+Every `prepare` that needs consent creates a new pending login. Up to
+`max_pending_logins` (default 5) may exist per grant key, counted per provider,
+or per store when persisted; one more cancels the oldest in the same atomic
+write. Completing one never invalidates another: each completion replaces the
+grant's client and tokens, so the newest completed login wins. A pending login
+ends once: completion (including consent denial), `cancel` (including by the
+cap) or expiry. Invalid state, redirect or issuer does not consume it.
 
 Persisted binding metadata and valid tokens remain usable by recreated
 providers without rediscovery. Do not serialize the pending handle as an AHP
@@ -211,8 +221,9 @@ authorized unbound target sends cached credentials up front.
   `coordinate(key, budget)`, an async context manager yielding an exclusive guard
   with `await load()` and atomic
   `await compare_and_swap(expected_generation, record) -> bool`.
-  Grant keys hold `OAuthRecord`s and registration keys hold
-  `OAuthRegistration`s, through the same guard.
+  Grant keys hold `OAuthRecord`s, client-credentials registration keys
+  `OAuthRegistration`s and, with `persist_pending_logins`, pending keys
+  `OAuthPendingLogins`, through the same guard.
   Binding metadata contains trusted principal/endpoint information but no client
   secret. Persist it alongside securely stored grants so a recreated provider
   can locate credentials without rediscovery. Resolve current client secrets
@@ -244,7 +255,9 @@ The SDK selects the client per exact issuer and flow, in this order:
    the issuer metadata has `client_id_metadata_document_supported: true`. The URL
    is the `client_id` (public client, auth method `none`). It must be HTTPS with a
    path and no userinfo, fragment or dot segments, and the redirect must be one of
-   `redirect_uris`; otherwise `invalid_configuration`. The SDK never fetches it.
+   `redirect_uris`, where a loopback redirect is compared without its port (RFC
+   8252 section 7.3), so `http://127.0.0.1/callback` covers every ephemeral port;
+   otherwise `invalid_configuration`. The SDK never fetches it.
    `invalid_client` for a CIMD client is `invalid_configuration`, with no DCR
    fallback.
 3. **Dynamic Client Registration (RFC 7591)**: when the configuration for that
@@ -254,12 +267,12 @@ The SDK selects the client per exact issuer and flow, in this order:
    `client_secret_post` method.
 4. Otherwise `credential_unavailable`.
 
-Leave `client_id` empty to opt into 2 and 3. A recorded CIMD or DCR selection
-stays in use when only issuer metadata changes; a host policy change (a
-pre-registered client, a different CIMD URL, removed DCR permission) reselects.
-A new `client_id` is a new grant key, so PKCE needs new consent. After an
-`invalid_client` replacement or a forced re-registration, the old grant is
-deleted unless it uses a shared `grant_partition`.
+Leave `client_id` empty to opt into 2 and 3. The grant key holds the
+configured client identity (`preregistered:<client_id>`, `cimd:<url>` or `dcr`),
+never an issued DCR `client_id`, so re-registering never moves a grant. A
+recorded CIMD or DCR selection stays in use when only issuer metadata changes; a
+host policy change (a pre-registered client, a different CIMD URL, removed DCR
+permission) reselects, which is a new grant key, so PKCE needs new consent.
 
 ```python
 managed = oauth.ManagedOAuthProvider(
@@ -277,35 +290,42 @@ oauth.OAuthClientConfiguration(
 )
 ```
 
-A PKCE client is registered only by host `prepare`; delivery paths return
-`interaction_required` instead. Client credentials register on any acquisition,
-including the up-front lookup. Registrations are stored under their own
-registration key (namespace, issuer, flow, redirect) through `store.coordinate`
-and shared by every grant with that key; keep redirects stable. Concurrent
-processes register once. Like a token request, a registration request whose
-bytes were written is received and committed despite caller cancellation. The client secret is written only to `secret_store`;
-the record holds its reference, and replaced or deleted records delete their
-reference. `registration_access_token` and `registration_client_uri` are
-ignored. Changing `client_name`, software identifiers, `scopes` or the initial
-access token reference re-registers.
+**PKCE**, as in MCP clients: only the host `prepare` that creates a pending
+login registers, with that login's exact redirect and `application_type:
+"native"` for a loopback redirect; delivery paths return
+`interaction_required`. Each login registers anew and there is no registration
+record: the login holds the issued client, and completion commits it with the
+tokens in the grant record. Refresh uses that stored client. Any issued
+`client_secret` is ignored. `invalid_client` at completion ends only that login
+(`interaction_required`) and keeps the stored grant; at refresh it returns
+`interaction_required` and deletes the grant only while it still holds the
+presented client and refresh token.
 
-A token-endpoint `invalid_client` deletes that registration generation: client
-credentials re-register and retry once; PKCE returns `interaction_required`.
-Every failed registration records a backoff marker: `registration_backoff`
+**Client credentials** keep one registration record per namespace and issuer,
+registered under `store.coordinate` on any acquisition (including the up-front
+lookup) when no usable record exists, and shared by every client-credentials
+grant for that issuer. Concurrent processes register once. Like a token request,
+a registration request whose bytes were written is received and committed
+despite caller cancellation. The record holds the client ID, its registered
+token-endpoint auth method and secret expiry; the client secret is written only
+to `secret_store`, the record holds its reference, and replaced or deleted
+records delete their reference. `registration_access_token` and
+`registration_client_uri` are ignored. An expired or unresolvable secret
+re-registers. A token-endpoint `invalid_client` deletes that client,
+re-registers and retries once; a repeated `invalid_client` is
+`credential_unavailable` and counts as a failed registration for the backoff,
+so a server that accepts registrations but rejects their clients is not
+re-registered on every operation. After a failed registration no process sharing the
+store registers for that issuer until a backoff passes (failures count until a
+token request with a registered client succeeds): `registration_backoff`
 (default 60 seconds) doubling to `registration_backoff_max` (default 1 hour), or
-a later `Retry-After` up to `retry_after_max` (default 1 hour). Until it elapses,
-only `prepare` sends a registration request; a still-valid stored token keeps
-working. Client credentials re-register within `min(10% of the secret lifetime,
-renewal_margin_max)` (default 1 hour) of `client_secret_expires_at`. The
-operation is served with the current registration first; renewal then runs as
-detached best-effort work bounded by `commit_timeout`, and a failed renewal
-only updates the failed marker; other failures are logged at warning level by
-the `agenthooksprotocol.oauth` logger, without secrets. A usable registration is
-read without its lock, so no operation waits on a renewal. Await
-`managed.renewals_settled()` before shutting down the event loop: on asyncio,
-shutdown after a renewal request was written loses the issued client. `prepare(..., force_registration=True)`
-discards the current registration, its secret and marker, and registers anew,
-for example after the authorization server deleted the client.
+a later `Retry-After` up to the same cap. Meanwhile the last failure's code is
+returned, so a retryable failure stays `provider_failed` (`retry`), and a
+still-valid stored token keeps working. Host `prepare` bypasses the backoff;
+`prepare(..., force_registration=True)` replaces a usable registration so
+changed registration settings take effect, and acquires a token with the new
+client even when a valid one is stored; a failed replacement keeps the current
+registration, records the failure in the backoff and returns it.
 
 ### Configure scopes and storage isolation
 
@@ -338,8 +358,8 @@ denied. PKCE returns `interaction_required` with the required scopes for a host
 `prepare`; client credentials acquire approved scopes without human login.
 
 The binding key identifies namespace, backend ID, purpose and exact destination.
-The separate grant key identifies namespace, issuer, resource, client ID, flow
-and partition. The allowed ceiling, requested/granted scopes, client
+The separate grant key identifies namespace, issuer, resource, client identity,
+flow and partition. The allowed ceiling, requested/granted scopes, client
 secrets/references, auth method and mutable metadata are not grant identity.
 Default partitions isolate bindings, including event and upload targets. Set the
 same nonempty `grant_partition` only when local policy independently authorizes
@@ -371,7 +391,8 @@ credentials remain noninteractive. After a 401 the rejected access token is not
 sent again.
 
 `await managed.reset(target, budget, handle=pending_or_credential)` deliberately
-clears the **current** grant, not just the handle's generation. Without a handle,
+clears the **current** grant and its pending logins, not just the handle's
+generation. Without a handle,
 it uses cached binding metadata; it does not discover an unknown target. Use it
 for explicit host logout/repair, never automatically for a stale 401. It can
 affect other bindings sharing an explicit grant partition. Use `cancel` instead

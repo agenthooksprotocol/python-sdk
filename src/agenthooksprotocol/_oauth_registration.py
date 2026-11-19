@@ -5,14 +5,13 @@ Pure helpers: no store, network or clock is owned here.
 
 from dataclasses import dataclass
 from email.utils import parsedate_to_datetime
-import hashlib
+import ipaddress
 from urllib.parse import urlsplit
 
 from .auth import AuthErrorCode
 from ._oauth_types import (
     OAuthDynamicRegistration,
     TokenEndpointAuthMethod,
-    _frame,
 )
 
 SECRET_METHODS: tuple[TokenEndpointAuthMethod, ...] = (
@@ -26,21 +25,6 @@ class RegistrationFailed(Exception):
 
     def __init__(self, code: AuthErrorCode, retry_after: float | None = None) -> None:
         self.code, self.retry_after = code, retry_after
-
-
-def request_digest(policy: OAuthDynamicRegistration) -> str:
-    scope = " ".join(sorted(set(policy.scopes or ())))
-    framed = _frame(
-        "ahp.oauth.registration-request:",
-        (
-            policy.client_name,
-            policy.software_id or "",
-            policy.software_version or "",
-            scope,
-            policy.initial_access_token_ref or "",
-        ),
-    )
-    return hashlib.sha256(framed.encode("utf-8")).hexdigest()
 
 
 def valid_document_url(url: object) -> bool:
@@ -63,6 +47,40 @@ def valid_document_url(url: object) -> bool:
     )
 
 
+def loopback(redirect: str) -> bool:
+    """An `http` redirect to a literal loopback IP without userinfo."""
+    try:
+        parts = urlsplit(redirect)
+        return (
+            parts.scheme == "http"
+            and parts.username is None
+            and parts.password is None
+            and ipaddress.ip_address(parts.hostname or "").is_loopback
+        )
+    except ValueError:
+        return False
+
+
+def declared_redirect(redirect: str, declared: tuple[str, ...]) -> bool:
+    """Whether a CIMD document declares `redirect`.
+
+    A loopback redirect is compared without its port (RFC 8252 section 7.3);
+    any other redirect must be listed exactly.
+    """
+    if redirect in declared:
+        return True
+    if not loopback(redirect):
+        return False
+
+    def portless(url: str) -> tuple[str, ...]:
+        parts = urlsplit(url)
+        return (parts.scheme, parts.hostname or "", parts.path, parts.query)
+
+    return any(
+        loopback(entry) and portless(entry) == portless(redirect) for entry in declared
+    )
+
+
 def registration_request(
     flow: str,
     redirect: str,
@@ -71,8 +89,10 @@ def registration_request(
 ) -> dict[str, object]:
     body: dict[str, object] = {"client_name": policy.client_name}
     if flow == "authorization_code_pkce":
+        body["redirect_uris"] = [redirect]
+        if loopback(redirect):
+            body["application_type"] = "native"
         body.update(
-            redirect_uris=[redirect],
             grant_types=["authorization_code", "refresh_token"],
             response_types=["code"],
         )
@@ -93,7 +113,6 @@ class Issued:
     client_id: str
     client_secret: str | None
     client_secret_expires_at: int | None
-    metadata: dict[str, object]
 
 
 def accept_registration(
@@ -119,12 +138,23 @@ def accept_registration(
     pkce = flow == "authorization_code_pkce"
     client_id, secret = body.get("client_id"), body.get("client_secret")
     expires_at = body.get("client_secret_expires_at")
+    echoed = body.get("redirect_uris")
+    sent = request.get("redirect_uris")
+    requested = sent if isinstance(sent, list) else []
     valid = (
         isinstance(client_id, str)
         and bool(client_id)
-        # Flows that sent no redirect_uris accept an absent or empty echo.
-        and body.get("redirect_uris", request.get("redirect_uris", []))
-        == request.get("redirect_uris", [])
+        # A JSON null is never an absent echo: each echoed field is checked
+        # when present. redirect_uris must be a list (null is not);
+        # a PKCE echo must contain the requested redirect. Client credentials
+        # sent none, so any echoed list is harmless.
+        and (
+            "redirect_uris" not in body
+            or (
+                isinstance(echoed, list)
+                and (not pkce or all(uri in echoed for uri in requested))
+            )
+        )
         and (
             "grant_types" not in body
             or (
@@ -137,31 +167,31 @@ def accept_registration(
             "token_endpoint_auth_method", request["token_endpoint_auth_method"]
         )
         == request["token_endpoint_auth_method"]
-        and (secret is None if pkce else isinstance(secret, str) and bool(secret))
+        # A public (PKCE) client ignores any issued secret and its expiry.
         and (
-            expires_at is None
+            pkce
             or (
-                type(expires_at) is int
-                and expires_at >= 0
-                and (expires_at == 0 or expires_at > now)
+                isinstance(secret, str)
+                and bool(secret)
+                # A JSON null is never an absent expiry.
+                and (
+                    "client_secret_expires_at" not in body
+                    or (
+                        type(expires_at) is int
+                        and expires_at >= 0
+                        and (expires_at == 0 or expires_at > now)
+                    )
+                )
             )
         )
     )
     if not valid:
         raise RegistrationFailed("invalid_configuration")
     assert isinstance(client_id, str)
-    metadata = {
-        key: value
-        for key, value in body.items()
-        if key
-        not in ("client_secret", "registration_access_token", "registration_client_uri")
-    }
-    return Issued(
-        client_id,
-        secret if isinstance(secret, str) else None,
-        expires_at if type(expires_at) is int else None,
-        metadata,
-    )
+    if pkce:
+        return Issued(client_id, None, None)
+    assert isinstance(secret, str)
+    return Issued(client_id, secret, expires_at if type(expires_at) is int else None)
 
 
 def parse_retry_after(value: str | None, now: float) -> float | None:

@@ -1,5 +1,8 @@
 """Client registration (pre-registered, CIMD, RFC 7591 DCR) at real host boundaries.
 
+PKCE registers per login (no registration record); client credentials keep a
+persisted registration record with a shared failure backoff.
+
 Source: agent-hooks-protocol/conformance/draft/sdk-auth-lifecycle.json.
 Every test runs under asyncio and Trio over HTTPX, the coordinated store and a
 host secret store.
@@ -22,6 +25,7 @@ from test_managed_oauth_runtime import (
     Policy,
     Store,
     metadata,
+    pending_logins,
 )
 
 from agenthooksprotocol.auth import (
@@ -41,6 +45,7 @@ from agenthooksprotocol.oauth import (
     PendingLogin,
     Ready,
 )
+from agenthooksprotocol._oauth_types import client_identity, grant_key
 
 LOOPBACK = "http://127.0.0.1:8765/callback"
 DOCUMENT = OAuthClientMetadataDocument(
@@ -317,7 +322,8 @@ class RegistrationLifecycleTests(unittest.TestCase):
                 if "error" in expect:
                     await self.fails(expect["error"], env.prepare())
                     self.assertFalse(env.n.registrations)
-                    self.assertFalse(any(r.pending for r in env.grants().values()))
+                    self.assertFalse(pending_logins(env.p))
+                    self.assertFalse(env.grants())
                     return
                 result = await env.prepare()
                 if expect["source"] == "dcr":
@@ -329,14 +335,19 @@ class RegistrationLifecycleTests(unittest.TestCase):
                     client = "dcr-1"
                 else:
                     self.assertFalse(env.n.registrations)
-                    self.assertIsNone(env.registration())
                     client = expect["client_id"]
                 if value["flow"] == PKCE:
+                    # A PKCE client never leaves a registration record.
+                    self.assertIsNone(env.registration())
                     self.assertEqual(client_of(result), client)
+                    self.assertEqual(result.key, grant_key(env.target, env.binding()))
                 else:
                     self.assertIsInstance(result, Ready)
                     self.assertEqual(env.n.token_clients, [client])
                 self.assertEqual(env.binding().client_source, expect["source"])
+                self.assertEqual(
+                    client_identity(env.binding()), expect["client_identity"]
+                )
 
             with self.subTest(row["id"]):
                 self.run_env(run, value["flow"], overrides, value["secret_hook"])
@@ -423,18 +434,26 @@ class RegistrationLifecycleTests(unittest.TestCase):
                 )
 
     def test_cimd_redirect_mismatch_creates_no_login(self):
-        async def run(env):
-            env.configure(
-                client_metadata_document=replace(
-                    DOCUMENT, redirect_uris=("http://127.0.0.1:9999/callback",)
-                )
-            )
-            await self.fails("invalid_configuration", env.prepare())
-            self.assertFalse(env.grants())
-            self.assertFalse(env.n.registrations)
-            self.assertFalse([u for u, _ in env.n.authorized if "state=" in u])
+        for declared in (
+            "http://127.0.0.1:8765/other",
+            "https://127.0.0.1:8765/callback",
+            "http://[::1]:8765/callback",
+        ):
 
-        self.run_env(run, PKCE, {"client_id_metadata_document_supported": True})
+            async def run(env, declared=declared):
+                env.configure(
+                    client_metadata_document=replace(
+                        DOCUMENT, redirect_uris=(declared,)
+                    )
+                )
+                await self.fails("invalid_configuration", env.prepare())
+                self.assertFalse(env.grants())
+                self.assertFalse(pending_logins(env.p))
+                self.assertFalse(env.n.registrations)
+                self.assertFalse([u for u, _ in env.n.authorized if "state=" in u])
+
+            with self.subTest(declared=declared):
+                self.run_env(run, PKCE, {"client_id_metadata_document_supported": True})
 
     def test_client_credentials_never_uses_cimd(self):
         async def run(env):
@@ -523,22 +542,55 @@ class RegistrationLifecycleTests(unittest.TestCase):
             with self.subTest(test.__name__):
                 self.run_env(test)
 
-    def test_pkce_registers_only_in_prepare_cc_registers_anywhere(self):
+    def test_pkce_registers_per_login_with_its_exact_redirect(self):
         async def pkce(env):
             await self.fails("interaction_required", env.challenge())
-            self.assertIsNone(await env.lookup())
+            # The binding is now known: the lookup needs a login too.
+            await self.fails("interaction_required", env.lookup())
             self.assertFalse(env.n.registrations)
-            self.assertIsInstance(await env.prepare(), PendingLogin)
-            self.assertEqual(len(env.n.registrations), 1)
+            first = await env.prepare()
+            second = await env.prepare(redirect_uri="http://127.0.0.1:50123/callback")
+            remote = await env.prepare(redirect_uri="https://host.test/callback")
+            self.assertEqual(
+                [client_of(login) for login in (first, second, remote)],
+                ["dcr-1", "dcr-2", "dcr-3"],
+            )
+            bodies = [body for body, _, _ in env.n.registrations]
+            self.assertEqual(
+                [body["redirect_uris"] for body in bodies],
+                [
+                    [LOOPBACK],
+                    ["http://127.0.0.1:50123/callback"],
+                    ["https://host.test/callback"],
+                ],
+            )
+            # application_type native only for a loopback redirect.
+            self.assertEqual(
+                [body.get("application_type") for body in bodies],
+                ["native", "native", None],
+            )
+            self.assertIsNone(env.registration())
+            # Each login completes with its own client and exact redirect.
+            state = parse_qs(urlsplit(second.authorization_url).query)["state"][0]
+            await env.p.complete(
+                env.target,
+                second,
+                "http://127.0.0.1:50123/callback?"
+                + urlencode({"state": state, "code": "c"}),
+                OperationBudget.after(5),
+            )
+            self.assertEqual(env.n.token_clients, ["dcr-2"])
+            self.assertEqual(
+                env.n.tokens[-1]["redirect_uri"], ["http://127.0.0.1:50123/callback"]
+            )
 
         async def cc(env):
             self.assertIsNotNone(await env.challenge())
             self.assertEqual(len(env.n.registrations), 1)
-            env.configure(dynamic_registration=OAuthDynamicRegistration("Renamed"))
             env.now[0] += 61
             self.assertIsNotNone(await env.lookup())
-            self.assertEqual(len(env.n.registrations), 2)
-            self.assertEqual(env.n.token_clients, ["dcr-1", "dcr-2"])
+            self.assertEqual(len(env.n.registrations), 1)
+            self.assertEqual(env.n.token_clients, ["dcr-1", "dcr-1"])
 
         self.run_env(pkce, PKCE)
         self.run_env(cc)
@@ -575,28 +627,44 @@ class RegistrationLifecycleTests(unittest.TestCase):
 
                 env.n.register_hook = hook
                 expect = row["expect"]
+                pkce = row["flow"] == PKCE
                 if not expect["accepted"]:
                     await self.fails(expect["error"], env.prepare())
                     self.assertEqual(env.n.registrations[0][0], row["request"])
-                    self.assertIsNone(env.registration().client_id)
+                    record = env.registration()
+                    if pkce:
+                        self.assertIsNone(record)
+                    else:
+                        self.assertIsNone(record.client_id)
                     self.assertFalse(env.secrets.stored)
                     self.assertFalse(env.grants())
+                    self.assertFalse(pending_logins(env.p))
                     return
-                await env.prepare()
+                result = await env.prepare()
                 self.assertEqual(env.n.registrations[0][0], row["request"])
-                record = env.registration()
-                self.assertEqual(record.client_id, expect["record"]["client_id"])
-                self.assertEqual(
-                    record.client_secret_expires_at,
-                    expect["record"]["client_secret_expires_at"],
-                )
-                self.assertEqual(
-                    record.secret_ref is not None, expect["record"]["secret_ref"]
-                )
-                if record.secret_ref is not None:
+                if pkce:
+                    # No registration record: the login holds the client.
+                    self.assertIsNone(env.registration())
+                    self.assertEqual(client_of(result), expect["record"]["client_id"])
+                    self.assertFalse(expect["record"]["secret_ref"])
+                    self.assertFalse(env.secrets.stored)
+                else:
+                    record = env.registration()
+                    self.assertEqual(record.client_id, expect["record"]["client_id"])
+                    self.assertEqual(
+                        record.client_secret_expires_at,
+                        expect["record"]["client_secret_expires_at"],
+                    )
+                    self.assertEqual(
+                        record.secret_ref is not None, expect["record"]["secret_ref"]
+                    )
                     self.assertEqual(
                         env.secrets.values[record.secret_ref],
                         row["response"]["client_secret"],
+                    )
+                    self.assertEqual(
+                        record.token_endpoint_auth_method,
+                        row["request"]["token_endpoint_auth_method"],
                     )
                 for forbidden in (
                     "not-a-real-secret",
@@ -604,13 +672,16 @@ class RegistrationLifecycleTests(unittest.TestCase):
                     "registration_client_uri",
                 ):
                     self.assertNotIn(forbidden, env.dump())
+                    if pkce:
+                        self.assertNotIn(forbidden, repr(pending_logins(env.p)))
 
             with self.subTest(row["id"]):
                 self.run_env(run, row["flow"])
 
     def test_registration_response_validation_persists_nothing(self):
         for response in (
-            {"client_id": "dcr", "client_secret": "not-a-real-secret"},
+            {"client_id": "dcr", "redirect_uris": LOOPBACK},
+            {"client_id": "dcr", "redirect_uris": None},
             {"client_id": "dcr", "redirect_uris": ["https://evil.example/cb"]},
             {"client_id": "dcr", "token_endpoint_auth_method": "client_secret_basic"},
         ):
@@ -623,9 +694,9 @@ class RegistrationLifecycleTests(unittest.TestCase):
                 failure = await self.fails("invalid_configuration", env.prepare())
                 self.assertEqual(failure.recovery, "configure")  # never retry
                 self.assertEqual(len(env.n.registrations), 1)
-                self.assertIsNone(env.registration().client_id)
+                self.assertIsNone(env.registration())
                 self.assertFalse(env.grants())
-                self.assertNotIn("not-a-real-secret", env.dump())
+                self.assertFalse(pending_logins(env.p))
 
             with self.subTest(response=response):
                 self.run_env(run, PKCE)
@@ -639,9 +710,6 @@ class RegistrationLifecycleTests(unittest.TestCase):
             await env.prepare()
             env.now[0] += 61
             await env.lookup()
-            record = env.registration()
-            self.assertNotIn("registration_access_token", record.issued)
-            self.assertNotIn("registration_client_uri", record.issued)
             self.assertNotIn("management-token", env.dump())
             self.assertNotIn("/manage/", env.dump())
             self.assertFalse(any("/manage/" in str(r.url) for r, _ in env.n.requests))
@@ -665,10 +733,14 @@ class RegistrationLifecycleTests(unittest.TestCase):
             self.assertNotIn("dcr-secret-1", env.dump())
 
         async def pkce(env):
+            env.n.register_hook = issuing(client_secret="ignored-secret")
             login = await env.prepare()
-            pending = env.grants()[login.key].pending
+            (pending,) = pending_logins(env.p)
             self.assertIsNone(pending.metadata.configuration.client_secret)
+            await env.complete(login)
             self.assertFalse(env.secrets.stored)
+            self.assertNotIn("ignored-secret", env.dump())
+            self.assertNotIn("client_secret", env.n.tokens[0])
 
         self.run_env(run)
         self.run_env(pkce, PKCE)
@@ -760,11 +832,8 @@ class RegistrationLifecycleTests(unittest.TestCase):
         async def run(env):
             winner = OAuthRegistration(
                 "winner-generation",
-                "",
                 "winner-client",
-                "winner-client-generation",
                 "client_secret_basic",
-                1000,
                 None,
                 "winner-ref",
             )
@@ -772,9 +841,7 @@ class RegistrationLifecycleTests(unittest.TestCase):
 
             async def compete(key, record):
                 if isinstance(record, OAuthRegistration) and record.client_id:
-                    env.s.records[key] = replace(
-                        winner, request_digest=record.request_digest
-                    )
+                    env.s.records[key] = winner
                     env.s.cas_hook = None
                     return False
                 return True
@@ -801,42 +868,9 @@ class RegistrationLifecycleTests(unittest.TestCase):
             self.assertEqual(purposes, ["register", "token", "register", "token"])
             self.assertEqual(env.n.token_clients, ["dcr-1", "dcr-2"])
             env.secrets.values.clear()
+            env.now[0] += 61
             self.assertIsNotNone(await env.lookup())
             self.assertEqual(env.n.token_clients, ["dcr-1", "dcr-2", "dcr-3"])
-
-        self.run_env(run)
-
-    def test_policy_change_reregisters_with_new_digest(self):
-        async def run(env):
-            await env.prepare()
-            changed = OAuthDynamicRegistration(
-                "Renamed",
-                software_id="adapter",
-                software_version="2",
-                scopes=("write", "read", "read"),
-            )
-            env.configure(dynamic_registration=changed)
-            await env.lookup()
-            body = env.n.registrations[1][0]
-            self.assertEqual(body["client_name"], "Renamed")
-            self.assertEqual(body["software_id"], "adapter")
-            self.assertEqual(body["software_version"], "2")
-            self.assertEqual(body["scope"], "read write")
-            self.assertEqual(env.secrets.deleted, ["ref-1"])
-            env.configure(
-                dynamic_registration=replace(changed, scopes=("read", "write"))
-            )
-            await env.lookup()
-            self.assertEqual(len(env.n.registrations), 2)
-            env.secrets.values["vault:iat"] = "iat"
-            env.configure(
-                dynamic_registration=replace(
-                    changed, initial_access_token_ref="vault:iat"
-                )
-            )
-            await env.lookup()
-            self.assertEqual(len(env.n.registrations), 3)
-            self.assertEqual(env.n.registrations[2][1]["authorization"], "Bearer iat")
 
         self.run_env(run)
 
@@ -875,6 +909,8 @@ class RegistrationLifecycleTests(unittest.TestCase):
             gets = [r for r, p in env.n.requests if p == "metadata"]
             self.assertEqual(len(gets), 2)
             self.assertIsNone(env.registration().next_attempt_at)
+            # The grant key ignores the replacement client.
+            self.assertEqual(list(env.grants()), [ready.credential.identity.key])
 
         async def repeated(env):
             env.n.token_hook = rejecting(401, error="invalid_client")
@@ -882,22 +918,25 @@ class RegistrationLifecycleTests(unittest.TestCase):
             self.assertEqual(len(env.n.registrations), 2)
             self.assertEqual(env.registration().attempts, 1)
             self.assertIsNone(env.registration().client_id)
-            await self.fails("credential_unavailable", env.challenge())
+            # It counts as a failed registration: a server that accepts
+            # registrations but rejects their clients is not re-registered on
+            # every operation, by any process sharing the store.
+            marker = env.registration()
+            self.assertEqual(marker.failure, "credential_unavailable")
+            self.assertEqual(marker.next_attempt_at, 1060)
+            other = env.provider()
+            for provider in (env.p, other):
+                await self.fails("credential_unavailable", env.challenge(provider))
             self.assertEqual(len(env.n.registrations), 2)
-
-        async def pkce(env):
-            await env.login()
-            env.now[0] += 61
-            env.n.token_hook = rejecting(401, error="invalid_client")
-            await self.fails("interaction_required", env.lookup())
-            self.assertIsNone(env.registration())
-            self.assertEqual(len(env.n.registrations), 1)
-            env.n.token_hook = None
-            self.assertEqual(client_of(await env.prepare()), "dcr-2")
+            env.now[0] = 1060
+            await self.fails("credential_unavailable", env.challenge(other))
+            self.assertEqual(len(env.n.registrations), 4)
+            # Doubling per failure, like any failed registration.
+            self.assertEqual(env.registration().attempts, 2)
+            self.assertEqual(env.registration().next_attempt_at, 1060 + 120)
 
         self.run_env(cc)
         self.run_env(repeated)
-        self.run_env(pkce, PKCE)
 
     def test_invalid_client_retry_skips_stale_uncoordinated_read(self):
         async def run(env):
@@ -923,49 +962,6 @@ class RegistrationLifecycleTests(unittest.TestCase):
             self.assertEqual(len(env.n.registrations), 2)
 
         self.run_env(run)
-
-    def test_replacement_client_uses_new_grant_key(self):
-        async def run(env):
-            first = await env.prepare()
-            old_key = first.credential.identity.key
-            env.n.token_hook = reject_client(env, "dcr-1")
-            env.now[0] += 61
-            second = await env.lookup()
-            self.assertNotEqual(second.identity.key, old_key)
-            self.assertEqual(env.binding().configuration.client_id, "dcr-2")
-            # The old grant is never migrated: a binding-scoped one is deleted.
-            self.assertNotIn(old_key, env.grants())
-            self.assertNotEqual(second.token, first.credential.token)
-            self.assertEqual(
-                env.grants()[second.identity.key].metadata.configuration.client_id,
-                "dcr-2",
-            )
-
-        self.run_env(run)
-
-    def test_replaced_client_old_grant_deleted_only_when_binding_scoped(self):
-        for partition in (None, "shared"):
-
-            async def invalid_client(env, partition=partition):
-                env.configure(grant_partition=partition)
-                first = await env.prepare()
-                env.n.token_hook = reject_client(env, "dcr-1")
-                env.now[0] += 61
-                await env.lookup()
-                kept = first.credential.identity.key in env.grants()
-                self.assertEqual(kept, partition is not None)
-
-            async def forced(env, partition=partition):
-                env.configure(grant_partition=partition)
-                first = await env.prepare()
-                await env.prepare(force_registration=True)
-                kept = first.credential.identity.key in env.grants()
-                self.assertEqual(kept, partition is not None)
-                self.assertEqual(len(env.grants()), 1 + kept)
-
-            with self.subTest(partition=partition):
-                self.run_env(invalid_client)
-                self.run_env(forced)
 
     def test_registration_written_completes_despite_caller_cancel(self):
         async def written(env):
@@ -1054,88 +1050,153 @@ class RegistrationLifecycleTests(unittest.TestCase):
 
         self.run_env(run)
 
-    def test_pkce_completion_invalid_client_drops_binding_scoped_grant(self):
-        for partition in (None, "shared"):
+    def test_pkce_invalid_client_ends_login_or_compare_and_deletes_grant(self):
+        async def completion(env):
+            ready = await env.login()
+            key = ready.credential.identity.key
+            # Expired without refresh material: the next prepare logs in anew.
+            env.now[0] += 61
+            kept = env.grants()[key]
+            env.s.records[key] = replace(
+                kept, token=replace(kept.token, refresh_token=None)
+            )
+            login = await env.prepare()
+            self.assertEqual(client_of(login), "dcr-2")
+            env.n.token_hook = reject_client(env, "dcr-2")
+            await self.fails("interaction_required", env.complete(login))
+            # Only that login ended; the grant with the older client is kept.
+            self.assertFalse(pending_logins(env.p))
+            self.assertEqual(
+                env.grants()[key].metadata.configuration.client_id, "dcr-1"
+            )
+            self.assertEqual(
+                env.grants()[key].token.access_token, ready.credential.token
+            )
+            self.assertIsNone(env.registration())
 
-            async def run(env, partition=partition):
-                env.configure(grant_partition=partition)
+        async def refresh(env):
+            ready = await env.login()
+            key = ready.credential.identity.key
+            env.now[0] += 61
+            env.n.token_hook = reject_client(env, "dcr-1")
+            await self.fails("interaction_required", env.lookup())
+            self.assertNotIn(key, env.grants())
+            self.assertIsNone(env.registration())
+            self.assertEqual(len(env.n.registrations), 1)
+            env.n.token_hook = None
+            self.assertEqual(client_of(await env.prepare()), "dcr-2")
 
-                async def no_refresh(request):
+        async def newer_grant_kept(env):
+            ready = await env.login()
+            key = ready.credential.identity.key
+            env.now[0] += 61
+            newer = replace(
+                env.grants()[key],
+                generation="newer",
+                metadata=replace(
+                    env.grants()[key].metadata,
+                    configuration=replace(
+                        env.grants()[key].metadata.configuration, client_id="dcr-9"
+                    ),
+                ),
+            )
+
+            async def hook(request):
+                # A newer login commits another client and tokens while the
+                # refresh is in flight (outside this lock).
+                env.s.records[key] = newer
+                return httpx.Response(401, json={"error": "invalid_client"})
+
+            env.n.token_hook = hook
+            await self.fails("interaction_required", env.lookup())
+            self.assertEqual(env.grants()[key], newer)
+
+        async def rotated_refresh_kept(env):
+            ready = await env.login()
+            key = ready.credential.identity.key
+            env.now[0] += 61
+            record = env.grants()[key]
+
+            async def hook(request):
+                # Same client, but another process rotated the refresh token.
+                current = env.s.records[key]
+                env.s.records[key] = replace(
+                    current,
+                    generation="rotated",
+                    token=replace(current.token, refresh_token="rotated"),
+                )
+                return httpx.Response(401, json={"error": "invalid_client"})
+
+            env.n.token_hook = hook
+            await self.fails("interaction_required", env.lookup())
+            self.assertEqual(env.grants()[key].token.refresh_token, "rotated")
+            self.assertEqual(
+                env.grants()[key].metadata.configuration.client_id,
+                record.metadata.configuration.client_id,
+            )
+
+        for test in (completion, refresh, newer_grant_kept, rotated_refresh_kept):
+            with self.subTest(test.__name__):
+                self.run_env(test, PKCE)
+
+    def test_null_echoed_fields_and_expiry_are_never_absent(self):
+        cases = [
+            ("client_credentials", "client_secret_expires_at"),
+            ("client_credentials", "redirect_uris"),
+            ("client_credentials", "grant_types"),
+            ("client_credentials", "token_endpoint_auth_method"),
+            (PKCE, "redirect_uris"),
+            (PKCE, "grant_types"),
+            (PKCE, "token_endpoint_auth_method"),
+        ]
+        for flow, member in cases:
+
+            async def run(env, member=member):
+                async def hook(body):
+                    issued = {"client_id": "dcr-null", member: None}
+                    if body["token_endpoint_auth_method"] != "none":
+                        issued["client_secret"] = "dcr-secret"
+                    return httpx.Response(201, json=issued)
+
+                env.n.register_hook = hook
+                await self.fails("invalid_configuration", env.prepare())
+                self.assertFalse(env.secrets.stored)
+                self.assertFalse(env.grants())
+                self.assertFalse(pending_logins(env.p))
+
+            with self.subTest(flow=flow, member=member):
+                self.run_env(run, flow)
+
+    def test_client_credentials_redirect_uris_echo_must_be_a_list(self):
+        for echo, accepted in (
+            ([], True),
+            (["https://evil.example/cb"], True),
+            (None, False),
+            ("https://host.test/cb", False),
+            ({"uri": "https://host.test/cb"}, False),
+        ):
+
+            async def run(env, echo=echo, accepted=accepted):
+                async def hook(body):
                     return httpx.Response(
-                        200,
+                        201,
                         json={
-                            "access_token": "a",
-                            "token_type": "Bearer",
-                            "expires_in": 60,
+                            "client_id": "dcr-cc",
+                            "client_secret": "dcr-secret",
+                            "redirect_uris": echo,
                         },
                     )
 
-                env.n.token_hook = no_refresh
-                await env.login()
-                env.now[0] += 61  # Expired, no refresh: a new login keeps the token.
-                login = await env.prepare()
-                self.assertIsNotNone(env.grants()[login.key].token)
-                env.n.token_hook = rejecting(401, error="invalid_client")
-                await self.fails("interaction_required", env.complete(login))
-                self.assertIsNone(env.registration())
-                self.assertEqual(login.key in env.grants(), partition is not None)
+                env.n.register_hook = hook
+                if accepted:
+                    self.assertIsInstance(await env.prepare(), Ready)
+                    self.assertEqual(env.n.token_clients, ["dcr-cc"])
+                else:
+                    await self.fails("invalid_configuration", env.prepare())
+                    self.assertIsNone(env.registration().client_id)
 
-            with self.subTest(partition=partition):
-                self.run_env(run, PKCE)
-
-    def test_shared_partition_stale_pending_login_with_reissued_client(self):
-        async def run(env):
-            async def hook(body):
-                return httpx.Response(201, json={"client_id": "dcr-same"})
-
-            env.n.register_hook = hook
-            env.configure(grant_partition="shared")
-            stale = await env.prepare()
-            other = replace(env.target, backend_id="backend-2")
-            fresh = await env.prepare(other, force_registration=True)
-            # Same grant key, newer generation: a new login, never the stale one.
-            self.assertEqual(fresh.key, stale.key)
-            self.assertNotEqual(fresh.generation, stale.generation)
-            newer = env.registration()
-            await self.fails("interaction_required", env.complete(stale))
-            self.assertEqual(env.registration(), newer)
-            self.assertIn(stale.key, env.grants())  # The shared grant is kept.
-            self.assertIsInstance(await env.complete(fresh, other), Ready)
-
-        self.run_env(run, PKCE)
-
-    def test_client_credentials_accepts_empty_redirect_uris_echo(self):
-        async def run(env):
-            async def hook(body):
-                return httpx.Response(
-                    201,
-                    json={
-                        "client_id": "dcr-cc",
-                        "client_secret": "dcr-secret",
-                        "redirect_uris": [],
-                    },
-                )
-
-            env.n.register_hook = hook
-            self.assertIsInstance(await env.prepare(), Ready)
-            self.assertEqual(env.n.token_clients, ["dcr-cc"])
-
-        async def non_empty(env):
-            async def hook(body):
-                return httpx.Response(
-                    201,
-                    json={
-                        "client_id": "dcr-cc",
-                        "client_secret": "dcr-secret",
-                        "redirect_uris": ["https://evil.example/cb"],
-                    },
-                )
-
-            env.n.register_hook = hook
-            await self.fails("invalid_configuration", env.prepare())
-
-        self.run_env(run)
-        self.run_env(non_empty)
+            with self.subTest(echo=echo):
+                self.run_env(run)
 
     def test_recorded_dcr_rechecks_eligibility_at_register_time(self):
         async def no_hook(env):
@@ -1173,135 +1234,57 @@ class RegistrationLifecycleTests(unittest.TestCase):
         self.run_env(no_hook)
         self.run_env(no_method)
 
-    def test_prepare_clears_failed_marker(self):
-        for flow in ("client_credentials", PKCE):
-
-            async def run(env):
-                await env.prepare()
-                key, record = next(
-                    (k, r)
-                    for k, r in env.s.records.items()
-                    if isinstance(r, OAuthRegistration)
-                )
-                env.s.records[key] = replace(
-                    record, generation="marked", attempts=4, next_attempt_at=99999
-                )
-                await env.prepare()
-                cleared = env.registration()
-                self.assertEqual((cleared.attempts, cleared.next_attempt_at), (0, None))
-                self.assertEqual(cleared.client_generation, record.client_generation)
-                self.assertEqual(len(env.n.registrations), 1)
-
-            with self.subTest(flow=flow):
-                self.run_env(run, flow)
-
-    def test_forced_reregistration_never_reuses_older_pending_login(self):
-        for same_client in (False, True):
-
-            async def run(env, same_client=same_client):
-                if same_client:
-
-                    async def hook(body):
-                        return httpx.Response(201, json={"client_id": "dcr-same"})
-
-                    env.n.register_hook = hook
-                old = await env.prepare()
-                new = await env.prepare(force_registration=True)
-                self.assertNotEqual(new.generation, old.generation)
-                self.assertEqual(len(env.n.registrations), 2)
-                await self.fails("interaction_required", env.complete(old))
-                self.assertIsInstance(await env.complete(new), Ready)
-
-            with self.subTest(same_client=same_client):
-                self.run_env(run, PKCE)
-
-    def test_stale_callback_invalid_client_keeps_newer_registration(self):
-        for same_client in (False, True):
-
-            async def run(env, same_client=same_client):
-                if same_client:
-
-                    async def hook(body):
-                        return httpx.Response(201, json={"client_id": "dcr-same"})
-
-                    env.n.register_hook = hook
-                stale = await env.prepare()
-                generation = env.registration().client_generation
-                other = replace(env.target, backend_id="backend-2")
-                await env.prepare(other, force_registration=True)
-                newer = env.registration()
-                self.assertNotEqual(newer.client_generation, generation)
-                env.n.token_hook = rejecting(401, error="invalid_client")
-                await self.fails("interaction_required", env.complete(stale))
-                self.assertEqual(env.registration(), newer)
-                self.assertEqual(len(env.n.tokens), 1)
-
-            with self.subTest(same_client=same_client):
-                self.run_env(run, PKCE)
-
-    def test_prepare_force_reregistration(self):
+    def test_prepare_force_registration_replaces_cc_registration(self):
         async def cc(env):
-            await env.prepare()
+            first = await env.prepare()
             record = env.registration()
-            env.s.records[next(k for k, r in env.s.records.items() if r is record)] = (
-                replace(record, attempts=3, next_attempt_at=99999, generation="marked")
-            )
-            await env.prepare(force_registration=True)
+            # The stored token is still valid, but a forced replacement
+            # acquires a new one with the new client.
+            forced = await env.prepare(force_registration=True)
+            self.assertIsInstance(forced, Ready)
+            self.assertNotEqual(forced.credential.token, first.credential.token)
             fresh = env.registration()
             self.assertEqual(fresh.client_id, "dcr-2")
-            self.assertNotEqual(fresh.client_generation, record.client_generation)
-            self.assertEqual((fresh.attempts, fresh.next_attempt_at), (0, None))
+            self.assertNotEqual(fresh.generation, record.generation)
             self.assertEqual(env.secrets.deleted, ["ref-1"])
             self.assertEqual(env.n.token_clients, ["dcr-1", "dcr-2"])
-
-        async def pkce(env):
-            login = await env.prepare()
-            env.now[0] += 601  # An expired login alone never re-registers.
-            renewed = await env.prepare()
-            self.assertNotEqual(renewed.generation, login.generation)
-            self.assertEqual(len(env.n.registrations), 1)
+            # Later operations serve the new client's token.
+            self.assertEqual((await env.lookup()).token, forced.credential.token)
+            # A failed replacement keeps the current registration, unmarked,
+            # and returns the failure.
+            env.n.register_hook = rejecting(503)
+            failure = await self.fails(
+                "provider_failed", env.prepare(force_registration=True)
+            )
+            self.assertEqual(failure.recovery, "retry")
+            kept = env.registration()
             self.assertEqual(
-                client_of(await env.prepare(force_registration=True)), "dcr-2"
+                (kept.client_id, kept.secret_ref), (fresh.client_id, fresh.secret_ref)
+            )
+            # The failure is recorded in the backoff (host prepare bypasses it).
+            self.assertEqual(
+                (kept.failure, kept.attempts, kept.next_attempt_at),
+                ("provider_failed", 1, env.now[0] + 60),
+            )
+            await self.fails("provider_failed", env.prepare(force_registration=True))
+            self.assertEqual(env.registration().attempts, 2)
+            self.assertEqual(env.registration().next_attempt_at, env.now[0] + 120)
+            self.assertEqual(len(env.n.registrations), 4)
+            self.assertEqual(env.n.token_clients, ["dcr-1", "dcr-2"])
+            self.assertEqual((await env.lookup()).token, forced.credential.token)
+            # The kept client still works; its next successful token request
+            # clears the backoff.
+            env.now[0] += 61
+            self.assertIsNotNone(await env.lookup())
+            cleared = env.registration()
+            self.assertEqual(
+                (cleared.failure, cleared.attempts, cleared.next_attempt_at),
+                (None, 0, None),
             )
 
         self.run_env(cc)
-        self.run_env(pkce, PKCE)
 
-    # Failed marker and backoff -------------------------------------------
-
-    def test_failed_marker_bounds_registration_until_backoff(self):
-        async def run(env):
-            env.n.register_hook = rejecting(503)
-            other = env.provider()
-            await self.fails("provider_failed", env.prepare())
-            marker = env.registration()
-            self.assertEqual((marker.attempts, marker.failed_at), (1, 1000))
-            self.assertEqual(marker.next_attempt_at, 1060)
-            await self.fails("credential_unavailable", env.challenge(other))
-            env.now[0] = 1059
-            await self.fails("credential_unavailable", env.challenge())
-            self.assertEqual(len(env.n.registrations), 1)
-            env.now[0] = 1060
-            await self.fails("provider_failed", env.challenge(other))
-            marker = env.registration()
-            self.assertEqual((marker.attempts, marker.next_attempt_at), (2, 1180))
-            env.now[0] = 1100
-            await self.fails("provider_failed", env.prepare())  # prepare ignores it
-            self.assertEqual(len(env.n.registrations), 3)
-            self.assertEqual(env.registration().attempts, 1)
-            env.n.register_hook = None
-            await env.prepare()
-            self.assertIsNone(env.registration().next_attempt_at)
-            # A request digest change clears a marker.
-            env.n.register_hook = rejecting(503)
-            env.configure(dynamic_registration=OAuthDynamicRegistration("A"))
-            env.now[0] += 61
-            await self.fails("provider_failed", env.lookup())
-            env.configure(dynamic_registration=OAuthDynamicRegistration("B"))
-            await self.fails("provider_failed", env.lookup())
-            self.assertEqual(env.registration().attempts, 1)
-
-        self.run_env(run)
+    # Client-credentials registration backoff ------------------------------
 
     def test_transient_registration_failures_back_off(self):
         cases = [
@@ -1323,14 +1306,29 @@ class RegistrationLifecycleTests(unittest.TestCase):
 
                 env.n.register_hook = hook
                 other = env.provider()
-                await self.fails(code, env.challenge())
+                failure = await self.fails(code, env.challenge())
+                marker = env.registration()
+                self.assertEqual((marker.attempts, marker.next_attempt_at), (1, 1060))
+                self.assertEqual(marker.failure, code)
+                # Shared through the store: no process registers during the
+                # backoff, and each returns the last failure's code.
                 for provider in (other, env.p, other):
-                    await self.fails("credential_unavailable", env.challenge(provider))
+                    again = await self.fails(code, env.challenge(provider))
+                    self.assertEqual(again.recovery, failure.recovery)
                     self.assertIsNone(await env.lookup(provider))
                 self.assertEqual(len(env.n.registrations), 1)
-                env.now[0] += 60
+                if code == "provider_failed":
+                    self.assertEqual(failure.recovery, "retry")
+                env.now[0] = 1060
                 await self.fails(code, env.challenge(other))
                 self.assertEqual(len(env.n.registrations), 2)
+                # Doubling per failure.
+                self.assertEqual(env.registration().next_attempt_at, 1060 + 120)
+                # Host prepare bypasses the backoff; success clears it.
+                env.n.register_hook = None
+                self.assertIsInstance(await env.prepare(), Ready)
+                self.assertEqual(len(env.n.registrations), 3)
+                self.assertIsNone(env.registration().next_attempt_at)
 
             with self.subTest(status=status):
                 self.run_env(run)
@@ -1341,7 +1339,7 @@ class RegistrationLifecycleTests(unittest.TestCase):
             ("10", {}, 1060),
             ("99999", {}, 4600),
             (formatdate(1500, usegmt=True), {}, 1500),
-            ("300", {"retry_after_max": 120}, 1120),
+            ("300", {"registration_backoff_max": 120}, 1120),
             ("300", {"registration_backoff": 400}, 1400),
         ]
         for header, options, expected in cases:
@@ -1358,7 +1356,7 @@ class RegistrationLifecycleTests(unittest.TestCase):
             with self.subTest(header=header, options=options):
                 self.run_env(run)
 
-    def test_marker_updates_are_atomic_under_lock(self):
+    def test_backoff_updates_are_atomic_under_lock(self):
         async def run(env):
             async def slow_failure(body):
                 await anyio.sleep(0.02)
@@ -1380,30 +1378,13 @@ class RegistrationLifecycleTests(unittest.TestCase):
                         tasks.start_soon(attempt, env.p if index % 2 else other)
                 self.assertEqual(len(env.n.registrations), round_)
                 self.assertEqual(env.registration().attempts, expected)
-                self.assertEqual(codes.count("provider_failed"), round_)
+                self.assertEqual(codes, ["provider_failed"] * 6 * round_)
                 env.now[0] += 120
 
         self.run_env(run)
 
-    def test_cc_auto_repairs_after_backoff(self):
+    def test_backoff_keeps_serving_a_valid_cc_token(self):
         async def run(env):
-            env.n.register_hook = issuing(env, lifetime=100)
-            await env.prepare()
-            env.n.register_hook = rejecting(503)
-            env.now[0] = 1100
-            await self.fails("provider_failed", env.lookup())
-            await self.fails("credential_unavailable", env.lookup())
-            self.assertEqual(len(env.n.registrations), 2)
-            env.n.register_hook = None
-            env.now[0] = 1160
-            self.assertIsNotNone(await env.lookup())
-            self.assertEqual(env.n.token_clients, ["dcr-1", "dcr-3"])
-            self.assertIsNone(env.registration().next_attempt_at)
-
-        self.run_env(run)
-
-    def test_marker_blocks_only_registration_requests(self):
-        async def cc(env):
             async def long_lived(request):
                 return httpx.Response(
                     200,
@@ -1423,178 +1404,6 @@ class RegistrationLifecycleTests(unittest.TestCase):
             self.assertEqual((await env.lookup()).token, first.credential.token)
             self.assertEqual(len(env.n.registrations), 2)
             self.assertEqual(len(env.n.tokens), 1)
-
-        async def pkce(env):
-            await env.login()
-            env.n.register_hook = rejecting(503)
-            env.configure(dynamic_registration=OAuthDynamicRegistration("Renamed"))
-            self.assertIsInstance(await env.prepare(), Ready)
-            self.assertEqual(env.registration().attempts, 1)
-            self.assertIsNotNone(await env.lookup())
-            env.now[0] += 61
-            await self.fails("interaction_required", env.lookup())
-            self.assertEqual(len(env.n.registrations), 2)
-
-        self.run_env(cc)
-        self.run_env(pkce, PKCE)
-
-    # Proactive renewal ---------------------------------------------------
-
-    def test_cc_proactive_reregistration_within_margin(self):
-        async def run(env):
-            # client_id_issued_at is ignored: the margin uses local registered_at.
-            env.n.register_hook = issuing(env, lifetime=10000, client_id_issued_at=1)
-            await env.prepare()
-            env.now[0] = 9999  # min(0.1 x 10000, 3600) = 1000 before expiry
-            await env.lookup()
-            await env.p.renewals_settled()
-            self.assertEqual(len(env.n.registrations), 1)
-            env.now[0] = 10000
-            # The operation acquires with the current client; renewal follows.
-            await env.lookup()
-            await env.p.renewals_settled()
-            self.assertEqual(len(env.n.registrations), 2)
-            self.assertEqual(env.n.token_clients, ["dcr-1", "dcr-1"])
-            env.now[0] += 61
-            await env.lookup()
-            self.assertEqual(env.n.token_clients, ["dcr-1", "dcr-1", "dcr-2"])
-
-        self.run_env(run)
-
-    def test_proactive_renewal_once_across_processes(self):
-        async def run(env):
-            env.n.register_hook = issuing(env, lifetime=10000)
-            await env.prepare()
-            env.now[0] = 10000
-            other = env.provider()
-            tokens = []
-
-            async def deliver(provider):
-                tokens.append((await env.lookup(provider)).token)
-
-            async with anyio.create_task_group() as tasks:
-                for index in range(6):
-                    tasks.start_soon(deliver, env.p if index % 2 else other)
-            await env.p.renewals_settled()
-            await other.renewals_settled()
-            self.assertEqual(len(env.n.registrations), 2)
-            self.assertEqual(len(set(tokens)), 1)
-            self.assertEqual(env.registration().client_id, "dcr-2")
-
-        self.run_env(run)
-
-    def test_proactive_renewal_failure_keeps_current_registration(self):
-        async def run(env):
-            env.n.register_hook = issuing(env, lifetime=10000)
-            await env.prepare()
-            env.n.register_hook = rejecting(429)
-            env.now[0] = 10000
-            self.assertIsNotNone(await env.lookup())
-            await env.p.renewals_settled()
-            record = env.registration()
-            self.assertEqual((record.client_id, record.attempts), ("dcr-1", 1))
-            env.now[0] = 10030
-            self.assertIsNotNone(await env.lookup())
-            await env.p.renewals_settled()
-            self.assertEqual(len(env.n.registrations), 2)
-            self.assertEqual(env.n.token_clients, ["dcr-1", "dcr-1"])
-
-        self.run_env(run)
-
-    def test_proactive_renewal_never_delays_or_changes_the_operation(self):
-        async def slow(env):
-            async def long_lived(request):
-                return httpx.Response(
-                    200,
-                    json={
-                        "access_token": "cached",
-                        "token_type": "Bearer",
-                        "expires_in": 9500,
-                    },
-                )
-
-            env.n.token_hook = long_lived
-            env.n.register_hook = issuing(env, lifetime=10000)
-            await env.prepare()
-            release = anyio.Event()
-
-            async def gate(request):
-                await anyio.sleep(0.3)
-                release.set()
-
-            env.n.register_gate = gate
-            env.now[0] = 10000
-            # A 0.15 s deadline still serves the valid cached token at once;
-            # the 0.3 s renewal runs detached and sends no token request.
-            env.p = env.provider(operation_timeout=0.15)
-            with anyio.fail_after(0.15):
-                credential = await env.lookup()
-            self.assertEqual(credential.token, "cached")
-            self.assertEqual(len(env.n.tokens), 1)
-            await env.p.renewals_settled()
-            self.assertTrue(release.is_set())
-            self.assertEqual(env.registration().client_id, "dcr-2")
-            self.assertEqual(len(env.n.tokens), 1)
-
-        self.run_env(slow)
-
-    def test_concurrent_caller_never_waits_on_detached_renewal(self):
-        async def run(env):
-            async def long_lived(request):
-                return httpx.Response(
-                    200,
-                    json={
-                        "access_token": "cached",
-                        "token_type": "Bearer",
-                        "expires_in": 9500,
-                    },
-                )
-
-            env.n.token_hook = long_lived
-            env.n.register_hook = issuing(env, lifetime=10000)
-            await env.prepare()
-            posting, release = anyio.Event(), anyio.Event()
-
-            async def gate(request):
-                posting.set()
-                await anyio.sleep(0.4)
-                release.set()
-
-            env.n.register_gate = gate
-            env.now[0] = 10000
-            env.p = env.provider(operation_timeout=0.15)
-            with anyio.fail_after(0.15):
-                self.assertEqual((await env.lookup()).token, "cached")
-            await posting.wait()  # The renewal holds the registration lock.
-            other = env.provider(operation_timeout=0.15)
-            for provider in (env.p, other):
-                with anyio.fail_after(0.15):
-                    self.assertEqual((await env.lookup(provider)).token, "cached")
-            self.assertFalse(release.is_set())
-            await env.p.renewals_settled()
-            await other.renewals_settled()
-            self.assertEqual(len(env.n.registrations), 2)
-            self.assertEqual(len(env.n.tokens), 1)
-
-        self.run_env(run)
-
-    def test_detached_renewal_failure_is_logged_without_secrets(self):
-        async def run(env):
-            env.n.register_hook = issuing(env, lifetime=10000)
-            await env.prepare()
-
-            async def broken(value, budget):
-                raise RuntimeError(value)  # Would leak the secret if logged.
-
-            env.secrets.store = broken
-            env.now[0] = 10000
-            with self.assertLogs("agenthooksprotocol.oauth", "WARNING") as logs:
-                self.assertIsNotNone(await env.lookup())
-                await env.p.renewals_settled()
-            self.assertEqual(len(logs.records), 1)
-            self.assertIn("RuntimeError", logs.output[0])
-            self.assertNotIn("dcr-secret", logs.output[0])
-            self.assertEqual(env.registration().client_id, "dcr-1")
 
         self.run_env(run)
 
@@ -1627,22 +1436,238 @@ class RegistrationLifecycleTests(unittest.TestCase):
     def test_lookup_never_registers_pkce(self):
         async def pkce(env):
             await env.login()
-            env.configure(dynamic_registration=OAuthDynamicRegistration("Renamed"))
             self.assertIsNotNone(await env.lookup())  # A valid token still works.
             env.now[0] += 61
+            # Refresh presents the stored client; nothing registers.
+            self.assertIsNotNone(await env.lookup())
+            await env.p.reset(env.target, OperationBudget.after(5))
             await self.fails("interaction_required", env.lookup())
             await self.fails("interaction_required", env.challenge())
             self.assertEqual(len(env.n.registrations), 1)
             self.assertIsNone(env.registration())
 
         async def cc(env):
+            self.assertIsNone(await env.lookup())  # Unbound: anonymous.
             await env.prepare()
-            env.configure(dynamic_registration=OAuthDynamicRegistration("Renamed"))
+            env.now[0] += 61
+            env.s.records.pop(
+                next(
+                    k
+                    for k, r in env.s.records.items()
+                    if isinstance(r, OAuthRegistration)
+                )
+            )
             self.assertIsNotNone(await env.lookup())
             self.assertEqual(len(env.n.registrations), 2)
 
         self.run_env(pkce, PKCE)
         self.run_env(cc)
+
+    def test_cimd_loopback_redirect_is_compared_without_its_port(self):
+        """Canonical lifecycle: cimd-portless-loopback-redirect-matches."""
+        cases = [
+            ("http://127.0.0.1/callback", "http://127.0.0.1:51004/callback"),
+            ("http://127.0.0.1:8765/callback", "http://127.0.0.1:9999/callback"),
+            ("http://[::1]/callback", "http://[::1]:51004/callback"),
+        ]
+        for declared, redirect in cases:
+
+            async def run(env, declared=declared, redirect=redirect):
+                env.configure(
+                    client_metadata_document=replace(
+                        DOCUMENT, redirect_uris=(declared,)
+                    )
+                )
+                login = await env.prepare(redirect_uri=redirect)
+                self.assertEqual(client_of(login), DOCUMENT.url)
+                query = parse_qs(urlsplit(login.authorization_url).query)
+                # The exact redirect, with its port, is what is sent.
+                self.assertEqual(query["redirect_uri"], [redirect])
+                callback = (
+                    redirect
+                    + "?"
+                    + urlencode({"state": query["state"][0], "code": "c"})
+                )
+                await env.p.complete(
+                    env.target, login, callback, OperationBudget.after(5)
+                )
+                self.assertEqual(env.n.tokens[-1]["redirect_uri"], [redirect])
+
+            with self.subTest(declared=declared, redirect=redirect):
+                self.run_env(run, PKCE, {"client_id_metadata_document_supported": True})
+        # localhost is never accepted, even when declared verbatim.
+        for redirect in (
+            "http://localhost:51004/callback",
+            "http://localhost/callback",
+        ):
+
+            async def localhost(env, redirect=redirect):
+                env.configure(
+                    client_metadata_document=replace(
+                        DOCUMENT, redirect_uris=(redirect,)
+                    )
+                )
+                await self.fails(
+                    "invalid_configuration", env.prepare(redirect_uri=redirect)
+                )
+                self.assertFalse(env.n.registrations)
+                self.assertFalse(pending_logins(env.p))
+
+            with self.subTest(redirect=redirect):
+                self.run_env(
+                    localhost, PKCE, {"client_id_metadata_document_supported": True}
+                )
+
+    def test_issued_client_is_committed_with_the_grant(self):
+        async def run(env):
+            ready = await env.login()
+            key = ready.credential.identity.key
+            record = env.grants()[key]
+            self.assertEqual(record.metadata.configuration.client_id, "dcr-1")
+            self.assertIsNotNone(record.token.refresh_token)
+            # The binding holds no issued client, and the key no client_id.
+            self.assertEqual(env.binding().configuration.client_id, "")
+            self.assertNotIn("dcr-1", key)
+            # A re-registered client replaces it under the same key.
+            again = await env.prepare(required_scopes=("read",))
+            self.assertIsInstance(again, Ready)  # A valid grant is served.
+            await env.p.reset(env.target, OperationBudget.after(5))
+            second = await env.login()
+            self.assertEqual(second.credential.identity.key, key)
+            self.assertEqual(
+                env.grants()[key].metadata.configuration.client_id, "dcr-2"
+            )
+            # Refresh uses the stored client, without registering.
+            env.now[0] += 61
+            self.assertIsNotNone(await env.lookup())
+            self.assertEqual(env.n.token_clients, ["dcr-1", "dcr-2", "dcr-2"])
+            self.assertEqual(env.n.tokens[-1]["grant_type"], ["refresh_token"])
+            self.assertEqual(len(env.n.registrations), 2)
+            self.assertEqual(
+                env.grants()[key].metadata.configuration.client_id, "dcr-2"
+            )
+
+        self.run_env(run, PKCE)
+
+    def test_redirect_supplied_only_to_prepare_works_for_every_client_source(self):
+        redirect = "http://127.0.0.1:50555/callback"
+        sources = {
+            "preregistered": dict(client_id="host-client", dynamic_registration=None),
+            "cimd": dict(
+                client_metadata_document=replace(
+                    DOCUMENT, redirect_uris=("http://127.0.0.1/callback",)
+                ),
+                dynamic_registration=None,
+            ),
+            "dcr": {},
+        }
+        for source, changes in sources.items():
+
+            async def run(env, source=source, changes=changes):
+                # The host configures no redirect; each login brings its own.
+                env.configure(redirect_uri=None, **changes)
+                await self.fails("invalid_configuration", env.prepare())
+                self.assertFalse(pending_logins(env.p))
+                self.assertFalse(env.n.registrations)
+                login = await env.prepare(redirect_uri=redirect)
+                state = parse_qs(urlsplit(login.authorization_url).query)["state"][0]
+                ready = await env.p.complete(
+                    env.target,
+                    login,
+                    redirect + "?" + urlencode({"state": state, "code": "c"}),
+                    OperationBudget.after(5),
+                )
+                self.assertEqual(env.binding().client_source, source)
+                self.assertIsNone(env.binding().configuration.redirect_uri)
+                # Lookup, challenge and prepare work without any redirect.
+                self.assertEqual((await env.lookup()).token, ready.credential.token)
+                self.assertIsNotNone(await env.challenge())
+                env.now[0] += 61
+                self.assertIsNotNone(await env.lookup())
+                self.assertIsInstance(await env.prepare(), Ready)
+                self.assertEqual(
+                    [form["grant_type"][0] for form in env.n.tokens],
+                    ["authorization_code", "refresh_token"],
+                )
+                # A localhost redirect for a login is still rejected first.
+                await env.p.reset(env.target, OperationBudget.after(5))
+                await self.fails(
+                    "invalid_configuration",
+                    env.prepare(redirect_uri="http://localhost:50555/callback"),
+                )
+                self.assertEqual(len(env.n.registrations), source == "dcr")
+
+            with self.subTest(source=source):
+                self.run_env(run, PKCE, {"client_id_metadata_document_supported": True})
+
+    def test_failure_count_resets_after_a_successful_token_request(self):
+        async def run(env):
+            env.n.register_hook = rejecting(503)
+            await self.fails("provider_failed", env.prepare())
+            await self.fails("provider_failed", env.prepare())  # bypasses backoff
+            self.assertEqual(env.registration().attempts, 2)
+            env.n.register_hook = issuing(env, lifetime=100)
+            await env.prepare()
+            # The count reached the new client, then its token succeeded.
+            self.assertEqual(env.registration().attempts, 0)
+            self.assertEqual(env.registration().client_id, "dcr-1")
+            # A later failure (here at secret expiry) starts the backoff anew,
+            # as an invalid_client would.
+            env.n.register_hook = rejecting(503)
+            env.now[0] = 1100
+            await self.fails("provider_failed", env.lookup())
+            marker = env.registration()
+            self.assertEqual((marker.attempts, marker.next_attempt_at), (1, 1160))
+
+        async def rejected_until_success(env):
+            # Repeated invalid_client keeps counting across re-registrations
+            # until a token request succeeds.
+            env.n.token_hook = rejecting(401, error="invalid_client")
+            await self.fails("credential_unavailable", env.prepare())
+            await self.fails("credential_unavailable", env.prepare())
+            self.assertEqual(env.registration().attempts, 2)
+            env.n.token_hook = None
+            await env.prepare()
+            self.assertEqual(env.registration().attempts, 0)
+
+        self.run_env(run)
+        self.run_env(rejected_until_success)
+
+    def test_failure_count_reset_is_best_effort_after_the_grant_lock(self):
+        async def run(env):
+            env.n.register_hook = rejecting(503)
+            await self.fails("provider_failed", env.prepare())
+            env.n.register_hook = None
+            coordinate = env.s.coordinate
+            held = []
+
+            def failing(key, budget):
+                if key.startswith("ahp.oauth.registration:") and env.n.tokens:
+                    # The reset runs after the grant lock is released.
+                    held.extend(
+                        lock.locked()
+                        for name, lock in env.s.locks.items()
+                        if name.startswith("ahp.oauth.grant:")
+                    )
+                    raise RuntimeError("store unavailable")
+                return coordinate(key, budget)
+
+            env.s.coordinate = failing
+            # The token is committed: the failed reset never fails prepare.
+            ready = await env.prepare()
+            self.assertIsInstance(ready, Ready)
+            self.assertEqual(held, [False])
+            self.assertEqual(env.registration().attempts, 1)
+            self.assertEqual(
+                env.grants()[ready.credential.identity.key].token.access_token,
+                ready.credential.token,
+            )
+            env.s.coordinate = coordinate
+            env.now[0] += 61
+            await env.lookup()
+            self.assertEqual(env.registration().attempts, 0)
+
+        self.run_env(run)
 
 
 if __name__ == "__main__":

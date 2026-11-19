@@ -7,6 +7,7 @@ Run: uv run --locked --all-extras python -m unittest discover -s tests -p test_m
 import hashlib
 import importlib.util
 import json
+import logging
 import unittest
 from base64 import urlsafe_b64encode
 from contextlib import asynccontextmanager
@@ -30,6 +31,9 @@ from agenthooksprotocol.auth import (
 from agenthooksprotocol.oauth import (
     ManagedOAuthProvider,
     OAuthClientConfiguration,
+    OAuthClientMetadataDocument,
+    OAuthDynamicRegistration,
+    OAuthPendingLogins,
     OperationBudget,
     PendingLogin,
     Ready,
@@ -104,6 +108,21 @@ class Store:
                     return True
 
             yield Guard()
+
+
+def pending_logins(provider, store=None):
+    """Live pending logins: process-owned, or persisted in `store`."""
+    from agenthooksprotocol.oauth import OAuthPendingLogins
+
+    records = (
+        store.records if store is not None else provider._logins.records
+    ).values()
+    return [
+        login
+        for record in records
+        if isinstance(record, OAuthPendingLogins)
+        for login in record.logins
+    ]
 
 
 class Policy:
@@ -306,7 +325,6 @@ class ManagedOAuthRuntimeTests(unittest.TestCase):
             self.assertEqual(query["resource"], [RESOURCE])
             self.assertEqual(query["code_challenge_method"], ["S256"])
             self.assertEqual(query["scope"], ["read"])
-            self.assertEqual(await p.prepare(target, budget), login)
             callback = "https://host.test/callback?" + urlencode(
                 {"state": query["state"][0], "code": "one-use-code"}
             )
@@ -415,7 +433,7 @@ class ManagedOAuthRuntimeTests(unittest.TestCase):
                 await p.prepare(target, OperationBudget.after(5))
             self.assertNotEqual(failure.exception.recovery, "login")
             self.assertNotEqual(failure.exception.code, "interaction_required")
-            self.assertFalse(any(record.pending for record in s.records.values()))
+            self.assertFalse(pending_logins(p))
             n.token_hook = None
             self.assertIsInstance(
                 await p.prepare(target, OperationBudget.after(5)), Ready
@@ -919,7 +937,7 @@ class ManagedOAuthRuntimeTests(unittest.TestCase):
                 with self.assertRaises(AuthenticationFailure):
                     await p.complete(target, login, callback, OperationBudget.after(5))
                 self.assertFalse(n.tokens)
-                self.assertEqual(next(iter(s.records.values())).status, "pending")
+                self.assertEqual(len(pending_logins(p)), 1)
             self.assertEqual(len(calls), 1)
             self.assertEqual(calls[-1], (RESOURCE, (ISSUER,), ()))
             policy.configuration = original
@@ -1225,10 +1243,11 @@ class ManagedOAuthRuntimeTests(unittest.TestCase):
                     )
             self.assertEqual(failure.exception.code, "interaction_required")
             self.assertEqual(
-                next(iter(s.records.values())).pending.state, login.generation
+                [item.state for item in pending_logins(p)], [login.generation]
             )
             await p.cancel(target, login, OperationBudget.after(5))
             self.assertFalse(s.records)
+            self.assertFalse(pending_logins(p))
             self.assertTrue(s.bindings)
             replacement = await p.prepare(target, OperationBudget.after(5))
             self.assertNotEqual(replacement.generation, login.generation)
@@ -1436,7 +1455,7 @@ class ManagedOAuthRuntimeTests(unittest.TestCase):
                     AuthContext({"id": "backend"}, None, RESOURCE, "event", scope)
                 )
             self.assertEqual(cached.token, first.credential.token)
-            self.assertFalse(any(record.pending for record in s.records.values()))
+            self.assertFalse(pending_logins(p))
             self.assertEqual(len(n.tokens), 1)
 
         self.run_async(run)
@@ -1586,133 +1605,6 @@ class ManagedOAuthRuntimeTests(unittest.TestCase):
 
                 self.run_async(run)
 
-    def test_pending_supersede_requests_scope_union_and_old_callback_fails(self):
-        """Canonical lifecycle: pending-login-supersede, pending-login-supersede-scope-union."""
-
-        async def run(p, n, s, policy, target, now):
-            policy.configuration = replace(
-                Policy("authorization_code_pkce").configuration,
-                allowed_scopes=("read", "write", "admin"),
-            )
-            budget = OperationBudget.after(5)
-            first = await p.prepare(target, budget)
-            # Requirements already covered by the pending scopes reuse it.
-            policy.configuration = replace(
-                policy.configuration, required_scopes=("read",)
-            )
-            self.assertEqual(await p.prepare(target, budget), first)
-            policy.configuration = replace(
-                policy.configuration, scopes=("write",), required_scopes=()
-            )
-            second = await p.prepare(target, budget)
-            self.assertNotEqual(second.generation, first.generation)
-
-            def scopes(login):
-                return set(
-                    parse_qs(urlsplit(login.authorization_url).query)["scope"][
-                        0
-                    ].split()
-                )
-
-            self.assertEqual(scopes(second), {"read", "write"})
-            # The alternating caller is now covered: no supersede loop.
-            policy.configuration = replace(policy.configuration, scopes=("read",))
-            self.assertEqual(await p.prepare(target, budget), second)
-            # A narrower caller ceiling still reuses (filtered at use); a new
-            # scope supersedes with the union intersected with its ceiling.
-            policy.configuration = replace(
-                policy.configuration, allowed_scopes=("read", "admin"), scopes=("read",)
-            )
-            self.assertEqual(await p.prepare(target, budget), second)
-            policy.configuration = replace(
-                policy.configuration, scopes=("read", "admin")
-            )
-            third = await p.prepare(target, budget)
-            # Pending scopes and ceilings only grow.
-            self.assertEqual(scopes(third), {"read", "write", "admin"})
-            for old in (first, second):
-                with self.assertRaises(AuthenticationFailure) as failure:
-                    await self.complete_login(p, target, old)
-                self.assertEqual(failure.exception.code, "interaction_required")
-            self.assertFalse(n.tokens)
-            policy.configuration = replace(
-                policy.configuration, redirect_uri="https://host.test/other"
-            )
-            fourth = await p.prepare(target, budget)
-            self.assertNotEqual(fourth.generation, third.generation)
-            # A different redirect does not merge the old pending scopes.
-            self.assertEqual(scopes(fourth), {"read", "admin"})
-            policy.configuration = replace(
-                policy.configuration, redirect_uri="https://host.test/callback"
-            )
-            with self.assertRaises(AuthenticationFailure) as failure:
-                await self.complete_login(p, target, third)
-            self.assertEqual(failure.exception.code, "interaction_required")
-            # A supersede stores the union of both ceilings, and completion
-            # keeps every merged scope.
-            await p.reset(target, budget)
-            base = Policy("authorization_code_pkce").configuration
-            policy.configuration = replace(
-                base, scopes=("read",), allowed_scopes=("read", "write")
-            )
-            await p.prepare(target, budget)
-            policy.configuration = replace(
-                base, scopes=("admin",), allowed_scopes=("admin",)
-            )
-            merged = await p.prepare(target, budget)
-            pending = next(iter(s.records.values())).pending.metadata.configuration
-            self.assertEqual(set(pending.scopes), {"read", "admin"})
-            self.assertEqual(set(pending.ceiling), {"read", "write", "admin"})
-
-            async def everything(request):
-                return httpx.Response(
-                    200,
-                    json={
-                        "access_token": "merged",
-                        "token_type": "Bearer",
-                        "scope": "read write admin openid",
-                    },
-                )
-
-            n.token_hook = everything
-            await self.complete_login(p, target, merged)
-            self.assertEqual(
-                next(iter(s.records.values())).token.scopes, ("admin", "read", "write")
-            )
-
-        self.run_async(run)
-
-    def test_pending_reuse_is_independent_of_caller_deadline(self):
-        """Canonical lifecycle: pending-login-reuse."""
-
-        async def run(p, n, s, policy, target, now):
-            policy.configuration = Policy("authorization_code_pkce").configuration
-            first = await p.prepare(target, OperationBudget.after(1))
-            self.assertEqual(await p.prepare(target, OperationBudget.after(5)), first)
-            self.assertEqual(await p.prepare(target, OperationBudget.after(0.5)), first)
-            now[0] += 100
-            # A wider caller ceiling reuses it; the creating ceiling bounds the grant.
-            policy.configuration = replace(
-                policy.configuration, allowed_scopes=("read", "write")
-            )
-            self.assertEqual(await p.prepare(target, OperationBudget.after(5)), first)
-
-            async def broad(request):
-                return httpx.Response(
-                    200,
-                    json={
-                        "access_token": "t",
-                        "token_type": "Bearer",
-                        "scope": "read write",
-                    },
-                )
-
-            n.token_hook = broad
-            self.assertIsInstance(await self.complete_login(p, target, first), Ready)
-            self.assertEqual(next(iter(s.records.values())).token.scopes, ("read",))
-
-        self.run_async(run)
-
     def test_pending_lifetime_is_fixed_and_survives_creating_prepare(self):
         """Canonical lifecycle: pending-login-fixed-lifetime."""
 
@@ -1738,57 +1630,331 @@ class ManagedOAuthRuntimeTests(unittest.TestCase):
 
         self.run_async(run)
 
-    def test_pending_login_completes_from_another_process_after_creator_cancelled(self):
-        """Canonical lifecycle: pending-login-cross-process-completion."""
+    def other_process(self, p, n, s, policy, now, **options):
+        return ManagedOAuthProvider(
+            network=n,
+            store=s,
+            policy=policy,
+            namespace="tenant",
+            clock=lambda: now[0],
+            expiry_skew=0,
+            **options,
+        )
+
+    def test_callback_without_state_is_interaction_required(self):
+        async def run(p, n, s, policy, target, now):
+            policy.configuration = Policy("authorization_code_pkce").configuration
+            login = await p.prepare(target, OperationBudget.after(5))
+            for handle in (login, None):
+                for query in ({"code": "c"}, {"code": "c", "state": ""}):
+                    with self.assertRaises(AuthenticationFailure) as failure:
+                        await p.complete(
+                            target,
+                            handle,
+                            "https://host.test/callback?" + urlencode(query),
+                            OperationBudget.after(5),
+                        )
+                    self.assertEqual(failure.exception.code, "interaction_required")
+            # Nothing was consumed or sent.
+            self.assertFalse(n.tokens)
+            self.assertIsInstance(await self.complete_login(p, target, login), Ready)
+
+        self.run_async(run)
+
+    def test_pending_login_is_owned_by_the_creating_process(self):
+        """Canonical lifecycle: pending-login-owned-by-creating-process."""
 
         async def run(p, n, s, policy, target, now):
             policy.configuration = Policy("authorization_code_pkce").configuration
-            entered = anyio.Event()
-            published = []
-
-            async def commit_then_block(key, record):
-                if record is not None and record.pending is not None:
-                    s.records[key] = record
-                    published.append(
-                        PendingLogin(
-                            key,
-                            record.pending.state,
-                            record.pending.authorization_url,
-                            record.pending.expires_at,
-                        )
-                    )
-                    entered.set()
-                    await anyio.sleep_forever()
-                return True
-
-            s.cas_hook = commit_then_block
-
-            async def prepare():
-                await p.prepare(target, OperationBudget.after(10))
-
-            async with anyio.create_task_group() as tasks:
-                tasks.start_soon(prepare)
-                await entered.wait()
-                tasks.cancel_scope.cancel()
-            s.cas_hook = None
-            other = ManagedOAuthProvider(
-                network=n,
-                store=s,
-                policy=policy,
-                namespace="tenant",
-                clock=lambda: now[0],
-                expiry_skew=0,
-            )
-            # Another process only has the stored record and the (serializable) handle.
-            self.assertEqual(
-                await other.prepare(target, OperationBudget.after(5)), published[0]
-            )
-            ready = await self.complete_login(other, target, published[0])
-            self.assertIsInstance(ready, Ready)
+            login = await p.prepare(target, OperationBudget.after(5))
+            # Nothing about the login is in the shared store.
+            self.assertFalse(s.records)
+            self.assertEqual(len(pending_logins(p)), 1)
+            other = self.other_process(p, n, s, policy, now)
             with self.assertRaises(AuthenticationFailure) as failure:
-                await self.complete_login(p, target, published[0])
+                await self.complete_login(other, target, login)
+            self.assertEqual(failure.exception.code, "interaction_required")
+            self.assertFalse(n.tokens)
+            # The creating process completes it by state, without the handle.
+            state = parse_qs(urlsplit(login.authorization_url).query)["state"][0]
+            ready = await p.complete(
+                target,
+                None,
+                "https://host.test/callback?"
+                + urlencode({"state": state, "code": "c"}),
+                OperationBudget.after(5),
+            )
+            self.assertIsInstance(ready, Ready)
+            self.assertFalse(pending_logins(p))
+
+        self.run_async(run)
+
+    def test_persisted_pending_login_completes_by_state_in_another_process(self):
+        """Canonical lifecycle: pending-login-persisted-cross-process-completion."""
+
+        async def run(p, n, s, policy, target, now):
+            policy.configuration = Policy("authorization_code_pkce").configuration
+            creator = self.other_process(
+                p, n, s, policy, now, persist_pending_logins=True
+            )
+            with anyio.CancelScope() as owner:
+                login = await creator.prepare(
+                    target, OperationBudget.after(10, cancel_scope=owner)
+                )
+                owner.cancel()
+            stored = pending_logins(None, s)
+            self.assertEqual([item.state for item in stored], [login.generation])
+            verifier = stored[0].verifier
+            # The verifier is only in the pending record: never in binding
+            # metadata, reprs or the authorization URL.
+            self.assertNotIn(verifier, repr(s.bindings))
+            self.assertNotIn(verifier, repr(s.records))
+            self.assertNotIn(verifier, login.authorization_url)
+            other = self.other_process(
+                p, n, s, policy, now, persist_pending_logins=True
+            )
+            state = parse_qs(urlsplit(login.authorization_url).query)["state"][0]
+            # A pasted callback URL alone completes it.
+            with self.assertLogs("agenthooksprotocol", "DEBUG") as logs:
+                logging.getLogger("agenthooksprotocol").debug("sentinel")
+                ready = await other.complete(
+                    target,
+                    None,
+                    "https://host.test/callback?"
+                    + urlencode({"state": state, "code": "pasted"}),
+                    OperationBudget.after(5),
+                )
+            self.assertIsInstance(ready, Ready)
+            self.assertNotIn(verifier, "".join(logs.output))
+            self.assertEqual(n.tokens[-1]["code_verifier"], [verifier])
+            self.assertFalse(pending_logins(None, s))
+            with self.assertRaises(AuthenticationFailure) as failure:
+                await self.complete_login(creator, target, login)
             self.assertEqual(failure.exception.code, "interaction_required")
             self.assertEqual(len(n.tokens), 1)
+
+        self.run_async(run)
+
+    def test_concurrent_pending_logins_complete_only_their_own_state(self):
+        """Canonical lifecycle: pending-logins-concurrent-per-state."""
+
+        async def run(p, n, s, policy, target, now):
+            policy.configuration = Policy("authorization_code_pkce").configuration
+            first = await p.prepare(
+                target,
+                OperationBudget.after(5),
+                redirect_uri="http://127.0.0.1:4001/cb",
+            )
+            second = await p.prepare(
+                target,
+                OperationBudget.after(5),
+                redirect_uri="http://127.0.0.1:4002/cb",
+            )
+            self.assertEqual(first.key, second.key)
+            self.assertNotEqual(first.generation, second.generation)
+            self.assertEqual(len(pending_logins(p)), 2)
+
+            def callback(login, port):
+                state = parse_qs(urlsplit(login.authorization_url).query)["state"][0]
+                return f"http://127.0.0.1:{port}/cb?" + urlencode(
+                    {"state": state, "code": f"code-{port}"}
+                )
+
+            # A callback carrying the other login's state or redirect is refused
+            # without consuming either login.
+            for login, url in (
+                (first, callback(second, 4002)),
+                (first, callback(first, 4002)),
+            ):
+                with self.assertRaises(AuthenticationFailure) as failure:
+                    await p.complete(target, login, url, OperationBudget.after(5))
+                self.assertEqual(failure.exception.code, "access_denied")
+            self.assertFalse(n.tokens)
+            await p.complete(
+                target, second, callback(second, 4002), OperationBudget.after(5)
+            )
+            self.assertEqual(n.tokens[-1]["redirect_uri"], ["http://127.0.0.1:4002/cb"])
+            self.assertEqual(n.tokens[-1]["code"], ["code-4002"])
+            self.assertEqual(
+                [item.state for item in pending_logins(p)], [first.generation]
+            )
+            await p.complete(
+                target, first, callback(first, 4001), OperationBudget.after(5)
+            )
+            self.assertEqual(n.tokens[-1]["redirect_uri"], ["http://127.0.0.1:4001/cb"])
+            self.assertFalse(pending_logins(p))
+
+        self.run_async(run)
+
+    def test_persisted_expired_pending_logins_are_swept_on_prepare(self):
+        """Expired persisted logins and verifiers are deleted on host prepare."""
+
+        async def run(p, n, s, policy, target, now):
+            policy.configuration = replace(
+                Policy("authorization_code_pkce").configuration, login_lifetime=60
+            )
+            budget = OperationBudget.after(5)
+            host = self.other_process(p, n, s, policy, now, persist_pending_logins=True)
+            old = await host.prepare(target, budget)
+            (stale,) = pending_logins(None, s)
+            authorize = n.authorize
+
+            async def expire_while_creating(url, purpose, budget):
+                # The old login expires after prepare starts, while the new
+                # one is being created: the write itself drops it.
+                if purpose == "authorization" and "state=" in url:
+                    now[0] += 61
+                await authorize(url, purpose, budget)
+
+            n.authorize = expire_while_creating
+            fresh = await host.prepare(target, budget)
+            n.authorize = authorize
+            stored = pending_logins(None, s)
+            self.assertEqual([item.state for item in stored], [fresh.generation])
+            self.assertNotIn(stale.verifier, [item.verifier for item in stored])
+            with self.assertRaises(AuthenticationFailure) as failure:
+                await self.complete_login(host, target, old)
+            self.assertEqual(failure.exception.code, "interaction_required")
+            # A prepare that returns Ready still deletes expired logins.
+            await self.complete_login(host, target, fresh)
+            policy.configuration = replace(
+                policy.configuration, allowed_scopes=("read", "write")
+            )
+            step_up = await host.prepare(target, budget, required_scopes=("write",))
+            self.assertIsInstance(step_up, PendingLogin)
+            now[0] += 61
+            self.assertTrue(pending_logins(None, s))
+            self.assertIsInstance(await host.prepare(target, budget), Ready)
+            self.assertFalse(pending_logins(None, s))
+            self.assertFalse(
+                [r for r in s.records.values() if isinstance(r, OAuthPendingLogins)]
+            )
+
+        self.run_async(run)
+
+    def test_pending_logins_are_capped_per_grant_key(self):
+        """Canonical lifecycle: pending-logins-capped-per-grant-key."""
+
+        async def run(p, n, s, policy, target, now):
+            policy.configuration = Policy("authorization_code_pkce").configuration
+            budget = OperationBudget.after(5)
+            logins = [await p.prepare(target, budget) for _ in range(6)]
+            # Default cap 5: the sixth cancels the oldest.
+            self.assertEqual(
+                [item.state for item in pending_logins(p)],
+                [login.generation for login in logins[1:]],
+            )
+            with self.assertRaises(AuthenticationFailure) as failure:
+                await self.complete_login(p, target, logins[0])
+            self.assertEqual(failure.exception.code, "interaction_required")
+            # Another grant key has its own cap.
+            upload = replace(target, purpose="upload")
+            await p.prepare(upload, budget)
+            self.assertEqual(len(pending_logins(p)), 6)
+            # Expired logins are deleted, not counted.
+            now[0] += 601
+            fresh = await p.prepare(target, budget)
+            # Expired logins of every grant key are deleted.
+            self.assertEqual(
+                [item.state for item in pending_logins(p)], [fresh.generation]
+            )
+            # Persisted: capped per store, evicted in the same atomic write.
+            capped = self.other_process(
+                p, n, s, policy, now, persist_pending_logins=True, max_pending_logins=2
+            )
+            other = self.other_process(
+                p, n, s, policy, now, persist_pending_logins=True, max_pending_logins=2
+            )
+            made = [
+                await capped.prepare(target, budget),
+                await other.prepare(target, budget),
+                await capped.prepare(target, budget),
+            ]
+            self.assertEqual(
+                [item.state for item in pending_logins(None, s)],
+                [login.generation for login in made[1:]],
+            )
+            self.assertEqual(len([r for r in s.transitions if r is not None]), 3)
+            with self.assertRaises(AuthenticationFailure):
+                ManagedOAuthProvider(
+                    network=n,
+                    store=s,
+                    policy=policy,
+                    namespace="tenant",
+                    max_pending_logins=0,
+                )
+
+        self.run_async(run)
+
+    def test_newest_completed_login_wins(self):
+        """Canonical lifecycle: pending-completion-newest-grant-wins."""
+
+        async def run(p, n, s, policy, target, now):
+            policy.configuration = replace(
+                Policy("authorization_code_pkce").configuration,
+                allowed_scopes=("read", "write"),
+            )
+            budget = OperationBudget.after(5)
+            first = await p.prepare(target, budget)
+            policy.configuration = replace(policy.configuration, scopes=("write",))
+            second = await p.prepare(target, budget)
+            await self.complete_login(p, target, second)
+            record = next(iter(s.records.values()))
+            self.assertEqual(record.token.access_token, "access-1")
+            # Completing one leaves the other valid; it then replaces the grant.
+            self.assertIsInstance(await self.complete_login(p, target, first), Ready)
+            records = list(s.records.values())
+            self.assertEqual(len(records), 1)
+            self.assertEqual(records[0].token.access_token, "access-2")
+            self.assertEqual(records[0].token.refresh_token, "refresh-2")
+
+        self.run_async(run)
+
+    def test_each_login_may_use_its_own_ephemeral_loopback_port(self):
+        """Canonical lifecycle: loopback-redirect-ephemeral-port-per-login."""
+
+        async def run(p, n, s, policy, target, now):
+            policy.configuration = replace(
+                Policy("authorization_code_pkce").configuration,
+                redirect_uri="http://127.0.0.1:1/unused",
+            )
+            budget = OperationBudget.after(5)
+            for port in (50001, 50002):
+                redirect = f"http://127.0.0.1:{port}/callback"
+                login = await p.prepare(target, budget, redirect_uri=redirect)
+                query = parse_qs(urlsplit(login.authorization_url).query)
+                self.assertEqual(query["redirect_uri"], [redirect])
+                # The host now configures yet another port; the login keeps its own.
+                policy.configuration = replace(
+                    policy.configuration, redirect_uri="http://127.0.0.1:2/other"
+                )
+                wrong = redirect.replace(str(port), "50009")
+                with self.assertRaises(AuthenticationFailure) as failure:
+                    await p.complete(
+                        target,
+                        login,
+                        wrong
+                        + "?"
+                        + urlencode({"state": query["state"][0], "code": "c"}),
+                        budget,
+                    )
+                self.assertEqual(failure.exception.code, "access_denied")
+                ready = await p.complete(
+                    target,
+                    login,
+                    redirect
+                    + "?"
+                    + urlencode({"state": query["state"][0], "code": "c"}),
+                    budget,
+                )
+                self.assertEqual(n.tokens[-1]["redirect_uri"], [redirect])
+                await p.reset(target, budget, handle=ready.credential)
+            # localhost is never a loopback redirect: rejected before any login.
+            for redirect in ("http://localhost:50003/callback", "http://LOCALHOST/cb"):
+                with self.assertRaises(AuthenticationFailure) as failure:
+                    await p.prepare(target, budget, redirect_uri=redirect)
+                self.assertEqual(failure.exception.code, "invalid_configuration")
+            self.assertFalse(pending_logins(p))
 
         self.run_async(run)
 
@@ -1930,7 +2096,7 @@ class ManagedOAuthRuntimeTests(unittest.TestCase):
                 b64decode(request.headers["authorization"].split()[1]),
                 b"host-client:current-secret",
             )
-            self.assertFalse(any(record.pending for record in s.records.values()))
+            self.assertFalse(pending_logins(p))
 
         self.run_async(run)
 
@@ -1994,24 +2160,57 @@ class ManagedOAuthRuntimeTests(unittest.TestCase):
         self.run_async(run)
 
     def test_all_canonical_key_vectors_cross_http_and_coordinated_store(self):
+        """Grant keys use the configured client identity, never an issued client."""
+
+        class KeyNetwork(VectorNetwork):
+            issued = None
+
+            async def handle(self, request):
+                if request.method == "POST" and request.url.path == "/register":
+                    return httpx.Response(201, json={"client_id": self.issued})
+                return await super().handle(request)
+
         async def run():
             for vector in FIXTURES["keys"]:
                 with self.subTest(vector=vector["id"]):
                     value = vector["input"]
                     scopes = tuple(value["allowed_scopes"])
+                    source, _, identity = value["client_identity"].partition(":")
+                    redirect = "https://host.test/callback"
                     config = OAuthClientConfiguration(
                         issuer=value["issuer"],
-                        client_id=value["client_id"],
+                        client_id=identity if source == "preregistered" else "",
                         flow=value["flow"],
                         scopes=scopes,
                         allowed_scopes=scopes,
-                        redirect_uri="https://host.test/callback",
+                        redirect_uri=redirect,
                         client_secret=value.get("client_secret"),
+                        token_endpoint_auth_method=value.get(
+                            "token_endpoint_auth_method", "none"
+                        ),
                         grant_partition=value.get("grant_partition"),
+                        client_metadata_document=OAuthClientMetadataDocument(
+                            identity, (redirect,)
+                        )
+                        if source == "cimd"
+                        else None,
+                        dynamic_registration=OAuthDynamicRegistration("Adapter")
+                        if source == "dcr"
+                        else None,
                     )
-                    network = VectorNetwork(
-                        config, metadata_overrides=value.get("metadata")
+                    overrides = dict(value.get("metadata") or {})
+                    if source == "cimd":
+                        overrides["client_id_metadata_document_supported"] = True
+                    if source == "dcr":
+                        overrides["registration_endpoint"] = (
+                            value["issuer"] + "/register"
+                        )
+                    network = KeyNetwork(
+                        config,
+                        [{"access_token": "a", "token_type": "Bearer"}],
+                        metadata_overrides=overrides,
                     )
+                    network.issued = value.get("issued_client_id")
                     store = Store()
                     policy = VectorPolicy(config, value["resource"])
                     provider = ManagedOAuthProvider(
@@ -2029,7 +2228,7 @@ class ManagedOAuthRuntimeTests(unittest.TestCase):
                         OAuthBinding(
                             value["issuer"],
                             value["resource"],
-                            value["client_id"],
+                            config.client_id,
                             value["flow"],
                             scopes,
                         ),
@@ -2041,13 +2240,18 @@ class ManagedOAuthRuntimeTests(unittest.TestCase):
                         self.assertIsInstance(result, PendingLogin)
                         self.assertEqual(set(store.bindings), {vector["binding_key"]})
                         self.assertEqual(store.coordinated, [vector["grant_key"]])
-                        self.assertEqual(set(store.records), {vector["grant_key"]})
                         self.assertEqual(result.key, vector["grant_key"])
-                        self.assertTrue(network.requests)
+                        client = parse_qs(urlsplit(result.authorization_url).query)[
+                            "client_id"
+                        ][0]
+                        self.assertEqual(
+                            client,
+                            value.get("issued_client_id", identity),
+                        )
                         self.assertTrue(
                             all(
-                                request.method == "GET"
-                                for request, _ in network.requests
+                                request.method == "GET" or purpose == "registration"
+                                for request, purpose in network.requests
                             )
                         )
                         self.assertFalse(
@@ -2055,6 +2259,22 @@ class ManagedOAuthRuntimeTests(unittest.TestCase):
                                 "oauth-protected-resource" in str(request.url)
                                 for request, _ in network.requests
                             )
+                        )
+                        state = parse_qs(urlsplit(result.authorization_url).query)[
+                            "state"
+                        ][0]
+                        await provider.complete(
+                            target,
+                            result,
+                            redirect + "?" + urlencode({"state": state, "code": "c"}),
+                            OperationBudget.after(5),
+                        )
+                        # The grant record holds the client its tokens were
+                        # issued to, under the identity-based key.
+                        self.assertEqual(set(store.records), {vector["grant_key"]})
+                        record = store.records[vector["grant_key"]]
+                        self.assertEqual(
+                            record.metadata.configuration.client_id, client
                         )
                         self.assertTrue(
                             all(
@@ -2065,6 +2285,10 @@ class ManagedOAuthRuntimeTests(unittest.TestCase):
                         self.assertTrue(
                             all(
                                 metadata.configuration.client_secret is None
+                                and (
+                                    source != "dcr"
+                                    or metadata.configuration.client_id == ""
+                                )
                                 for metadata in store.bindings.values()
                             )
                         )
@@ -2534,7 +2758,7 @@ class ManagedOAuthRuntimeTests(unittest.TestCase):
                 (await p.credential(self.unbound())).token, ready.credential.token
             )
             self.assertEqual(len(n.requests), count)
-            self.assertFalse(any(record.pending for record in s.records.values()))
+            self.assertFalse(pending_logins(p))
 
         self.run_async(run)
 
@@ -3968,10 +4192,12 @@ LIFECYCLE_TESTS = {
     "client-credentials-transient-reissue": "test_cc_without_refresh_reissues_after_transient_using_current_secret",
     "delivery-never-creates-pending-login": "test_dispatch_does_not_create_pending_and_host_prepare_cancel_is_separate",
     "pending-login-fixed-lifetime": "test_pending_lifetime_is_fixed_and_survives_creating_prepare",
-    "pending-login-cross-process-completion": "test_pending_login_completes_from_another_process_after_creator_cancelled",
-    "pending-login-reuse": "test_pending_reuse_is_independent_of_caller_deadline",
-    "pending-login-supersede": "test_pending_supersede_requests_scope_union_and_old_callback_fails",
-    "pending-login-supersede-scope-union": "test_pending_supersede_requests_scope_union_and_old_callback_fails",
+    "pending-login-owned-by-creating-process": "test_pending_login_is_owned_by_the_creating_process",
+    "pending-login-persisted-cross-process-completion": "test_persisted_pending_login_completes_by_state_in_another_process",
+    "pending-logins-concurrent-per-state": "test_concurrent_pending_logins_complete_only_their_own_state",
+    "pending-logins-capped-per-grant-key": "test_pending_logins_are_capped_per_grant_key",
+    "pending-completion-newest-grant-wins": "test_newest_completed_login_wins",
+    "loopback-redirect-ephemeral-port-per-login": "test_each_login_may_use_its_own_ephemeral_loopback_port",
     "pending-login-end-states": "test_pending_login_ends_once_by_completion_cancel_denial_or_expiry",
     "metadata-and-secret-rotation": "test_secret_rotation_is_runtime_only_for_refresh_and_confidential_pkce_completion",
     "scope-ceiling-widening-keeps-grant": "test_widening_allowed_ceiling_keeps_existing_grant",
@@ -4007,37 +4233,29 @@ REGISTRATION_TESTS = {
     "cimd-used-when-supported": "test_cimd_client_completes_as_public_client",
     "cimd-not-supported-falls-back-to-dcr": "test_cimd_unadvertised_or_non_true_support_uses_dcr",
     "cimd-redirect-mismatch-invalid-configuration": "test_cimd_redirect_mismatch_creates_no_login",
+    "cimd-portless-loopback-redirect-matches": "test_cimd_loopback_redirect_is_compared_without_its_port",
     "cimd-never-fetched-by-sdk": "test_cimd_document_url_is_never_requested",
     "cimd-client-credentials-not-used": "test_client_credentials_never_uses_cimd",
     "cimd-invalid-client-no-dcr-fallback": "test_cimd_invalid_client_is_configuration_without_dcr",
     "dcr-policy-disallows-registration": "test_dcr_requires_host_permission",
     "dcr-registration-endpoint-destination-policy": "test_registration_endpoint_destination_policy",
-    "dcr-pkce-registers-only-in-prepare": "test_pkce_registers_only_in_prepare_cc_registers_anywhere",
+    "dcr-pkce-registers-per-login": "test_pkce_registers_per_login_with_its_exact_redirect",
+    "dcr-issued-client-stored-with-grant": "test_issued_client_is_committed_with_the_grant",
+    "dcr-pkce-invalid-client-drops-grant": "test_pkce_invalid_client_ends_login_or_compare_and_deletes_grant",
     "dcr-registers-once-across-processes": "test_concurrent_processes_register_once",
     "dcr-registration-reused-across-grants": "test_registration_reused_across_bindings_and_partitions",
     "dcr-expired-secret-reregisters": "test_expired_or_unresolvable_secret_reregisters_before_token_request",
     "dcr-invalid-client-reregisters-once": "test_invalid_client_reregisters_once",
-    "dcr-new-client-id-new-grant": "test_replacement_client_uses_new_grant_key",
     "dcr-secret-not-in-token-record": "test_client_secret_only_in_host_secret_store",
     "dcr-no-secret-hook-no-confidential-registration": "test_without_secret_hook_cc_dcr_unavailable_pkce_unaffected",
     "dcr-metadata-change-keeps-selection": "test_metadata_change_keeps_recorded_selection",
     "dcr-management-fields-not-persisted": "test_registration_management_fields_ignored",
     "dcr-initial-access-token-scoped": "test_initial_access_token_sent_only_to_its_issuer",
     "lookup-never-registers-pkce": "test_lookup_never_registers_pkce",
-    "dcr-failed-marker-bounds-registration": "test_failed_marker_bounds_registration_until_backoff",
     "dcr-response-validation-invalid-configuration": "test_registration_response_validation_persists_nothing",
-    "prepare-force-reregistration": "test_prepare_force_reregistration",
-    "dcr-policy-change-reregisters": "test_policy_change_reregisters_with_new_digest",
     "dcr-replaced-secret-deleted": "test_replaced_or_deleted_registration_secret_is_deleted",
-    "cc-registration-auto-repairs-after-backoff": "test_cc_auto_repairs_after_backoff",
-    "cc-proactive-reregistration-before-expiry": "test_cc_proactive_reregistration_within_margin",
-    "marker-blocks-only-registration": "test_marker_blocks_only_registration_requests",
-    "stale-callback-does-not-delete-new-registration": "test_stale_callback_invalid_client_keeps_newer_registration",
     "registration-transient-failure-backs-off": "test_transient_registration_failures_back_off",
     "registration-retry-after-honoured": "test_retry_after_sets_next_attempt",
-    "marker-update-atomic-across-processes": "test_marker_updates_are_atomic_under_lock",
-    "proactive-reregistration-once-across-processes": "test_proactive_renewal_once_across_processes",
-    "proactive-renewal-failure-keeps-current-registration": "test_proactive_renewal_failure_keeps_current_registration",
 }
 
 

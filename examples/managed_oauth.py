@@ -55,15 +55,15 @@ async def login(
     credentials can return Ready immediately without invoking interact.
     """
     target = auth.normalize_auth_target(context, namespace=NAMESPACE)
-    # The pending login is stored with its own fixed lifetime; each call has a
-    # short budget and the user interaction happens between them.
+    # The pending login lives in this provider with its own fixed lifetime; each
+    # call has a short budget and the user interaction happens between them.
     result = await managed.prepare(
         target, oauth.OperationBudget.after(30), challenge=challenge
     )
     if isinstance(result, oauth.Ready):
         return result
-    # No SDK browser or listener is created. Any process sharing the store can
-    # complete the stored pending login.
+    # No SDK browser or listener is created. With persist_pending_logins=True,
+    # another process sharing the store can complete it by the callback state.
     callback_url = await interact(result)
     return await managed.complete(
         target, result, callback_url, oauth.OperationBudget.after(30)

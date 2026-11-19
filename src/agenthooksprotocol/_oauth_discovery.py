@@ -303,8 +303,14 @@ def validate_configuration(
         else _scope_set(configuration.allowed_scopes)
     )
     mandatory = _scope_set(configuration.required_scopes) | _scope_set(required)
-    if not requested.issubset(allowed) or not mandatory.issubset(allowed):
+    if not requested.issubset(allowed):
         raise AuthenticationFailure(code="access_denied")
+    if not mandatory.issubset(allowed):
+        # A challenged or host-required scope outside the ceiling: name the
+        # full requirement so hosts can tell this refusal from the others.
+        raise AuthenticationFailure(
+            code="access_denied", required_scopes=tuple(sorted(mandatory))
+        )
     # An empty client_id asks client selection for CIMD or DCR.
     registered = not configuration.client_id
     if configuration.issuer not in issuers:

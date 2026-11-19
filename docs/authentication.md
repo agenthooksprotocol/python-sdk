@@ -88,7 +88,12 @@ credential and untrusted destination; `login` for required interaction and
 rejected refresh; `retry` for discovery/provider failure; and `none` for denied
 access. `interaction_required` can carry validated `required_scopes`; pass them
 to `prepare(..., required_scopes=...)` to request step-up consent.
-`access_denied` may report them for diagnostics only. Hosts can use these values to choose configuration, consent or retry UI.
+`access_denied` reports them, for diagnostics only, when the refusal is a
+missing scope: a challenged or host-required scope outside the allowed ceiling
+(the full required set is named), or a grant that lacks a required scope. Other
+refusals (host trust policy, such as an untrusted issuer or resource, or a
+denied consent) carry no scopes. Hosts can use these values to choose
+configuration, consent or retry UI.
 Structured provider classifications survive the transport boundary, without
 retaining secret-bearing exception contexts. Cancellation remains native under
 asyncio and Trio, and provider calls stay inside the enclosing operation budget.
@@ -352,7 +357,10 @@ only when an explicit or challenged required scope is missing.
 
 A Bearer 403 `insufficient_scope` requirement applies only to the challenged
 operation and the acquisition it triggers; it is not stored on the binding.
-Forbidden scopes fail with `access_denied`. If the challenge omits `scope`,
+A challenged scope outside the allowed ceiling fails with `access_denied`
+carrying the full required set (challenged, explicit and configured), as does
+an explicit `prepare(..., required_scopes=...)` outside it, so hosts can name
+the refused scopes. If the challenge omits `scope`,
 explicit host requirements must identify the needed scopes; otherwise access is
 denied. PKCE returns `interaction_required` with the required scopes for a host
 `prepare`; client credentials acquire approved scopes without human login.

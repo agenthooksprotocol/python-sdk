@@ -1359,6 +1359,94 @@ class ManagedOAuthRuntimeTests(unittest.TestCase):
 
         self.run_async(run)
 
+    def test_scope_outside_ceiling_is_denied_with_required_scopes(self):
+        async def run(p, n, s, policy, target, now):
+            # A permissive host policy: the SDK's own ceiling check refuses.
+            async def select(target, resource, issuers, required_scopes, budget):
+                return policy.configuration
+
+            policy.select = select
+            policy.configuration = replace(
+                Policy("authorization_code_pkce").configuration,
+                allowed_scopes=("read", "write"),
+                required_scopes=("write",),
+            )
+            # Host-required scope outside the ceiling, on fresh discovery.
+            with self.assertRaises(AuthenticationFailure) as failure:
+                await p.prepare(
+                    target, OperationBudget.after(5), required_scopes=("admin",)
+                )
+            self.assertEqual(failure.exception.code, "access_denied")
+            self.assertEqual(failure.exception.required_scopes, ("admin", "write"))
+            self.assertEqual(n.tokens, [])
+            with_write = policy.configuration
+            policy.configuration = replace(with_write, required_scopes=())
+            first = await self.complete_login(
+                p, target, await p.prepare(target, OperationBudget.after(5))
+            )
+            self.assertTrue(s.bindings)
+            policy.configuration = with_write
+            # The same refusal on the cached-binding path.
+            with self.assertRaises(AuthenticationFailure) as failure:
+                await p.prepare(
+                    target, OperationBudget.after(5), required_scopes=("admin",)
+                )
+            self.assertEqual(failure.exception.code, "access_denied")
+            self.assertEqual(failure.exception.required_scopes, ("admin", "write"))
+
+            def insufficient(scope):
+                return AuthChallenge(
+                    403,
+                    {
+                        "www-authenticate": 'Bearer error="insufficient_scope", scope="'
+                        + scope
+                        + '"'
+                    },
+                    RESOURCE,
+                    first.credential.identity,
+                    True,
+                )
+
+            with anyio.CancelScope() as cancel:
+                context = AuthContext(
+                    {"id": "backend"}, None, RESOURCE, "event", cancel
+                )
+                # A challenged scope outside the ceiling names the requirement.
+                with self.assertRaises(AuthenticationFailure) as failure:
+                    await p.challenge(context, insufficient("admin"))
+                self.assertEqual(failure.exception.code, "access_denied")
+                self.assertEqual(failure.exception.required_scopes, ("admin", "write"))
+                # The challenge requirement is operation-scoped: an in-ceiling
+                # step-up still asks for consent with the scopes.
+                policy.configuration = replace(with_write, required_scopes=())
+                with self.assertRaises(AuthenticationFailure) as failure:
+                    await p.challenge(context, insufficient("write"))
+                self.assertEqual(failure.exception.code, "interaction_required")
+                self.assertEqual(failure.exception.required_scopes, ("write",))
+
+        self.run_async(run)
+
+    def test_untrusted_issuer_is_denied_without_required_scopes(self):
+        async def run(p, n, s, policy, target, now):
+            policy.configuration = replace(
+                policy.configuration, allowed_scopes=("read", "write")
+            )
+
+            async def select(target, resource, issuers, required_scopes, budget):
+                # Host trust policy refuses the discovered issuer.
+                raise AuthenticationFailure(code="access_denied")
+
+            policy.select = select
+            with self.assertRaises(AuthenticationFailure) as failure:
+                await p.prepare(
+                    target, OperationBudget.after(5), required_scopes=("write",)
+                )
+            self.assertEqual(failure.exception.code, "access_denied")
+            self.assertEqual(failure.exception.required_scopes, ())
+            self.assertEqual(n.tokens, [])
+
+        self.run_async(run)
+
     def test_pkce_stepup_round_trip_shared_grant_and_operation_scoped_requirement(self):
         async def run(p, n, s, policy, target, now):
             policy.configuration = replace(

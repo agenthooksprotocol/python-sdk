@@ -1812,11 +1812,10 @@ class ManagedOAuthProvider:
                 raise AuthenticationFailure(code="access_denied")
             requested = pending.metadata.configuration
             source = pending.metadata.client_source
-            # The login's R; an older release's record holds only the
-            # prepare-time host-required scopes.
-            required = tuple(
-                sorted(set(pending.required_scopes) | set(requested.required_scopes))
-            )
+            # The login's R. A record from an older release has none: its
+            # prepare-time host-required scopes apply when it holds any, else
+            # the current ones (checked after the host policy below).
+            stored_required = pending.required_scopes
             assert requested.redirect_uri is not None
             # 2. Validate the callback: an invalid one never burns the login.
             redirect = urlsplit(requested.redirect_uri)
@@ -1849,6 +1848,11 @@ class ManagedOAuthProvider:
             # Only the configuration half of the decision: the stored R is
             # checked against the grant after the exchange.
             check_configuration(scope_policy(target, config))
+            required = (
+                stored_required
+                if stored_required is not None
+                else requested.required_scopes or config.required_scopes
+            )
             document = config.client_metadata_document
             if (
                 grant_key(target, current) != key

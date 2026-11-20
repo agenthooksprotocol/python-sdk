@@ -39,6 +39,14 @@ from agenthooksprotocol._scope_decision import (
 )
 
 RESOURCE = base.RESOURCE
+
+# Scope-contract v2 lifecycle ids map to ProviderTests.
+SCOPE_DECIDE_TESTS = {
+    "entry-points-route-through-decide": "test_every_entry_point_goes_through_decide",
+    "transport-challenge-routing": "test_transport_routes_to_the_provider",
+    "replay-rejection-retires-token": "test_transport_routes_to_the_provider",
+    "complete-token-endpoint-errors-classified": "test_complete_token_endpoint_errors_are_classified",
+}
 PKCE, CC = "authorization_code_pkce", "client_credentials"
 
 
@@ -482,7 +490,7 @@ class ProviderTests(unittest.TestCase):
             )
             with recording() as decisions, anyio.CancelScope() as scope:
                 first = await p.prepare(target, OperationBudget.after(5))
-                self.assertEqual(decisions[-1].action, "acquire")
+                self.assertEqual(decisions[-1][0].action, "acquire")
                 count = len(decisions)
                 # Bound delivery and the up-front lookup.
                 bound = AuthContext(
@@ -501,7 +509,7 @@ class ProviderTests(unittest.TestCase):
                 for entry in (bound, self.context(scope)):
                     credential = await p.credential(entry)
                     self.assertEqual(credential.token, first.credential.token)
-                    self.assertEqual(decisions[-1].action, "use")
+                    self.assertEqual(decisions[-1][0].action, "use")
                     self.assertGreater(len(decisions), count)
                     count = len(decisions)
                 # challenge (401 and 403).
@@ -515,7 +523,7 @@ class ProviderTests(unittest.TestCase):
                         True,
                     ),
                 )
-                self.assertTrue(decisions[-1].retire)
+                self.assertTrue(decisions[-1][0].retire)
                 with self.assertRaises(AuthenticationFailure) as failure:
                     await p.challenge(
                         self.context(scope),
@@ -734,7 +742,9 @@ class ProviderTests(unittest.TestCase):
             for key, record in list(p._logins.records.items()):
                 p._logins.records[key] = OAuthPendingLogins(
                     record.generation,
-                    tuple(replace(item, required_scopes=()) for item in record.logins),
+                    tuple(
+                        replace(item, required_scopes=None) for item in record.logins
+                    ),
                 )
             # The current host no longer requires write; the prepare-time H
             # (held by the record) still applies.
@@ -847,26 +857,6 @@ class ProviderTests(unittest.TestCase):
             assert_stripped(self, failure, "access_denied")
             self.assertIs(failure.exception.login_ended, False)
 
-        async def token_endpoint_failures(p, n, s, policy, target, now):
-            policy.configuration = base.Policy(PKCE).configuration
-            for status, body in (
-                (400, {"error": "invalid_scope"}),
-                (400, {"error": "access_denied"}),
-                (400, {"error": "unauthorized_client"}),
-                (404, None),
-            ):
-                login = await p.prepare(target, OperationBudget.after(5))
-
-                async def fail(request, status=status, body=body):
-                    return httpx.Response(status, json=body)
-
-                n.token_hook = fail
-                with self.assertRaises(AuthenticationFailure) as failure:
-                    await self.complete_login(p, target, login)
-                assert_stripped(self, failure, "provider_failed")
-                self.assertIs(failure.exception.login_ended, True)
-                n.token_hook = None
-
         for test in (
             store_failure,
             coordinated_store_failure,
@@ -875,10 +865,54 @@ class ProviderTests(unittest.TestCase):
             callback_failure,
             source_failure,
             unparseable_callback,
-            token_endpoint_failures,
         ):
             with self.subTest(test.__name__):
                 self.run_async(test)
+
+    def test_complete_token_endpoint_errors_are_classified(self):
+        async def unreachable(request):
+            raise httpx.ConnectError("unreachable", request=request)
+
+        def answer(status, body=None):
+            async def respond(request):
+                return httpx.Response(status, json=body)
+
+            return respond
+
+        cases = (
+            (answer(400, {"error": "invalid_grant"}), "interaction_required"),
+            (answer(401, {"error": "invalid_client"}), "credential_unavailable"),
+            (answer(400, {"error": "unauthorized_client"}), "provider_failed"),
+            (answer(400, {"error": "access_denied"}), "provider_failed"),
+            (answer(400, {"error": "invalid_scope"}), "provider_failed"),
+            (answer(500, {"error": "server_error"}), "provider_failed"),
+            (answer(404), "provider_failed"),
+            (unreachable, "provider_failed"),
+            (
+                answer(200, {"access_token": "t", "token_type": "mac"}),
+                "provider_failed",
+            ),
+        )
+
+        async def run(p, n, s, policy, target, now):
+            policy.configuration = base.Policy(PKCE).configuration
+            for hook, code in cases:
+                login = await p.prepare(target, OperationBudget.after(5))
+                n.token_hook = hook
+                with self.assertRaises(AuthenticationFailure) as failure:
+                    await self.complete_login(p, target, login)
+                self.assertEqual(
+                    (
+                        failure.exception.code,
+                        failure.exception.required_scopes,
+                        failure.exception.login_ended,
+                    ),
+                    (code, (), True),
+                )
+                self.assertFalse(base.pending_logins(p))
+                n.token_hook = None
+
+        self.run_async(run)
 
     def test_login_ended_only_on_complete_errors(self):
         async def run(p, n, s, policy, target, now):

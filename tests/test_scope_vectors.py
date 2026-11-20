@@ -1,30 +1,31 @@
 """Canonical `scope_decisions` and `completions` vectors at real host boundaries.
 
 Source: agent-hooks-protocol/conformance/draft/sdk-auth-lifecycle.json
-(vendored). Every vector runs under asyncio and Trio over HTTPX, the
-coordinated store, host trust policy and a host secret store.
+(vendored), fields as defined in spec/draft/sdk-auth-lifecycle.md (Executable
+coverage). Every vector runs under asyncio and Trio over HTTPX, the
+coordinated store, host trust policy and a host secret store. Every field a
+vector defines is asserted; an unknown field fails the run. A vector whose
+`requires` names a feature Python lacks is skipped, never remapped.
 
-Mapping of vector inputs to Python host boundaries:
-- binding `stored`: binding metadata is stored by an earlier operation (with
-  no grant when `granted` is null); `preset`: an explicit OAuth binding
-  preset; `unbound`: neither, so discovery starts at protected-resource
-  metadata.
-- path `credential`: bound delivery (`credential` with the binding);
-  `preemptive`: the up-front lookup for an unbound destination; `fresh`,
-  `cached`, `prepare`: host `prepare`; `challenge`: `challenge` with the
-  presented credential.
-- host_error `client_selection` is `OAuthTrustPolicy.select`; `destination` is
-  `OAuthNetwork.authorize` for the named endpoint.
-- A vector's `requires` names optional SDK features; a vector needing one
-  Python lacks is skipped, never remapped onto another mechanism, and an
-  unknown feature fails.
-- `acquisition_scopes` is read from the token request, the login's
-  authorization URL, or (after `interaction_required`) the login a host
-  `prepare` with the same challenge and the error's scopes creates.
+Python mappings:
+- `binding` `stored`: binding metadata stored by an earlier operation, with
+  the vector's `grant` (or none) written to the grant record; `preset`: an
+  explicit OAuth binding preset (its `scopes` only when `preset_scopes` is
+  present); `unbound`: neither.
+- `path` `cached` and `credential`: bound delivery (`credential` with the
+  binding; a stored binding is passed without `scopes`, which is no
+  constraint); `preemptive`: the up-front lookup (no binding); `challenge`:
+  `challenge` with the attempt for generation `sent`; `prepare`: host
+  `prepare`; `fresh`: bound delivery for a preset, else `prepare` (the only
+  entry point other than a challenge that discovers an unbound target; the
+  vectors' fresh outcomes are decided before step 9).
+- `host_error` `client_selection` is `OAuthTrustPolicy.select`;
+  `destination` is `OAuthNetwork.authorize` for the named endpoint.
+- `required` is the R `decide` computed for the operation.
 """
 
 import unittest
-from contextlib import contextmanager
+from contextlib import asynccontextmanager, contextmanager
 from dataclasses import replace
 from functools import partial
 from urllib.parse import parse_qs, urlencode, urlsplit
@@ -32,6 +33,7 @@ from urllib.parse import parse_qs, urlencode, urlsplit
 import anyio
 import httpx
 
+import test_managed_oauth_runtime as base
 from test_managed_oauth_runtime import FIXTURES, ISSUER, RESOURCE, Policy, Store
 from test_oauth_registration import DCR, RegNetwork, Secrets
 
@@ -41,27 +43,30 @@ from agenthooksprotocol.auth import (
     AuthenticationFailure,
     AuthTarget,
     OAuthBinding,
+    normalize_auth_target,
 )
 from agenthooksprotocol.oauth import (
     ManagedOAuthProvider,
     OAuthClientMetadataDocument,
+    OAuthPendingLogins,
     OAuthRecord,
     OperationBudget,
     PendingLogin,
     Ready,
+    StoredToken,
+    _Attempt,
 )
+from agenthooksprotocol._oauth_types import binding_key, grant_key
 
 SCOPED = ("access_denied", "interaction_required")
 # Optional SDK features the vectors may require, and those Python has.
 KNOWN_FEATURES = {"complete_handle", "token_validation_callback"}
 PYTHON_FEATURES = {"complete_handle"}
-# Vectors of the vendored spec revision that scope contract v2 changes; they
-# are replaced when the v2 spec is vendored.
-SUPERSEDED = {
-    # v2 step 3: a 401 hint is used only by a client-credentials acquisition.
-    "challenge-401-scope-not-required",
-}
-# Every field a vector defines is asserted; an unknown field fails the run.
+REDIRECT = "https://host.test/callback?tenant=a"
+DOCUMENT = OAuthClientMetadataDocument(
+    "https://adapter.example/oauth/client.json", (REDIRECT,)
+)
+# The fields the spec defines; any other fails the run.
 FIELDS = {
     "scope_decisions": (
         {
@@ -69,12 +74,14 @@ FIELDS = {
             "path",
             "binding",
             "requested",
-            "preset_scopes",
-            "ceiling",
             "host_required",
             "explicit",
-            "granted",
+            "ceiling",
+            "preset_scopes",
+            "grant",
+            "sent",
             "challenge",
+            "prior_401_hint",
             "host_error",
         },
         {
@@ -83,9 +90,10 @@ FIELDS = {
             "required",
             "action",
             "acquisition_scopes",
-            "network_calls",
-            "authorization_server_requests",
             "retired",
+            "authorization_server_requests",
+            "network_calls",
+            "network_calls_max",
         },
     ),
     "completions": (
@@ -93,33 +101,49 @@ FIELDS = {
             "pending",
             "handle",
             "client_source",
+            "source_permitted",
             "callback",
+            "host_error",
+            "claim",
             "exchange",
             "stored_required",
+            "prepare_time_host_required",
+            "current_host_required",
             "granted",
             "ceiling",
-            "host_error",
         },
-        {"code", "scopes", "login_ended", "grant_persisted", "failed"},
+        {"code", "scopes", "login_ended", "grant_persisted"},
     ),
 }
-CALLBACK = "https://host.test/callback"
-DOCUMENT = OAuthClientMetadataDocument(
-    "https://adapter.example/oauth/client.json", (CALLBACK,)
-)
+GRANT_FIELDS = {"generation", "granted", "token", "refresh"}
+HOST_ERROR_FIELDS = {"callback", "target", "code", "scopes"}
+CHALLENGE_FIELDS = {"status", "www_authenticate"}
+CLAIM_FIELDS = {"outcome", "error_code", "reread"}
 
 
 @contextmanager
 def recording():
-    """Record every outcome `decide` returns to the provider."""
+    """Record `decide`'s outcome (or failure) and R for every call."""
     from agenthooksprotocol import oauth
+    from agenthooksprotocol._scope_decision import DecisionFailure
 
     decisions = []
     original = oauth.decide
 
-    def recorded(*args, **kwargs):
-        decision = original(*args, **kwargs)
-        decisions.append(decision)
+    def recorded(op, policy, explicit, challenge, *args, **kwargs):
+        required = tuple(
+            sorted(
+                set(policy.host_required)
+                | (set(explicit) if isinstance(explicit, tuple) else set())
+                | set(challenge.scopes)
+            )
+        )
+        try:
+            decision = original(op, policy, explicit, challenge, *args, **kwargs)
+        except DecisionFailure as failure:
+            decisions.append((failure, required))
+            raise
+        decisions.append((decision, required))
         return decision
 
     oauth.decide = recorded
@@ -142,17 +166,22 @@ def granting(n, scope, *, kind="Bearer"):
                 "token_type": kind,
                 "expires_in": 60,
                 "scope": scope,
+                "refresh_token": f"refresh-{len(n.tokens)}",
             },
         )
 
     return token
 
 
-def responding(status, body):
+def responding(status, body=None):
     async def token(request):
         return httpx.Response(status, json=body)
 
     return token
+
+
+async def unreachable(request):
+    raise httpx.ConnectError("unreachable", request=request)
 
 
 def state_of(login):
@@ -166,7 +195,6 @@ def url_scopes(login):
 
 class Env:
     def __init__(self, flow, overrides=None):
-        self.flow = flow
         self.n = RegNetwork(**(overrides or {}))
         self.s = Store()
         self.policy = Policy(flow)
@@ -186,6 +214,7 @@ class Env:
             await anyio.lowlevel.checkpoint()
             return self.policy.configuration
 
+        self.select = select
         self.policy.select = select
 
     def configure(self, **changes):
@@ -197,31 +226,30 @@ class Env:
     def server_requests(self):
         return sum(1 for r, _ in self.n.requests if r.url.host == "issuer.test")
 
-    async def finish(self, target, login):
-        return await self.p.complete(
-            target,
-            login,
-            CALLBACK + "?" + urlencode({"state": state_of(login), "code": "valid"}),
-            budget(),
-        )
 
-
-class ScopeDecisionVectorTests(unittest.TestCase):
+class ScopeVectorTests(unittest.TestCase):
     def run_vectors(self, kind, run):
         inputs, expects = FIELDS[kind]
         for vector in FIXTURES[kind]:
+            given, expect = vector["input"], vector["expect"]
             required = set(vector.get("requires", ()))
             self.assertLessEqual(required, KNOWN_FEATURES, vector["id"])
-            self.assertLessEqual(set(vector), {"id", "input", "expect", "requires"})
-            self.assertLessEqual(set(vector["input"]), inputs, vector["id"])
-            self.assertLessEqual(set(vector["expect"]), expects, vector["id"])
+            self.assertLessEqual(set(vector), {"id", "requires", "input", "expect"})
+            self.assertLessEqual(set(given), inputs, vector["id"])
+            self.assertLessEqual(set(expect), expects, vector["id"])
+            for name, fields in (
+                ("grant", GRANT_FIELDS),
+                ("host_error", HOST_ERROR_FIELDS),
+                ("challenge", CHALLENGE_FIELDS),
+                ("claim", CLAIM_FIELDS),
+            ):
+                if isinstance(given.get(name), dict):
+                    self.assertLessEqual(set(given[name]), fields, vector["id"])
             for backend in ("asyncio", "trio"):
                 with self.subTest(vector=vector["id"], backend=backend):
                     missing = required - PYTHON_FEATURES
                     if missing:
                         self.skipTest("requires " + ", ".join(sorted(missing)))
-                    if vector["id"] in SUPERSEDED:
-                        self.skipTest("superseded by scope contract v2")
                     with recording() as decisions:
                         anyio.run(partial(run, vector, decisions), backend=backend)
 
@@ -231,254 +259,319 @@ class ScopeDecisionVectorTests(unittest.TestCase):
     def test_completion_vectors(self):
         self.run_vectors("completions", self.completion)
 
+    # scope_decisions ---------------------------------------------------
+
     async def decision(self, vector, decisions):
-        given, expect = vector["input"], vector["expect"]
-        flow = given["flow"]
-        env = Env(flow)
+        env = Env(vector["input"]["flow"])
         try:
-            await self.decide(env, flow, given, expect, decisions)
+            await self.decide(env, vector["input"], vector["expect"], decisions)
         finally:
             await env.n.client.aclose()
 
-    async def decide(self, env, flow, given, expect, decisions):
+    async def write_grant(self, env, target, given):
+        """Replace the stored grant with the vector's (or remove it)."""
+        metadata = env.s.bindings[binding_key(target)]
+        key = grant_key(target, metadata)
+        env.s.records.pop(key, None)
+        grant = given["grant"]
+        if grant is None:
+            return key, None
+        token = StoredToken(
+            f"access-g{grant['generation']}",
+            env.now[0] + (3600 if grant["token"] == "valid" else -1),
+            f"refresh-g{grant['generation']}" if grant["refresh"] else None,
+            tuple(sorted(grant["granted"])),
+        )
+        env.s.records[key] = OAuthRecord(
+            str(grant["generation"]), "active", metadata, token
+        )
+        return key, token.access_token
+
+    async def decide(self, env, given, expect, decisions):
+        flow = given["flow"]
         requested = tuple(sorted(given["requested"]))
         ceiling = tuple(sorted(given.get("ceiling", requested)))
-        preset = tuple(sorted(given.get("preset_scopes", requested)))
+        preset = given.get("preset_scopes")
         wire = {
             "type": "oauth",
             "flow": flow,
             "issuer": ISSUER,
             "resource": RESOURCE,
             "clientId": "host-client",
-            "scopes": list(preset),
         }
-        typed = OAuthBinding(ISSUER, RESOURCE, "host-client", flow, preset)
+        if flow == "client_credentials":
+            wire["clientSecretRef"] = "host/secret"
+        presetted_wire = dict(
+            wire, **({"scopes": preset} if preset is not None else {})
+        )
+        typed = OAuthBinding(
+            ISSUER,
+            RESOURCE,
+            "host-client",
+            flow,
+            tuple(sorted(preset)) if preset is not None else None,
+            wire.get("clientSecretRef"),
+        )
         plain = AuthTarget("tenant", "backend", RESOURCE, "event", None)
-        presetted = AuthTarget("tenant", "backend", RESOURCE, "event", wire, typed)
-        target = presetted if given["binding"] == "preset" else plain
-        granted = given["granted"]
-        presented = None
-        if granted is not None or given["binding"] == "stored":
+        presetted = AuthTarget(
+            "tenant", "backend", RESOURCE, "event", presetted_wire, typed
+        )
+        bound = given["binding"]
+        target = presetted if bound == "preset" else plain
+        stored_token = None
+        key = None
+        if bound == "stored" or given["grant"] is not None:
+            # An earlier operation stores the binding.
             env.configure(
                 scopes=requested,
                 allowed_scopes=tuple(
-                    sorted(set(requested) | set(ceiling) | set(granted or ()))
+                    sorted(
+                        set(requested)
+                        | set(ceiling)
+                        | set(given["grant"]["granted"] if given["grant"] else ())
+                    )
                 ),
             )
-            env.n.token_hook = granting(env.n, " ".join(sorted(granted or ())))
-            first = await env.p.prepare(
-                target,
-                budget(),
-                required_scopes=tuple(sorted(set(granted or ()) - set(requested))),
-            )
+            env.n.token_hook = granting(env.n, " ".join(requested))
+            first = await env.p.prepare(target, budget())
             if isinstance(first, PendingLogin):
-                if granted is None:
-                    await env.p.cancel(target, first, budget())
-                else:
-                    first = await env.finish(target, first)
-            if isinstance(first, Ready):
-                presented = first.credential
-                if granted is None:
-                    for key in list(env.grants()):
-                        env.s.records.pop(key)
-        env.configure(
-            scopes=requested,
-            allowed_scopes=tuple(given["ceiling"]) if "ceiling" in given else None,
-            required_scopes=tuple(sorted(given["host_required"])),
+                await env.p.cancel(target, first, budget())
+            key, stored_token = await self.write_grant(env, target, given)
+        # The operation's context and the attempt for generation `sent`.
+        path = given["path"]
+        context_binding = (
+            presetted_wire
+            if bound == "preset"
+            else wire
+            if path in ("cached", "credential")
+            else None
         )
-        env.n.token_hook = granting(env.n, " ".join(ceiling))
-        failure = given.get("host_error")
-        if failure is not None:
-            raised = AuthenticationFailure(
-                code=failure["code"], required_scopes=tuple(failure["scopes"])
-            )
-
-            async def refuse(*args):
-                raise raised
-
-            if failure["callback"] == "client_selection":
-                env.policy.select = refuse
-            else:
-                self.assertEqual(failure["target"], "registration_endpoint")
-                env.configure(
-                    client_id="",
-                    client_secret=None,
-                    token_endpoint_auth_method="none",
-                    dynamic_registration=DCR,
-                )
-                authorize = env.n.authorize
-
-                async def destination(url, purpose, budget):
-                    if purpose == "registration":
-                        raise raised
-                    await authorize(url, purpose, budget)
-
-                env.n.authorize = destination
-        challenge = None
-        if "challenge" in given:
-            challenge = AuthChallenge(
-                given["challenge"]["status"],
-                {"www-authenticate": given["challenge"]["www_authenticate"]},
-                RESOURCE,
-                presented.identity if presented is not None else None,
-                True,
-            )
-        del decisions[:]  # Only the operation under test.
-        requests, server, tokens = (
-            len(env.n.requests),
-            env.server_requests(),
-            len(env.n.tokens),
-        )
-        result = error = None
+        if path == "fresh" and bound == "preset":
+            context_binding = presetted_wire
         with anyio.CancelScope() as scope:
-            path = given["path"]
-            bound = wire if path == "credential" else None
-            context = AuthContext({"id": "backend"}, bound, RESOURCE, "event", scope)
-            try:
-                if path in ("fresh", "cached", "prepare"):
-                    result = await env.p.prepare(
-                        target,
-                        budget(),
-                        required_scopes=tuple(given["explicit"]),
-                    )
-                elif path in ("credential", "preemptive"):
-                    result = await env.p.credential(context)
+            context = AuthContext(
+                {"id": "backend"}, context_binding, RESOURCE, "event", scope
+            )
+            if "prior_401_hint" in given:
+                # An earlier operation's 401 hint; then the vector's grant.
+                env.configure(
+                    scopes=requested, allowed_scopes=ceiling, required_scopes=()
+                )
+                await env.p.challenge(
+                    context,
+                    AuthChallenge(
+                        401,
+                        {
+                            "www-authenticate": 'Bearer scope="'
+                            + " ".join(given["prior_401_hint"])
+                            + '"'
+                        },
+                        RESOURCE,
+                        None,
+                        True,
+                    ),
+                )
+                key, stored_token = await self.write_grant(env, target, given)
+            env.configure(
+                scopes=requested,
+                allowed_scopes=tuple(given["ceiling"]) if "ceiling" in given else None,
+                required_scopes=tuple(given["host_required"]),
+            )
+            env.n.token_hook = granting(env.n, " ".join(ceiling))
+            failure = given.get("host_error")
+            if failure is not None:
+                raised = AuthenticationFailure(
+                    code=failure["code"], required_scopes=tuple(failure["scopes"])
+                )
+
+                async def refuse(*args):
+                    raise raised
+
+                if failure["callback"] == "client_selection":
+                    env.policy.select = refuse
                 else:
+                    self.assertEqual(failure["callback"], "destination")
+                    purpose = {
+                        "registration_endpoint": "registration",
+                        "issuer_metadata": "metadata",
+                    }[failure["target"]]
+                    if purpose == "registration":
+                        env.configure(
+                            client_id="",
+                            client_secret=None,
+                            token_endpoint_auth_method="none",
+                            dynamic_registration=DCR,
+                        )
+                    authorize = env.n.authorize
+
+                    async def destination(url, kind, budget):
+                        if kind == purpose and urlsplit(url).hostname == "issuer.test":
+                            raise raised
+                        await authorize(url, kind, budget)
+
+                    env.n.authorize = destination
+            attempt = None
+            challenge = None
+            if "challenge" in given:
+                sent = given.get("sent")
+                if sent is not None:
+                    attempt = _Attempt(
+                        key,
+                        str(sent),
+                        normalize_auth_target(context, namespace="tenant").identity,
+                    )
+                challenge = AuthChallenge(
+                    given["challenge"]["status"],
+                    {"www-authenticate": given["challenge"]["www_authenticate"]},
+                    RESOURCE,
+                    attempt,
+                    True,
+                )
+            sent_token = (
+                stored_token
+                if challenge is not None
+                and given.get("sent") is not None
+                and given["grant"] is not None
+                and given["grant"]["generation"] == given["sent"]
+                else None
+            )
+            del decisions[:]
+            requests, server, tokens = (
+                len(env.n.requests),
+                env.server_requests(),
+                len(env.n.tokens),
+            )
+            result = error = None
+            try:
+                if path == "prepare" or (path == "fresh" and bound != "preset"):
+                    result = await env.p.prepare(
+                        target, budget(), required_scopes=tuple(given["explicit"])
+                    )
+                elif path == "challenge":
                     result = await env.p.challenge(context, challenge)
+                else:
+                    result = await env.p.credential(context)
             except AuthenticationFailure as caught:
                 error = caught
-        self.assertEqual(error.code if error else None, expect["code"])
+        code = error.code if error is not None else None
+        self.assertEqual(code, expect["code"])
+        self.assertEqual("scopes" in expect, code in SCOPED)
         if error is not None:
-            if "scopes" in expect:
-                self.assertEqual(list(error.required_scopes), expect["scopes"])
-            if error.code not in SCOPED:
-                self.assertEqual(error.required_scopes, ())
-            if error.code == "interaction_required" and "required" in expect:
-                self.assertEqual(list(error.required_scopes), expect["required"])
-        if "network_calls" in expect:
-            self.assertEqual(len(env.n.requests) - requests, expect["network_calls"])
+            self.assertEqual(list(error.required_scopes), expect.get("scopes", []))
+        if "required" in expect:
+            self.assertTrue(decisions)
+            self.assertEqual(list(decisions[-1][1]), expect["required"])
+        action = expect.get("action")
+        self.assertEqual(action is not None, code is None)
+        if action is not None:
+            self.assertEqual(decisions[-1][0].action, action)
+            if action == "use":
+                self.assertEqual(result.token, stored_token)
+                self.assertEqual(len(env.n.tokens), tokens)
+            elif action in ("refresh", "acquire"):
+                self.assertEqual(len(env.n.tokens), tokens + 1)
+                self.assertEqual(
+                    env.n.tokens[-1]["grant_type"],
+                    ["refresh_token" if action == "refresh" else "client_credentials"],
+                )
+            else:
+                self.assertIsInstance(result, PendingLogin)
+        self.assertEqual("acquisition_scopes" in expect, action in ("acquire", "login"))
+        if "acquisition_scopes" in expect:
+            sent_scopes = (
+                url_scopes(result)
+                if action == "login"
+                else sorted(env.n.tokens[-1].get("scope", [""])[0].split())
+            )
+            self.assertEqual(sent_scopes, expect["acquisition_scopes"])
+        self.assertEqual(
+            "retired" in expect, challenge is not None and challenge.status == 401
+        )
+        if "retired" in expect:
+            retired = sent_token is not None and not any(
+                r.token is not None and r.token.access_token == sent_token
+                for r in env.grants().values()
+            )
+            self.assertEqual(retired, expect["retired"])
         if "authorization_server_requests" in expect:
             self.assertEqual(
-                env.server_requests() - server,
-                expect["authorization_server_requests"],
+                env.server_requests() - server, expect["authorization_server_requests"]
             )
-        if expect.get("retired"):
-            self.assertIsNotNone(presented)
-            self.assertFalse(
-                any(
-                    r.token is not None and r.token.access_token == presented.token
-                    for r in env.grants().values()
-                )
+        if "network_calls" in expect:
+            self.assertEqual(len(env.n.requests) - requests, expect["network_calls"])
+        if "network_calls_max" in expect:
+            self.assertLessEqual(
+                len(env.n.requests) - requests, expect["network_calls_max"]
             )
-        action = expect.get("action")
-        if action is not None:
-            # The operation went through decide, whose final outcome is the
-            # vector's action with its required set.
-            self.assertEqual(decisions[-1].action, action)
-            self.assertEqual(list(decisions[-1].required), expect["required"])
-        if action == "use":
-            self.assertIsInstance(result, Ready)
-            self.assertEqual(result.credential.token, presented.token)
-            self.assertEqual(len(env.n.tokens), tokens)
-        elif action == "acquire":
-            self.assertIsNotNone(result)
-            self.assertEqual(len(env.n.tokens), tokens + 1)
-        elif action == "login":
-            self.assertIsInstance(result, PendingLogin)
-            stored = [
-                login
-                for record in env.s.records.values()
-                for login in getattr(record, "logins", ())
-            ] or list(
-                login
-                for record in env.p._logins.records.values()
-                for login in record.logins
-            )
-            self.assertEqual(list(stored[-1].required_scopes), expect["required"])
-        if "acquisition_scopes" in expect:
-            if isinstance(result, PendingLogin):
-                sent = url_scopes(result)
-            elif action == "acquire":
-                sent = sorted(env.n.tokens[-1]["scope"][0].split())
-            else:
-                self.assertEqual(error.code, "interaction_required")
-                login = await env.p.prepare(
-                    presetted if given["binding"] == "preset" else plain,
-                    budget(),
-                    challenge=challenge,
-                    required_scopes=error.required_scopes,
-                )
-                self.assertIsInstance(login, PendingLogin)
-                sent = url_scopes(login)
-            self.assertEqual(sent, expect["acquisition_scopes"])
+
+    # completions -------------------------------------------------------
 
     async def completion(self, vector, decisions):
-        given, expect = vector["input"], vector["expect"]
+        given = vector["input"]
         source = given["client_source"]
         env = Env(
             "authorization_code_pkce",
             {"client_id_metadata_document_supported": True} if source == "cimd" else {},
         )
         try:
-            await self.complete(env, given, expect, source)
+            await self.complete(env, given, vector["expect"], source)
         finally:
             await env.n.client.aclose()
 
     async def complete(self, env, given, expect, source):
+        env.configure(redirect_uri=REDIRECT)
         if source == "cimd":
             env.configure(client_id="", client_metadata_document=DOCUMENT)
         elif source == "dcr":
             env.configure(client_id="", dynamic_registration=DCR)
         target = AuthTarget("tenant", "backend", RESOURCE, "event", None)
-        stored, ceiling = set(given["stored_required"]), set(given["ceiling"])
+        legacy = given["stored_required"] is None
+        stored = set(given["stored_required"] or ())
+        ceiling = set(given["ceiling"])
         wide = tuple(sorted(stored | ceiling))
-        env.configure(scopes=wide, allowed_scopes=wide)
+        env.configure(
+            scopes=wide,
+            allowed_scopes=wide,
+            required_scopes=tuple(given.get("prepare_time_host_required", ())),
+        )
         login = await env.p.prepare(
             target, budget(), required_scopes=tuple(sorted(stored))
         )
         self.assertIsInstance(login, PendingLogin)
         named = state_of(login)
-        if given["callback"] == "state_mismatch":
-            # The callback names another pending login than the handle.
-            named = state_of(await env.p.prepare(target, budget()))
-        if given["pending"] == "expired":
+        handle = {"matching": login, "none": None}.get(given["handle"])
+        if given["handle"] == "other":
+            handle = await env.p.prepare(target, budget())
+        if legacy:
+            # An older release's record: no stored R.
+            for key, record in list(env.p._logins.records.items()):
+                env.p._logins.records[key] = OAuthPendingLogins(
+                    record.generation,
+                    tuple(
+                        replace(item, required_scopes=None) for item in record.logins
+                    ),
+                )
+        pending = given["pending"]
+        if pending == "expired":
             env.now[0] = login.expires_at
-        elif given["pending"] == "ended":
+        elif pending == "ended":
             await env.p.cancel(target, login, budget())
-        elif given["pending"] == "unknown":
+        elif pending == "unknown":
             named = "unknown-state"
-        env.configure(scopes=tuple(sorted(ceiling)), allowed_scopes=None)
-        exchange = given["exchange"]
-        env.n.token_hook = {
-            "ok": granting(env.n, " ".join(sorted(given["granted"]))),
-            "invalid_grant": responding(400, {"error": "invalid_grant"}),
-            "invalid_client": responding(401, {"error": "invalid_client"}),
-            "token_endpoint_failure": responding(500, {"error": "server_error"}),
-            "invalid_response": granting(env.n, "read", kind="mac"),
-        }[exchange]
-        query = {"state": named, "code": "valid"}
-        base, suffix = CALLBACK, ""
-        defect = given["callback"]
-        if defect == "denied":
-            query = {"state": named, "error": "access_denied"}
-        elif defect == "redirect_mismatch":
-            base = "https://evil.test/callback"
-        elif defect == "iss_mismatch":
-            query["iss"] = "https://other.test"
-        elif defect == "fragment":
-            suffix = "#fragment"
-        elif defect == "userinfo":
-            base = "https://user@host.test/callback"
-        elif defect == "missing_code":
-            del query["code"]
-        elif defect == "missing_state":
-            del query["state"]
-        url = base + "?" + urlencode(query) + suffix
-        if defect == "duplicate_param":
-            url += "&code=again"
-        before = {k: r.generation for k, r in env.grants().items()}
-        handle = login if given["handle"] == "matching" else None
-        select = env.policy.select
+        # Current host policy.
+        env.configure(
+            scopes=tuple(sorted(ceiling)),
+            allowed_scopes=None,
+            required_scopes=tuple(given.get("current_host_required", ())),
+        )
+        if not given["source_permitted"]:
+            env.configure(
+                **{
+                    "preregistered": {"client_id": "other-client"},
+                    "cimd": {"client_metadata_document": None},
+                    "dcr": {"dynamic_registration": None},
+                }[source]
+            )
         failure = given.get("host_error")
         if failure is not None:
             self.assertEqual(failure["callback"], "client_selection")
@@ -490,38 +583,110 @@ class ScopeDecisionVectorTests(unittest.TestCase):
                 raise raised
 
             env.policy.select = refuse
+        exchange = given["exchange"]
+        env.n.token_hook = {
+            "ok": granting(env.n, " ".join(sorted(given["granted"]))),
+            "invalid_grant": responding(400, {"error": "invalid_grant"}),
+            "invalid_client": responding(401, {"error": "invalid_client"}),
+            "unauthorized_client": responding(400, {"error": "unauthorized_client"}),
+            "access_denied": responding(400, {"error": "access_denied"}),
+            "invalid_scope": responding(400, {"error": "invalid_scope"}),
+            "server_error": responding(500, {"error": "server_error"}),
+            "unreachable": unreachable,
+            "not_found": responding(404),
+            "invalid_response": granting(env.n, "read", kind="mac"),
+        }[exchange]
+        self.claim(env, given["claim"])
+        query = [("state", named), ("code", "valid")]
+        base_url, suffix = "https://host.test/callback?tenant=a", ""
+        defect = given["callback"]
+        if defect == "valid_with_server_params":
+            query.append(("session_state", "server-added"))
+        elif defect == "denied":
+            query = [("state", named), ("error", "access_denied")]
+        elif defect == "denied_invalid_client":
+            query = [("state", named), ("error", "invalid_client")]
+        elif defect == "redirect_mismatch":
+            base_url = "https://evil.test/callback?tenant=a"
+        elif defect == "redirect_query_mismatch":
+            base_url = "https://host.test/callback?tenant=b"
+        elif defect == "state_duplicated":
+            query.append(("state", named))
+        elif defect == "iss_mismatch":
+            query.append(("iss", "https://other.test"))
+        elif defect == "fragment":
+            suffix = "#fragment"
+        elif defect == "userinfo":
+            base_url = "https://user@host.test/callback?tenant=a"
+        elif defect == "missing_code":
+            query = [("state", named)]
+        elif defect == "code_and_error":
+            query.append(("error", "access_denied"))
+        elif defect == "duplicate_param":
+            query.append(("code", "again"))
+        elif defect == "unparseable":
+            base_url = "https://host.test:99999999/callback?tenant=a"
+        else:
+            self.assertEqual(defect, "valid")
+        if pending == "absent":
+            query = [(k, v) for k, v in query if k != "state"]
+        url = base_url + "&" + urlencode(query) + suffix
+        before = {k: r.generation for k, r in env.grants().items()}
         error = None
         try:
             ready = await env.p.complete(target, handle, url, budget())
         except AuthenticationFailure as caught:
             error = caught
-        env.policy.select = select
-        if expect.get("code") is None and not expect.get("failed"):
-            self.assertIsNone(error)
+        code = error.code if error is not None else None
+        self.assertEqual(code, expect["code"])
+        self.assertEqual("scopes" in expect, code in SCOPED)
+        self.assertEqual("login_ended" in expect, code is not None)
+        if error is None:
             self.assertIsInstance(ready, Ready)
         else:
-            self.assertIsNotNone(error)
-            if "code" in expect:
-                self.assertEqual(error.code, expect["code"])
             self.assertEqual(list(error.required_scopes), expect.get("scopes", []))
             self.assertIs(error.login_ended, expect["login_ended"])
-            if not expect["login_ended"]:
-                after = {k: r.generation for k, r in env.grants().items()}
-                self.assertEqual(after != before, expect["grant_persisted"])
-                # Still pending: the matching callback completes it.
-                env.n.token_hook = granting(env.n, " ".join(sorted(stored)))
-                self.assertIsInstance(
-                    await env.p.complete(
-                        target,
-                        None,
-                        CALLBACK + "?" + urlencode({"state": named, "code": "c"}),
-                        budget(),
-                    ),
-                    Ready,
-                )
-                return
+            states = [item.state for item in base.pending_logins(env.p)]
+            if pending == "pending" and given["claim"] == "ok":
+                # login_ended describes the login named by the state.
+                self.assertEqual(named in states, not expect["login_ended"])
+            if given["handle"] == "other" and not expect["login_ended"]:
+                self.assertIn(handle.generation, states)
         after = {k: r.generation for k, r in env.grants().items()}
         self.assertEqual(after != before, expect["grant_persisted"])
+
+    @staticmethod
+    def claim(env, claim):
+        """An uncertain claim: the store errors at the claim, then the
+        re-read finds the login gone, pending or cannot tell."""
+        if claim == "ok":
+            return
+        assert claim["outcome"] == "uncertain"
+        logins = env.p._logins
+        original = logins.coordinate
+        state = {"claimed": False}
+
+        @asynccontextmanager
+        async def coordinate(key, budget):
+            if state["claimed"] and claim["reread"] == "undetermined":
+                raise AuthenticationFailure(code=claim["error_code"])
+            async with original(key, budget) as guard:
+
+                class Uncertain:
+                    async def load(self):
+                        return await guard.load()
+
+                    async def compare_and_swap(self, expected, record):
+                        if state["claimed"]:
+                            return await guard.compare_and_swap(expected, record)
+                        state["claimed"] = True
+                        if claim["reread"] == "gone":
+                            await guard.compare_and_swap(expected, record)
+                        raise AuthenticationFailure(code=claim["error_code"])
+
+                yield Uncertain()
+
+        logins.coordinate = coordinate
 
 
 if __name__ == "__main__":

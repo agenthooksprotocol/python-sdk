@@ -223,7 +223,8 @@ cap) or expiry.
 
 A pending login records the required set R it was prepared with (host-required
 at that time, explicit and any challenged scopes; a record from an older
-release, without R, uses its prepare-time host-required scopes). `complete`
+release, without R, uses its prepare-time host-required scopes when it holds
+any, else the current ones). `complete`
 succeeds only if
 the granted scopes within the current ceiling cover that R; otherwise it fails
 `access_denied` with that R, still persisting the grant (and any rotated refresh
@@ -388,8 +389,9 @@ registration, records the failure in the backoff and returns it.
 
 `OAuthClientConfiguration.scopes` is the requested set. `allowed_scopes` is the
 local ceiling and defaults to requested scopes when omitted. `required_scopes`
-contains host-required scopes. All scopes use OAuth's ASCII grammar (malformed
-tokens raise `ValueError` at construction). An OAuth binding preset's `scopes`
+contains host-required scopes. All scopes use OAuth's ASCII grammar; an
+invalid token fails `invalid_configuration` when the configuration is used,
+never at construction. An OAuth binding preset's `scopes`
 are optional: omitted means no constraint, and present they must equal the
 selected client's configured scopes.
 

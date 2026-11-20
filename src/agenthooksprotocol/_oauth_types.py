@@ -154,12 +154,10 @@ class OAuthClientConfiguration:
     def __post_init__(self) -> None:
         if not 0 < self.login_lifetime <= 600:
             raise ValueError("Login lifetime must be positive and at most 600")
-        for scopes in (self.scopes, self.allowed_scopes, self.required_scopes):
-            if not _valid_scopes(scopes):
-                raise ValueError("Invalid OAuth scope")
-        # Scopes outside the ceiling are refused by the SDK as auth errors when
-        # the configuration is used: requested ones as invalid_configuration,
-        # required ones as access_denied naming the required set.
+        # Scopes are the scope decision's: an invalid token or requested
+        # scopes outside the ceiling fail invalid_configuration, and required
+        # ones outside it access_denied naming R, as auth errors when the
+        # configuration is used, never at construction.
         if self.grant_partition is not None and (
             not isinstance(self.grant_partition, str) or not self.grant_partition
         ):
@@ -234,7 +232,8 @@ class PendingState:
     authorization_url: str = field(repr=False)
     # Wall-clock expiry fixed at creation; not tied to any caller's deadline.
     expires_at: float
-    required_scopes: tuple[str, ...] = ()
+    # None for a record written by an older release, which stored no R.
+    required_scopes: tuple[str, ...] | None = None
 
 
 @dataclass(frozen=True)

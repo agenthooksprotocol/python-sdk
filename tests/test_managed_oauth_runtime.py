@@ -4371,6 +4371,7 @@ class LifecycleCoverageTests(unittest.TestCase):
     def test_every_lifecycle_id_maps_to_an_existing_native_test(self):
         from test_oauth_registration import RegistrationLifecycleTests
         from test_scope_contract import SCOPE_CONTRACT_TESTS, ScopeContractTests
+        from test_scope_decide import SCOPE_DECIDE_TESTS, ProviderTests
         from test_server_configuration import ConfigurationRetryTests
 
         ids = [entry["id"] for entry in FIXTURES["lifecycle"]]
@@ -4379,6 +4380,7 @@ class LifecycleCoverageTests(unittest.TestCase):
             REGISTRATION_TESTS,
             CONFIGURATION_TESTS,
             SCOPE_CONTRACT_TESTS,
+            SCOPE_DECIDE_TESTS,
         )
         self.assertEqual(sum(map(len, groups)), len(set().union(*groups)))
         self.assertEqual(set(ids), set().union(*groups))
@@ -4387,6 +4389,7 @@ class LifecycleCoverageTests(unittest.TestCase):
             (RegistrationLifecycleTests, REGISTRATION_TESTS.values()),
             (ConfigurationRetryTests, CONFIGURATION_TESTS.values()),
             (ScopeContractTests, SCOPE_CONTRACT_TESTS.values()),
+            (ProviderTests, SCOPE_DECIDE_TESTS.values()),
         ):
             for name in names:
                 self.assertTrue(callable(getattr(tests, name, None)), name)

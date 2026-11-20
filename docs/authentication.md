@@ -226,8 +226,9 @@ cap) or expiry.
 
 A pending login records the required set R it was prepared with (host-required
 at that time, explicit and any challenged scopes; a record from an older
-release, without R, uses the prepare-time host-required scopes every Python
-pending record holds, even when empty). `complete`
+release, without R, uses the prepare-time host-required scopes its
+configuration holds, even when empty, and only a record lacking them uses the
+current ones). `complete`
 succeeds only if
 the granted scopes within the current ceiling cover that R; otherwise it fails
 `access_denied` with that R, still persisting the grant (and any rotated refresh

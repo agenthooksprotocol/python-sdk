@@ -1814,14 +1814,11 @@ class ManagedOAuthProvider:
                 raise AuthenticationFailure(code="access_denied")
             requested = pending.metadata.configuration
             source = pending.metadata.client_source
-            # The login's R. A record from an older release has none; every
-            # Python record holds its prepare-time host-required scopes (the
-            # login's configuration, even empty), which then apply.
-            required = (
-                pending.required_scopes
-                if pending.required_scopes is not None
-                else requested.required_scopes
-            )
+            # The login's R. A record from an older release has none: the
+            # prepare-time host-required scopes Python records hold (the
+            # login's configuration, even empty) apply; only a record whose
+            # configuration lacks them (None) falls back to the current ones.
+            prepared = requested.required_scopes
             assert requested.redirect_uri is not None
             # 2. Validate the callback: an invalid one never burns the login.
             redirect = urlsplit(requested.redirect_uri)
@@ -1854,6 +1851,13 @@ class ManagedOAuthProvider:
             # Only the configuration half of the decision: the stored R is
             # checked against the grant after the exchange.
             check_configuration(scope_policy(target, config))
+            required = (
+                pending.required_scopes
+                if pending.required_scopes is not None
+                else prepared
+                if prepared is not None
+                else config.required_scopes
+            )
             document = config.client_metadata_document
             if (
                 grant_key(target, current) != key

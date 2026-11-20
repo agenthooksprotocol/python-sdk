@@ -59,13 +59,14 @@ from agenthooksprotocol._oauth_types import binding_key, grant_key
 
 SCOPED = ("access_denied", "interaction_required")
 # Optional SDK features the vectors may require, and those Python has.
-KNOWN_FEATURES = {"complete_handle", "token_validation_callback"}
-PYTHON_FEATURES = {"complete_handle"}
-# Vectors whose input Python's persisted format cannot hold. Every Python
-# pending record holds its prepare-time host-required scopes, so a record
-# without them (the current-H fallback) cannot exist; the spec has no
-# `requires` feature for it yet.
-NOT_REPRESENTABLE = {"complete-legacy-record-current-host-required"}
+KNOWN_FEATURES = {
+    "complete_handle",
+    "legacy_prepare_time_host_required",
+    "token_validation_callback",
+}
+# Python's previous release persisted the prepare-time host-required scopes
+# on pending logins (metadata.configuration.required_scopes).
+PYTHON_FEATURES = {"complete_handle", "legacy_prepare_time_host_required"}
 REDIRECT = "https://host.test/callback?tenant=a"
 DOCUMENT = OAuthClientMetadataDocument(
     "https://adapter.example/oauth/client.json", (REDIRECT,)
@@ -258,11 +259,6 @@ class ScopeVectorTests(unittest.TestCase):
                     missing = required - PYTHON_FEATURES
                     if missing:
                         self.skipTest("requires " + ", ".join(sorted(missing)))
-                    if vector["id"] in NOT_REPRESENTABLE:
-                        # Fails if the vector is gone or gains a `requires`.
-                        self.assertNotIn("requires", vector)
-                        self.assertNotIn("prepare_time_host_required", given)
-                        self.skipTest("not representable in Python's pending format")
                     with recording() as decisions:
                         anyio.run(partial(run, vector, decisions), backend=backend)
 
@@ -666,7 +662,21 @@ class ScopeVectorTests(unittest.TestCase):
                 env.p._logins.records[key] = OAuthPendingLogins(
                     record.generation,
                     tuple(
-                        replace(item, required_scopes=None) for item in record.logins
+                        replace(
+                            item,
+                            required_scopes=None,
+                            # A record lacking the prepare-time requirement
+                            # (the absent-field fallback) reads as None.
+                            metadata=item.metadata
+                            if "prepare_time_host_required" in given
+                            else replace(
+                                item.metadata,
+                                configuration=replace(
+                                    item.metadata.configuration, required_scopes=None
+                                ),
+                            ),
+                        )
+                        for item in record.logins
                     ),
                 )
         pending = given["pending"]

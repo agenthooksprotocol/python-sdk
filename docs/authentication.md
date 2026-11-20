@@ -198,16 +198,19 @@ cap) or expiry.
 
 `complete` runs in this order:
 
-1. It finds the pending login named by the callback's `state` (through the
-   handle, else the stored binding) before any host callback runs. If there is
-   none (the `state` is absent or unknown, its login expired or ended, or the
-   handle names another login), it fails `interaction_required`.
+1. It finds the pending login named by the callback's `state`, under the
+   target's stored binding, before any host callback runs. If there is none
+   (the `state` is absent or unknown, or its login expired or ended), it fails
+   `interaction_required`, whatever handle is passed.
 2. It validates the callback: the exact redirect (scheme, host, port, path and
    the redirect's own query; parameters the authorization server adds, such
    as `session_state`, are allowed), no fragment or userinfo, exactly one
    `state`, no `iss` other than the issuer, exactly one of `code` or `error`,
-   and no duplicated parameter. An invalid or unparseable callback fails
-   `access_denied` and leaves the login pending.
+   and no duplicated parameter. A handle naming another login than the
+   callback's `state` (including one from an older `prepare` under another
+   grant key) is an invalid callback too. An invalid or unparseable callback
+   fails `access_denied` with `login_ended` False and leaves the logins
+   pending.
 3. It applies host policy: client selection, destination checks, and the
    login's client source, which fails `invalid_configuration` when host policy
    no longer permits it. A failure keeps its code and leaves the login pending.
@@ -223,8 +226,8 @@ cap) or expiry.
 
 A pending login records the required set R it was prepared with (host-required
 at that time, explicit and any challenged scopes; a record from an older
-release, without R, uses its prepare-time host-required scopes when it holds
-any, else the current ones). `complete`
+release, without R, uses the prepare-time host-required scopes every Python
+pending record holds, even when empty). `complete`
 succeeds only if
 the granted scopes within the current ceiling cover that R; otherwise it fails
 `access_denied` with that R, still persisting the grant (and any rotated refresh

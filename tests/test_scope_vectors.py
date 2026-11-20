@@ -24,7 +24,9 @@ Mapping of vector inputs to Python host boundaries:
 """
 
 import unittest
+from contextlib import contextmanager
 from dataclasses import replace
+from functools import partial
 from urllib.parse import parse_qs, urlencode, urlsplit
 
 import anyio
@@ -53,10 +55,78 @@ SCOPED = ("access_denied", "interaction_required")
 # Optional SDK features the vectors may require, and those Python has.
 KNOWN_FEATURES = {"complete_handle", "token_validation_callback"}
 PYTHON_FEATURES = {"complete_handle"}
+# Vectors of the vendored spec revision that scope contract v2 changes; they
+# are replaced when the v2 spec is vendored.
+SUPERSEDED = {
+    # v2 step 3: a 401 hint is used only by a client-credentials acquisition.
+    "challenge-401-scope-not-required",
+}
+# Every field a vector defines is asserted; an unknown field fails the run.
+FIELDS = {
+    "scope_decisions": (
+        {
+            "flow",
+            "path",
+            "binding",
+            "requested",
+            "preset_scopes",
+            "ceiling",
+            "host_required",
+            "explicit",
+            "granted",
+            "challenge",
+            "host_error",
+        },
+        {
+            "code",
+            "scopes",
+            "required",
+            "action",
+            "acquisition_scopes",
+            "network_calls",
+            "authorization_server_requests",
+            "retired",
+        },
+    ),
+    "completions": (
+        {
+            "pending",
+            "handle",
+            "client_source",
+            "callback",
+            "exchange",
+            "stored_required",
+            "granted",
+            "ceiling",
+            "host_error",
+        },
+        {"code", "scopes", "login_ended", "grant_persisted", "failed"},
+    ),
+}
 CALLBACK = "https://host.test/callback"
 DOCUMENT = OAuthClientMetadataDocument(
     "https://adapter.example/oauth/client.json", (CALLBACK,)
 )
+
+
+@contextmanager
+def recording():
+    """Record every outcome `decide` returns to the provider."""
+    from agenthooksprotocol import oauth
+
+    decisions = []
+    original = oauth.decide
+
+    def recorded(*args, **kwargs):
+        decision = original(*args, **kwargs)
+        decisions.append(decision)
+        return decision
+
+    oauth.decide = recorded
+    try:
+        yield decisions
+    finally:
+        oauth.decide = original
 
 
 def budget():
@@ -138,15 +208,22 @@ class Env:
 
 class ScopeDecisionVectorTests(unittest.TestCase):
     def run_vectors(self, kind, run):
+        inputs, expects = FIELDS[kind]
         for vector in FIXTURES[kind]:
             required = set(vector.get("requires", ()))
             self.assertLessEqual(required, KNOWN_FEATURES, vector["id"])
+            self.assertLessEqual(set(vector), {"id", "input", "expect", "requires"})
+            self.assertLessEqual(set(vector["input"]), inputs, vector["id"])
+            self.assertLessEqual(set(vector["expect"]), expects, vector["id"])
             for backend in ("asyncio", "trio"):
                 with self.subTest(vector=vector["id"], backend=backend):
                     missing = required - PYTHON_FEATURES
                     if missing:
                         self.skipTest("requires " + ", ".join(sorted(missing)))
-                    anyio.run(run, vector, backend=backend)
+                    if vector["id"] in SUPERSEDED:
+                        self.skipTest("superseded by scope contract v2")
+                    with recording() as decisions:
+                        anyio.run(partial(run, vector, decisions), backend=backend)
 
     def test_scope_decision_vectors(self):
         self.run_vectors("scope_decisions", self.decision)
@@ -154,16 +231,16 @@ class ScopeDecisionVectorTests(unittest.TestCase):
     def test_completion_vectors(self):
         self.run_vectors("completions", self.completion)
 
-    async def decision(self, vector):
+    async def decision(self, vector, decisions):
         given, expect = vector["input"], vector["expect"]
         flow = given["flow"]
         env = Env(flow)
         try:
-            await self.decide(env, flow, given, expect)
+            await self.decide(env, flow, given, expect, decisions)
         finally:
             await env.n.client.aclose()
 
-    async def decide(self, env, flow, given, expect):
+    async def decide(self, env, flow, given, expect, decisions):
         requested = tuple(sorted(given["requested"]))
         ceiling = tuple(sorted(given.get("ceiling", requested)))
         preset = tuple(sorted(given.get("preset_scopes", requested)))
@@ -246,6 +323,7 @@ class ScopeDecisionVectorTests(unittest.TestCase):
                 presented.identity if presented is not None else None,
                 True,
             )
+        del decisions[:]  # Only the operation under test.
         requests, server, tokens = (
             len(env.n.requests),
             env.server_requests(),
@@ -293,6 +371,11 @@ class ScopeDecisionVectorTests(unittest.TestCase):
                 )
             )
         action = expect.get("action")
+        if action is not None:
+            # The operation went through decide, whose final outcome is the
+            # vector's action with its required set.
+            self.assertEqual(decisions[-1].action, action)
+            self.assertEqual(list(decisions[-1].required), expect["required"])
         if action == "use":
             self.assertIsInstance(result, Ready)
             self.assertEqual(result.credential.token, presented.token)
@@ -329,7 +412,7 @@ class ScopeDecisionVectorTests(unittest.TestCase):
                 sent = url_scopes(login)
             self.assertEqual(sent, expect["acquisition_scopes"])
 
-    async def completion(self, vector):
+    async def completion(self, vector, decisions):
         given, expect = vector["input"], vector["expect"]
         source = given["client_source"]
         env = Env(
@@ -423,6 +506,8 @@ class ScopeDecisionVectorTests(unittest.TestCase):
             self.assertEqual(list(error.required_scopes), expect.get("scopes", []))
             self.assertIs(error.login_ended, expect["login_ended"])
             if not expect["login_ended"]:
+                after = {k: r.generation for k, r in env.grants().items()}
+                self.assertEqual(after != before, expect["grant_persisted"])
                 # Still pending: the matching callback completes it.
                 env.n.token_hook = granting(env.n, " ".join(sorted(stored)))
                 self.assertIsInstance(

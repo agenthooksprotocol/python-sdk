@@ -28,13 +28,24 @@ from .auth import (
     AuthChallenge,
     AuthContext,
     AuthErrorCode,
-    AuthRecovery,
     AuthTarget,
     BearerCredential,
     OAuthBinding,
     normalize_auth_target,
 )
 from .runtime import OperationCancelledError
+from ._scope_decision import (
+    Decision,
+    Grant,
+    Op,
+    check_configuration,
+    classify,
+    classify_challenge,
+    cover,
+    decide,
+    retires,
+    valid_scopes,
+)
 from ._oauth_types import (
     OAuthClientConfiguration as OAuthClientConfiguration,
     OAuthClientMetadataDocument as OAuthClientMetadataDocument,
@@ -57,7 +68,6 @@ from ._oauth_types import (
     OperationBudget as OperationBudget,
     PendingLogin as PendingLogin,
     Ready as Ready,
-    ScopeFailure,
     binding_key,
     grant_key,
     pending_key,
@@ -85,7 +95,6 @@ _DEFINITIVE = (
 )
 _SCOPE = r"[\x21\x23-\x5b\x5d-\x7e]+"
 _SCOPE_LIST = re.compile(rf"{_SCOPE}(?: {_SCOPE})*")
-_SCOPE_TOKEN = re.compile(_SCOPE)
 
 
 def _endpoint(url: str) -> str:
@@ -478,12 +487,15 @@ class ManagedOAuthProvider:
             self._prepared[key] = self._prepared.get(key, 0) + 1
 
     async def _run(
-        self, operation: Callable[[], Awaitable[T]], budget: OperationBudget
+        self,
+        operation: Callable[[], Awaitable[T]],
+        budget: OperationBudget,
+        completion: _Completion | None = None,
     ) -> T:
-        """The single error boundary: only safe codes, never exception chains."""
-        failure: AuthErrorCode = "provider_failed"
-        recovery: AuthRecovery | None = None
-        scopes: tuple[str, ...] = ()
+        """The single error boundary: `classify` sets the code and scopes,
+        never exception chains. For `complete` (`completion`) every error
+        also carries `login_ended`."""
+        failure: BaseException | None = None
         timed_out = cancelled = False
         try:
             await anyio.lowlevel.checkpoint_if_cancelled()
@@ -496,25 +508,28 @@ class ManagedOAuthProvider:
             timed_out = True
         except OperationCancelledError:
             cancelled = True
-        except AuthenticationFailure as error:
-            failure, recovery = error.code, error.recovery
-            # Only the SDK's own scope checks name scopes; any scopes on a
-            # host-raised failure (selection, destination or store callbacks)
-            # are stripped.
-            if isinstance(error, ScopeFailure):
-                scopes = error.required_scopes
-        except ImportError:
-            failure = "unsupported_binding"
-        except Exception:
-            pass
+        except Exception as caught:
+            failure = caught
         # Outside the handler: no secret-bearing __cause__ or __context__.
+        raised: Exception
         if timed_out:
-            raise TimeoutError("Authentication operation timed out")
-        if cancelled:
-            raise OperationCancelledError("Authentication operation cancelled")
-        raise AuthenticationFailure(
-            code=failure, recovery=recovery, required_scopes=scopes
-        )
+            raised = TimeoutError("Authentication operation timed out")
+        elif cancelled:
+            raised = OperationCancelledError("Authentication operation cancelled")
+        else:
+            assert failure is not None
+            code, recovery, scopes = classify(failure)
+            failure = None
+            raised = AuthenticationFailure(
+                code=code, recovery=recovery, required_scopes=scopes
+            )
+        if completion is not None:
+            ended = completion.ended
+            if ended is None:
+                ended = await self._login_ended(completion)
+            # Additive: the code and recovery are unchanged.
+            setattr(raised, "login_ended", ended)
+        raise raised
 
     def _check_target(self, target: AuthTarget) -> None:
         if (
@@ -806,16 +821,14 @@ class ManagedOAuthProvider:
         key: StoreKey,
         metadata: OAuthMetadata,
         config: OAuthClientConfiguration,
-        required: tuple[str, ...],
-        granted: tuple[str, ...],
+        decision: Decision,
         budget: OperationBudget,
-        hinted: tuple[str, ...] = (),
     ) -> PendingLogin:
         """Create one process-owned (or persisted) pending login.
 
-        It requests previous grant ∪ ((requested ∪ required ∪ 401 hints) ∩
-        ceiling) and records that ceiling and the required set. A DCR client
-        is registered for this login, with its exact redirect.
+        It requests `decide`'s login scopes, and records them with the
+        ceiling (the acquisition ceiling) and R. A DCR client is registered
+        for this login, with its exact redirect.
         """
         from ._oauth_discovery import check_redirect
 
@@ -834,8 +847,7 @@ class ManagedOAuthProvider:
             or not declared_redirect(config.redirect_uri, document.redirect_uris)
         ):
             raise AuthenticationFailure(code="invalid_configuration")
-        wanted = set(config.scopes) | set(required) | set(hinted)
-        scopes = tuple(sorted(set(granted) | (wanted & set(config.ceiling))))
+        scopes = decision.request
         ceiling = tuple(sorted(set(config.ceiling) | set(scopes)))
         if metadata.client_source == "dcr":
             config = replace(
@@ -865,7 +877,7 @@ class ManagedOAuthProvider:
             verifier,
             url,
             self.clock() + config.login_lifetime,
-            tuple(sorted(set(required))),
+            decision.required,
         )
         async with self._logins.coordinate(pending_key(key), budget) as guard:
             record = _pending_record(await guard.load())
@@ -1375,7 +1387,7 @@ class ManagedOAuthProvider:
         challenge: AuthChallenge | None = None,
         rejected: _Attempt | None = None,
         *,
-        interactive: bool,
+        op: Op,
         lookup: bool = False,
         explicit: tuple[str, ...] = (),
         force_registration: bool = False,
@@ -1390,7 +1402,7 @@ class ManagedOAuthProvider:
             budget,
             challenge,
             rejected,
-            interactive=interactive,
+            op=op,
             lookup=lookup,
             explicit=explicit,
             force_registration=force_registration,
@@ -1411,47 +1423,61 @@ class ManagedOAuthProvider:
         challenge: AuthChallenge | None,
         rejected: _Attempt | None,
         *,
-        interactive: bool,
+        op: Op,
         lookup: bool,
         explicit: tuple[str, ...],
         force_registration: bool,
         redirect_uri: str | None,
         worked: list[tuple[str, str]],
     ) -> Ready | PendingLogin | None:
-        """Serve, refresh, reissue or (interactive only) start a login.
+        """Carry out `decide`'s outcome: use, refresh, acquire or (host
+        `prepare` only) start a login.
 
-        Full discovery runs only on a cache miss, a rebind, a host `prepare`
-        or challenge handling. `lookup` (unbound up-front lookup) never runs
-        protected-resource discovery or starts a login: it serves, refreshes
-        or re-acquires with persisted metadata, fails like any operation when
-        the binding is known, and returns None (anonymous) only on a store
-        miss or host policy refusal.
-        `explicit` holds host-supplied required scopes (step-up round trip).
-        The required set R is host-required ∪ explicit ∪ a 403's challenged
-        scopes; a 401's `scope` only adds requested scopes.
+        `decide` runs as soon as the client is selected, so a refusal comes
+        before any authorization-server request, and again under the grant
+        lock with the stored grant. Full discovery runs only on a cache
+        miss, a rebind, a host `prepare` or challenge handling. `lookup`
+        (unbound up-front lookup) never runs protected-resource discovery or
+        starts a login: it serves, refreshes or re-acquires with persisted
+        metadata, fails like any operation when the binding is known, and
+        returns None (anonymous) only on a store miss or host policy refusal.
         """
         from ._oauth_discovery import (
-            challenge_requirements,
-            check_scopes,
-            discover,
             issuer_metadata,
+            scope_policy,
+            select_client,
             validate_configuration,
         )
 
         self._check_target(target)
+        interactive = op == "prepare"
         binding = binding_key(target)
-        if challenge is not None and challenge.status == 401 and rejected is not None:
-            # Retire the rejected token before any other decision, so it is
-            # never resent whatever the renewal does.
-            await self._retire(rejected, budget)
-        _, challenged, hints = challenge_requirements(challenge)
-        challenged = tuple(sorted(set(challenged) | set(explicit)))
+        classified = classify_challenge(challenge)
+        sent = rejected.generation if rejected is not None else None
+        # Selection sees this operation's explicit and challenged scopes.
+        wanted = tuple(
+            sorted(
+                set(classified.scopes)
+                | (set(explicit) if valid_scopes(explicit) else set())
+            )
+        )
         cached = await self.store.load_binding(binding, budget)
         renew, refetched, replaced, fresh = False, False, False, False
         # A forced client-credentials re-registration acquires a token with
         # the new client instead of serving the replaced client's.
         forced = False
         force = force_registration
+
+        if retires(classified, sent):
+            # Decide step 0, before host policy or any other step: the
+            # rejected token is never resent, whatever the outcome.
+            assert rejected is not None
+            await self._retire(rejected, budget)
+
+        async def decided(config: OAuthClientConfiguration) -> None:
+            # Decide steps 1-4, before any authorization-server request.
+            decide(op, scope_policy(target, config), explicit, classified, sent=sent)
+
         while True:
             metadata = None if renew else cached
             chosen: OAuthClientConfiguration | None = None
@@ -1465,26 +1491,25 @@ class ManagedOAuthProvider:
                 try:
                     resource = await self.policy.resource(target, budget)
                     config = await self.policy.select(
-                        target, resource, issuers, challenged, budget
+                        target, resource, issuers, wanted, budget
                     )
                 except AuthenticationFailure:
                     if lookup:
                         return None  # Host policy refusal: anonymous attempt.
                 else:
-                    # The ceiling decision is local and final: never
-                    # rediscover because of it.
-                    check_scopes(config, challenged)
                     try:
                         if redirect_uri is not None:
                             config = replace(config, redirect_uri=redirect_uri)
-                        validate_configuration(
-                            target, resource, issuers, challenged, config
-                        )
-                        chosen = config
-                        candidate = _candidate(metadata, resource, config)
+                        validate_configuration(target, resource, issuers, config)
                     except AuthenticationFailure:
                         if lookup:
                             raise
+                    else:
+                        # The decision is local and final: never rediscover
+                        # because of it.
+                        await decided(config)
+                        chosen = config
+                        candidate = _candidate(metadata, resource, config)
                 # A failed cached check or a changed principal (issuer, client
                 # identity, flow or partition) rediscovers and repairs the
                 # binding; the lookup cannot discover, so it fails instead of
@@ -1515,16 +1540,17 @@ class ManagedOAuthProvider:
             if metadata is None:
                 if lookup:
                     return None
-                metadata = await discover(
+                resource, chosen = await select_client(
                     target,
-                    challenge,
+                    classified,
                     self.network,
                     self.policy,
                     budget,
                     redirect_uri=redirect_uri,
                     explicit=explicit,
                 )
-                chosen = metadata.configuration
+                await decided(chosen)
+                metadata = await issuer_metadata(resource, chosen, self.network, budget)
             assert chosen is not None
             metadata, blocked = await self._select(
                 metadata,
@@ -1544,20 +1570,12 @@ class ManagedOAuthProvider:
             )
             force = False  # A forced re-registration happens once per prepare.
             config = metadata.configuration
+            policy = scope_policy(target, config)
             # Secrets are operation-local and never enter persisted metadata.
             stored = _persisted(metadata)
             if stored != cached:
                 await self.store.save_binding(binding, stored, budget)
                 cached = stored
-            # A challenge requirement applies to this operation only.
-            required = tuple(sorted(set(challenged) | set(config.required_scopes)))
-            if not set(required) <= set(config.ceiling):
-                raise ScopeFailure(code="access_denied", required_scopes=required)
-            if challenge is not None and challenge.status == 403 and not required:
-                # insufficient_scope naming nothing, and no host requirement.
-                raise AuthenticationFailure(code="access_denied")
-            # 401 scope hints within the ceiling are requested, never required.
-            hinted = tuple(sorted(set(hints) & set(config.ceiling)))
             key = grant_key(target, stored)
             if interactive:
                 # Host prepare deletes this grant key's expired pending logins
@@ -1571,53 +1589,38 @@ class ManagedOAuthProvider:
                 async with self.store.coordinate(key, budget) as guard:
                     record = _grant_record(await guard.load())
                     token = record.token if record is not None else None
-                    adequate = token is not None and set(required) <= (
-                        set(token.scopes) & set(config.ceiling)
-                    )
-                    stale = (
-                        record is not None
-                        and rejected is not None
-                        and record.generation == rejected.generation
-                    )
-                    if (
-                        adequate
-                        and challenge is not None
-                        and challenge.status == 403
-                        and (stale or rejected is None)
-                    ):
-                        # The server calls the token insufficient, yet its
-                        # grant records R: never replay it, loop on consent
-                        # or start a login. (A newer token than the one
-                        # rejected is served as usual.)
-                        raise ScopeFailure(
-                            code="access_denied", required_scopes=required
-                        )
-                    if (
-                        token is not None
-                        and adequate
-                        and not stale
-                        and not forced
-                        and token.access_token is not None
-                        and (
-                            token.expires_at is None
-                            or token.expires_at > self.clock() + self.expiry_skew
-                        )
-                    ):
-                        assert record is not None
-                        return self._ready(target, key, record)
-                    if blocked is not None:
-                        # No usable registration: only a stored token works.
-                        raise AuthenticationFailure(
-                            code=blocked, required_scopes=required
-                        )
-                    refresh = (
-                        token.refresh_token if token is not None and adequate else None
-                    )
+                    refresh = token.refresh_token if token is not None else None
                     if issued and (
                         record is None or not record.metadata.configuration.client_id
                     ):
                         refresh = None  # No client to present the token with.
-                    if config.flow == "client_credentials" or refresh:
+                    decision = decide(
+                        op,
+                        policy,
+                        explicit,
+                        classified,
+                        Grant(
+                            record.generation,
+                            token.scopes,
+                            token.access_token is not None
+                            and not forced
+                            and (
+                                token.expires_at is None
+                                or token.expires_at > self.clock() + self.expiry_skew
+                            ),
+                            refresh is not None,
+                        )
+                        if record is not None and token is not None
+                        else None,
+                        sent,
+                    )
+                    if decision.action == "use":
+                        assert record is not None
+                        return self._ready(target, key, record)
+                    if decision.action in ("refresh", "acquire"):
+                        if blocked is not None:
+                            # No usable registration: only a stored token works.
+                            raise AuthenticationFailure(code=blocked)
                         if not discovered and (interactive or challenge is not None):
                             # Renew endpoint metadata outside the lock, then reload.
                             renew = True
@@ -1630,25 +1633,16 @@ class ManagedOAuthProvider:
                                 client_id=record.metadata.configuration.client_id,
                             )
                             committed = _with_client(stored, exchanged.client_id)
-                        # Re-acquisition keeps the previous grant (step-up).
-                        granted = set(token.scopes) if token is not None else set()
-                        requested = tuple(
-                            sorted(
-                                granted
-                                | set(config.scopes)
-                                | set(required)
-                                | set(hinted)
-                            )
-                        )
+                        previous = set(token.scopes) if token is not None else set()
                         form = (
                             {"grant_type": "refresh_token", "refresh_token": refresh}
-                            if refresh
+                            if decision.action == "refresh" and refresh
                             else {
                                 "grant_type": "client_credentials",
-                                "scope": " ".join(requested),
+                                "scope": " ".join(decision.request),
                             }
                         )
-                        if not requested:
+                        if not decision.request:
                             form.pop("scope", None)
                         active = await self._exchange(
                             guard,
@@ -1657,10 +1651,10 @@ class ManagedOAuthProvider:
                             exchanged,
                             budget,
                             form,
-                            requested,
-                            previous=token if refresh else None,
+                            decision.request,
+                            previous=token if decision.action == "refresh" else None,
                             retained=token,
-                            ceiling=tuple(sorted(granted | set(config.ceiling))),
+                            ceiling=tuple(sorted(previous | set(config.ceiling))),
                             forget_client=issued,
                         )
                         if stored.client_source == "dcr" and not issued:
@@ -1672,22 +1666,12 @@ class ManagedOAuthProvider:
                                 )
                             )
                         assert active.token is not None
-                        if not set(required) <= set(active.token.scopes) & set(
-                            config.ceiling
-                        ):
-                            raise ScopeFailure(
-                                code="access_denied", required_scopes=required
-                            )
+                        decision.verify(active.token.scopes, config.ceiling)
                         return self._ready(target, key, active)
-                    if not interactive:
-                        raise ScopeFailure(
-                            code="interaction_required", required_scopes=required
-                        )
                     if not discovered:
                         # A login rebuilds binding metadata first.
                         renew = True
                         continue
-                    granted_scopes = token.scopes if token is not None else ()
             except _InvalidClient:
                 if stored.client_source == "cimd":
                     raise AuthenticationFailure(code="invalid_configuration") from None
@@ -1715,9 +1699,7 @@ class ManagedOAuthProvider:
                     raise
             else:
                 # Registration and the login itself run outside the grant lock.
-                return await self._login(
-                    key, metadata, config, required, granted_scopes, budget, hinted
-                )
+                return await self._login(key, metadata, config, decision, budget)
             # Persisted issuer metadata looks stale: refetch the stored
             # issuer's metadata once (never protected-resource discovery),
             # persist it when the issuer is unchanged, and retry once.
@@ -1748,18 +1730,19 @@ class ManagedOAuthProvider:
         """
 
         async def run() -> Ready | PendingLogin:
-            if not isinstance(required_scopes, (tuple, list)) or any(
-                not isinstance(scope, str) or _SCOPE_TOKEN.fullmatch(scope) is None
-                for scope in required_scopes
-            ):
-                # A malformed explicit requirement never silently shrinks R.
-                raise AuthenticationFailure(code="invalid_configuration")
+            # `decide` refuses anything but RFC 6749 tokens as configuration;
+            # a malformed requirement never silently shrinks R.
+            explicit: tuple[str, ...] = (
+                tuple(required_scopes)
+                if isinstance(required_scopes, list)
+                else required_scopes
+            )
             result = await self._acquire(
                 target,
                 budget,
                 challenge,
-                interactive=True,
-                explicit=tuple(sorted(set(required_scopes))),
+                op="prepare",
+                explicit=explicit,
                 force_registration=force_registration,
                 redirect_uri=redirect_uri,
             )
@@ -1778,33 +1761,35 @@ class ManagedOAuthProvider:
         budget: OperationBudget,
         progress: _Completion,
     ) -> Ready:
-        from ._oauth_discovery import validate_configuration
+        """Contract section 3: look up, validate, host policy, claim, then
+        exchange and persist."""
+        from ._oauth_discovery import scope_policy, validate_configuration
 
-        # Host misuse (wrong provider namespace or a bearer target), not a
-        # callback defect.
+        # Host misuse (wrong provider namespace or a bearer target).
         self._check_target(target)
-        callback = urlsplit(callback_url)
-        values = parse_qs(callback.query, keep_blank_values=True)
-        # The login is named by the callback's state, whatever handle is
-        # passed; a handle only has to agree with it.
+        try:
+            callback = urlsplit(callback_url)
+            _ = callback.port
+            values = parse_qs(callback.query, keep_blank_values=True)
+        except (ValueError, TypeError, AttributeError):
+            # An unparseable callback is an invalid callback.
+            progress.ended = False
+            raise AuthenticationFailure(code="access_denied") from None
+        # 1. The login named by the callback's state, before any host
+        # callback: through the handle, else the stored binding's grant key.
         state = next(iter(values.get("state", ())), "")
         if not state:
-            # No state names no login, as for an unknown state.
             progress.ended = True
             raise AuthenticationFailure(code="interaction_required")
-        progress.state = state
-        if login is not None:
-            progress.key = login.key
         metadata = await self.store.load_binding(binding_key(target), budget)
-        if metadata is None:
+        if login is not None:
+            key = login.key
+        elif metadata is not None:
+            key = grant_key(target, metadata)
+        else:
             progress.ended = True  # No binding: no login is reachable.
             raise AuthenticationFailure(code="interaction_required")
-        resource = await self.policy.resource(target, budget)
-        issuers = (metadata.configuration.issuer,)
-        config = await self.policy.select(target, resource, issuers, (), budget)
-        current = _candidate(metadata, resource, config)
-        key = grant_key(target, current)
-        progress.key = key
+        progress.key, progress.state = key, state
         async with self._logins.coordinate(pending_key(key), budget) as guard:
             found = _pending_record(await guard.load())
             pending = next(
@@ -1816,17 +1801,24 @@ class ManagedOAuthProvider:
                 None,
             )
             if found is None or pending is None:
-                progress.ended = True  # Unknown, expired or already ended.
+                # Unknown, expired or ended.
+                progress.ended = True
                 raise AuthenticationFailure(code="interaction_required")
             # Every rejection until the claim leaves this login pending.
             progress.ended = False
+            if login is not None and login.generation != state:
+                # A handle naming another login than the callback's state is
+                # an invalid callback; both logins stay pending.
+                raise AuthenticationFailure(code="access_denied")
             requested = pending.metadata.configuration
             source = pending.metadata.client_source
-            # The required set this login was prepared with.
-            required = pending.required_scopes
+            # The login's R; an older release's record holds only the
+            # prepare-time host-required scopes.
+            required = tuple(
+                sorted(set(pending.required_scopes) | set(requested.required_scopes))
+            )
             assert requested.redirect_uri is not None
-            # Validate the callback before anything can consume the login: a
-            # stray or invalid callback is access_denied and never burns it.
+            # 2. Validate the callback: an invalid one never burns the login.
             redirect = urlsplit(requested.redirect_uri)
             fixed = parse_qs(redirect.query, keep_blank_values=True)
             issuer = values.get("iss")
@@ -1839,54 +1831,59 @@ class ManagedOAuthProvider:
                 != (redirect.scheme, redirect.netloc, redirect.path)
                 or any(values.get(name) != value for name, value in fixed.items())
                 or any(len(items) > 1 for items in values.values())
-                or (
-                    login is not None
-                    and (login.key != key or login.generation != pending.state)
-                )
                 or (issuer is not None and issuer != [requested.issuer])
                 or (pending.metadata.require_response_issuer and issuer is None)
                 or ("error" in values) == ("code" in values)
                 or ("code" in values and not codes[0])
             ):
                 raise AuthenticationFailure(code="access_denied")
+            # 3. Host policy: selection, the client source, destinations.
+            recorded = metadata if metadata is not None else pending.metadata
+            resource = await self.policy.resource(target, budget)
+            issuers = (recorded.configuration.issuer,)
+            config = await self.policy.select(target, resource, issuers, (), budget)
+            current = _candidate(recorded, resource, config)
             # The login's exact redirect, whatever the host configures now.
             config = replace(config, redirect_uri=requested.redirect_uri)
-            # The stored required set is enforced after the exchange, so a
-            # narrower grant or ceiling still persists the grant.
-            validate_configuration(target, resource, issuers, (), config)
+            validate_configuration(target, resource, issuers, config)
+            # Only the configuration half of the decision: the stored R is
+            # checked against the grant after the exchange.
+            check_configuration(scope_policy(target, config))
+            document = config.client_metadata_document
+            if (
+                grant_key(target, current) != key
+                or source != current.client_source
+                or not (
+                    source == "preregistered"
+                    or (
+                        source == "cimd"
+                        and document is not None
+                        and document.url == requested.client_id
+                    )
+                    or (source == "dcr" and config.dynamic_registration is not None)
+                )
+            ):
+                # Host policy no longer permits the login's client.
+                raise AuthenticationFailure(code="invalid_configuration")
             if "error" not in values:
                 await self.network.authorize(callback_url, "authorization", budget)
-            # Complete with the client the login was created under, while
-            # current host policy still permits its source; otherwise the
-            # login can never complete and is ended below.
-            document = config.client_metadata_document
-            usable = source == current.client_source and (
-                source == "preregistered"
-                or (
-                    source == "cimd"
-                    and document is not None
-                    and document.url == requested.client_id
-                )
-                or (source == "dcr" and config.dynamic_registration is not None)
-            )
-            # Claim the login once; expired logins go with it.
+            # 4. Claim the login once; expired logins go with it. An uncertain
+            # outcome is re-read afterwards.
             now = self.clock()
             rest = tuple(
                 item
                 for item in found.logins
                 if item is not pending and item.expires_at > now
             )
+            progress.ended = None
             if not await guard.compare_and_swap(
                 found.generation,
                 OAuthPendingLogins(uuid4().hex, rest) if rest else None,
             ):
-                progress.ended = None  # A concurrent writer: look again.
                 raise AuthenticationFailure(code="provider_failed", recovery="retry")
             progress.ended = True
-        if not usable:
-            raise AuthenticationFailure(code="interaction_required")
+        # 5. Consent denied.
         if "error" in values:
-            # Valid consent denial consumes the login, never the stored grant.
             if source == "cimd" and values["error"] == ["invalid_client"]:
                 raise AuthenticationFailure(code="invalid_configuration")
             raise AuthenticationFailure(code="access_denied")
@@ -1906,6 +1903,7 @@ class ManagedOAuthProvider:
             "redirect_uri": requested.redirect_uri,
             "code_verifier": pending.verifier,
         }
+        # 6. Exchange the code; 7. persist and check the login's R.
         async with self.store.coordinate(key, budget) as guard:
             record = _grant_record(await guard.load())
             previous = record.token if record is not None else None
@@ -1931,21 +1929,26 @@ class ManagedOAuthProvider:
                     code=True,
                 )
             except _InvalidClient:
-                if source == "preregistered":
-                    raise
                 # Only this login ends; the stored grant, which may hold an
                 # older valid client, is kept.
                 raise AuthenticationFailure(
-                    code="invalid_configuration"
+                    code="credential_unavailable"
+                    if source == "preregistered"
+                    else "invalid_configuration"
                     if source == "cimd"
                     else "interaction_required"
                 ) from None
+            except AuthenticationFailure as error:
+                # invalid_grant is interaction_required; every other
+                # token-endpoint failure (unreachable, 404, other OAuth
+                # errors, an invalid response) is provider_failed.
+                if error.code != "interaction_required" or isinstance(
+                    error, _StaleMetadata
+                ):
+                    raise AuthenticationFailure(code="provider_failed") from None
+                raise
             assert active.token is not None
-            # The grant is committed; it must cover the login's required set
-            # within the current ceiling.
-            effective = set(active.token.scopes) & set(config.ceiling)
-            if not set(required) <= effective:
-                raise ScopeFailure(code="access_denied", required_scopes=required)
+            cover(required, active.token.scopes, config.ceiling)
             return self._ready(target, key, active)
 
     async def complete(
@@ -1965,21 +1968,14 @@ class ManagedOAuthProvider:
         `OperationCancelledError` it raises has `login_ended`: True when the
         named login no longer exists after the call (consumed, expired or
         unknown), False while it is still pending (for example a stray or
-        invalid callback rejected before the claim).
+        invalid callback, or a host-policy failure, before the claim).
         """
         progress = _Completion()
-        try:
-            ready = await self._run(
-                lambda: self._complete(target, login, callback_url, budget, progress),
-                budget,
-            )
-        except (AuthenticationFailure, TimeoutError, OperationCancelledError) as error:
-            ended = progress.ended
-            if ended is None:
-                ended = await self._login_ended(progress)
-            # Additive: the code and recovery are unchanged.
-            setattr(error, "login_ended", ended)
-            raise
+        ready = await self._run(
+            lambda: self._complete(target, login, callback_url, budget, progress),
+            budget,
+            progress,
+        )
         self._record_prepared(target, ready)
         return ready
 
@@ -2076,12 +2072,12 @@ class ManagedOAuthProvider:
         if context.binding is None:
             # Up-front lookup for an unbound destination: never discovery or login.
             found = await self._run(
-                lambda: self._acquire(target, budget, interactive=False, lookup=True),
+                lambda: self._acquire(target, budget, op="credential", lookup=True),
                 budget,
             )
             return found.credential if isinstance(found, Ready) else None
         result = await self._run(
-            lambda: self._acquire(target, budget, interactive=False), budget
+            lambda: self._acquire(target, budget, op="credential"), budget
         )
         assert isinstance(result, Ready)
         return result.credential
@@ -2107,7 +2103,7 @@ class ManagedOAuthProvider:
                 budget,
                 challenge,
                 attempt if isinstance(attempt, _Attempt) else None,
-                interactive=False,
+                op="challenge",
             ),
             budget,
         )

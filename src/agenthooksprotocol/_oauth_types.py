@@ -7,7 +7,7 @@ from typing import Literal, Protocol, TYPE_CHECKING
 
 import anyio
 
-from .auth import AuthenticationFailure, AuthErrorCode, AuthTarget, BearerCredential
+from .auth import AuthErrorCode, AuthTarget, BearerCredential
 
 if TYPE_CHECKING:
     import httpx
@@ -91,12 +91,6 @@ def _valid_scopes(scopes: tuple[str, ...] | None) -> bool:
         )
         for scope in scopes
     )
-
-
-class ScopeFailure(AuthenticationFailure):
-    """A refusal by the SDK's own scope checks, carrying the operation's full
-    required set. Only these keep their scopes at the managed-OAuth boundary;
-    scopes on host-raised failures are stripped."""
 
 
 @dataclass(frozen=True)

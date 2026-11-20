@@ -1850,8 +1850,9 @@ class ManagedOAuthRuntimeTests(unittest.TestCase):
                     {"state": state, "code": f"code-{port}"}
                 )
 
-            # A callback carrying the other login's state or redirect is refused
-            # without consuming either login.
+            # A handle naming another login than the callback's state, or a
+            # callback carrying the other login's redirect, is an invalid
+            # callback: refused without consuming either login.
             for login, url in (
                 (first, callback(second, 4002)),
                 (first, callback(first, 4002)),
@@ -1859,6 +1860,7 @@ class ManagedOAuthRuntimeTests(unittest.TestCase):
                 with self.assertRaises(AuthenticationFailure) as failure:
                     await p.complete(target, login, url, OperationBudget.after(5))
                 self.assertEqual(failure.exception.code, "access_denied")
+                self.assertIs(failure.exception.login_ended, False)
             self.assertFalse(n.tokens)
             await p.complete(
                 target, second, callback(second, 4002), OperationBudget.after(5)
@@ -2500,6 +2502,11 @@ class ManagedOAuthRuntimeTests(unittest.TestCase):
                                     failure.exception.code,
                                     vector.get("error", "access_denied"),
                                 )
+                                if "error_scopes" in vector:
+                                    self.assertEqual(
+                                        list(failure.exception.required_scopes),
+                                        vector["error_scopes"],
+                                    )
                                 self.assertEqual(delivered, [])
                             await transport.aclose()
                             self.assertFalse(client.is_closed)

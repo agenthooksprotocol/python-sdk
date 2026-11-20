@@ -12,12 +12,12 @@ import anyio
 import httpx
 
 import test_managed_oauth_runtime as base
+from agenthooksprotocol._auth_challenge import insufficient_scope
 from agenthooksprotocol.auth import (
     AuthChallenge,
     AuthContext,
     AuthenticationFailure,
     OAuthBinding,
-    _scope_challenge,
 )
 from agenthooksprotocol.oauth import (
     OAuthClientConfiguration,
@@ -323,7 +323,13 @@ class ScopeContractTests(unittest.TestCase):
             third = await self.challenge(p, rejected(second.identity, "admin"))
             self.assertEqual(third.token, "access-3")
             self.assertEqual(n.tokens[-1]["scope"], ["read"])
-            # PKCE: a 401 hint widens the next sign-in's request, not R.
+            # The hint was this operation's only: a later acquisition does
+            # not request it.
+            now[0] += 61
+            later = await self.credential(p)
+            self.assertEqual(later.token, "access-4")
+            self.assertEqual(n.tokens[-1]["scope"], ["read"])
+            # PKCE: a sign-in never requests a 401 hint, and R ignores it.
             policy.configuration = replace(
                 base.Policy("authorization_code_pkce").configuration,
                 allowed_scopes=("read", "write"),
@@ -334,7 +340,7 @@ class ScopeContractTests(unittest.TestCase):
             )
             self.assertIsInstance(login, PendingLogin)
             query = parse_qs(urlsplit(login.authorization_url).query)
-            self.assertEqual(query["scope"], ["read write"])
+            self.assertEqual(query["scope"], ["read"])
             n.token_hook = granting(n, "read")
             self.assertIsInstance(await self.complete_login(p, pkce, login), Ready)
 
@@ -385,8 +391,8 @@ class ScopeContractTests(unittest.TestCase):
                     challenge = insufficient(
                         raw=raw, identity=first.credential.identity
                     )
-                    # Not an auth retry at the transport.
-                    self.assertFalse(_scope_challenge(challenge.headers))
+                    # The transport routes it; the provider refuses it.
+                    self.assertTrue(insufficient_scope(challenge.headers))
                     with self.assertRaises(AuthenticationFailure) as failure:
                         await self.challenge(p, challenge)
                     self.assertFailure(failure, "access_denied")
@@ -630,7 +636,8 @@ class ScopeContractTests(unittest.TestCase):
             await complete(login, good, "provider_failed", False)
             policy.select = original
             self.assertEqual(len(base.pending_logins(p)), 1)
-            # The callback names another pending login than the handle.
+            # The handle names another login than the callback's state: an
+            # invalid callback, both logins pending.
             second = await p.prepare(target, budget())
             await complete(
                 login,

@@ -19,6 +19,7 @@ from agenthooksprotocol._oauth_discovery import (
 from agenthooksprotocol._oauth_types import OAuthClientConfiguration, OperationBudget
 from agenthooksprotocol.oauth import ManagedOAuthProvider
 from agenthooksprotocol.runtime import OperationCancelledError
+from agenthooksprotocol._scope_decision import DecisionFailure, classify
 
 RESOURCE = "https://resource.test/api/events"
 ISSUER = "https://issuer.test/tenant"
@@ -125,13 +126,20 @@ class OAuthDiscoveryTests(unittest.TestCase):
 
         async with httpx.AsyncClient(transport=httpx.MockTransport(handle)) as client:
             network = HostNetwork(client, denied)
-            result = await discover(
-                target(binding, destination),
-                auth,
-                network,
-                policy or Policy(),
-                OperationBudget.after(2),
-            )
+            try:
+                result = await discover(
+                    target(binding, destination),
+                    auth,
+                    network,
+                    policy or Policy(),
+                    OperationBudget.after(2),
+                )
+            except DecisionFailure as failure:
+                # The provider's error boundary classifies decide's outcomes.
+                code, recovery, scopes = classify(failure)
+                raise AuthenticationFailure(
+                    code=code, recovery=recovery, required_scopes=scopes
+                ) from None
             return result, network
 
     def test_path_then_root_and_oauth_oidc_order(self):

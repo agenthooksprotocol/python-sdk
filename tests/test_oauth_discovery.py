@@ -308,12 +308,11 @@ class OAuthDiscoveryTests(unittest.TestCase):
 
         self.both(run)
 
-    def test_challenge_parser_ignores_unknown_schemes_and_accepts_padded_token68(self):
+    def test_challenge_parser_ignores_unknown_schemes_and_their_token68(self):
         async def run():
             for header in (
                 'Basic dXNlcjpwYXNz==, Bearer scope="read"',
                 'Newauth abc==, Bearer scope="read", Digest realm="other"',
-                "Bearer abc==",
                 "Newauth abc==",
             ):
                 with self.subTest(header=header):
@@ -325,6 +324,13 @@ class OAuthDiscoveryTests(unittest.TestCase):
                     # A 401's scope is a requested-scope hint, not required.
                     self.assertEqual(policy.requirements, ())
                     self.assertTrue(network.sent)
+            # A Bearer challenge has auth-params only: a token68 (or a bare
+            # name) is a bad auth-param.
+            for header in ("Bearer abc==", "Bearer scope"):
+                with self.subTest(header=header):
+                    with self.assertRaises(AuthenticationFailure) as failure:
+                        await self.run_discovery(auth=challenge(header))
+                    self.assertEqual(failure.exception.code, "access_denied")
 
         self.both(run)
 

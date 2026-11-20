@@ -2957,7 +2957,7 @@ class ManagedOAuthRuntimeTests(unittest.TestCase):
                 )
             self.assertEqual(
                 (failure.exception.code, failure.exception.recovery),
-                ("interaction_required", "login"),
+                ("refresh_rejected", "login"),
             )
             self.assertFalse(s.records)
 
@@ -3311,7 +3311,7 @@ class ManagedOAuthRuntimeTests(unittest.TestCase):
                 (httpx.Response(503), "provider_failed"),
                 (
                     httpx.Response(400, json={"error": "invalid_grant"}),
-                    "interaction_required",
+                    "refresh_rejected",
                 ),
             ):
 

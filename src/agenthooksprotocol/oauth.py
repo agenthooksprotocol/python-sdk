@@ -676,15 +676,20 @@ class ManagedOAuthProvider:
                 # A newer record replaced ours: it is kept, never wiped.
                 raise AuthenticationFailure(code="provider_failed")
             # Token-endpoint errors never carry scopes or choose a scope
-            # code: a code exchange's or a PKCE refresh's invalid_grant needs
-            # a login; invalid_client is classified by client source;
-            # unauthorized_client is an unusable client; anything else
-            # (access_denied, invalid_scope, server errors) is provider_failed.
-            if outcome.code == "invalid_grant" and (
-                code
-                or (previous is not None and config.flow == "authorization_code_pkce")
-            ):
-                raise AuthenticationFailure(code="interaction_required")
+            # code (renewal errors): invalid_grant needs a login after a code
+            # exchange, is refresh_rejected for a PKCE refresh and
+            # credential_unavailable for client credentials; invalid_client
+            # is classified by client source; unauthorized_client is an
+            # unusable client; anything else (access_denied, invalid_scope,
+            # server errors) is provider_failed.
+            if outcome.code == "invalid_grant":
+                raise AuthenticationFailure(
+                    code="interaction_required"
+                    if code
+                    else "refresh_rejected"
+                    if previous is not None
+                    else "credential_unavailable"
+                )
             if outcome.code == "invalid_client":
                 raise _InvalidClient()
             if outcome.code == "unauthorized_client" and not code:
@@ -1803,9 +1808,7 @@ class ManagedOAuthProvider:
                 raise AuthenticationFailure(code="interaction_required")
             # Every rejection until the claim leaves this login pending.
             progress.ended = False
-            if login is not None and (
-                login.key != key or login.generation != state
-            ):
+            if login is not None and (login.key != key or login.generation != state):
                 # A handle naming another login than the callback's state is
                 # an invalid callback; both logins stay pending.
                 raise AuthenticationFailure(code="access_denied")

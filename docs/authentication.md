@@ -401,7 +401,8 @@ token that was sent (if it is still the stored one), whatever follows; then
 configuration (requested scopes outside the ceiling, a preset that differs, or
 an invalid scope token, including a malformed `prepare(...,
 required_scopes=...)`, fail `invalid_configuration`); then the challenge form
-(an unparseable or ambiguous Bearer challenge, a 403 other than
+(an unparseable or ambiguous Bearer challenge, including a token68 or bare
+name where a Bearer auth-param belongs, a 403 other than
 `insufficient_scope`, or a bare `insufficient_scope` with no host-required or
 explicit scopes fail `access_denied` with no scopes); then the ceiling (R
 outside it fails `access_denied` with R); then the stored grant (use, refresh,
@@ -482,10 +483,13 @@ may have rotated credentials externally; a retry can ultimately return
 `invalid_grant`. Only PKCE grants refresh; client credentials always
 reissue, noninteractively. Token-endpoint errors on a refresh or reissue
 carry no scopes: a PKCE refresh `invalid_grant` drops both tokens (unless a
-newer record already replaced them) and fails `interaction_required`;
+newer record already replaced them) and fails `refresh_rejected`, and a
+client-credentials `invalid_grant` fails `credential_unavailable`;
 `invalid_client` is classified by client source (`credential_unavailable`
-for a pre-registered client, `invalid_configuration` for CIMD, a new
-registration or login for DCR); `unauthorized_client` fails
+for a pre-registered client, `invalid_configuration` for CIMD,
+`interaction_required` for a PKCE DCR client; a client-credentials DCR client
+re-registers once and re-acquires, and a repeated `invalid_client` fails
+`credential_unavailable`); `unauthorized_client` fails
 `credential_unavailable`; any other OAuth error (including `access_denied`
 and `invalid_scope`), an unreachable endpoint or an invalid response fails
 `provider_failed`. After a 401 the rejected access token is not sent again.

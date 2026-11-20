@@ -113,6 +113,10 @@ FIELDS = {
         },
         {"code", "scopes", "login_ended", "grant_persisted"},
     ),
+    "token_errors": (
+        {"grant_type", "client_source", "error"},
+        {"code", "reregistrations"},
+    ),
 }
 GRANT_FIELDS = {"generation", "granted", "token", "refresh"}
 HOST_ERROR_FIELDS = {"callback", "target", "code", "scopes"}
@@ -257,6 +261,90 @@ class ScopeVectorTests(unittest.TestCase):
 
     def test_completion_vectors(self):
         self.run_vectors("completions", self.completion)
+
+    def test_token_error_vectors(self):
+        self.run_vectors("token_errors", self.token_error)
+
+    # token_errors ------------------------------------------------------
+
+    async def token_error(self, vector, decisions):
+        given, expect = vector["input"], vector["expect"]
+        refresh = given["grant_type"] == "refresh"
+        self.assertIn(given["grant_type"], ("refresh", "client_credentials"))
+        source = given["client_source"]
+        env = Env(
+            "authorization_code_pkce" if refresh else "client_credentials",
+            {"client_id_metadata_document_supported": True} if source == "cimd" else {},
+        )
+        try:
+            target = AuthTarget("tenant", "backend", RESOURCE, "event", None)
+            if refresh:
+                env.configure(redirect_uri=REDIRECT)
+            if source == "cimd":
+                self.assertTrue(refresh)
+                env.configure(client_id="", client_metadata_document=DOCUMENT)
+            elif source == "dcr":
+                env.configure(
+                    client_id="",
+                    client_secret=None,
+                    token_endpoint_auth_method="none",
+                    dynamic_registration=DCR,
+                )
+            else:
+                self.assertEqual(source, "preregistered")
+            # A stored, now expired grant.
+            env.n.token_hook = granting(env.n, "read")
+            first = await env.p.prepare(target, budget())
+            if refresh:
+                await env.p.complete(
+                    target,
+                    first,
+                    REDIRECT
+                    + "&"
+                    + urlencode({"state": state_of(first), "code": "valid"}),
+                    budget(),
+                )
+            env.now[0] += 61
+            env.n.token_hook = {
+                "invalid_grant": responding(400, {"error": "invalid_grant"}),
+                "invalid_client": responding(401, {"error": "invalid_client"}),
+                "unauthorized_client": responding(
+                    400, {"error": "unauthorized_client"}
+                ),
+                "access_denied": responding(400, {"error": "access_denied"}),
+                "invalid_scope": responding(400, {"error": "invalid_scope"}),
+                "server_error": responding(500, {"error": "server_error"}),
+                "unreachable": unreachable,
+                "not_found": responding(404),
+                "invalid_response": granting(env.n, "read", kind="mac"),
+            }[given["error"]]
+            registrations, tokens = len(env.n.registrations), len(env.n.tokens)
+            with (
+                anyio.CancelScope() as scope,
+                self.assertRaises(AuthenticationFailure) as failure,
+            ):
+                await env.p.credential(
+                    AuthContext({"id": "backend"}, None, RESOURCE, "event", scope)
+                )
+            self.assertEqual(
+                (failure.exception.code, failure.exception.required_scopes),
+                (expect["code"], ()),
+            )
+            self.assertGreater(len(env.n.tokens), tokens)
+            self.assertEqual(
+                env.n.tokens[tokens]["grant_type"],
+                ["refresh_token" if refresh else "client_credentials"],
+            )
+            cc_dcr = (
+                not refresh and source == "dcr" and given["error"] == "invalid_client"
+            )
+            self.assertEqual("reregistrations" in expect, cc_dcr)
+            if "reregistrations" in expect:
+                self.assertEqual(
+                    len(env.n.registrations) - registrations, expect["reregistrations"]
+                )
+        finally:
+            await env.n.client.aclose()
 
     # scope_decisions ---------------------------------------------------
 
@@ -451,11 +539,17 @@ class ScopeVectorTests(unittest.TestCase):
                     # receives the vector's 401 (else a bare Bearer one),
                     # which the provider handles.
                     raw = given.get("challenge", {"status": 401})
+                    header = raw.get("www_authenticate", "Bearer")
                     result = await env.p.challenge(
                         context,
                         AuthChallenge(
                             raw["status"],
-                            {"www-authenticate": raw.get("www_authenticate", "Bearer")},
+                            # The vectors' resource is this host's resource.
+                            {
+                                "www-authenticate": header.replace(
+                                    "https://api.example/", "https://resource.test/"
+                                )
+                            },
                             RESOURCE,
                             None,
                             True,

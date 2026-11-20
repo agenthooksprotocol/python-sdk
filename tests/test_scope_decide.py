@@ -48,6 +48,7 @@ SCOPE_DECIDE_TESTS = {
     "transport-challenge-routing": "test_transport_routes_to_the_provider",
     "replay-rejection-retires-token": "test_transport_routes_to_the_provider",
     "complete-token-endpoint-errors-classified": "test_complete_token_endpoint_errors_are_classified",
+    "renewal-token-errors-classified": "test_refresh_and_reissue_token_errors_are_classified",
 }
 PKCE, CC = "authorization_code_pkce", "client_credentials"
 
@@ -938,7 +939,7 @@ class ProviderTests(unittest.TestCase):
             return respond
 
         pkce_cases = (
-            (answer(400, {"error": "invalid_grant"}), "interaction_required"),
+            (answer(400, {"error": "invalid_grant"}), "refresh_rejected"),
             (answer(401, {"error": "invalid_client"}), "credential_unavailable"),
             (answer(400, {"error": "unauthorized_client"}), "credential_unavailable"),
             (answer(400, {"error": "access_denied"}), "provider_failed"),
@@ -951,7 +952,7 @@ class ProviderTests(unittest.TestCase):
             ),
         )
         cc_cases = (
-            (answer(400, {"error": "invalid_grant"}), "provider_failed"),
+            (answer(400, {"error": "invalid_grant"}), "credential_unavailable"),
             (answer(400, {"error": "unauthorized_client"}), "credential_unavailable"),
             (answer(401, {"error": "invalid_client"}), "credential_unavailable"),
             (answer(400, {"error": "access_denied"}), "provider_failed"),

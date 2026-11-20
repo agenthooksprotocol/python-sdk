@@ -20,8 +20,9 @@ class ChallengeError(ValueError):
 def _bearer(headers: Mapping[str, str]) -> tuple[int, list[tuple[str, str]]]:
     """(Bearer challenge count, its auth-params in order, duplicates kept).
 
-    Unknown schemes and padded token68 values are ignored; a malformed
-    Bearer auth-param raises ChallengeError.
+    Unknown schemes (and their token68 values) are ignored; a malformed
+    Bearer auth-param, including a token68 (RFC 6750 Bearer challenges have
+    auth-params only), raises ChallengeError.
     """
     values = [v for k, v in headers.items() if k.lower() == "www-authenticate"]
     if len(values) > 1:
@@ -53,14 +54,12 @@ def _bearer(headers: Mapping[str, str]) -> tuple[int, list[tuple[str, str]]]:
             if not scheme:
                 continue
             piece = scheme[2].strip()
-        if not active:
-            continue
         match = re.fullmatch(
             rf'({_TOKEN})\s*=\s*({_TOKEN}|"(?:[^"\\\r\n]|\\[^\r\n])*")', piece
         )
+        if not active:
+            continue
         if match is None:
-            if re.fullmatch(r"[A-Za-z0-9._~+/-]+=*", piece):
-                continue
             raise ChallengeError()
         key, value = match[1].lower(), match[2]
         if value.startswith('"'):

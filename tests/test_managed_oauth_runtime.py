@@ -332,7 +332,9 @@ class ManagedOAuthRuntimeTests(unittest.TestCase):
                 await p.complete(
                     target, login, callback.replace(query["state"][0], "wrong"), budget
                 )
-            self.assertEqual(failure.exception.code, "access_denied")
+            # An unknown state names no login, whatever handle is passed.
+            self.assertEqual(failure.exception.code, "interaction_required")
+            self.assertIs(failure.exception.login_ended, True)
             self.assertFalse(n.tokens)
             self.assertIsInstance(
                 await p.complete(target, login, callback, budget), Ready
@@ -4361,16 +4363,23 @@ CONFIGURATION_TESTS = {
 class LifecycleCoverageTests(unittest.TestCase):
     def test_every_lifecycle_id_maps_to_an_existing_native_test(self):
         from test_oauth_registration import RegistrationLifecycleTests
+        from test_scope_contract import SCOPE_CONTRACT_TESTS, ScopeContractTests
         from test_server_configuration import ConfigurationRetryTests
 
         ids = [entry["id"] for entry in FIXTURES["lifecycle"]]
-        groups = (LIFECYCLE_TESTS, REGISTRATION_TESTS, CONFIGURATION_TESTS)
+        groups = (
+            LIFECYCLE_TESTS,
+            REGISTRATION_TESTS,
+            CONFIGURATION_TESTS,
+            SCOPE_CONTRACT_TESTS,
+        )
         self.assertEqual(sum(map(len, groups)), len(set().union(*groups)))
         self.assertEqual(set(ids), set().union(*groups))
         for tests, names in (
             (ManagedOAuthRuntimeTests, LIFECYCLE_TESTS.values()),
             (RegistrationLifecycleTests, REGISTRATION_TESTS.values()),
             (ConfigurationRetryTests, CONFIGURATION_TESTS.values()),
+            (ScopeContractTests, SCOPE_CONTRACT_TESTS.values()),
         ):
             for name in names:
                 self.assertTrue(callable(getattr(tests, name, None)), name)

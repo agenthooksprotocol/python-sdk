@@ -1780,31 +1780,31 @@ class ManagedOAuthProvider:
     ) -> Ready:
         from ._oauth_discovery import validate_configuration
 
+        # Host misuse (wrong provider namespace or a bearer target), not a
+        # callback defect.
         self._check_target(target)
         callback = urlsplit(callback_url)
         values = parse_qs(callback.query, keep_blank_values=True)
-        if login is not None:
-            progress.key, progress.state = login.key, login.generation
-        elif not any(values.get("state", ())):
+        # The login is named by the callback's state, whatever handle is
+        # passed; a handle only has to agree with it.
+        state = next(iter(values.get("state", ())), "")
+        if not state:
             # No state names no login, as for an unknown state.
             progress.ended = True
             raise AuthenticationFailure(code="interaction_required")
+        progress.state = state
+        if login is not None:
+            progress.key = login.key
         metadata = await self.store.load_binding(binding_key(target), budget)
         if metadata is None:
-            if login is None:
-                progress.ended = True  # No binding: no login is reachable.
+            progress.ended = True  # No binding: no login is reachable.
             raise AuthenticationFailure(code="interaction_required")
         resource = await self.policy.resource(target, budget)
         issuers = (metadata.configuration.issuer,)
         config = await self.policy.select(target, resource, issuers, (), budget)
         current = _candidate(metadata, resource, config)
         key = grant_key(target, current)
-        if login is not None and login.key != key:
-            raise AuthenticationFailure(code="access_denied")
-        if not any(values.get("state", ())):
-            raise AuthenticationFailure(code="interaction_required")
-        state = login.generation if login is not None else values["state"][0]
-        progress.key, progress.state = key, state
+        progress.key = key
         async with self._logins.coordinate(pending_key(key), budget) as guard:
             found = _pending_record(await guard.load())
             pending = next(
@@ -1816,7 +1816,7 @@ class ManagedOAuthProvider:
                 None,
             )
             if found is None or pending is None:
-                progress.ended = True  # Unknown, expired or already consumed.
+                progress.ended = True  # Unknown, expired or already ended.
                 raise AuthenticationFailure(code="interaction_required")
             # Every rejection until the claim leaves this login pending.
             progress.ended = False
@@ -1825,28 +1825,12 @@ class ManagedOAuthProvider:
             # The required set this login was prepared with.
             required = pending.required_scopes
             assert requested.redirect_uri is not None
-            # The login's exact redirect, whatever the host configures now.
-            config = replace(config, redirect_uri=requested.redirect_uri)
-            # The stored required set is enforced after the exchange, so a
-            # narrower grant or ceiling still persists the grant.
-            validate_configuration(target, resource, issuers, (), config)
-            # Complete with the client the login was created under, while
-            # current host policy still permits its source.
-            document = config.client_metadata_document
-            if source != current.client_source or not (
-                source == "preregistered"
-                or (
-                    source == "cimd"
-                    and document
-                    and document.url == requested.client_id
-                )
-                or (source == "dcr" and config.dynamic_registration is not None)
-            ):
-                raise AuthenticationFailure(code="interaction_required")
-            # Validate redirect, state and issuer before consuming the login.
+            # Validate the callback before anything can consume the login: a
+            # stray or invalid callback is access_denied and never burns it.
             redirect = urlsplit(requested.redirect_uri)
             fixed = parse_qs(redirect.query, keep_blank_values=True)
             issuer = values.get("iss")
+            codes = values.get("code", [])
             if (
                 callback.fragment
                 or callback.username is not None
@@ -1854,16 +1838,37 @@ class ManagedOAuthProvider:
                 or (callback.scheme, callback.netloc, callback.path)
                 != (redirect.scheme, redirect.netloc, redirect.path)
                 or any(values.get(name) != value for name, value in fixed.items())
-                or values.get("state") != [pending.state]
+                or any(len(items) > 1 for items in values.values())
+                or (
+                    login is not None
+                    and (login.key != key or login.generation != pending.state)
+                )
                 or (issuer is not None and issuer != [requested.issuer])
                 or (pending.metadata.require_response_issuer and issuer is None)
+                or ("error" in values) == ("code" in values)
+                or ("code" in values and not codes[0])
             ):
                 raise AuthenticationFailure(code="access_denied")
-            codes = values.get("code", [])
+            # The login's exact redirect, whatever the host configures now.
+            config = replace(config, redirect_uri=requested.redirect_uri)
+            # The stored required set is enforced after the exchange, so a
+            # narrower grant or ceiling still persists the grant.
+            validate_configuration(target, resource, issuers, (), config)
             if "error" not in values:
-                if len(codes) != 1 or not codes[0]:
-                    raise AuthenticationFailure(code="access_denied")
                 await self.network.authorize(callback_url, "authorization", budget)
+            # Complete with the client the login was created under, while
+            # current host policy still permits its source; otherwise the
+            # login can never complete and is ended below.
+            document = config.client_metadata_document
+            usable = source == current.client_source and (
+                source == "preregistered"
+                or (
+                    source == "cimd"
+                    and document is not None
+                    and document.url == requested.client_id
+                )
+                or (source == "dcr" and config.dynamic_registration is not None)
+            )
             # Claim the login once; expired logins go with it.
             now = self.clock()
             rest = tuple(
@@ -1878,6 +1883,8 @@ class ManagedOAuthProvider:
                 progress.ended = None  # A concurrent writer: look again.
                 raise AuthenticationFailure(code="provider_failed", recovery="retry")
             progress.ended = True
+        if not usable:
+            raise AuthenticationFailure(code="interaction_required")
         if "error" in values:
             # Valid consent denial consumes the login, never the stored grant.
             if source == "cimd" and values["error"] == ["invalid_client"]:

@@ -28,6 +28,21 @@ from agenthooksprotocol.oauth import (
 
 RESOURCE, ISSUER = base.RESOURCE, base.ISSUER
 
+# Scope-contract lifecycle ids map to ScopeContractTests; the canonical
+# scope_decisions and completions vectors run in test_scope_vectors.
+SCOPE_CONTRACT_TESTS = {
+    "preset-scopes-requested-not-required": "test_rule_01_preset_scopes_are_requested_not_required",
+    "ceiling-refusal-before-network-every-path": "test_rule_03_ceiling_refusal_is_local_on_every_path",
+    "requested-outside-ceiling-invalid-configuration": "test_rule_04_requested_outside_ceiling_is_invalid_configuration",
+    "challenge-401-scope-requested-not-required": "test_rule_05_401_scope_is_requested_never_required",
+    "malformed-challenge-scope-denied": "test_rule_07_malformed_scope_fails_closed",
+    "insufficient-scope-already-granted-denied": "test_rule_08_server_insufficient_but_recorded_granted",
+    "complete-enforces-stored-required-set": "test_rule_09_complete_enforces_the_logins_required_set",
+    "grant-narrower-than-required-denied": "test_rule_10_narrower_grant_fails_with_r_and_persists",
+    "host-policy-errors-carry-no-scopes": "test_rule_11_host_policy_errors_never_carry_scopes",
+    "complete-error-login-ended": "test_rule_12_complete_errors_report_login_ended",
+}
+
 
 def insufficient(scope=None, identity=None, *, raw=None):
     header = 'Bearer error="insufficient_scope"'
@@ -122,6 +137,17 @@ class ScopeContractTests(unittest.TestCase):
                     preset, OperationBudget.after(5), required_scopes=("admin",)
                 )
             self.assertFailure(failure, "access_denied", ("admin",))
+            # A preset must equal the selected client's configured scopes.
+            other = replace(
+                preset,
+                backend_id="other",
+                typed_binding=replace(preset.typed_binding, scopes=("files",)),
+            )
+            before = calls(n)
+            with self.assertRaises(AuthenticationFailure) as failure:
+                await p.prepare(other, OperationBudget.after(5))
+            self.assertFailure(failure, "invalid_configuration")
+            self.assertEqual(calls(n), before)
 
         self.run_async(run)
 
@@ -215,6 +241,18 @@ class ScopeContractTests(unittest.TestCase):
                 await p.prepare(other, OperationBudget.after(5))
             self.assertFailure(failure, "access_denied", ("admin",))
             self.assertEqual(calls(n), before)
+            # Unbound: only the protected-resource metadata fetch that client
+            # selection needs, and no authorization-server request.
+            sent = len(n.requests)
+            with self.assertRaises(AuthenticationFailure) as failure:
+                await p.prepare(
+                    replace(target, backend_id="unbound"), OperationBudget.after(5)
+                )
+            self.assertFailure(failure, "access_denied", ("admin",))
+            self.assertEqual(
+                [(r.url.host, purpose) for r, purpose in n.requests[sent:]],
+                [("resource.test", "metadata")],
+            )
 
         self.run_async(run)
 
@@ -592,7 +630,27 @@ class ScopeContractTests(unittest.TestCase):
             await complete(login, good, "provider_failed", False)
             policy.select = original
             self.assertEqual(len(base.pending_logins(p)), 1)
-            # Unknown state or no state: ended.
+            # The callback names another pending login than the handle.
+            second = await p.prepare(target, budget())
+            await complete(
+                login,
+                "https://host.test/callback?"
+                + urlencode({"state": state(second), "code": "valid"}),
+                "access_denied",
+                False,
+            )
+            # Duplicated parameters, or both code and error.
+            await complete(login, good + "&code=again", "access_denied", False)
+            await complete(login, good + "&error=access_denied", "access_denied", False)
+            self.assertEqual(len(base.pending_logins(p)), 2)
+            # Unknown, absent or ended state: interaction_required, whatever
+            # handle is passed.
+            await complete(
+                login,
+                "https://host.test/callback?state=unknown&code=valid",
+                "interaction_required",
+                True,
+            )
             await complete(
                 None,
                 "https://host.test/callback?state=unknown&code=valid",

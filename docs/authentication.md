@@ -189,7 +189,23 @@ or per store when persisted; one more cancels the oldest in the same atomic
 write. Completing one never invalidates another: each completion replaces the
 grant's client and tokens, so the newest completed login wins. A pending login
 ends once: completion (including consent denial), `cancel` (including by the
-cap) or expiry. Invalid state, redirect or issuer does not consume it.
+cap) or expiry.
+
+`complete` first finds the pending login named by the callback's `state`. If
+there is none (the `state` is absent or unknown, or its login expired or
+ended), it fails `interaction_required`, whatever handle is passed. It then
+validates the callback before claiming the login: the exact redirect, a
+`state` equal to the handle's when one is passed, no `iss` other than the
+issuer, no fragment or userinfo, exactly one of `code` or `error`, and no
+duplicated parameter. An invalid callback fails `access_denied` and does not
+consume the login. A valid callback is claimed once; a consent denial then
+fails `access_denied`. After the claim, a token-endpoint `invalid_grant` fails
+`interaction_required`, and `invalid_client` fails `credential_unavailable`
+for a pre-registered client, `invalid_configuration` for a CIMD client and
+`interaction_required` for a DCR client. Any other token-endpoint failure or an
+invalid token response fails `provider_failed`. These errors carry no scopes.
+If current host policy no longer permits the login's client source, the claimed
+login ends with `interaction_required`.
 
 A pending login records the required set R it was prepared with (host-required
 at that time, explicit and any challenged scopes). `complete` succeeds only if
@@ -199,8 +215,9 @@ token) and consuming the login. Every `AuthenticationFailure`, `TimeoutError`
 or `OperationCancelledError` raised by `complete` has a boolean `login_ended`:
 `True` when the login named by the callback's `state` no longer exists after
 the call (consumed, expired or unknown), `False` while it is still pending (for
-example a stray or invalid callback rejected before the claim). It does not
-change the code or recovery.
+example an invalid callback rejected with `access_denied` before the claim). A
+host-policy failure before the claim (for example `select` raising) also leaves
+the login pending. It does not change the code or recovery.
 
 Persisted binding metadata and valid tokens remain usable by recreated
 providers without rediscovery. Do not serialize the pending handle as an AHP

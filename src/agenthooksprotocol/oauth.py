@@ -675,21 +675,19 @@ class ManagedOAuthProvider:
             if not committed and not forget:
                 # A newer record replaced ours: it is kept, never wiped.
                 raise AuthenticationFailure(code="provider_failed")
-            if outcome.code == "invalid_grant":
-                raise AuthenticationFailure(
-                    code="interaction_required"
-                    if code
-                    else "credential_unavailable"
-                    if previous is None
-                    else "refresh_rejected"
-                    if config.flow == "authorization_code_pkce"
-                    else "provider_failed"
-                )
-            if outcome.code in ("access_denied", "invalid_scope"):
-                raise AuthenticationFailure(code="access_denied")
+            # Token-endpoint errors never carry scopes or choose a scope
+            # code: a code exchange's or a PKCE refresh's invalid_grant needs
+            # a login; invalid_client is classified by client source;
+            # unauthorized_client is an unusable client; anything else
+            # (access_denied, invalid_scope, server errors) is provider_failed.
+            if outcome.code == "invalid_grant" and (
+                code
+                or (previous is not None and config.flow == "authorization_code_pkce")
+            ):
+                raise AuthenticationFailure(code="interaction_required")
             if outcome.code == "invalid_client":
                 raise _InvalidClient()
-            if outcome.code == "unauthorized_client":
+            if outcome.code == "unauthorized_client" and not code:
                 raise AuthenticationFailure(code="credential_unavailable")
             raise AuthenticationFailure(code="provider_failed")
         if not committed or settled is None:
@@ -1696,7 +1694,8 @@ class ManagedOAuthProvider:
                 continue
             except _StaleMetadata:
                 if discovered or refetched:
-                    raise
+                    # The token endpoint stayed unreachable.
+                    raise AuthenticationFailure(code="provider_failed") from None
             else:
                 # Registration and the login itself run outside the grant lock.
                 return await self._login(key, metadata, config, decision, budget)
@@ -1776,19 +1775,17 @@ class ManagedOAuthProvider:
             progress.ended = False
             raise AuthenticationFailure(code="access_denied") from None
         # 1. The login named by the callback's state, before any host
-        # callback: through the handle, else the stored binding's grant key.
+        # callback, under the grant key of the target's stored binding (a
+        # handle is only compared with it, below).
         state = next(iter(values.get("state", ())), "")
         if not state:
             progress.ended = True
             raise AuthenticationFailure(code="interaction_required")
         metadata = await self.store.load_binding(binding_key(target), budget)
-        if login is not None:
-            key = login.key
-        elif metadata is not None:
-            key = grant_key(target, metadata)
-        else:
+        if metadata is None:
             progress.ended = True  # No binding: no login is reachable.
             raise AuthenticationFailure(code="interaction_required")
+        key = grant_key(target, metadata)
         progress.key, progress.state = key, state
         async with self._logins.coordinate(pending_key(key), budget) as guard:
             found = _pending_record(await guard.load())
@@ -1806,15 +1803,17 @@ class ManagedOAuthProvider:
                 raise AuthenticationFailure(code="interaction_required")
             # Every rejection until the claim leaves this login pending.
             progress.ended = False
-            if login is not None and login.generation != state:
+            if login is not None and (
+                login.key != key or login.generation != state
+            ):
                 # A handle naming another login than the callback's state is
                 # an invalid callback; both logins stay pending.
                 raise AuthenticationFailure(code="access_denied")
             requested = pending.metadata.configuration
             source = pending.metadata.client_source
             # The login's R. A record from an older release has none: its
-            # prepare-time host-required scopes apply when it holds any, else
-            # the current ones (checked after the host policy below).
+            # prepare-time host-required scopes apply when it holds them (even
+            # empty), else the current ones (checked after host policy).
             stored_required = pending.required_scopes
             assert requested.redirect_uri is not None
             # 2. Validate the callback: an invalid one never burns the login.
@@ -1851,7 +1850,9 @@ class ManagedOAuthProvider:
             required = (
                 stored_required
                 if stored_required is not None
-                else requested.required_scopes or config.required_scopes
+                else requested.required_scopes
+                if requested.required_scopes is not None
+                else config.required_scopes
             )
             document = config.client_metadata_document
             if (

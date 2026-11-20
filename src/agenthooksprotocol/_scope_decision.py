@@ -209,8 +209,13 @@ def _decide(
     if covered and grant is not None and grant.token_valid and not stale:
         return Decision("use", R, retire=retire)
     previous = set(grant.granted) if grant is not None else set()
-    # 7. Refresh.
-    if grant is not None and grant.refresh and set(R) <= previous:
+    # 7. Refresh (PKCE grants; client credentials always reissue).
+    if (
+        policy.flow == "authorization_code_pkce"
+        and grant is not None
+        and grant.refresh
+        and set(R) <= previous
+    ):
         return Decision("refresh", R, retire=retire)
     # 8. Client credentials.
     if policy.flow == "client_credentials":

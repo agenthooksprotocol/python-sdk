@@ -8,6 +8,7 @@ Every provider test runs under asyncio and Trio.
 import unittest
 from contextlib import asynccontextmanager
 from dataclasses import replace
+from urllib.parse import parse_qs, urlencode, urlsplit
 
 import anyio
 import httpx
@@ -27,6 +28,7 @@ from agenthooksprotocol.oauth import (
     OAuthPendingLogins,
     OAuthRecord,
     OperationBudget,
+    Ready,
 )
 from agenthooksprotocol.runtime import ProtocolError
 from agenthooksprotocol._scope_decision import (
@@ -380,6 +382,17 @@ TABLE = [
         grant(("read",), valid=False, refresh=True),
         None,
         ("acquire", ("write",), ("read", "write"), False),
+    ),
+    # Client credentials never refresh: they always reissue.
+    (
+        "client credentials reissue despite a refresh token",
+        "credential",
+        policy(flow=CC, H=("read",)),
+        (),
+        None,
+        grant(("read",), valid=False, refresh=True),
+        None,
+        ("acquire", ("read",), ("read",), False),
     ),
     # 8. Client credentials.
     (
@@ -911,6 +924,150 @@ class ProviderTests(unittest.TestCase):
                 )
                 self.assertFalse(base.pending_logins(p))
                 n.token_hook = None
+
+        self.run_async(run)
+
+    def test_refresh_and_reissue_token_errors_are_classified(self):
+        async def unreachable(request):
+            raise httpx.ConnectError("unreachable", request=request)
+
+        def answer(status, body=None):
+            async def respond(request):
+                return httpx.Response(status, json=body)
+
+            return respond
+
+        pkce_cases = (
+            (answer(400, {"error": "invalid_grant"}), "interaction_required"),
+            (answer(401, {"error": "invalid_client"}), "credential_unavailable"),
+            (answer(400, {"error": "unauthorized_client"}), "credential_unavailable"),
+            (answer(400, {"error": "access_denied"}), "provider_failed"),
+            (answer(400, {"error": "invalid_scope"}), "provider_failed"),
+            (answer(500, {"error": "server_error"}), "provider_failed"),
+            (unreachable, "provider_failed"),
+            (
+                answer(200, {"access_token": "t", "token_type": "mac"}),
+                "provider_failed",
+            ),
+        )
+        cc_cases = (
+            (answer(400, {"error": "invalid_grant"}), "provider_failed"),
+            (answer(400, {"error": "unauthorized_client"}), "credential_unavailable"),
+            (answer(401, {"error": "invalid_client"}), "credential_unavailable"),
+            (answer(400, {"error": "access_denied"}), "provider_failed"),
+            (answer(400, {"error": "invalid_scope"}), "provider_failed"),
+        )
+
+        async def refresh(p, n, s, policy, target, now):
+            policy.configuration = replace(
+                base.Policy(PKCE).configuration, required_scopes=("read",)
+            )
+            for hook, code in pkce_cases:
+                s.records.clear()
+                await self.complete_login(
+                    p, target, await p.prepare(target, OperationBudget.after(5))
+                )
+                now[0] += 61
+                n.token_hook = hook
+                with (
+                    anyio.CancelScope() as scope,
+                    self.assertRaises(AuthenticationFailure) as failure,
+                ):
+                    await p.credential(self.context(scope))
+                self.assertEqual(
+                    (failure.exception.code, failure.exception.required_scopes),
+                    (code, ()),
+                )
+                self.assertIsNone(failure.exception.login_ended)
+                self.assertEqual(n.tokens[-1]["grant_type"], ["refresh_token"])
+                n.token_hook = None
+
+        async def reissue(p, n, s, policy, target, now):
+            policy.configuration = replace(
+                policy.configuration, required_scopes=("read",)
+            )
+            await p.prepare(target, OperationBudget.after(5))
+            for hook, code in cc_cases:
+                now[0] += 61
+                n.token_hook = hook
+                with self.assertRaises(AuthenticationFailure) as failure:
+                    await p.prepare(target, OperationBudget.after(5))
+                self.assertEqual(
+                    (failure.exception.code, failure.exception.required_scopes),
+                    (code, ()),
+                )
+                self.assertEqual(n.tokens[-1]["grant_type"], ["client_credentials"])
+                n.token_hook = None
+
+        for test in (refresh, reissue):
+            with self.subTest(test.__name__):
+                self.run_async(test)
+
+    def test_handle_from_another_grant_key_is_an_invalid_callback(self):
+        async def run(p, n, s, policy, target, now):
+            policy.configuration = base.Policy(PKCE).configuration
+            older = await p.prepare(target, OperationBudget.after(5))
+            # Host policy moves to another client: a new grant key.
+            policy.configuration = replace(policy.configuration, client_id="other")
+            self.permissive(policy)
+            current = await p.prepare(target, OperationBudget.after(5))
+            self.assertNotEqual(older.key, current.key)
+            state = parse_qs(urlsplit(current.authorization_url).query)["state"][0]
+            with self.assertRaises(AuthenticationFailure) as failure:
+                await p.complete(
+                    target,
+                    older,
+                    "https://host.test/callback?"
+                    + urlencode({"state": state, "code": "valid"}),
+                    OperationBudget.after(5),
+                )
+            self.assertEqual(
+                (
+                    failure.exception.code,
+                    failure.exception.required_scopes,
+                    failure.exception.login_ended,
+                ),
+                ("access_denied", (), False),
+            )
+            states = {item.state for item in base.pending_logins(p)}
+            self.assertIn(state, states)
+            self.assertIn(older.generation, states)
+            self.assertFalse(n.tokens)
+
+        self.run_async(run)
+
+    def test_legacy_record_with_empty_prepare_time_requirement(self):
+        async def run(p, n, s, policy, target, now):
+            self.permissive(policy)
+            policy.configuration = replace(
+                base.Policy(PKCE).configuration, scopes=("read", "write")
+            )
+            login = await p.prepare(target, OperationBudget.after(5))
+            for key, record in list(p._logins.records.items()):
+                p._logins.records[key] = OAuthPendingLogins(
+                    record.generation,
+                    tuple(
+                        replace(item, required_scopes=None) for item in record.logins
+                    ),
+                )
+            # The record holds an empty prepare-time requirement: the current
+            # host-required scopes do not apply to it.
+            policy.configuration = replace(
+                policy.configuration, required_scopes=("write",)
+            )
+
+            async def narrow(request):
+                return httpx.Response(
+                    200,
+                    json={
+                        "access_token": "narrow",
+                        "token_type": "Bearer",
+                        "scope": "read",
+                    },
+                )
+
+            n.token_hook = narrow
+            self.assertIsInstance(await self.complete_login(p, target, login), Ready)
 
         self.run_async(run)
 

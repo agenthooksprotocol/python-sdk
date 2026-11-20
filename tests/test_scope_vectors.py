@@ -16,9 +16,8 @@ Python mappings:
   binding; a stored binding is passed without `scopes`, which is no
   constraint); `preemptive`: the up-front lookup (no binding); `challenge`:
   `challenge` with the attempt for generation `sent`; `prepare`: host
-  `prepare`; `fresh`: bound delivery for a preset, else `prepare` (the only
-  entry point other than a challenge that discovers an unbound target; the
-  vectors' fresh outcomes are decided before step 9).
+  `prepare`; `fresh`: bound delivery for a preset, else an anonymous request
+  receiving the vector's 401, handled by `challenge`.
 - `host_error` `client_selection` is `OAuthTrustPolicy.select`;
   `destination` is `OAuthNetwork.authorize` for the named endpoint.
 - `required` is the R `decide` computed for the operation.
@@ -443,9 +442,24 @@ class ScopeVectorTests(unittest.TestCase):
             )
             result = error = None
             try:
-                if path == "prepare" or (path == "fresh" and bound != "preset"):
+                if path == "prepare":
                     result = await env.p.prepare(
                         target, budget(), required_scopes=tuple(given["explicit"])
+                    )
+                elif path == "fresh" and bound != "preset":
+                    # First use of an unbound target: an anonymous request
+                    # receives the vector's 401 (else a bare Bearer one),
+                    # which the provider handles.
+                    raw = given.get("challenge", {"status": 401})
+                    result = await env.p.challenge(
+                        context,
+                        AuthChallenge(
+                            raw["status"],
+                            {"www-authenticate": raw.get("www_authenticate", "Bearer")},
+                            RESOURCE,
+                            None,
+                            True,
+                        ),
                     )
                 elif path == "challenge":
                     result = await env.p.challenge(context, challenge)
@@ -548,7 +562,21 @@ class ScopeVectorTests(unittest.TestCase):
                 env.p._logins.records[key] = OAuthPendingLogins(
                     record.generation,
                     tuple(
-                        replace(item, required_scopes=None) for item in record.logins
+                        replace(
+                            item,
+                            required_scopes=None,
+                            # A record without the prepare-time host-required
+                            # scopes holds None.
+                            metadata=item.metadata
+                            if "prepare_time_host_required" in given
+                            else replace(
+                                item.metadata,
+                                configuration=replace(
+                                    item.metadata.configuration, required_scopes=None
+                                ),
+                            ),
+                        )
+                        for item in record.logins
                     ),
                 )
         pending = given["pending"]

@@ -479,10 +479,16 @@ rotated refresh token. No outcome leaves a record in the in-flight `refreshing`
 state. A timeout, 5xx, non-OAuth response or transient OAuth error retains
 refresh material and advises retry, not automatic login. An ambiguous exchange
 may have rotated credentials externally; a retry can ultimately return
-`invalid_grant`. A PKCE refresh `invalid_grant` drops both tokens (unless a
-newer record already replaced them) and fails `refresh_rejected`. Client
-credentials remain noninteractive. After a 401 the rejected access token is not
-sent again.
+`invalid_grant`. Only PKCE grants refresh; client credentials always
+reissue, noninteractively. Token-endpoint errors on a refresh or reissue
+carry no scopes: a PKCE refresh `invalid_grant` drops both tokens (unless a
+newer record already replaced them) and fails `interaction_required`;
+`invalid_client` is classified by client source (`credential_unavailable`
+for a pre-registered client, `invalid_configuration` for CIMD, a new
+registration or login for DCR); `unauthorized_client` fails
+`credential_unavailable`; any other OAuth error (including `access_denied`
+and `invalid_scope`), an unreachable endpoint or an invalid response fails
+`provider_failed`. After a 401 the rejected access token is not sent again.
 
 `await managed.reset(target, budget, handle=pending_or_credential)` deliberately
 clears the **current** grant and its pending logins, not just the handle's

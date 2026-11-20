@@ -728,7 +728,7 @@ class RegistrationLifecycleTests(unittest.TestCase):
             self.assertNotIn("dcr-secret-1", repr(ready))
             env.n.token_hook = rejecting(400, error="invalid_scope")
             env.now[0] += 61
-            failure = await self.fails("access_denied", env.lookup())
+            failure = await self.fails("provider_failed", env.lookup())
             self.assertNotIn("dcr-secret-1", str(failure) + repr(failure.__dict__))
             self.assertNotIn("dcr-secret-1", env.dump())
 

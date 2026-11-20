@@ -34,10 +34,13 @@ from agenthooksprotocol.oauth import (
     OAuthClientMetadataDocument,
     OAuthDynamicRegistration,
     OAuthPendingLogins,
+    OAuthRecord,
     OperationBudget,
     PendingLogin,
     Ready,
+    StoredToken,
 )
+from agenthooksprotocol._oauth_types import binding_key, grant_key
 
 RESOURCE = "https://resource.test/api"
 ISSUER = "https://issuer.test"
@@ -376,8 +379,8 @@ class ManagedOAuthRuntimeTests(unittest.TestCase):
             )
             self.assertTrue(token_request.headers["authorization"].startswith("Basic "))
             self.assertNotIn("client_secret", n.tokens[0])
-            self.assertEqual(n.tokens[1]["grant_type"], ["refresh_token"])
-            self.assertEqual(n.tokens[1]["refresh_token"], ["refresh-1"])
+            # Client credentials reissue; they never refresh.
+            self.assertEqual(n.tokens[1]["grant_type"], ["client_credentials"])
             self.assertTrue(all(form["resource"] == [RESOURCE] for form in n.tokens))
             await p.reset(target, OperationBudget.after(5))
             self.assertFalse(s.records)
@@ -446,7 +449,7 @@ class ManagedOAuthRuntimeTests(unittest.TestCase):
 
     def test_cancel_network_preserves_refresh_and_allows_explicit_retry(self):
         async def run(p, n, s, policy, target, now):
-            await p.prepare(target, OperationBudget.after(5))
+            await self.pkce_grant(p, n, policy, target)
             old = next(iter(s.records.values())).token
             now[0] += 61
             entered = anyio.Event()
@@ -999,7 +1002,7 @@ class ManagedOAuthRuntimeTests(unittest.TestCase):
 
     def test_uncertain_refresh_preserves_material_and_retry_can_recover(self):
         async def run(p, n, s, policy, target, now):
-            await p.prepare(target, OperationBudget.after(5))
+            await self.pkce_grant(p, n, policy, target)
             old_token = next(iter(s.records.values())).token
             now[0] += 61
 
@@ -1036,7 +1039,8 @@ class ManagedOAuthRuntimeTests(unittest.TestCase):
     def test_unknown_expiry_narrowed_scopes_initial_and_refresh(self):
         async def run(p, n, s, policy, target, now):
             policy.configuration = replace(
-                policy.configuration, scopes=("read", "write")
+                Policy("authorization_code_pkce").configuration,
+                scopes=("read", "write"),
             )
 
             async def token(request):
@@ -1051,7 +1055,9 @@ class ManagedOAuthRuntimeTests(unittest.TestCase):
                 )
 
             n.token_hook = token
-            first = await p.prepare(target, OperationBudget.after(5))
+            first = await self.complete_login(
+                p, target, await p.prepare(target, OperationBudget.after(5))
+            )
             record = next(iter(s.records.values()))
             self.assertIsNone(record.token.expires_at)
             self.assertEqual(record.token.scopes, ("read",))
@@ -1553,11 +1559,12 @@ class ManagedOAuthRuntimeTests(unittest.TestCase):
     def test_narrowed_refresh_omitted_scope_inherits_previous_grant(self):
         async def run(p, n, s, policy, target, now):
             policy.configuration = replace(
-                policy.configuration, scopes=("read", "write")
+                Policy("authorization_code_pkce").configuration,
+                scopes=("read", "write"),
             )
 
             async def token(request):
-                initial = n.tokens[-1]["grant_type"] == ["client_credentials"]
+                initial = n.tokens[-1]["grant_type"] == ["authorization_code"]
                 return httpx.Response(
                     200,
                     json={
@@ -1569,7 +1576,9 @@ class ManagedOAuthRuntimeTests(unittest.TestCase):
                 )
 
             n.token_hook = token
-            await p.prepare(target, OperationBudget.after(5))
+            await self.complete_login(
+                p, target, await p.prepare(target, OperationBudget.after(5))
+            )
             now[0] += 61
             await p.prepare(target, OperationBudget.after(5))
             record = next(iter(s.records.values()))
@@ -2399,18 +2408,27 @@ class ManagedOAuthRuntimeTests(unittest.TestCase):
                     requested = sorted(
                         set(vector["requested"]) & set(vector["allowed"])
                     )
+                    refreshing = vector.get("exchange") == "refresh"
+                    # Only PKCE grants refresh; client credentials reissue.
+                    flow = (
+                        "authorization_code_pkce"
+                        if refreshing
+                        else "client_credentials"
+                    )
                     config = OAuthClientConfiguration(
                         issuer=ISSUER,
                         client_id="host-client",
-                        flow="client_credentials",
+                        flow=flow,
                         scopes=tuple(requested),
                         allowed_scopes=tuple(vector["allowed"]),
                         required_scopes=tuple(vector["required"]),
+                        redirect_uri="https://host.test/callback"
+                        if refreshing
+                        else None,
                     )
                     responses = []
-                    refreshing = vector.get("exchange") == "refresh"
                     seeded = "previous_granted" in vector
-                    if seeded:
+                    if seeded and not refreshing:
                         responses.append(
                             {
                                 "access_token": "seed-access",
@@ -2443,11 +2461,7 @@ class ManagedOAuthRuntimeTests(unittest.TestCase):
                         expiry_skew=0,
                     )
                     typed = OAuthBinding(
-                        ISSUER,
-                        RESOURCE,
-                        "host-client",
-                        "client_credentials",
-                        tuple(requested),
+                        ISSUER, RESOURCE, "host-client", flow, tuple(requested)
                     )
                     target = AuthTarget(
                         "vectors", "backend", RESOURCE, "event", None, typed
@@ -2457,7 +2471,7 @@ class ManagedOAuthRuntimeTests(unittest.TestCase):
                         "issuer": ISSUER,
                         "resource": RESOURCE,
                         "clientId": "host-client",
-                        "flow": "client_credentials",
+                        "flow": flow,
                         "scopes": requested,
                     }
                     delivered = []
@@ -2467,7 +2481,27 @@ class ManagedOAuthRuntimeTests(unittest.TestCase):
                         return httpx.Response(204)
 
                     try:
-                        if seeded:
+                        if seeded and refreshing:
+                            # A stored, expired PKCE grant with a refresh token.
+                            login = await provider.prepare(
+                                target, OperationBudget.after(5)
+                            )
+                            await provider.cancel(
+                                target, login, OperationBudget.after(5)
+                            )
+                            metadata = store.bindings[binding_key(target)]
+                            store.records[grant_key(target, metadata)] = OAuthRecord(
+                                "seed",
+                                "active",
+                                metadata,
+                                StoredToken(
+                                    "seed-access",
+                                    now[0] - 1,
+                                    "r1",
+                                    tuple(sorted(vector["previous_granted"])),
+                                ),
+                            )
+                        elif seeded:
                             await provider.prepare(target, OperationBudget.after(5))
                             now[0] += 2
                         policy.configuration = config
@@ -2565,7 +2599,9 @@ class ManagedOAuthRuntimeTests(unittest.TestCase):
                                 network.tokens[-1]["refresh_token"], ["r1"]
                             )
                             self.assertNotIn("scope", network.tokens[-1])
-                        self.assertEqual(len(network.tokens), 2 if seeded else 1)
+                        self.assertEqual(
+                            len(network.tokens), 2 if seeded and not refreshing else 1
+                        )
                         self.assertFalse(network.responses)
                         self.assertTrue(store.coordinated)
                     finally:
@@ -2725,8 +2761,8 @@ class ManagedOAuthRuntimeTests(unittest.TestCase):
             )
             self.assertEqual(len(token_requests), 2)
             self.assertEqual(str(token_requests[-1].url), ISSUER + "/rotated-token")
-            self.assertEqual(n.tokens[-1]["grant_type"], ["refresh_token"])
-            self.assertEqual(n.tokens[-1]["refresh_token"], ["endpoint-refresh-1"])
+            # Client credentials reissue with the current secret.
+            self.assertEqual(n.tokens[-1]["grant_type"], ["client_credentials"])
             self.assertEqual(
                 b64decode(token_requests[-1].headers["authorization"].split()[1]),
                 b"host-client:latest-endpoint-secret",
@@ -2863,7 +2899,7 @@ class ManagedOAuthRuntimeTests(unittest.TestCase):
         """Canonical lifecycle: unbound-lookup-refreshes-expired-token."""
 
         async def run(p, n, s, policy, target, now):
-            first = await p.prepare(target, OperationBudget.after(5))
+            first = await self.pkce_grant(p, n, policy, target)
             now[0] += 61
             fresh = ManagedOAuthProvider(
                 network=n,
@@ -2921,7 +2957,7 @@ class ManagedOAuthRuntimeTests(unittest.TestCase):
                 )
             self.assertEqual(
                 (failure.exception.code, failure.exception.recovery),
-                ("refresh_rejected", "login"),
+                ("interaction_required", "login"),
             )
             self.assertFalse(s.records)
 
@@ -3275,7 +3311,7 @@ class ManagedOAuthRuntimeTests(unittest.TestCase):
                 (httpx.Response(503), "provider_failed"),
                 (
                     httpx.Response(400, json={"error": "invalid_grant"}),
-                    "refresh_rejected",
+                    "interaction_required",
                 ),
             ):
 

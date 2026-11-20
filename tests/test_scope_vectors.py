@@ -13,10 +13,11 @@ Mapping of vector inputs to Python host boundaries:
   `preemptive`: the up-front lookup for an unbound destination; `fresh`,
   `cached`, `prepare`: host `prepare`; `challenge`: `challenge` with the
   presented credential.
-- host_error `client_selection` is `OAuthTrustPolicy.select`; Python has no
-  separate token-validation callback, so `token_validation` is the host's
-  resource authorization (`OAuthTrustPolicy.resource`); `destination` is
+- host_error `client_selection` is `OAuthTrustPolicy.select`; `destination` is
   `OAuthNetwork.authorize` for the named endpoint.
+- A vector's `requires` names optional SDK features; a vector needing one
+  Python lacks is skipped, never remapped onto another mechanism, and an
+  unknown feature fails.
 - `acquisition_scopes` is read from the token request, the login's
   authorization URL, or (after `interaction_required`) the login a host
   `prepare` with the same challenge and the error's scopes creates.
@@ -49,6 +50,9 @@ from agenthooksprotocol.oauth import (
 )
 
 SCOPED = ("access_denied", "interaction_required")
+# Optional SDK features the vectors may require, and those Python has.
+KNOWN_FEATURES = {"complete_handle", "token_validation_callback"}
+PYTHON_FEATURES = {"complete_handle"}
 CALLBACK = "https://host.test/callback"
 DOCUMENT = OAuthClientMetadataDocument(
     "https://adapter.example/oauth/client.json", (CALLBACK,)
@@ -135,8 +139,13 @@ class Env:
 class ScopeDecisionVectorTests(unittest.TestCase):
     def run_vectors(self, kind, run):
         for vector in FIXTURES[kind]:
+            required = set(vector.get("requires", ()))
+            self.assertLessEqual(required, KNOWN_FEATURES, vector["id"])
             for backend in ("asyncio", "trio"):
                 with self.subTest(vector=vector["id"], backend=backend):
+                    missing = required - PYTHON_FEATURES
+                    if missing:
+                        self.skipTest("requires " + ", ".join(sorted(missing)))
                     anyio.run(run, vector, backend=backend)
 
     def test_scope_decision_vectors(self):
@@ -212,8 +221,6 @@ class ScopeDecisionVectorTests(unittest.TestCase):
 
             if failure["callback"] == "client_selection":
                 env.policy.select = refuse
-            elif failure["callback"] == "token_validation":
-                env.policy.resource = refuse
             else:
                 self.assertEqual(failure["target"], "registration_endpoint")
                 env.configure(
@@ -388,11 +395,24 @@ class ScopeDecisionVectorTests(unittest.TestCase):
             url += "&code=again"
         before = {k: r.generation for k, r in env.grants().items()}
         handle = login if given["handle"] == "matching" else None
+        select = env.policy.select
+        failure = given.get("host_error")
+        if failure is not None:
+            self.assertEqual(failure["callback"], "client_selection")
+            raised = AuthenticationFailure(
+                code=failure["code"], required_scopes=tuple(failure["scopes"])
+            )
+
+            async def refuse(*args):
+                raise raised
+
+            env.policy.select = refuse
         error = None
         try:
             ready = await env.p.complete(target, handle, url, budget())
         except AuthenticationFailure as caught:
             error = caught
+        env.policy.select = select
         if expect.get("code") is None and not expect.get("failed"):
             self.assertIsNone(error)
             self.assertIsInstance(ready, Ready)

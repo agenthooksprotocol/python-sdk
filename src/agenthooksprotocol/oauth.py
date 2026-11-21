@@ -1452,11 +1452,17 @@ class ManagedOAuthProvider:
             validate_configuration,
         )
 
+        classified = classify_challenge(challenge)
+        sent = rejected.generation if rejected is not None else None
+        if retires(classified, sent):
+            # Decide step 0, before the target check, host policy or any
+            # other step: the rejected token is never resent, whatever the
+            # outcome.
+            assert rejected is not None
+            await self._retire(rejected, budget)
         self._check_target(target)
         interactive = op == "prepare"
         binding = binding_key(target)
-        classified = classify_challenge(challenge)
-        sent = rejected.generation if rejected is not None else None
         # Selection sees this operation's explicit and challenged scopes.
         wanted = tuple(
             sorted(
@@ -1470,12 +1476,6 @@ class ManagedOAuthProvider:
         # the new client instead of serving the replaced client's.
         forced = False
         force = force_registration
-
-        if retires(classified, sent):
-            # Decide step 0, before host policy or any other step: the
-            # rejected token is never resent, whatever the outcome.
-            assert rejected is not None
-            await self._retire(rejected, budget)
 
         async def decided(config: OAuthClientConfiguration) -> None:
             # Decide steps 1-4, before any authorization-server request.
@@ -1874,8 +1874,9 @@ class ManagedOAuthProvider:
             ):
                 # Host policy no longer permits the login's client.
                 raise AuthenticationFailure(code="invalid_configuration")
-            if "error" not in values:
-                await self.network.authorize(callback_url, "authorization", budget)
+            # The destination check runs for every valid callback, consent
+            # denials included.
+            await self.network.authorize(callback_url, "authorization", budget)
             # 4. Claim the login once; expired logins go with it. An uncertain
             # outcome is re-read afterwards.
             now = self.clock()
@@ -2096,25 +2097,33 @@ class ManagedOAuthProvider:
         context: AuthContext,
         challenge: AuthChallenge,
     ) -> BearerCredential | None:
-        target = normalize_auth_target(context, namespace=self.namespace)
         attempt = challenge.attempted_identity
-        if attempt is not None and (
-            not isinstance(attempt, _Attempt)
-            or attempt.target_identity != target.identity
-        ):
-            raise AuthenticationFailure(code="invalid_configuration")
-        if challenge.status not in (401, 403):
-            return None
         budget = self._budget()
-        result = await self._run(
-            lambda: self._acquire(
+
+        async def run() -> Ready | None:
+            if challenge.status == 401 and isinstance(attempt, _Attempt):
+                # Decide step 0 precedes every target and configuration
+                # check: the attempt names the rejected grant generation.
+                await self._retire(attempt, budget)
+            target = normalize_auth_target(context, namespace=self.namespace)
+            if attempt is not None and (
+                not isinstance(attempt, _Attempt)
+                or attempt.target_identity != target.identity
+            ):
+                raise AuthenticationFailure(code="invalid_configuration")
+            if challenge.status not in (401, 403):
+                return None
+            result = await self._acquire(
                 target,
                 budget,
                 challenge,
                 attempt if isinstance(attempt, _Attempt) else None,
                 op="challenge",
-            ),
-            budget,
-        )
-        assert isinstance(result, Ready)
+            )
+            assert isinstance(result, Ready)
+            return result
+
+        result = await self._run(run, budget)
+        if result is None:
+            return None
         return result.credential if challenge.retry_allowed else None

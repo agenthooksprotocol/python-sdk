@@ -211,9 +211,11 @@ cap) or expiry.
    grant key) is an invalid callback too. An invalid or unparseable callback
    fails `access_denied` with `login_ended` False and leaves the logins
    pending.
-3. It applies host policy: client selection, destination checks, and the
-   login's client source, which fails `invalid_configuration` when host policy
-   no longer permits it. A failure keeps its code and leaves the login pending.
+3. It applies host policy: client selection, the login's client source,
+   which fails `invalid_configuration` when host policy no longer permits it,
+   and the destination check of the callback, for every valid callback
+   including a consent denial. A failure keeps its code, carries no scopes and
+   leaves the login pending.
 4. It claims the login once.
 5. A consent denial then fails `access_denied` (`invalid_configuration` for a
    CIMD `invalid_client`).
@@ -401,7 +403,9 @@ selected client's configured scopes.
 
 Every entry point (`prepare`, delivery `credential`, the up-front lookup and
 `challenge`) runs one scope decision, in this order: a 401 first retires the
-token that was sent (if it is still the stored one), whatever follows; then
+token that was sent (if it is still the stored one), whatever follows, and
+before any target or configuration check whenever the attempt identifies the
+rejected grant; then
 configuration (requested scopes outside the ceiling, a preset that differs, or
 an invalid scope token, including a malformed `prepare(...,
 required_scopes=...)`, fail `invalid_configuration`); then the challenge form

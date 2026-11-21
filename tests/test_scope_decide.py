@@ -676,6 +676,99 @@ class ProviderTests(unittest.TestCase):
 
         self.run_async(run)
 
+    def test_401_retires_before_target_and_configuration_checks(self):
+        async def run(p, n, s, policy, target, now):
+            self.permissive(policy)
+            first = await p.prepare(target, OperationBudget.after(5))
+
+            def retired():
+                record = next(iter(s.records.values()))
+                return record.token.access_token is None
+
+            rejected = AuthChallenge(
+                401,
+                {"www-authenticate": "Bearer"},
+                RESOURCE,
+                first.credential.identity,
+                True,
+            )
+            with anyio.CancelScope() as scope:
+                # A target the attempt does not belong to (a bearer binding):
+                # the target check fails, after the token is retired.
+                bearer = AuthContext(
+                    {"id": "backend"},
+                    {"type": "bearer", "tokenEnv": "TOKEN"},
+                    RESOURCE,
+                    "event",
+                    scope,
+                )
+                with self.assertRaises(AuthenticationFailure) as failure:
+                    await p.challenge(bearer, rejected)
+            self.assertEqual(
+                (failure.exception.code, failure.exception.required_scopes),
+                ("invalid_configuration", ()),
+            )
+            self.assertTrue(retired())
+            # A configuration failure (requested outside the ceiling): the
+            # renewed token is retired first too.
+            second = await p.prepare(target, OperationBudget.after(5))
+            policy.configuration = replace(
+                policy.configuration, scopes=("read", "admin"), allowed_scopes=("read",)
+            )
+            with (
+                anyio.CancelScope() as scope,
+                self.assertRaises(AuthenticationFailure) as failure,
+            ):
+                await p.challenge(
+                    self.context(scope),
+                    replace(rejected, attempted_identity=second.credential.identity),
+                )
+            self.assertEqual(failure.exception.code, "invalid_configuration")
+            self.assertTrue(retired())
+
+        self.run_async(run)
+
+    def test_destination_check_runs_before_claiming_a_consent_denial(self):
+        async def run(p, n, s, policy, target, now):
+            self.permissive(policy)
+            policy.configuration = base.Policy(PKCE).configuration
+            login = await p.prepare(target, OperationBudget.after(5))
+            authorize = n.authorize
+            checked = []
+
+            async def refuse(url, purpose, budget):
+                if purpose == "authorization" and url.startswith(
+                    "https://host.test/callback"
+                ):
+                    checked.append(url)
+                    raise AuthenticationFailure(
+                        code="untrusted_destination", required_scopes=("read",)
+                    )
+                await authorize(url, purpose, budget)
+
+            n.authorize = refuse
+            state = parse_qs(urlsplit(login.authorization_url).query)["state"][0]
+            with self.assertRaises(AuthenticationFailure) as failure:
+                await p.complete(
+                    target,
+                    login,
+                    "https://host.test/callback?"
+                    + urlencode({"state": state, "error": "access_denied"}),
+                    OperationBudget.after(5),
+                )
+            self.assertEqual(
+                (
+                    failure.exception.code,
+                    failure.exception.required_scopes,
+                    failure.exception.login_ended,
+                ),
+                ("untrusted_destination", (), False),
+            )
+            self.assertTrue(checked)
+            self.assertEqual([item.state for item in base.pending_logins(p)], [state])
+
+        self.run_async(run)
+
     def test_newer_generation_than_the_one_sent_is_used(self):
         async def run(p, n, s, policy, target, now):
             self.permissive(policy)

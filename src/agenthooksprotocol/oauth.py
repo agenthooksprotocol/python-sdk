@@ -1617,6 +1617,8 @@ class ManagedOAuthProvider:
                             ),
                             metadata,
                         )
+                        # Fetched in this operation: never fetched again.
+                        fresh = True
                     except AuthenticationFailure:
                         if lookup:
                             raise

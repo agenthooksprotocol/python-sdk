@@ -925,6 +925,75 @@ class ProviderTests(unittest.TestCase):
 
         self.run_async(run)
 
+    def test_missing_server_metadata_is_fetched_once(self):
+        def strip(s):
+            for key, stored in list(s.bindings.items()):
+                s.bindings[key] = replace(
+                    stored, token_endpoint="", authorization_endpoint=None
+                )
+
+        def fetches(n, count):
+            return [
+                (r.url.host, purpose)
+                for r, purpose in n.requests[count:]
+                if purpose == "metadata"
+            ]
+
+        async def login(p, n, s, policy, target, now):
+            self.permissive(policy)
+            policy.configuration = base.Policy(PKCE).configuration
+            await self.complete_login(
+                p, target, await p.prepare(target, OperationBudget.after(5))
+            )
+            s.records.clear()
+            strip(s)
+            count = len(n.requests)
+            self.assertIsInstance(
+                await p.prepare(target, OperationBudget.after(5)), PendingLogin
+            )
+            self.assertEqual(fetches(n, count), [("issuer.test", "metadata")])
+
+        async def step_up(p, n, s, policy, target, now):
+            self.permissive(policy)
+            policy.configuration = replace(
+                policy.configuration, scopes=("read", "write")
+            )
+            first = await p.prepare(target, OperationBudget.after(5))
+            strip(s)
+
+            async def wide(request):
+                return httpx.Response(
+                    200,
+                    json={
+                        "access_token": "stepped",
+                        "token_type": "Bearer",
+                        "scope": "read write",
+                    },
+                )
+
+            n.token_hook = wide
+            count = len(n.requests)
+            with anyio.CancelScope() as scope:
+                await p.challenge(
+                    self.context(scope),
+                    AuthChallenge(
+                        403,
+                        {
+                            "www-authenticate": 'Bearer error="insufficient_scope",'
+                            ' scope="write"'
+                        },
+                        RESOURCE,
+                        first.credential.identity,
+                        True,
+                    ),
+                )
+            self.assertEqual(fetches(n, count), [("issuer.test", "metadata")])
+            self.assertEqual(n.tokens[-1]["grant_type"], ["client_credentials"])
+
+        for test in (login, step_up):
+            with self.subTest(test.__name__):
+                self.run_async(test)
+
     def test_newer_generation_than_the_one_sent_is_used(self):
         async def run(p, n, s, policy, target, now):
             self.permissive(policy)

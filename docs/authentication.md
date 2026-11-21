@@ -213,8 +213,8 @@ cap) or expiry.
    pending.
 3. It applies host policy: client selection, the login's client source,
    which fails `invalid_configuration` when host policy no longer permits it,
-   and the destination check of the callback, for every valid callback
-   including a consent denial. A failure keeps its code, carries no scopes and
+   and the destination checks of the callback and the token endpoint, for
+   every valid callback including a consent denial. A failure keeps its code, carries no scopes and
    leaves the login pending.
 4. It claims the login once.
 5. A consent denial then fails `access_denied` (`invalid_configuration` for a

@@ -1874,9 +1874,12 @@ class ManagedOAuthProvider:
             ):
                 # Host policy no longer permits the login's client.
                 raise AuthenticationFailure(code="invalid_configuration")
-            # The destination check runs for every valid callback, consent
-            # denials included.
+            # The destination checks (the callback and the token endpoint)
+            # run for every valid callback, consent denials included.
             await self.network.authorize(callback_url, "authorization", budget)
+            await self.network.authorize(
+                pending.metadata.token_endpoint, "token", budget
+            )
             # 4. Claim the login once; expired logins go with it. An uncertain
             # outcome is re-read afterwards.
             now = self.clock()

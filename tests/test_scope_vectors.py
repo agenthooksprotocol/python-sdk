@@ -88,6 +88,7 @@ FIELDS = {
             "challenge",
             "prior_401_hint",
             "host_error",
+            "target_error",
         },
         {
             "code",
@@ -126,6 +127,13 @@ FIELDS = {
 }
 GRANT_FIELDS = {"generation", "granted", "token", "refresh"}
 HOST_ERROR_FIELDS = {"callback", "target", "code", "scopes"}
+TARGET_ERROR_FIELDS = {"check", "code"}
+# Host destination checks by vector target.
+DESTINATIONS = {
+    "registration_endpoint": "registration",
+    "issuer_metadata": "metadata",
+    "token_endpoint": "token",
+}
 CHALLENGE_FIELDS = {"status", "www_authenticate"}
 CLAIM_FIELDS = {"outcome", "error_code", "reread"}
 
@@ -249,6 +257,7 @@ class ScopeVectorTests(unittest.TestCase):
             for name, fields in (
                 ("grant", GRANT_FIELDS),
                 ("host_error", HOST_ERROR_FIELDS),
+                ("target_error", TARGET_ERROR_FIELDS),
                 ("challenge", CHALLENGE_FIELDS),
                 ("claim", CLAIM_FIELDS),
             ):
@@ -484,10 +493,7 @@ class ScopeVectorTests(unittest.TestCase):
                     env.policy.select = refuse
                 else:
                     self.assertEqual(failure["callback"], "destination")
-                    purpose = {
-                        "registration_endpoint": "registration",
-                        "issuer_metadata": "metadata",
-                    }[failure["target"]]
+                    purpose = DESTINATIONS[failure["target"]]
                     if purpose == "registration":
                         env.configure(
                             client_id="",
@@ -515,7 +521,12 @@ class ScopeVectorTests(unittest.TestCase):
                     )
                 challenge = AuthChallenge(
                     given["challenge"]["status"],
-                    {"www-authenticate": given["challenge"]["www_authenticate"]},
+                    {
+                        # The vectors' resource is this host's resource.
+                        "www-authenticate": given["challenge"][
+                            "www_authenticate"
+                        ].replace("https://api.example/", "https://resource.test/")
+                    },
                     RESOURCE,
                     attempt,
                     True,
@@ -528,6 +539,14 @@ class ScopeVectorTests(unittest.TestCase):
                 and given["grant"]["generation"] == given["sent"]
                 else None
             )
+            # A target or configuration check that fails before any decide
+            # step: the operation's binding is unsupported.
+            checked = context
+            if "target_error" in given:
+                self.assertEqual(given["target_error"]["check"], "unsupported_binding")
+                checked = replace(
+                    context, binding=dict(wire, flow="device_authorization")
+                )
             del decisions[:]
             requests, server, tokens = (
                 len(env.n.requests),
@@ -562,9 +581,9 @@ class ScopeVectorTests(unittest.TestCase):
                         ),
                     )
                 elif path == "challenge":
-                    result = await env.p.challenge(context, challenge)
+                    result = await env.p.challenge(checked, challenge)
                 else:
-                    result = await env.p.credential(context)
+                    result = await env.p.credential(checked)
             except AuthenticationFailure as caught:
                 error = caught
         code = error.code if error is not None else None
@@ -702,15 +721,26 @@ class ScopeVectorTests(unittest.TestCase):
             )
         failure = given.get("host_error")
         if failure is not None:
-            self.assertEqual(failure["callback"], "client_selection")
             raised = AuthenticationFailure(
                 code=failure["code"], required_scopes=tuple(failure["scopes"])
             )
+            if failure["callback"] == "client_selection":
 
-            async def refuse(*args):
-                raise raised
+                async def refuse(*args):
+                    raise raised
 
-            env.policy.select = refuse
+                env.policy.select = refuse
+            else:
+                self.assertEqual(failure["callback"], "destination")
+                purpose = DESTINATIONS[failure["target"]]
+                authorize = env.n.authorize
+
+                async def destination(url, kind, budget):
+                    if kind == purpose and urlsplit(url).hostname == "issuer.test":
+                        raise raised
+                    await authorize(url, kind, budget)
+
+                env.n.authorize = destination
         exchange = given["exchange"]
         env.n.token_hook = {
             "ok": granting(env.n, " ".join(sorted(given["granted"]))),

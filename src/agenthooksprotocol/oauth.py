@@ -36,6 +36,7 @@ from .auth import (
 from .runtime import OperationCancelledError
 from ._scope_decision import (
     Decision,
+    DecisionFailure,
     Grant,
     Op,
     check_configuration,
@@ -1597,26 +1598,40 @@ class ManagedOAuthProvider:
                         record is None or not record.metadata.configuration.client_id
                     ):
                         refresh = None  # No client to present the token with.
-                    decision = decide(
-                        op,
-                        policy,
-                        explicit,
-                        classified,
-                        Grant(
-                            record.generation,
-                            token.scopes,
-                            token.access_token is not None
-                            and not forced
-                            and (
-                                token.expires_at is None
-                                or token.expires_at > self.clock() + self.expiry_skew
-                            ),
-                            refresh is not None,
+                    try:
+                        decision = decide(
+                            op,
+                            policy,
+                            explicit,
+                            classified,
+                            Grant(
+                                record.generation,
+                                token.scopes,
+                                token.access_token is not None
+                                and not forced
+                                and (
+                                    token.expires_at is None
+                                    or token.expires_at
+                                    > self.clock() + self.expiry_skew
+                                ),
+                                refresh is not None,
+                            )
+                            if record is not None and token is not None
+                            else None,
+                            sent,
                         )
-                        if record is not None and token is not None
-                        else None,
-                        sent,
-                    )
+                    except DecisionFailure as failure:
+                        if (
+                            failure.code == "interaction_required"
+                            and challenge is not None
+                            and not discovered
+                        ):
+                            # Challenge handling renews binding metadata
+                            # (under host destination policy) before asking
+                            # for consent.
+                            renew = True
+                            continue
+                        raise
                     if decision.action == "use":
                         assert record is not None
                         return self._ready(target, key, record)

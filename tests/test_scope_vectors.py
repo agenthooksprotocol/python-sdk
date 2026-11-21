@@ -130,10 +130,12 @@ HOST_ERROR_FIELDS = {"callback", "target", "code", "scopes"}
 TARGET_ERROR_FIELDS = {"check", "code"}
 # Host destination checks by vector target.
 DESTINATIONS = {
-    "registration_endpoint": "registration",
-    "issuer_metadata": "metadata",
-    "token_endpoint": "token",
+    "registration_endpoint": ("registration", "issuer.test"),
+    "issuer_metadata": ("metadata", "issuer.test"),
+    "token_endpoint": ("token", "issuer.test"),
+    "protected_resource_metadata": ("metadata", "resource.test"),
 }
+PATHS = {"fresh", "cached", "prepare", "credential", "challenge", "preemptive"}
 CHALLENGE_FIELDS = {"status", "www_authenticate"}
 CLAIM_FIELDS = {"outcome", "error_code", "reread"}
 
@@ -391,6 +393,9 @@ class ScopeVectorTests(unittest.TestCase):
 
     async def decide(self, env, given, expect, decisions):
         flow = given["flow"]
+        # An unknown path or binding fails the run.
+        self.assertIn(given["path"], PATHS)
+        self.assertIn(given["binding"], ("stored", "preset", "unbound"))
         requested = tuple(sorted(given["requested"]))
         ceiling = tuple(sorted(given.get("ceiling", requested)))
         preset = given.get("preset_scopes")
@@ -493,7 +498,7 @@ class ScopeVectorTests(unittest.TestCase):
                     env.policy.select = refuse
                 else:
                     self.assertEqual(failure["callback"], "destination")
-                    purpose = DESTINATIONS[failure["target"]]
+                    purpose, host = DESTINATIONS[failure["target"]]
                     if purpose == "registration":
                         env.configure(
                             client_id="",
@@ -504,7 +509,7 @@ class ScopeVectorTests(unittest.TestCase):
                     authorize = env.n.authorize
 
                     async def destination(url, kind, budget):
-                        if kind == purpose and urlsplit(url).hostname == "issuer.test":
+                        if kind == purpose and urlsplit(url).hostname == host:
                             raise raised
                         await authorize(url, kind, budget)
 
@@ -582,8 +587,10 @@ class ScopeVectorTests(unittest.TestCase):
                     )
                 elif path == "challenge":
                     result = await env.p.challenge(checked, challenge)
-                else:
+                elif path in ("fresh", "cached", "credential", "preemptive"):
                     result = await env.p.credential(checked)
+                else:
+                    self.fail("unknown path " + repr(path))
             except AuthenticationFailure as caught:
                 error = caught
         code = error.code if error is not None else None
@@ -732,11 +739,11 @@ class ScopeVectorTests(unittest.TestCase):
                 env.policy.select = refuse
             else:
                 self.assertEqual(failure["callback"], "destination")
-                purpose = DESTINATIONS[failure["target"]]
+                purpose, host = DESTINATIONS[failure["target"]]
                 authorize = env.n.authorize
 
                 async def destination(url, kind, budget):
-                    if kind == purpose and urlsplit(url).hostname == "issuer.test":
+                    if kind == purpose and urlsplit(url).hostname == host:
                         raise raised
                     await authorize(url, kind, budget)
 

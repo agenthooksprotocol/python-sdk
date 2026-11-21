@@ -103,8 +103,12 @@ only those outcomes of its single scope decision (and `complete`'s check of a
 login's R) carry them. Every other error, including any raised by host
 callbacks, stores or networks (trust policy, client selection, destination
 checks) and token-endpoint errors, carries none: scopes a host sets are
-stripped. Hosts can use these values to choose configuration, consent or retry
-UI.
+stripped. A host destination refusal keeps the host's code (by convention
+`untrusted_destination`) whichever URL it refuses: protected-resource or
+authorization-server metadata, registration, token or callback. Challenge
+handling renews binding metadata, under that policy, before it reports
+`interaction_required`. Hosts can use these values to choose configuration,
+consent or retry UI.
 Structured provider classifications survive the transport boundary, without
 retaining secret-bearing exception contexts. Cancellation remains native under
 asyncio and Trio, and provider calls stay inside the enclosing operation budget.

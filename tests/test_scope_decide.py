@@ -994,6 +994,45 @@ class ProviderTests(unittest.TestCase):
             with self.subTest(test.__name__):
                 self.run_async(test)
 
+    def test_prepare_served_without_server_sweeps_expired_logins(self):
+        async def run(p, n, s, policy, target, now):
+            self.permissive(policy)
+            policy.configuration = replace(
+                base.Policy(PKCE).configuration,
+                scopes=("read", "write"),
+            )
+
+            async def lasting(request):
+                return httpx.Response(
+                    200,
+                    json={
+                        "access_token": "lasting",
+                        "token_type": "Bearer",
+                        "scope": "read",
+                    },
+                )
+
+            n.token_hook = lasting
+            await self.complete_login(
+                p, target, await p.prepare(target, OperationBudget.after(5))
+            )
+            stale = await p.prepare(
+                target, OperationBudget.after(5), required_scopes=("write",)
+            )
+            self.assertIsInstance(stale, PendingLogin)
+            for key, stored in list(s.bindings.items()):
+                s.bindings[key] = replace(
+                    stored, token_endpoint="", authorization_endpoint=None
+                )
+            now[0] = stale.expires_at
+            count = len(n.requests)
+            served = await p.prepare(target, OperationBudget.after(5))
+            self.assertEqual(served.credential.token, "lasting")
+            self.assertEqual(len(n.requests), count)
+            self.assertFalse(base.pending_logins(p))
+
+        self.run_async(run)
+
     def test_newer_generation_than_the_one_sent_is_used(self):
         async def run(p, n, s, policy, target, now):
             self.permissive(policy)

@@ -464,9 +464,14 @@ class ScopeVectorTests(unittest.TestCase):
         if "force_registration" in given:
             self.assertIs(forcing, True)
             self.assertEqual(given["path"], "prepare")
-            self.assertEqual(given.get("client_source"), "dcr")
         self.assertEqual("client_source" in given, bound == "unbound" or forcing)
-        self.assertEqual("authorization_server_requests_min" in expect, forcing)
+        # Forced re-registration replaces only a client-credentials DCR client.
+        replacing = (
+            forcing
+            and given["flow"] == "client_credentials"
+            and given.get("client_source") == "dcr"
+        )
+        self.assertEqual("authorization_server_requests_min" in expect, replacing)
         source = given.get("client_source", "preregistered")
         if source == "cimd":
             env.n.overrides["client_id_metadata_document_supported"] = True

@@ -1505,11 +1505,24 @@ class ManagedOAuthProvider:
             # refusal at decide steps 1-5, or step-9 consent) is returned
             # without one. A refresh, acquisition or login returns None: the
             # caller fetches the issuer's metadata.
-            if force or forced or renew:
-                # A forced re-registration, or a renewal this operation
-                # already decided it needs, takes the full path.
+            if (
+                (
+                    force
+                    and stored.client_source == "dcr"
+                    and config.flow == "client_credentials"
+                )
+                or forced
+                or renew
+            ):
+                # A forced client-credentials re-registration (the only
+                # client it replaces), or a renewal this operation already
+                # decided it needs, takes the full path.
                 return None
             key = grant_key(target, stored)
+            if interactive:
+                # Host prepare deletes this grant key's expired pending
+                # logins, whatever it returns.
+                await self._end_logins(key, budget, lambda item: True)
             issued = stored.client_source == "dcr" and (
                 config.flow == "authorization_code_pkce"
             )

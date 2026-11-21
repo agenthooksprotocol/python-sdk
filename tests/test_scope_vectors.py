@@ -91,6 +91,7 @@ FIELDS = {
             "prior_401_hint",
             "host_error",
             "target_error",
+            "client_source",
         },
         {
             "code",
@@ -123,7 +124,7 @@ FIELDS = {
         {"code", "scopes", "login_ended", "grant_persisted"},
     ),
     "token_errors": (
-        {"grant_type", "client_source", "error"},
+        {"grant_type", "client_source", "error", "refetch"},
         {"code", "reregistrations"},
     ),
 }
@@ -337,6 +338,34 @@ class ScopeVectorTests(unittest.TestCase):
                 "not_found": responding(404),
                 "invalid_response": granting(env.n, "read", kind="mac"),
             }[given["error"]]
+            refetch = given.get("refetch")
+            if refetch is not None:
+                self.assertIn(given["error"], ("unreachable", "not_found"))
+                if refetch == "failed":
+                    send = env.n.send
+
+                    # The stale-metadata refetch itself fails.
+                    async def failing(request, purpose, budget):
+                        if purpose == "metadata" and request.url.host == "issuer.test":
+                            return httpx.Response(500, request=request)
+                        return await send(request, purpose, budget)
+
+                    env.n.send = failing
+                else:
+                    self.assertLessEqual(set(refetch), HOST_ERROR_FIELDS)
+                    self.assertEqual(refetch["callback"], "destination")
+                    purpose, host = DESTINATIONS[refetch["target"]]
+                    raised = AuthenticationFailure(
+                        code=refetch["code"], required_scopes=tuple(refetch["scopes"])
+                    )
+                    authorize = env.n.authorize
+
+                    async def destination(url, kind, budget):
+                        if kind == purpose and urlsplit(url).hostname == host:
+                            raise raised
+                        await authorize(url, kind, budget)
+
+                    env.n.authorize = destination
             registrations, tokens = len(env.n.registrations), len(env.n.tokens)
             with (
                 anyio.CancelScope() as scope,
@@ -428,6 +457,27 @@ class ScopeVectorTests(unittest.TestCase):
             "tenant", "backend", RESOURCE, "event", presetted_wire, typed
         )
         bound = given["binding"]
+        # An unbound target's client source (present exactly then).
+        self.assertEqual("client_source" in given, bound == "unbound")
+        source = given.get("client_source", "preregistered")
+        if source == "cimd":
+            env.n.overrides["client_id_metadata_document_supported"] = True
+            env.configure(
+                client_id="",
+                client_secret=None,
+                token_endpoint_auth_method="none",
+                client_metadata_document=DOCUMENT,
+                redirect_uri=REDIRECT,
+            )
+        elif source == "dcr":
+            env.configure(
+                client_id="",
+                client_secret=None,
+                token_endpoint_auth_method="none",
+                dynamic_registration=DCR,
+            )
+        else:
+            self.assertEqual(source, "preregistered")
         target = presetted if bound == "preset" else plain
         stored_token = None
         key = None

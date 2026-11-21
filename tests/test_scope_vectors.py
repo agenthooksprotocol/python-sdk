@@ -92,6 +92,7 @@ FIELDS = {
             "host_error",
             "target_error",
             "client_source",
+            "force_registration",
         },
         {
             "code",
@@ -103,6 +104,7 @@ FIELDS = {
             "authorization_server_requests",
             "network_calls",
             "network_calls_max",
+            "authorization_server_requests_min",
         },
     ),
     "completions": (
@@ -458,7 +460,13 @@ class ScopeVectorTests(unittest.TestCase):
         )
         bound = given["binding"]
         # An unbound target's client source (present exactly then).
-        self.assertEqual("client_source" in given, bound == "unbound")
+        forcing = given.get("force_registration", False)
+        if "force_registration" in given:
+            self.assertIs(forcing, True)
+            self.assertEqual(given["path"], "prepare")
+            self.assertEqual(given.get("client_source"), "dcr")
+        self.assertEqual("client_source" in given, bound == "unbound" or forcing)
+        self.assertEqual("authorization_server_requests_min" in expect, forcing)
         source = given.get("client_source", "preregistered")
         if source == "cimd":
             env.n.overrides["client_id_metadata_document_supported"] = True
@@ -499,6 +507,10 @@ class ScopeVectorTests(unittest.TestCase):
             if isinstance(first, PendingLogin):
                 await env.p.cancel(target, first, budget())
             key, stored_token = await self.write_grant(env, target, given)
+            if bound == "unbound":
+                # A usable grant without a stored binding (for example one
+                # shared through a grant partition).
+                del env.s.bindings[binding_key(target)]
             if bound == "stored_without_metadata":
                 # The binding record lacks persisted authorization-server
                 # metadata: a token request first fetches the issuer's.
@@ -624,7 +636,10 @@ class ScopeVectorTests(unittest.TestCase):
             try:
                 if path == "prepare":
                     result = await env.p.prepare(
-                        target, budget(), required_scopes=tuple(given["explicit"])
+                        target,
+                        budget(),
+                        required_scopes=tuple(given["explicit"]),
+                        force_registration=forcing,
                     )
                 elif path == "fresh" and bound != "preset":
                     # First use of an unbound target: an anonymous request
@@ -668,7 +683,8 @@ class ScopeVectorTests(unittest.TestCase):
         if action is not None:
             self.assertEqual(decisions[-1][0].action, action)
             if action == "use":
-                self.assertEqual(result.token, stored_token)
+                served = result.credential if isinstance(result, Ready) else result
+                self.assertEqual(served.token, stored_token)
                 self.assertEqual(len(env.n.tokens), tokens)
             elif action in ("refresh", "acquire"):
                 self.assertEqual(len(env.n.tokens), tokens + 1)
@@ -701,6 +717,13 @@ class ScopeVectorTests(unittest.TestCase):
             )
         if "network_calls" in expect:
             self.assertEqual(len(env.n.requests) - requests, expect["network_calls"])
+        if "authorization_server_requests_min" in expect:
+            self.assertGreaterEqual(
+                env.server_requests() - server,
+                expect["authorization_server_requests_min"],
+            )
+            # The replaced client's token is never served.
+            self.assertNotEqual(result.credential.token, stored_token)
         if "network_calls_max" in expect:
             self.assertLessEqual(
                 len(env.n.requests) - requests, expect["network_calls_max"]

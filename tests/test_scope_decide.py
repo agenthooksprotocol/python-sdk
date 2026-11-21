@@ -769,6 +769,50 @@ class ProviderTests(unittest.TestCase):
 
         self.run_async(run)
 
+    def test_pkce_step_up_needing_consent_makes_no_server_request(self):
+        async def run(p, n, s, policy, target, now):
+            self.permissive(policy)
+            policy.configuration = replace(
+                base.Policy(PKCE).configuration, scopes=("read", "write")
+            )
+            first = await self.complete_login(
+                p, target, await p.prepare(target, OperationBudget.after(5))
+            )
+            authorize = n.authorize
+
+            async def refuse(url, purpose, budget):
+                # Every authorization-server destination is refused.
+                if urlsplit(url).hostname == "issuer.test":
+                    raise AuthenticationFailure(code="untrusted_destination")
+                await authorize(url, purpose, budget)
+
+            n.authorize = refuse
+            count = len(n.requests)
+            with (
+                anyio.CancelScope() as scope,
+                self.assertRaises(AuthenticationFailure) as failure,
+            ):
+                await p.challenge(
+                    self.context(scope),
+                    AuthChallenge(
+                        403,
+                        {
+                            "www-authenticate": 'Bearer error="insufficient_scope",'
+                            ' scope="write"'
+                        },
+                        RESOURCE,
+                        first.credential.identity,
+                        True,
+                    ),
+                )
+            self.assertEqual(
+                (failure.exception.code, failure.exception.required_scopes),
+                ("interaction_required", ("write",)),
+            )
+            self.assertEqual(len(n.requests), count)
+
+        self.run_async(run)
+
     def test_newer_generation_than_the_one_sent_is_used(self):
         async def run(p, n, s, policy, target, now):
             self.permissive(policy)

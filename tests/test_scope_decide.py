@@ -28,6 +28,7 @@ from agenthooksprotocol.oauth import (
     OAuthPendingLogins,
     OAuthRecord,
     OperationBudget,
+    PendingLogin,
     Ready,
 )
 from agenthooksprotocol.runtime import ProtocolError
@@ -810,6 +811,39 @@ class ProviderTests(unittest.TestCase):
                 ("interaction_required", ("write",)),
             )
             self.assertEqual(len(n.requests), count)
+
+        self.run_async(run)
+
+    def test_consent_needed_without_a_grant_makes_no_server_request(self):
+        async def run(p, n, s, policy, target, now):
+            self.permissive(policy)
+            policy.configuration = base.Policy(PKCE).configuration
+            preset = AuthContext(
+                {"id": "backend"},
+                {
+                    "type": "oauth",
+                    "flow": PKCE,
+                    "issuer": base.ISSUER,
+                    "resource": RESOURCE,
+                    "clientId": "host-client",
+                },
+                RESOURCE,
+                "event",
+                anyio.CancelScope(),
+            )
+            for attempt in range(2):
+                with self.assertRaises(AuthenticationFailure) as failure:
+                    await p.credential(preset)
+                self.assertEqual(
+                    (failure.exception.code, failure.exception.required_scopes),
+                    ("interaction_required", ()),
+                )
+            self.assertFalse([r for r, _ in n.requests if r.url.host == "issuer.test"])
+            # The binding is known; a host prepare fetches issuer metadata.
+            self.assertTrue(s.bindings)
+            login = await p.prepare(target, OperationBudget.after(5))
+            self.assertIsInstance(login, PendingLogin)
+            self.assertTrue([r for r, _ in n.requests if r.url.host == "issuer.test"])
 
         self.run_async(run)
 

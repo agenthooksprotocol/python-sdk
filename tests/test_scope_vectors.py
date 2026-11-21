@@ -9,7 +9,9 @@ vector defines is asserted; an unknown field fails the run. A vector whose
 
 Python mappings:
 - `binding` `stored`: binding metadata stored by an earlier operation, with
-  the vector's `grant` (or none) written to the grant record; `preset`: an
+  the vector's `grant` (or none) written to the grant record;
+  `stored_without_metadata`: the same without the persisted
+  authorization-server metadata; `preset`: an
   explicit OAuth binding preset (its `scopes` only when `preset_scopes` is
   present); `unbound`: neither.
 - `path` `cached` and `credential`: bound delivery (`credential` with the
@@ -395,7 +397,9 @@ class ScopeVectorTests(unittest.TestCase):
         flow = given["flow"]
         # An unknown path or binding fails the run.
         self.assertIn(given["path"], PATHS)
-        self.assertIn(given["binding"], ("stored", "preset", "unbound"))
+        self.assertIn(
+            given["binding"], ("stored", "stored_without_metadata", "preset", "unbound")
+        )
         requested = tuple(sorted(given["requested"]))
         ceiling = tuple(sorted(given.get("ceiling", requested)))
         preset = given.get("preset_scopes")
@@ -427,7 +431,8 @@ class ScopeVectorTests(unittest.TestCase):
         target = presetted if bound == "preset" else plain
         stored_token = None
         key = None
-        if bound == "stored" or given["grant"] is not None:
+        stored_binding = bound in ("stored", "stored_without_metadata")
+        if stored_binding or given["grant"] is not None:
             # An earlier operation stores the binding.
             env.configure(
                 scopes=requested,
@@ -444,6 +449,13 @@ class ScopeVectorTests(unittest.TestCase):
             if isinstance(first, PendingLogin):
                 await env.p.cancel(target, first, budget())
             key, stored_token = await self.write_grant(env, target, given)
+            if bound == "stored_without_metadata":
+                # The binding record lacks persisted authorization-server
+                # metadata: a token request first fetches the issuer's.
+                stored = env.s.bindings[binding_key(target)]
+                env.s.bindings[binding_key(target)] = replace(
+                    stored, token_endpoint="", authorization_endpoint=None
+                )
         # The operation's context and the attempt for generation `sent`.
         path = given["path"]
         context_binding = (

@@ -196,6 +196,23 @@ def _candidate(
     return replace(metadata, resource=resource, configuration=config)
 
 
+def _provisional(
+    resource: str, config: OAuthClientConfiguration
+) -> OAuthMetadata | None:
+    """Binding metadata without authorization-server metadata, when the
+    client source does not depend on it: a pre-registered client, or DCR as
+    the only permitted source. None otherwise (CIMD needs the server's
+    advertised support)."""
+    if config.client_id:
+        return OAuthMetadata(resource, config, "", client_source="preregistered")
+    if (
+        config.dynamic_registration is not None
+        and config.client_metadata_document is None
+    ):
+        return OAuthMetadata(resource, config, "", client_source="dcr")
+    return None
+
+
 def _keep_selection(fresh: OAuthMetadata, recorded: OAuthMetadata) -> OAuthMetadata:
     """Refetched issuer metadata keeps the recorded client selection."""
     return replace(fresh, client_source=recorded.client_source)
@@ -1477,6 +1494,26 @@ class ManagedOAuthProvider:
         forced = False
         force = force_registration
 
+        async def without_server(
+            config: OAuthClientConfiguration,
+            keys: tuple[StoreKey, ...],
+            binding_metadata: OAuthMetadata | None = None,
+        ) -> None:
+            # An outcome that needs no authorization-server request is
+            # returned without one: with no stored grant a PKCE operation
+            # other than prepare can only need consent (decide step 9).
+            if op == "prepare" or config.flow != "authorization_code_pkce":
+                return
+            for key in keys:
+                found = _grant_record(await self.store.load(key, budget))
+                if found is not None and found.token is not None:
+                    return  # A stored grant may be usable: the full path.
+            if binding_metadata is not None:
+                await self.store.save_binding(
+                    binding, _persisted(binding_metadata), budget
+                )
+            decide(op, scope_policy(target, config), explicit, classified, None, sent)
+
         async def decided(config: OAuthClientConfiguration) -> None:
             # Decide steps 1-4, before any authorization-server request.
             decide(op, scope_policy(target, config), explicit, classified, sent=sent)
@@ -1525,6 +1562,7 @@ class ManagedOAuthProvider:
                     candidate = None
                 metadata = candidate
                 if metadata is not None and not metadata.token_endpoint:
+                    await without_server(config, (grant_key(target, metadata),))
                     # Missing persisted authorization-server metadata: fetch
                     # the stored issuer's only, never protected-resource data.
                     try:
@@ -1553,6 +1591,15 @@ class ManagedOAuthProvider:
                     explicit=explicit,
                 )
                 await decided(chosen)
+                provisional = _provisional(resource, chosen)
+                if provisional is not None:
+                    await without_server(
+                        chosen,
+                        (grant_key(target, provisional),),
+                        # Known without issuer metadata, which a later
+                        # operation fetches when it needs it.
+                        provisional,
+                    )
                 metadata = await issuer_metadata(resource, chosen, self.network, budget)
             assert chosen is not None
             metadata, blocked = await self._select(

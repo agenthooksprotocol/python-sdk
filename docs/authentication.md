@@ -106,8 +106,11 @@ checks) and token-endpoint errors, carries none: scopes a host sets are
 stripped. A host destination refusal keeps the host's code (by convention
 `untrusted_destination`) whichever URL it refuses: protected-resource or
 authorization-server metadata, registration, token or callback. An outcome
-that needs no authorization-server request, such as a PKCE step-up that
-needs consent (`interaction_required`), is returned without one. Hosts can use these values to choose configuration,
+that needs no authorization-server request is returned without one: a PKCE
+step-up that needs consent, or a PKCE delivery or challenge with no stored
+grant for a pre-registered or DCR-only client, fails `interaction_required`
+without contacting the authorization server (the binding is stored without
+its metadata, which the next operation that needs it fetches). Hosts can use these values to choose configuration,
 consent or retry UI.
 Structured provider classifications survive the transport boundary, without
 retaining secret-bearing exception contexts. Cancellation remains native under

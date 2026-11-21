@@ -36,6 +36,7 @@ from .auth import (
 from .runtime import OperationCancelledError
 from ._scope_decision import (
     Decision,
+    DecisionFailure,
     Grant,
     Op,
     check_configuration,
@@ -1496,23 +1497,65 @@ class ManagedOAuthProvider:
 
         async def without_server(
             config: OAuthClientConfiguration,
-            keys: tuple[StoreKey, ...],
-            binding_metadata: OAuthMetadata | None = None,
-        ) -> None:
-            # An outcome that needs no authorization-server request is
-            # returned without one: with no stored grant a PKCE operation
-            # other than prepare can only need consent (decide step 9).
-            if op == "prepare" or config.flow != "authorization_code_pkce":
-                return
-            for key in keys:
-                found = _grant_record(await self.store.load(key, budget))
-                if found is not None and found.token is not None:
-                    return  # A stored grant may be usable: the full path.
-            if binding_metadata is not None:
-                await self.store.save_binding(
-                    binding, _persisted(binding_metadata), budget
+            stored: OAuthMetadata,
+            new_binding: bool = False,
+        ) -> Ready | None:
+            # Binding metadata without authorization-server metadata: an
+            # outcome that needs no authorization-server request (use, a
+            # refusal at decide steps 1-5, or step-9 consent) is returned
+            # without one. A refresh, acquisition or login returns None: the
+            # caller fetches the issuer's metadata.
+            if force or forced or renew:
+                # A forced re-registration, or a renewal this operation
+                # already decided it needs, takes the full path.
+                return None
+            key = grant_key(target, stored)
+            issued = stored.client_source == "dcr" and (
+                config.flow == "authorization_code_pkce"
+            )
+            # An uncoordinated read: it returns committed records only, and
+            # any write happens on the full path under the grant lock.
+            record = _grant_record(await self.store.load(key, budget))
+            token = record.token if record is not None else None
+            refresh = token.refresh_token if token is not None else None
+            if issued and (
+                record is None or not record.metadata.configuration.client_id
+            ):
+                refresh = None
+            outcome: Ready | None = None
+            try:
+                decision = decide(
+                    op,
+                    scope_policy(target, config),
+                    explicit,
+                    classified,
+                    Grant(
+                        record.generation,
+                        token.scopes,
+                        token.access_token is not None
+                        and (
+                            token.expires_at is None
+                            or token.expires_at > self.clock() + self.expiry_skew
+                        ),
+                        refresh is not None,
+                    )
+                    if record is not None and token is not None
+                    else None,
+                    sent,
                 )
-            decide(op, scope_policy(target, config), explicit, classified, None, sent)
+            except DecisionFailure:
+                if new_binding:
+                    # Known without issuer metadata, which a later
+                    # operation fetches when it needs it.
+                    await self.store.save_binding(binding, _persisted(stored), budget)
+                raise
+            if decision.action != "use":
+                return None
+            assert record is not None
+            outcome = self._ready(target, key, record)
+            if new_binding:
+                await self.store.save_binding(binding, _persisted(stored), budget)
+            return outcome
 
         async def decided(config: OAuthClientConfiguration) -> None:
             # Decide steps 1-4, before any authorization-server request.
@@ -1562,7 +1605,9 @@ class ManagedOAuthProvider:
                     candidate = None
                 metadata = candidate
                 if metadata is not None and not metadata.token_endpoint:
-                    await without_server(config, (grant_key(target, metadata),))
+                    served = await without_server(config, metadata)
+                    if served is not None:
+                        return served
                     # Missing persisted authorization-server metadata: fetch
                     # the stored issuer's only, never protected-resource data.
                     try:
@@ -1593,13 +1638,9 @@ class ManagedOAuthProvider:
                 await decided(chosen)
                 provisional = _provisional(resource, chosen)
                 if provisional is not None:
-                    await without_server(
-                        chosen,
-                        (grant_key(target, provisional),),
-                        # Known without issuer metadata, which a later
-                        # operation fetches when it needs it.
-                        provisional,
-                    )
+                    served = await without_server(chosen, provisional, True)
+                    if served is not None:
+                        return served
                 metadata = await issuer_metadata(resource, chosen, self.network, budget)
             assert chosen is not None
             metadata, blocked = await self._select(

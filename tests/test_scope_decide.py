@@ -847,6 +847,84 @@ class ProviderTests(unittest.TestCase):
 
         self.run_async(run)
 
+    def test_stored_binding_without_metadata_decides_without_the_server(self):
+        async def run(p, n, s, policy, target, now):
+            self.permissive(policy)
+            policy.configuration = replace(
+                base.Policy(PKCE).configuration,
+                scopes=("read", "write"),
+                required_scopes=("read",),
+            )
+
+            async def expiring(request):
+                return httpx.Response(
+                    200,
+                    json={
+                        "access_token": f"access-{len(n.tokens)}",
+                        "token_type": "Bearer",
+                        "expires_in": 60,
+                        "scope": "read",
+                    },
+                )
+
+            n.token_hook = expiring
+            first = await self.complete_login(
+                p, target, await p.prepare(target, OperationBudget.after(5))
+            )
+            # The binding record loses its authorization-server metadata.
+            for key, stored in list(s.bindings.items()):
+                s.bindings[key] = replace(
+                    stored, token_endpoint="", authorization_endpoint=None
+                )
+
+            def server():
+                return [r for r, _ in n.requests if r.url.host == "issuer.test"]
+
+            count = len(server())
+            with anyio.CancelScope() as scope:
+                # Use: a valid grant covering R.
+                used = await p.credential(self.context(scope))
+                self.assertEqual(used.token, first.credential.token)
+                # A refusal at step 4 (R outside the ceiling).
+                policy.configuration = replace(
+                    policy.configuration, required_scopes=("admin",)
+                )
+                with self.assertRaises(AuthenticationFailure) as failure:
+                    await p.credential(self.context(scope))
+                self.assertEqual(
+                    (failure.exception.code, failure.exception.required_scopes),
+                    ("access_denied", ("admin",)),
+                )
+                # Step 9: a grant lacking R needs consent.
+                policy.configuration = replace(
+                    policy.configuration, required_scopes=("write",)
+                )
+                with self.assertRaises(AuthenticationFailure) as failure:
+                    await p.credential(self.context(scope))
+                self.assertEqual(
+                    (failure.exception.code, failure.exception.required_scopes),
+                    ("interaction_required", ("write",)),
+                )
+                # Step 9: an expired grant without a refresh token.
+                policy.configuration = replace(
+                    policy.configuration, required_scopes=("read",)
+                )
+                now[0] += 61
+                with self.assertRaises(AuthenticationFailure) as failure:
+                    await p.credential(self.context(scope))
+                self.assertEqual(
+                    (failure.exception.code, failure.exception.required_scopes),
+                    ("interaction_required", ("read",)),
+                )
+            self.assertEqual(len(server()), count)
+            # A login does need the server: prepare fetches its metadata.
+            self.assertIsInstance(
+                await p.prepare(target, OperationBudget.after(5)), PendingLogin
+            )
+            self.assertGreater(len(server()), count)
+
+        self.run_async(run)
+
     def test_newer_generation_than_the_one_sent_is_used(self):
         async def run(p, n, s, policy, target, now):
             self.permissive(policy)

@@ -311,6 +311,9 @@ class UnificationTests(unittest.TestCase):
 
             deadlines, messages = [], []
             stopped = anyio.Event()
+            # The operation's budget, expired once the safe retry is in
+            # flight (not by a wall-clock margin).
+            budget = {}
 
             class Provider:
                 async def credential(self, context):
@@ -328,6 +331,7 @@ class UnificationTests(unittest.TestCase):
                 messages.append(req.content)
                 if len(messages) == 1:
                     return httpx.Response(401, headers={"www-authenticate": "Bearer"})
+                budget["scope"].deadline = anyio.current_time()
                 try:
                     await anyio.sleep_forever()
                 finally:
@@ -337,6 +341,8 @@ class UnificationTests(unittest.TestCase):
             backend = cfg["hooks"][0]
             backend["transport"] = {"type": "http", "url": "https://event.test"}
             backend["authentication"] = {"type": "bearer", "tokenRef": "host:key"}
+            # The subscription's own deadline is longer than the caller's.
+            backend["subscriptions"][0]["timeoutMs"] = 60000
             async with httpx.AsyncClient(
                 transport=httpx.MockTransport(handle)
             ) as client:
@@ -358,14 +364,15 @@ class UnificationTests(unittest.TestCase):
                     ),
                 ) as hooks:
                     with self.assertRaises(TimeoutError):
-                        with anyio.fail_after(0.25) as scope:
+                        # Shorter than the subscription's deadline, so it is
+                        # the single remaining budget everywhere.
+                        with anyio.fail_after(10) as scope:
+                            budget["scope"], deadline = scope, scope.deadline
                             await hooks.tool_before(facts())
                     self.assertEqual(len(messages), 2)
                     self.assertEqual(messages[0], messages[1])
                     self.assertTrue(stopped.is_set())
-                    self.assertTrue(
-                        all(deadline == scope.deadline for deadline in deadlines)
-                    )
+                    self.assertTrue(all(seen == deadline for seen in deadlines))
                     self.assertEqual(hooks._operations, [])
                 self.assertFalse(client.is_closed)
 

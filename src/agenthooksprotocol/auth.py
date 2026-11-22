@@ -28,14 +28,6 @@ from .headers import validate_headers, resolve_headers
 _REPLAYABLE = ("hooks/intercept", "hooks/configuration", "hooks/capabilities")
 
 
-def _scope_challenge(headers: Any) -> bool:
-    try:
-        parse_challenge(403, headers)
-    except ChallengeError:
-        return False
-    return True
-
-
 class TransportFailure(ProtocolError):
     """Sanitized delivery failure, distinct from invalid protocol data."""
 
@@ -115,6 +107,9 @@ class AuthenticationFailure(ProtocolError):
             )
             else ()
         )
+        # Set by ManagedOAuthProvider.complete on every error it raises: True
+        # when the login named by the callback's state no longer exists.
+        self.login_ended: bool | None = None
 
 
 SecretResolver: TypeAlias = Callable[[str], str | None | Awaitable[str | None]]
@@ -330,9 +325,10 @@ class AuthenticatedHTTPTransport(HTTPTransport):
             if explicit_auth or response.status_code not in (401, 403):
                 return response
             challenges = response.headers.get("www-authenticate", "")
-            if response.status_code == 403 and not _scope_challenge(response.headers):
-                # Only a Bearer insufficient_scope 403 is an auth challenge;
-                # any other 403 is an operational failure for the caller.
+            if response.status_code == 403 and not insufficient_scope(response.headers):
+                # Only one Bearer insufficient_scope challenge makes a 403 an
+                # auth challenge (the provider validates its scope); any
+                # other 403 is an operational failure for the caller.
                 return response
             safe = (
                 retry_allowed
@@ -370,7 +366,7 @@ class AuthenticatedHTTPTransport(HTTPTransport):
             except Exception:
                 raise TransportFailure("HTTP delivery failed") from None
             if final.status_code == 401 or (
-                final.status_code == 403 and _scope_challenge(final.headers)
+                final.status_code == 403 and insufficient_scope(final.headers)
             ):
                 # A second rejection is an operational failure; the provider
                 # still handles it (no replay). A plain 403 is classified by
@@ -513,7 +509,7 @@ class AuthenticatedHTTPTransport(HTTPTransport):
 
 # Kept separate from the transport implementation; all public providers above
 # retain their existing entry points and lifecycle ownership.
-from ._auth_challenge import ChallengeError, parse_challenge  # noqa: E402
+from ._auth_challenge import insufficient_scope  # noqa: E402
 from ._auth_routing import (  # noqa: E402
     AuthTarget as AuthTarget,
     BearerBinding as BearerBinding,

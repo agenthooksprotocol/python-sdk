@@ -19,6 +19,7 @@ from agenthooksprotocol._oauth_discovery import (
 from agenthooksprotocol._oauth_types import OAuthClientConfiguration, OperationBudget
 from agenthooksprotocol.oauth import ManagedOAuthProvider
 from agenthooksprotocol.runtime import OperationCancelledError
+from agenthooksprotocol._scope_decision import DecisionFailure, classify
 
 RESOURCE = "https://resource.test/api/events"
 ISSUER = "https://issuer.test/tenant"
@@ -125,13 +126,20 @@ class OAuthDiscoveryTests(unittest.TestCase):
 
         async with httpx.AsyncClient(transport=httpx.MockTransport(handle)) as client:
             network = HostNetwork(client, denied)
-            result = await discover(
-                target(binding, destination),
-                auth,
-                network,
-                policy or Policy(),
-                OperationBudget.after(2),
-            )
+            try:
+                result = await discover(
+                    target(binding, destination),
+                    auth,
+                    network,
+                    policy or Policy(),
+                    OperationBudget.after(2),
+                )
+            except DecisionFailure as failure:
+                # The provider's error boundary classifies decide's outcomes.
+                code, recovery, scopes = classify(failure)
+                raise AuthenticationFailure(
+                    code=code, recovery=recovery, required_scopes=scopes
+                ) from None
             return result, network
 
     def test_path_then_root_and_oauth_oidc_order(self):
@@ -286,9 +294,9 @@ class OAuthDiscoveryTests(unittest.TestCase):
             )
             self.assertEqual(network.sent[0], url)
             self.assertEqual(result.configuration.scopes, ("read",))
-            self.assertEqual(policy.requirements, ("read",))
-            with self.assertRaises(AuthenticationFailure):
-                await self.run_discovery(auth=challenge('Bearer scope="admin"'))
+            # A 401's scope only adds requested scopes; it is never required.
+            self.assertEqual(policy.requirements, ())
+            await self.run_discovery(auth=challenge('Bearer scope="admin"'))
             for header in (
                 'Bearer scope="read", scope="read"',
                 'Bearer resource_metadata="https://a.test", RESOURCE_METADATA="https://b.test"',
@@ -300,12 +308,11 @@ class OAuthDiscoveryTests(unittest.TestCase):
 
         self.both(run)
 
-    def test_challenge_parser_ignores_unknown_schemes_and_accepts_padded_token68(self):
+    def test_challenge_parser_ignores_unknown_schemes_and_their_token68(self):
         async def run():
             for header in (
                 'Basic dXNlcjpwYXNz==, Bearer scope="read"',
                 'Newauth abc==, Bearer scope="read", Digest realm="other"',
-                "Bearer abc==",
                 "Newauth abc==",
             ):
                 with self.subTest(header=header):
@@ -314,11 +321,16 @@ class OAuthDiscoveryTests(unittest.TestCase):
                         auth=challenge(header), policy=policy
                     )
                     self.assertEqual(result.resource, RESOURCE)
-                    self.assertEqual(
-                        policy.requirements,
-                        ("read",) if 'scope="read"' in header else (),
-                    )
+                    # A 401's scope is a requested-scope hint, not required.
+                    self.assertEqual(policy.requirements, ())
                     self.assertTrue(network.sent)
+            # A Bearer challenge has auth-params only: a token68 (or a bare
+            # name) is a bad auth-param.
+            for header in ("Bearer abc==", "Bearer scope"):
+                with self.subTest(header=header):
+                    with self.assertRaises(AuthenticationFailure) as failure:
+                        await self.run_discovery(auth=challenge(header))
+                    self.assertEqual(failure.exception.code, "access_denied")
 
         self.both(run)
 
@@ -386,9 +398,22 @@ class OAuthDiscoveryTests(unittest.TestCase):
                 ),
             )
             self.assertEqual(metadata.configuration.scopes, ("read",))
+            # A 401 scope outside the ceiling is simply not requested.
+            await self.run_discovery(auth=challenge('Bearer scope="write"'))
             with self.assertRaises(AuthenticationFailure) as failure:
-                await self.run_discovery(auth=challenge('Bearer scope="write"'))
+                await self.run_discovery(
+                    auth=AuthChallenge(
+                        403,
+                        {
+                            "WWW-Authenticate": 'Bearer error="insufficient_scope", scope="write"'
+                        },
+                        RESOURCE,
+                        None,
+                        True,
+                    )
+                )
             self.assertEqual(failure.exception.code, "access_denied")
+            self.assertEqual(failure.exception.required_scopes, ("write",))
 
         self.both(run)
 

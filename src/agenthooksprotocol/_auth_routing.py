@@ -34,7 +34,9 @@ class OAuthBinding:
     resource: str = field(repr=False)
     client_id: str = field(repr=False)
     flow: Literal["authorization_code_pkce", "client_credentials"]
-    scopes: tuple[str, ...] = field(default=(), repr=False)
+    # A preset's scopes; None when omitted (no constraint). When present
+    # they must equal the selected client's configured scopes.
+    scopes: tuple[str, ...] | None = field(default=None, repr=False)
     client_secret_ref: str | None = field(default=None, repr=False)
     type: Literal["oauth"] = field(default="oauth", init=False)
 
@@ -137,24 +139,35 @@ def normalize_auth_target(
                 _url(binding.get("resource"), ("https",)),
             )
             client_id = binding.get("clientId")
-            scopes = binding.get("scopes", [])
+            # Omitted preset scopes are no constraint.
+            scopes = binding.get("scopes")
             secret = binding.get("clientSecretRef")
             if (
                 urlsplit(issuer).query
                 or not isinstance(client_id, str)
                 or not client_id
-                or not isinstance(scopes, (list, tuple))
-                or any(
-                    not isinstance(scope, str)
-                    or not scope
-                    or any(c.isspace() for c in scope)
-                    for scope in scopes
+                or (
+                    scopes is not None
+                    and (
+                        not isinstance(scopes, (list, tuple))
+                        or any(
+                            not isinstance(scope, str)
+                            or not scope
+                            or any(c.isspace() for c in scope)
+                            for scope in scopes
+                        )
+                    )
                 )
                 or (secret is not None and (not isinstance(secret, str) or not secret))
             ):
                 raise AuthenticationFailure(code="invalid_configuration")
             typed = OAuthBinding(
-                issuer, resource, client_id, flow, tuple(sorted(set(scopes))), secret
+                issuer,
+                resource,
+                client_id,
+                flow,
+                None if scopes is None else tuple(sorted(set(scopes))),
+                secret,
             )
         else:
             raise AuthenticationFailure(code="unsupported_binding")

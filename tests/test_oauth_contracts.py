@@ -209,19 +209,28 @@ class CanonicalVectorTests(unittest.TestCase):
                 self.assertIs(_response_scopes(malformed), False)
 
     def test_scope_policy_validation(self):
+        # Invalid tokens and scopes outside the ceiling are refused at use as
+        # auth errors (invalid_configuration / access_denied), never at
+        # construction.
         for scope in ("bad scope", 'quote"', "back\\slash", "nonasciié", ""):
-            with self.subTest(scope=scope), self.assertRaises(ValueError):
+            with self.subTest(scope=scope):
                 OAuthClientConfiguration(
                     "https://issuer.test",
                     "client",
                     "client_credentials",
                     scopes=(scope,),
                 )
-        with self.assertRaises(ValueError):
-            OAuthClientConfiguration(
-                "https://issuer.test",
-                "client",
-                "client_credentials",
-                scopes=("read",),
-                required_scopes=("admin",),
-            )
+        OAuthClientConfiguration(
+            "https://issuer.test",
+            "client",
+            "client_credentials",
+            scopes=("read",),
+            required_scopes=("admin",),
+        )
+        OAuthClientConfiguration(
+            "https://issuer.test",
+            "client",
+            "client_credentials",
+            scopes=("read", "admin"),
+            allowed_scopes=("read",),
+        )

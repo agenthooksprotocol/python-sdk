@@ -1371,45 +1371,87 @@ class ConfigurationRetryTests(unittest.TestCase):
         self.run_async(run)
 
     def test_short_event_deadlines_do_not_starve_slow_discovery(self):
+        """Discovery is held on a gate, not a wall-clock delay: waiters are
+        cancelled at known points, and the generous deadlines only bound a
+        regression (a starved or restarted discovery, or an event that waits
+        for a re-attempt), never the timing of a passing run."""
+
         async def run():
             from agenthooksprotocol.auth import TransportFailure
 
-            class Slow(ScriptedTransport):
+            class Gated(ScriptedTransport):
+                """Discovery blocks until released, once it has started."""
+
+                def __init__(self, *errors):
+                    super().__init__(*errors)
+                    self.started = anyio.Event()
+                    self.release = anyio.Event()
+                    # Gated discovery requests sent, including any a
+                    # cancelled waiter abandoned.
+                    self.attempts = 0
+
                 async def request(self, message):
                     if message["method"] == "hooks/configuration" and not self.errors:
-                        await anyio.sleep(0.3)
+                        self.attempts += 1
+                        self.started.set()
+                        await self.release.wait()
                     return await super().request(message)
+
+            def ready(hooks):
+                return bool(hooks.config["hooks"]) and bool(hooks._ready)
+
+            async def cancelled_waiter(hooks, transport):
+                """One event cancelled while discovery is in flight (a short
+                deadline expiring): True when it was still waiting."""
+                with anyio.CancelScope() as scope:
+                    async with anyio.create_task_group() as tasks:
+
+                        async def expire():
+                            await transport.started.wait()
+                            await anyio.lowlevel.checkpoint()
+                            scope.cancel()
+
+                        tasks.start_soon(expire)
+                        await hooks.tool_before(tool_input())
+                return scope.cancelled_caught
 
             for path in ("initial", "retry"):
                 with self.subTest(path=path):
                     clock = Clock()
                     errors = () if path == "initial" else (TransportFailure("down"),)
-                    transport = Slow(*errors)
+                    transport = Gated(*errors)
                     hooks = client(transport=transport)
-                    with patch("agenthooksprotocol._hooks._now", clock):
-                        if path == "retry":
-                            await hooks.__aenter__()
-                            # Warm the dispatch path outside the measured deadlines.
-                            await hooks.tool_before(tool_input("warm"))
-                            clock.now += 30
-                        timeouts = 0
-                        with anyio.fail_after(5):
-                            while not hooks.config["hooks"] or not hooks._ready:
-                                try:
-                                    with anyio.fail_after(0.05):
-                                        await hooks.tool_before(tool_input())
-                                except TimeoutError:
-                                    timeouts += 1
-                                await anyio.sleep(0.01)
                     try:
-                        # Cancelled waiters never restart the slow discovery.
+                        with patch("agenthooksprotocol._hooks._now", clock):
+                            with anyio.fail_after(10):
+                                if path == "initial":
+                                    # Events wait for the initial discovery;
+                                    # each waiter is cancelled mid-wait.
+                                    for _ in range(3):
+                                        self.assertTrue(
+                                            await cancelled_waiter(hooks, transport)
+                                        )
+                                else:
+                                    await hooks.__aenter__()
+                                    await hooks.tool_before(tool_input("warm"))
+                                    clock.now += 30
+                                    # This event starts the re-attempt and
+                                    # never waits for it, nor do later ones
+                                    # while it is held.
+                                    await hooks.tool_before(tool_input())
+                                    await transport.started.wait()
+                                    for _ in range(3):
+                                        await hooks.tool_before(tool_input())
+                                    self.assertFalse(ready(hooks))
+                                transport.release.set()
+                                while not ready(hooks):
+                                    await hooks.tool_before(tool_input())
+                                    await anyio.sleep(0.01)
+                        # Cancelled waiters never cancel or restart the slow
+                        # discovery: the one held on the gate completes.
+                        self.assertEqual(transport.attempts, 1)
                         expected = 1 if path == "initial" else 2
                         self.assertEqual(len(transport.discoveries), expected)
-                        if path == "initial":
-                            self.assertGreater(timeouts, 0)
-                        else:
-                            # Events never wait for a re-attempt.
-                            self.assertEqual(timeouts, 0)
                         result = await hooks.tool_before(tool_input("final"))
                         await result.aclose()
                         self.assertEqual(

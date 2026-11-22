@@ -6,13 +6,11 @@ at the host's OAuthNetwork boundary; no client or browser is owned here.
 
 from dataclasses import replace
 import json
-import re
 from urllib.parse import parse_qsl, urlsplit
 
 import anyio
 import httpx
 
-from ._auth_challenge import ChallengeError, parse_challenge
 from .auth import AuthChallenge, AuthenticationFailure, AuthTarget, OAuthBinding
 from ._oauth_types import (
     EndpointPurpose,
@@ -22,6 +20,7 @@ from ._oauth_types import (
     OAuthTrustPolicy,
     OperationBudget,
 )
+from ._scope_decision import Challenge, Op, Policy, classify_challenge, decide
 from .runtime import OperationCancelledError
 
 MAX_RESPONSE_BYTES = 1024 * 1024
@@ -173,18 +172,6 @@ async def safe_request(
     return result
 
 
-def challenge_requirements(
-    challenge: AuthChallenge | None,
-) -> tuple[str | None, tuple[str, ...]]:
-    if challenge is None:
-        return None, ()
-    try:
-        return parse_challenge(challenge.status, challenge.headers)
-    except ChallengeError as error:
-        code = error.code
-    raise AuthenticationFailure(code=code)
-
-
 def _well_known(identifier: str, name: str) -> list[tuple[str, str]]:
     parts = urlsplit(identifier)
     origin = f"{parts.scheme}://{parts.netloc}"
@@ -243,17 +230,6 @@ def _strings(document: dict[str, object], key: str) -> tuple[str, ...]:
     return tuple(value)
 
 
-def _scope_set(scopes: tuple[str, ...]) -> set[str]:
-    """Validate RFC 6749 scope tokens before comparing local policy sets."""
-    if not isinstance(scopes, tuple) or any(
-        not isinstance(scope, str)
-        or re.fullmatch(r"[\x21\x23-\x5b\x5d-\x7e]+", scope) is None
-        for scope in scopes
-    ):
-        raise _fail()
-    return set(scopes)
-
-
 def check_redirect(redirect: object) -> None:
     """HTTPS, or HTTP to a literal loopback IP (RFC 8252); never localhost."""
     if not isinstance(redirect, str):
@@ -286,25 +262,29 @@ def check_redirect(redirect: object) -> None:
         raise AuthenticationFailure(code="invalid_configuration")
 
 
+def scope_policy(target: AuthTarget, configuration: OAuthClientConfiguration) -> Policy:
+    """The `decide` inputs from the selected client and the target's preset
+    (whose omitted `scopes` is no constraint)."""
+    binding = target.typed_binding
+    return Policy(
+        configuration.flow,
+        configuration.scopes,
+        configuration.ceiling,
+        configuration.required_scopes,
+        binding.scopes if isinstance(binding, OAuthBinding) else None,
+    )
+
+
 def validate_configuration(
     target: AuthTarget,
     resource: str,
     issuers: tuple[str, ...],
-    required: tuple[str, ...],
     configuration: OAuthClientConfiguration,
 ) -> None:
-    """Revalidate host policy without fetching metadata or holding a grant lock."""
+    """Revalidate host policy without fetching metadata or holding a grant
+    lock. Scopes are `decide`'s, never checked here."""
     validate_url(resource)
     validate_url(configuration.issuer, issuer=True)
-    requested = _scope_set(configuration.scopes)
-    allowed = (
-        requested
-        if configuration.allowed_scopes is None
-        else _scope_set(configuration.allowed_scopes)
-    )
-    mandatory = _scope_set(configuration.required_scopes) | _scope_set(required)
-    if not requested.issubset(allowed) or not mandatory.issubset(allowed):
-        raise AuthenticationFailure(code="access_denied")
     # An empty client_id asks client selection for CIMD or DCR.
     registered = not configuration.client_id
     if configuration.issuer not in issuers:
@@ -316,7 +296,6 @@ def validate_configuration(
         or configuration.issuer != binding.issuer
         or configuration.client_id != binding.client_id
         or configuration.flow != binding.flow
-        or requested != _scope_set(binding.scopes)
     ):
         raise AuthenticationFailure(code="invalid_configuration")
     if configuration.flow == "authorization_code_pkce":
@@ -337,21 +316,25 @@ def validate_configuration(
         raise AuthenticationFailure(code="credential_unavailable")
 
 
-async def discover(
+async def select_client(
     target: AuthTarget,
-    challenge: AuthChallenge | None,
+    challenge: Challenge,
     network: OAuthNetwork,
     policy: OAuthTrustPolicy,
     budget: OperationBudget,
     *,
     redirect_uri: str | None = None,
-) -> OAuthMetadata:
-    """Resolve the locally selected binding. The result carries the current
-    client secret; callers strip it before persisting metadata.
-    `redirect_uri` overrides the configured redirect for one login."""
+    explicit: tuple[str, ...] = (),
+) -> tuple[str, OAuthClientConfiguration]:
+    """Resolve the resource and the locally selected client. An unbound
+    target makes the protected-resource metadata fetch selection needs; no
+    authorization-server request is made. `redirect_uri` overrides the
+    configured redirect for one login; `explicit` holds the host's `prepare`
+    required scopes, passed to selection with the challenged ones."""
     resource = validate_url(await policy.resource(target, budget))
     binding = target.typed_binding
-    metadata_url, required = challenge_requirements(challenge)
+    metadata_url = challenge.resource_metadata
+    required = tuple(sorted(set(challenge.scopes) | set(explicit)))
     issuers: tuple[str, ...]
     if binding is not None:
         if not isinstance(binding, OAuthBinding):
@@ -385,7 +368,35 @@ async def discover(
     configuration = await policy.select(target, resource, issuers, required, budget)
     if redirect_uri is not None:
         configuration = replace(configuration, redirect_uri=redirect_uri)
-    validate_configuration(target, resource, issuers, required, configuration)
+    validate_configuration(target, resource, issuers, configuration)
+    return resource, configuration
+
+
+async def discover(
+    target: AuthTarget,
+    challenge: AuthChallenge | None,
+    network: OAuthNetwork,
+    policy: OAuthTrustPolicy,
+    budget: OperationBudget,
+    *,
+    redirect_uri: str | None = None,
+    explicit: tuple[str, ...] = (),
+    op: Op = "prepare",
+) -> OAuthMetadata:
+    """Select the client, let `decide` refuse before any authorization-server
+    request, then fetch the selected issuer's metadata. The result carries
+    the current client secret; callers strip it before persisting metadata."""
+    classified = classify_challenge(challenge)
+    resource, configuration = await select_client(
+        target,
+        classified,
+        network,
+        policy,
+        budget,
+        redirect_uri=redirect_uri,
+        explicit=explicit,
+    )
+    decide(op, scope_policy(target, configuration), explicit, classified)
     return await issuer_metadata(resource, configuration, network, budget)
 
 

@@ -18,7 +18,7 @@ jobs:
       - uses: actions/checkout@v5
         with:
           repository: agenthooksprotocol/agent-hooks-protocol
-          ref: bcb88b55b75f74dc54d8e56d5bb5da79b7f8151f
+          ref: 4d62772aa8ae02348221732765551ce28995cc7e
           path: protocol-fixtures
       - run: mv protocol-fixtures ../agent-hooks-protocol
       - uses: actions/setup-python@v6
@@ -32,6 +32,6 @@ jobs:
       - run: uv run --locked --all-extras python -m compileall -q src tests
       - run: PYTHONPATH=src uv run --locked --all-extras python -m unittest discover -s tests
       - run: uv run --locked --all-extras mypy
-      - run: uv run --locked --all-extras mypy --strict src/agenthooksprotocol/oauth.py src/agenthooksprotocol/_oauth_discovery.py src/agenthooksprotocol/_oauth_types.py src/agenthooksprotocol/_auth_challenge.py src/agenthooksprotocol/_oauth_registration.py
+      - run: uv run --locked --all-extras mypy --strict src/agenthooksprotocol/oauth.py src/agenthooksprotocol/_oauth_discovery.py src/agenthooksprotocol/_oauth_types.py src/agenthooksprotocol/_auth_challenge.py src/agenthooksprotocol/_oauth_registration.py src/agenthooksprotocol/_scope_decision.py
       - run: PYTHONPATH=src uv run --locked --all-extras python tests/typecheck_named_boundary_codecs.py
       - run: uv run --locked --all-extras python ../agent-hooks-protocol/tools/generate_sdk.py --python-sdk . --check

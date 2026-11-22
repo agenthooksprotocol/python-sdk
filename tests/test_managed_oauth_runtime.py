@@ -34,10 +34,13 @@ from agenthooksprotocol.oauth import (
     OAuthClientMetadataDocument,
     OAuthDynamicRegistration,
     OAuthPendingLogins,
+    OAuthRecord,
     OperationBudget,
     PendingLogin,
     Ready,
+    StoredToken,
 )
+from agenthooksprotocol._oauth_types import binding_key, grant_key
 
 RESOURCE = "https://resource.test/api"
 ISSUER = "https://issuer.test"
@@ -332,7 +335,9 @@ class ManagedOAuthRuntimeTests(unittest.TestCase):
                 await p.complete(
                     target, login, callback.replace(query["state"][0], "wrong"), budget
                 )
-            self.assertEqual(failure.exception.code, "access_denied")
+            # An unknown state names no login, whatever handle is passed.
+            self.assertEqual(failure.exception.code, "interaction_required")
+            self.assertIs(failure.exception.login_ended, True)
             self.assertFalse(n.tokens)
             self.assertIsInstance(
                 await p.complete(target, login, callback, budget), Ready
@@ -374,8 +379,8 @@ class ManagedOAuthRuntimeTests(unittest.TestCase):
             )
             self.assertTrue(token_request.headers["authorization"].startswith("Basic "))
             self.assertNotIn("client_secret", n.tokens[0])
-            self.assertEqual(n.tokens[1]["grant_type"], ["refresh_token"])
-            self.assertEqual(n.tokens[1]["refresh_token"], ["refresh-1"])
+            # Client credentials reissue; they never refresh.
+            self.assertEqual(n.tokens[1]["grant_type"], ["client_credentials"])
             self.assertTrue(all(form["resource"] == [RESOURCE] for form in n.tokens))
             await p.reset(target, OperationBudget.after(5))
             self.assertFalse(s.records)
@@ -444,7 +449,7 @@ class ManagedOAuthRuntimeTests(unittest.TestCase):
 
     def test_cancel_network_preserves_refresh_and_allows_explicit_retry(self):
         async def run(p, n, s, policy, target, now):
-            await p.prepare(target, OperationBudget.after(5))
+            await self.pkce_grant(p, n, policy, target)
             old = next(iter(s.records.values())).token
             now[0] += 61
             entered = anyio.Event()
@@ -997,7 +1002,7 @@ class ManagedOAuthRuntimeTests(unittest.TestCase):
 
     def test_uncertain_refresh_preserves_material_and_retry_can_recover(self):
         async def run(p, n, s, policy, target, now):
-            await p.prepare(target, OperationBudget.after(5))
+            await self.pkce_grant(p, n, policy, target)
             old_token = next(iter(s.records.values())).token
             now[0] += 61
 
@@ -1034,7 +1039,8 @@ class ManagedOAuthRuntimeTests(unittest.TestCase):
     def test_unknown_expiry_narrowed_scopes_initial_and_refresh(self):
         async def run(p, n, s, policy, target, now):
             policy.configuration = replace(
-                policy.configuration, scopes=("read", "write")
+                Policy("authorization_code_pkce").configuration,
+                scopes=("read", "write"),
             )
 
             async def token(request):
@@ -1049,7 +1055,9 @@ class ManagedOAuthRuntimeTests(unittest.TestCase):
                 )
 
             n.token_hook = token
-            first = await p.prepare(target, OperationBudget.after(5))
+            first = await self.complete_login(
+                p, target, await p.prepare(target, OperationBudget.after(5))
+            )
             record = next(iter(s.records.values()))
             self.assertIsNone(record.token.expires_at)
             self.assertEqual(record.token.scopes, ("read",))
@@ -1359,6 +1367,94 @@ class ManagedOAuthRuntimeTests(unittest.TestCase):
 
         self.run_async(run)
 
+    def test_scope_outside_ceiling_is_denied_with_required_scopes(self):
+        async def run(p, n, s, policy, target, now):
+            # A permissive host policy: the SDK's own ceiling check refuses.
+            async def select(target, resource, issuers, required_scopes, budget):
+                return policy.configuration
+
+            policy.select = select
+            policy.configuration = replace(
+                Policy("authorization_code_pkce").configuration,
+                allowed_scopes=("read", "write"),
+                required_scopes=("write",),
+            )
+            # Host-required scope outside the ceiling, on fresh discovery.
+            with self.assertRaises(AuthenticationFailure) as failure:
+                await p.prepare(
+                    target, OperationBudget.after(5), required_scopes=("admin",)
+                )
+            self.assertEqual(failure.exception.code, "access_denied")
+            self.assertEqual(failure.exception.required_scopes, ("admin", "write"))
+            self.assertEqual(n.tokens, [])
+            with_write = policy.configuration
+            policy.configuration = replace(with_write, required_scopes=())
+            first = await self.complete_login(
+                p, target, await p.prepare(target, OperationBudget.after(5))
+            )
+            self.assertTrue(s.bindings)
+            policy.configuration = with_write
+            # The same refusal on the cached-binding path.
+            with self.assertRaises(AuthenticationFailure) as failure:
+                await p.prepare(
+                    target, OperationBudget.after(5), required_scopes=("admin",)
+                )
+            self.assertEqual(failure.exception.code, "access_denied")
+            self.assertEqual(failure.exception.required_scopes, ("admin", "write"))
+
+            def insufficient(scope):
+                return AuthChallenge(
+                    403,
+                    {
+                        "www-authenticate": 'Bearer error="insufficient_scope", scope="'
+                        + scope
+                        + '"'
+                    },
+                    RESOURCE,
+                    first.credential.identity,
+                    True,
+                )
+
+            with anyio.CancelScope() as cancel:
+                context = AuthContext(
+                    {"id": "backend"}, None, RESOURCE, "event", cancel
+                )
+                # A challenged scope outside the ceiling names the requirement.
+                with self.assertRaises(AuthenticationFailure) as failure:
+                    await p.challenge(context, insufficient("admin"))
+                self.assertEqual(failure.exception.code, "access_denied")
+                self.assertEqual(failure.exception.required_scopes, ("admin", "write"))
+                # The challenge requirement is operation-scoped: an in-ceiling
+                # step-up still asks for consent with the scopes.
+                policy.configuration = replace(with_write, required_scopes=())
+                with self.assertRaises(AuthenticationFailure) as failure:
+                    await p.challenge(context, insufficient("write"))
+                self.assertEqual(failure.exception.code, "interaction_required")
+                self.assertEqual(failure.exception.required_scopes, ("write",))
+
+        self.run_async(run)
+
+    def test_untrusted_issuer_is_denied_without_required_scopes(self):
+        async def run(p, n, s, policy, target, now):
+            policy.configuration = replace(
+                policy.configuration, allowed_scopes=("read", "write")
+            )
+
+            async def select(target, resource, issuers, required_scopes, budget):
+                # Host trust policy refuses the discovered issuer.
+                raise AuthenticationFailure(code="access_denied")
+
+            policy.select = select
+            with self.assertRaises(AuthenticationFailure) as failure:
+                await p.prepare(
+                    target, OperationBudget.after(5), required_scopes=("write",)
+                )
+            self.assertEqual(failure.exception.code, "access_denied")
+            self.assertEqual(failure.exception.required_scopes, ())
+            self.assertEqual(n.tokens, [])
+
+        self.run_async(run)
+
     def test_pkce_stepup_round_trip_shared_grant_and_operation_scoped_requirement(self):
         async def run(p, n, s, policy, target, now):
             policy.configuration = replace(
@@ -1463,11 +1559,12 @@ class ManagedOAuthRuntimeTests(unittest.TestCase):
     def test_narrowed_refresh_omitted_scope_inherits_previous_grant(self):
         async def run(p, n, s, policy, target, now):
             policy.configuration = replace(
-                policy.configuration, scopes=("read", "write")
+                Policy("authorization_code_pkce").configuration,
+                scopes=("read", "write"),
             )
 
             async def token(request):
-                initial = n.tokens[-1]["grant_type"] == ["client_credentials"]
+                initial = n.tokens[-1]["grant_type"] == ["authorization_code"]
                 return httpx.Response(
                     200,
                     json={
@@ -1479,7 +1576,9 @@ class ManagedOAuthRuntimeTests(unittest.TestCase):
                 )
 
             n.token_hook = token
-            await p.prepare(target, OperationBudget.after(5))
+            await self.complete_login(
+                p, target, await p.prepare(target, OperationBudget.after(5))
+            )
             now[0] += 61
             await p.prepare(target, OperationBudget.after(5))
             record = next(iter(s.records.values()))
@@ -1760,8 +1859,9 @@ class ManagedOAuthRuntimeTests(unittest.TestCase):
                     {"state": state, "code": f"code-{port}"}
                 )
 
-            # A callback carrying the other login's state or redirect is refused
-            # without consuming either login.
+            # A handle naming another login than the callback's state, or a
+            # callback carrying the other login's redirect, is an invalid
+            # callback: refused without consuming either login.
             for login, url in (
                 (first, callback(second, 4002)),
                 (first, callback(first, 4002)),
@@ -1769,6 +1869,7 @@ class ManagedOAuthRuntimeTests(unittest.TestCase):
                 with self.assertRaises(AuthenticationFailure) as failure:
                     await p.complete(target, login, url, OperationBudget.after(5))
                 self.assertEqual(failure.exception.code, "access_denied")
+                self.assertIs(failure.exception.login_ended, False)
             self.assertFalse(n.tokens)
             await p.complete(
                 target, second, callback(second, 4002), OperationBudget.after(5)
@@ -2307,18 +2408,27 @@ class ManagedOAuthRuntimeTests(unittest.TestCase):
                     requested = sorted(
                         set(vector["requested"]) & set(vector["allowed"])
                     )
+                    refreshing = vector.get("exchange") == "refresh"
+                    # Only PKCE grants refresh; client credentials reissue.
+                    flow = (
+                        "authorization_code_pkce"
+                        if refreshing
+                        else "client_credentials"
+                    )
                     config = OAuthClientConfiguration(
                         issuer=ISSUER,
                         client_id="host-client",
-                        flow="client_credentials",
+                        flow=flow,
                         scopes=tuple(requested),
                         allowed_scopes=tuple(vector["allowed"]),
                         required_scopes=tuple(vector["required"]),
+                        redirect_uri="https://host.test/callback"
+                        if refreshing
+                        else None,
                     )
                     responses = []
-                    refreshing = vector.get("exchange") == "refresh"
                     seeded = "previous_granted" in vector
-                    if seeded:
+                    if seeded and not refreshing:
                         responses.append(
                             {
                                 "access_token": "seed-access",
@@ -2351,11 +2461,7 @@ class ManagedOAuthRuntimeTests(unittest.TestCase):
                         expiry_skew=0,
                     )
                     typed = OAuthBinding(
-                        ISSUER,
-                        RESOURCE,
-                        "host-client",
-                        "client_credentials",
-                        tuple(requested),
+                        ISSUER, RESOURCE, "host-client", flow, tuple(requested)
                     )
                     target = AuthTarget(
                         "vectors", "backend", RESOURCE, "event", None, typed
@@ -2365,7 +2471,7 @@ class ManagedOAuthRuntimeTests(unittest.TestCase):
                         "issuer": ISSUER,
                         "resource": RESOURCE,
                         "clientId": "host-client",
-                        "flow": "client_credentials",
+                        "flow": flow,
                         "scopes": requested,
                     }
                     delivered = []
@@ -2375,7 +2481,27 @@ class ManagedOAuthRuntimeTests(unittest.TestCase):
                         return httpx.Response(204)
 
                     try:
-                        if seeded:
+                        if seeded and refreshing:
+                            # A stored, expired PKCE grant with a refresh token.
+                            login = await provider.prepare(
+                                target, OperationBudget.after(5)
+                            )
+                            await provider.cancel(
+                                target, login, OperationBudget.after(5)
+                            )
+                            metadata = store.bindings[binding_key(target)]
+                            store.records[grant_key(target, metadata)] = OAuthRecord(
+                                "seed",
+                                "active",
+                                metadata,
+                                StoredToken(
+                                    "seed-access",
+                                    now[0] - 1,
+                                    "r1",
+                                    tuple(sorted(vector["previous_granted"])),
+                                ),
+                            )
+                        elif seeded:
                             await provider.prepare(target, OperationBudget.after(5))
                             now[0] += 2
                         policy.configuration = config
@@ -2410,6 +2536,11 @@ class ManagedOAuthRuntimeTests(unittest.TestCase):
                                     failure.exception.code,
                                     vector.get("error", "access_denied"),
                                 )
+                                if "error_scopes" in vector:
+                                    self.assertEqual(
+                                        list(failure.exception.required_scopes),
+                                        vector["error_scopes"],
+                                    )
                                 self.assertEqual(delivered, [])
                             await transport.aclose()
                             self.assertFalse(client.is_closed)
@@ -2468,7 +2599,9 @@ class ManagedOAuthRuntimeTests(unittest.TestCase):
                                 network.tokens[-1]["refresh_token"], ["r1"]
                             )
                             self.assertNotIn("scope", network.tokens[-1])
-                        self.assertEqual(len(network.tokens), 2 if seeded else 1)
+                        self.assertEqual(
+                            len(network.tokens), 2 if seeded and not refreshing else 1
+                        )
                         self.assertFalse(network.responses)
                         self.assertTrue(store.coordinated)
                     finally:
@@ -2628,8 +2761,8 @@ class ManagedOAuthRuntimeTests(unittest.TestCase):
             )
             self.assertEqual(len(token_requests), 2)
             self.assertEqual(str(token_requests[-1].url), ISSUER + "/rotated-token")
-            self.assertEqual(n.tokens[-1]["grant_type"], ["refresh_token"])
-            self.assertEqual(n.tokens[-1]["refresh_token"], ["endpoint-refresh-1"])
+            # Client credentials reissue with the current secret.
+            self.assertEqual(n.tokens[-1]["grant_type"], ["client_credentials"])
             self.assertEqual(
                 b64decode(token_requests[-1].headers["authorization"].split()[1]),
                 b"host-client:latest-endpoint-secret",
@@ -2766,7 +2899,7 @@ class ManagedOAuthRuntimeTests(unittest.TestCase):
         """Canonical lifecycle: unbound-lookup-refreshes-expired-token."""
 
         async def run(p, n, s, policy, target, now):
-            first = await p.prepare(target, OperationBudget.after(5))
+            first = await self.pkce_grant(p, n, policy, target)
             now[0] += 61
             fresh = ManagedOAuthProvider(
                 network=n,
@@ -4273,16 +4406,26 @@ CONFIGURATION_TESTS = {
 class LifecycleCoverageTests(unittest.TestCase):
     def test_every_lifecycle_id_maps_to_an_existing_native_test(self):
         from test_oauth_registration import RegistrationLifecycleTests
+        from test_scope_contract import SCOPE_CONTRACT_TESTS, ScopeContractTests
+        from test_scope_decide import SCOPE_DECIDE_TESTS, ProviderTests
         from test_server_configuration import ConfigurationRetryTests
 
         ids = [entry["id"] for entry in FIXTURES["lifecycle"]]
-        groups = (LIFECYCLE_TESTS, REGISTRATION_TESTS, CONFIGURATION_TESTS)
+        groups = (
+            LIFECYCLE_TESTS,
+            REGISTRATION_TESTS,
+            CONFIGURATION_TESTS,
+            SCOPE_CONTRACT_TESTS,
+            SCOPE_DECIDE_TESTS,
+        )
         self.assertEqual(sum(map(len, groups)), len(set().union(*groups)))
         self.assertEqual(set(ids), set().union(*groups))
         for tests, names in (
             (ManagedOAuthRuntimeTests, LIFECYCLE_TESTS.values()),
             (RegistrationLifecycleTests, REGISTRATION_TESTS.values()),
             (ConfigurationRetryTests, CONFIGURATION_TESTS.values()),
+            (ScopeContractTests, SCOPE_CONTRACT_TESTS.values()),
+            (ProviderTests, SCOPE_DECIDE_TESTS.values()),
         ):
             for name in names:
                 self.assertTrue(callable(getattr(tests, name, None)), name)

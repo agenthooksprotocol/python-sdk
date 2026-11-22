@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.15.0](https://github.com/agenthooksprotocol/python-sdk/compare/v0.14.0...v0.15.0) (2026-11-22)
+
+
+### ⚠ BREAKING CHANGES
+
+* **oauth:** SDK scope handling follows the spec decide/complete/classify procedure. Only host-required, explicit and 403-challenged scopes are required; a 401 scope is a hint only; scoped errors carry the full required set, sorted, and host errors carry none; outcomes that need no authorization-server request make none; client credentials always reissue; renewal and complete() error codes follow the spec mapping; complete() validates the callback and runs host policy before claiming the login; forced re-registration applies only to a client-credentials DCR client. OAuthClientConfiguration no longer raises ValueError for scope errors; OAuthBinding.scopes is None when omitted.
+
+### Bug Fixes
+
+* **oauth:** route every scope decision through one decide and classify ([#60](https://github.com/agenthooksprotocol/python-sdk/issues/60)) ([6ea571a](https://github.com/agenthooksprotocol/python-sdk/commit/6ea571a657ba16cd0fff7e1d890d3860a8497e72))
+
 ## [0.14.0](https://github.com/agenthooksprotocol/python-sdk/compare/v0.13.1...v0.14.0) (2026-11-19)
 
 
